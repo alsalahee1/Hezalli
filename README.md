@@ -32,6 +32,7 @@ docs/
   15-testing-security.md       ← Phase 15: testing, security hardening, performance
   16-deployment-launch.md      ← Phase 16: put it on the internet
   17-post-launch-growth.md     ← Phase 17: analytics, SEO, mobile apps, scaling
+  18-business-model.md         ← How Hezalli makes money & manages vendors and buyers
 ```
 
 ## 🚀 How to start
