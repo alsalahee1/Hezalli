@@ -1,0 +1,18 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Models are added in Step 2.2 (see docs/DATABASE.md). Step 2.1 wires up
+// the generator, datasource, and a working database connection.
+//
+// Prisma 7 note: the connection URL is NOT set here. It lives in
+// prisma.config.ts (used by the Prisma CLI) and is passed to PrismaClient
+// through the pg driver adapter in lib/prisma.ts (used by the app runtime).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
