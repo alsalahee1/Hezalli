@@ -14,15 +14,9 @@
  * Run with: npm run db:seed
  */
 import "dotenv/config";
-import { randomBytes, scryptSync } from "node:crypto";
 
+import { hashPassword } from "../lib/password";
 import { prisma } from "../lib/prisma";
-
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `scrypt$${salt}$${hash}`;
-}
 
 const slugify = (s: string) =>
   s
@@ -30,8 +24,6 @@ const slugify = (s: string) =>
     .replace(/["']/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
-
-const PASSWORD = hashPassword("hezalli123");
 
 async function clearDatabase() {
   // Delete in child → parent order so foreign keys are satisfied.
@@ -293,6 +285,10 @@ type SeededProduct = {
 };
 
 async function main() {
+  // Dev login password shared by every seeded user (see file header). Hashed
+  // via the same helper the app uses so seeded users can sign in.
+  const PASSWORD = await hashPassword("hezalli123");
+
   console.log("🧹 Clearing existing data…");
   await clearDatabase();
 

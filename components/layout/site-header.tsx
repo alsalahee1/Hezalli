@@ -5,12 +5,19 @@ import { Menu, Search, ShoppingCart, Store, User, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
 import { LanguageSwitcher } from "./language-switcher";
 
-export function SiteHeader() {
+type HeaderUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+export function SiteHeader({ user }: { user?: HeaderUser | null }) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -55,11 +62,16 @@ export function SiteHeader() {
               {t("becomeSeller")}
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/account" aria-label={t("account")}>
-              <User className="size-5" />
-            </Link>
-          </Button>
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">
+                <User className="size-4" />
+                <span className="hidden sm:inline">{t("signIn")}</span>
+              </Link>
+            </Button>
+          )}
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart" aria-label={t("cart")}>
               <ShoppingCart className="size-5" />
