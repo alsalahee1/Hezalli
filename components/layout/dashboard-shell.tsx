@@ -1,0 +1,140 @@
+"use client";
+
+import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  LayoutDashboard,
+  Menu,
+  MessageSquare,
+  Package,
+  ScrollText,
+  Settings,
+  Shapes,
+  ShieldAlert,
+  ShoppingBag,
+  Store,
+  Tag,
+  Users,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+
+import { Link, usePathname } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
+
+type NavItem = { href: string; key: string; icon: LucideIcon };
+
+const SELLER_NAV: NavItem[] = [
+  { href: "/seller", key: "dashboard", icon: LayoutDashboard },
+  { href: "/seller/products", key: "products", icon: Package },
+  { href: "/seller/orders", key: "orders", icon: ShoppingBag },
+  { href: "/seller/returns", key: "returns", icon: ArrowLeftRight },
+  { href: "/seller/chat", key: "chat", icon: MessageSquare },
+  { href: "/seller/promotions", key: "promotions", icon: Tag },
+  { href: "/seller/settings", key: "settings", icon: Settings },
+];
+
+const ADMIN_NAV: NavItem[] = [
+  { href: "/admin", key: "dashboard", icon: LayoutDashboard },
+  { href: "/admin/users", key: "users", icon: Users },
+  { href: "/admin/sellers", key: "sellers", icon: Store },
+  { href: "/admin/products", key: "products", icon: Package },
+  { href: "/admin/orders", key: "orders", icon: ShoppingBag },
+  { href: "/admin/disputes", key: "disputes", icon: ShieldAlert },
+  { href: "/admin/categories", key: "categories", icon: Shapes },
+  { href: "/admin/promotions", key: "promotions", icon: Tag },
+  { href: "/admin/pages", key: "pages", icon: ScrollText },
+  { href: "/admin/settings", key: "settings", icon: Settings },
+];
+
+export function DashboardShell({
+  variant,
+  children,
+}: {
+  variant: "seller" | "admin";
+  children: React.ReactNode;
+}) {
+  const nav = variant === "seller" ? SELLER_NAV : ADMIN_NAV;
+  const ns = variant === "seller" ? "Seller" : "Admin";
+  const titleKey = variant === "seller" ? "center" : "panel";
+  const t = useTranslations(ns);
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const isActive = (href: string) =>
+    href === `/${variant}` ? pathname === href : pathname.startsWith(href);
+
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      <div className="flex h-14 items-center gap-2 border-b px-4">
+        <Store className="size-5" />
+        <span className="font-semibold">{t(titleKey)}</span>
+      </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {nav.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                isActive(item.href)
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+              {t(item.key)}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Desktop sidebar */}
+      <aside className="hidden w-64 shrink-0 border-e bg-background md:block">
+        {sidebar}
+      </aside>
+
+      {/* Mobile drawer */}
+      {open && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <aside className="absolute inset-y-0 start-0 w-64 border-e bg-background shadow-lg">
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex h-14 items-center gap-3 border-b px-4">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex size-9 items-center justify-center rounded-md hover:bg-muted md:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="size-5" />
+          </button>
+          <span className="font-semibold md:hidden">{t(titleKey)}</span>
+          <Link
+            href="/"
+            className="ms-auto text-sm text-muted-foreground hover:text-foreground hover:underline"
+          >
+            Hezalli
+          </Link>
+        </div>
+        <main className="flex-1 p-6">{children}</main>
+      </div>
+    </div>
+  );
+}

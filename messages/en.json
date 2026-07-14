@@ -1,0 +1,71 @@
+{
+  "Common": {
+    "appName": "Hezalli",
+    "tagline": "Yemen's multi-vendor marketplace",
+    "search": "Search products…",
+    "comingSoon": "Coming soon",
+    "comingSoonDesc": "This section is being built. Check back soon.",
+    "menu": "Menu",
+    "close": "Close"
+  },
+  "Header": {
+    "cart": "Cart",
+    "account": "Account",
+    "signIn": "Sign in",
+    "wishlist": "Wishlist",
+    "becomeSeller": "Sell on Hezalli"
+  },
+  "Categories": {
+    "all": "All categories",
+    "electronics": "Electronics",
+    "phones": "Phones & Accessories",
+    "fashion": "Fashion & Apparel",
+    "home": "Home & Kitchen",
+    "beauty": "Health & Beauty",
+    "groceries": "Groceries & Food",
+    "baby": "Baby, Kids & Toys",
+    "books": "Books & Stationery",
+    "sports": "Sports & Outdoors",
+    "automotive": "Automotive & Tools"
+  },
+  "Footer": {
+    "company": "Company",
+    "about": "About",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "help": "Help Center",
+    "rights": "© {year} Hezalli. All rights reserved.",
+    "protection": "Hezalli Buyer Protection — money back if it never arrives or isn't as described."
+  },
+  "Home": {
+    "heroTitle": "Everything you need, from sellers across Yemen",
+    "heroSubtitle": "Shop electronics, fashion, groceries and more. Pay by cash on delivery, local wallet, bank transfer, or USDT.",
+    "shopNow": "Shop now",
+    "browseCategories": "Browse categories",
+    "categoriesTitle": "Shop by category"
+  },
+  "Seller": {
+    "center": "Seller Center",
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "orders": "Orders",
+    "returns": "Returns",
+    "chat": "Chat",
+    "promotions": "Promotions",
+    "settings": "Settings",
+    "viewStore": "View store"
+  },
+  "Admin": {
+    "panel": "Admin Panel",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "sellers": "Sellers",
+    "products": "Products",
+    "orders": "Orders",
+    "disputes": "Disputes",
+    "categories": "Categories",
+    "promotions": "Promotions",
+    "pages": "Pages",
+    "settings": "Settings"
+  }
+}
