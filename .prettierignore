@@ -1,0 +1,14 @@
+# Dependencies & build output
+node_modules
+.next
+out
+build
+
+# Generated / lockfiles
+lib/generated
+prisma/migrations
+package-lock.json
+next-env.d.ts
+
+# Hand-authored docs (preserve manual formatting / tables)
+*.md
