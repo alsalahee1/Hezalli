@@ -30,7 +30,7 @@ export function CategoryNav({
   return (
     <nav
       className={cn(
-        "border-t bg-background",
+        "bg-background border-t",
         mobileOpen ? "block" : "hidden md:block",
       )}
     >
@@ -39,7 +39,7 @@ export function CategoryNav({
           "mx-auto max-w-7xl gap-1 px-4",
           mobileOpen
             ? "flex flex-col py-2"
-            : "flex overflow-x-auto py-2 [scrollbar-width:none]",
+            : "flex [scrollbar-width:none] overflow-x-auto py-2",
         )}
       >
         {CATEGORIES.map((cat) => (
@@ -47,7 +47,7 @@ export function CategoryNav({
             <Link
               href={`/c/${cat.slug}`}
               onClick={onNavigate}
-              className="block whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground block rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-colors"
             >
               {t(cat.key)}
             </Link>

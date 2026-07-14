@@ -90,41 +90,197 @@ async function clearDatabase() {
 
 const CATEGORIES = [
   { en: "Electronics", ar: "إلكترونيات", slug: "electronics" },
-  { en: "Phones & Accessories", ar: "الهواتف والإكسسوارات", slug: "phones-accessories" },
+  {
+    en: "Phones & Accessories",
+    ar: "الهواتف والإكسسوارات",
+    slug: "phones-accessories",
+  },
   { en: "Fashion & Apparel", ar: "الأزياء والملابس", slug: "fashion-apparel" },
   { en: "Home & Kitchen", ar: "المنزل والمطبخ", slug: "home-kitchen" },
   { en: "Health & Beauty", ar: "الصحة والجمال", slug: "health-beauty" },
   { en: "Groceries & Food", ar: "البقالة والأغذية", slug: "groceries-food" },
   { en: "Baby, Kids & Toys", ar: "الأطفال والألعاب", slug: "baby-kids-toys" },
-  { en: "Books & Stationery", ar: "الكتب والقرطاسية", slug: "books-stationery" },
-  { en: "Sports & Outdoors", ar: "الرياضة والهواء الطلق", slug: "sports-outdoors" },
-  { en: "Automotive & Tools", ar: "السيارات والأدوات", slug: "automotive-tools" },
+  {
+    en: "Books & Stationery",
+    ar: "الكتب والقرطاسية",
+    slug: "books-stationery",
+  },
+  {
+    en: "Sports & Outdoors",
+    ar: "الرياضة والهواء الطلق",
+    slug: "sports-outdoors",
+  },
+  {
+    en: "Automotive & Tools",
+    ar: "السيارات والأدوات",
+    slug: "automotive-tools",
+  },
 ];
 
 const BRANDS = ["Samsung", "Apple", "Anker", "Adidas", "Generic"];
 
 // storeIdx: 0 = Sana'a Electronics, 1 = Aden Fashion House
 const PRODUCTS = [
-  { en: 'Samsung 55" 4K Smart TV', ar: "تلفزيون سامسونج ذكي 55 بوصة 4K", cat: "electronics", brand: "Samsung", price: 499, store: 0 },
-  { en: "Apple iPhone 15 128GB", ar: "آيفون 15 128 جيجابايت", cat: "phones-accessories", brand: "Apple", price: 799, store: 0 },
-  { en: "Anker PowerCore 20000 Power Bank", ar: "باور بانك أنكر 20000", cat: "phones-accessories", brand: "Anker", price: 39, store: 0 },
-  { en: "Samsung Galaxy Buds2", ar: "سماعات سامسونج جالكسي بدز 2", cat: "electronics", brand: "Samsung", price: 89, store: 0 },
-  { en: "Wireless Keyboard & Mouse Combo", ar: "لوحة مفاتيح وماوس لاسلكي", cat: "electronics", brand: "Generic", price: 25, store: 0 },
-  { en: "Stainless Steel Cookware Set 10pc", ar: "طقم أواني طهي ستانلس ستيل 10 قطع", cat: "home-kitchen", brand: "Generic", price: 79, store: 0 },
-  { en: "Electric Kettle 1.8L", ar: "غلاية كهربائية 1.8 لتر", cat: "home-kitchen", brand: "Generic", price: 22, store: 0 },
-  { en: "Yoga Mat Non-Slip", ar: "سجادة يوغا مانعة للانزلاق", cat: "sports-outdoors", brand: "Generic", price: 18, store: 0 },
-  { en: "Car Phone Holder Magnetic", ar: "حامل هاتف مغناطيسي للسيارة", cat: "automotive-tools", brand: "Generic", price: 9, store: 0 },
-  { en: "LED Desk Lamp", ar: "مصباح مكتب LED", cat: "home-kitchen", brand: "Generic", price: 15, store: 0 },
-  { en: "Men's Cotton T-Shirt", ar: "تيشيرت قطني رجالي", cat: "fashion-apparel", brand: "Generic", price: 12, store: 1 },
-  { en: "Women's Abaya Classic Black", ar: "عباية نسائية كلاسيكية سوداء", cat: "fashion-apparel", brand: "Generic", price: 35, store: 1 },
-  { en: "Kids' Sneakers", ar: "حذاء رياضي للأطفال", cat: "fashion-apparel", brand: "Adidas", price: 29, store: 1 },
-  { en: "Oud Perfume 50ml", ar: "عطر عود 50 مل", cat: "health-beauty", brand: "Generic", price: 45, store: 1 },
-  { en: "Moisturizing Face Cream", ar: "كريم مرطب للوجه", cat: "health-beauty", brand: "Generic", price: 14, store: 1 },
-  { en: "Organic Sidr Honey 500g", ar: "عسل سدر عضوي 500 جرام", cat: "groceries-food", brand: "Generic", price: 28, store: 1 },
-  { en: "Yemeni Coffee Beans 250g", ar: "حبوب قهوة يمنية 250 جرام", cat: "groceries-food", brand: "Generic", price: 11, store: 1 },
-  { en: "Baby Diapers Pack", ar: "حفاضات أطفال", cat: "baby-kids-toys", brand: "Generic", price: 19, store: 1 },
-  { en: "Building Blocks Toy Set", ar: "مكعبات بناء للأطفال", cat: "baby-kids-toys", brand: "Generic", price: 16, store: 1 },
-  { en: "Arabic Novel Collection", ar: "مجموعة روايات عربية", cat: "books-stationery", brand: "Generic", price: 24, store: 1 },
+  {
+    en: 'Samsung 55" 4K Smart TV',
+    ar: "تلفزيون سامسونج ذكي 55 بوصة 4K",
+    cat: "electronics",
+    brand: "Samsung",
+    price: 499,
+    store: 0,
+  },
+  {
+    en: "Apple iPhone 15 128GB",
+    ar: "آيفون 15 128 جيجابايت",
+    cat: "phones-accessories",
+    brand: "Apple",
+    price: 799,
+    store: 0,
+  },
+  {
+    en: "Anker PowerCore 20000 Power Bank",
+    ar: "باور بانك أنكر 20000",
+    cat: "phones-accessories",
+    brand: "Anker",
+    price: 39,
+    store: 0,
+  },
+  {
+    en: "Samsung Galaxy Buds2",
+    ar: "سماعات سامسونج جالكسي بدز 2",
+    cat: "electronics",
+    brand: "Samsung",
+    price: 89,
+    store: 0,
+  },
+  {
+    en: "Wireless Keyboard & Mouse Combo",
+    ar: "لوحة مفاتيح وماوس لاسلكي",
+    cat: "electronics",
+    brand: "Generic",
+    price: 25,
+    store: 0,
+  },
+  {
+    en: "Stainless Steel Cookware Set 10pc",
+    ar: "طقم أواني طهي ستانلس ستيل 10 قطع",
+    cat: "home-kitchen",
+    brand: "Generic",
+    price: 79,
+    store: 0,
+  },
+  {
+    en: "Electric Kettle 1.8L",
+    ar: "غلاية كهربائية 1.8 لتر",
+    cat: "home-kitchen",
+    brand: "Generic",
+    price: 22,
+    store: 0,
+  },
+  {
+    en: "Yoga Mat Non-Slip",
+    ar: "سجادة يوغا مانعة للانزلاق",
+    cat: "sports-outdoors",
+    brand: "Generic",
+    price: 18,
+    store: 0,
+  },
+  {
+    en: "Car Phone Holder Magnetic",
+    ar: "حامل هاتف مغناطيسي للسيارة",
+    cat: "automotive-tools",
+    brand: "Generic",
+    price: 9,
+    store: 0,
+  },
+  {
+    en: "LED Desk Lamp",
+    ar: "مصباح مكتب LED",
+    cat: "home-kitchen",
+    brand: "Generic",
+    price: 15,
+    store: 0,
+  },
+  {
+    en: "Men's Cotton T-Shirt",
+    ar: "تيشيرت قطني رجالي",
+    cat: "fashion-apparel",
+    brand: "Generic",
+    price: 12,
+    store: 1,
+  },
+  {
+    en: "Women's Abaya Classic Black",
+    ar: "عباية نسائية كلاسيكية سوداء",
+    cat: "fashion-apparel",
+    brand: "Generic",
+    price: 35,
+    store: 1,
+  },
+  {
+    en: "Kids' Sneakers",
+    ar: "حذاء رياضي للأطفال",
+    cat: "fashion-apparel",
+    brand: "Adidas",
+    price: 29,
+    store: 1,
+  },
+  {
+    en: "Oud Perfume 50ml",
+    ar: "عطر عود 50 مل",
+    cat: "health-beauty",
+    brand: "Generic",
+    price: 45,
+    store: 1,
+  },
+  {
+    en: "Moisturizing Face Cream",
+    ar: "كريم مرطب للوجه",
+    cat: "health-beauty",
+    brand: "Generic",
+    price: 14,
+    store: 1,
+  },
+  {
+    en: "Organic Sidr Honey 500g",
+    ar: "عسل سدر عضوي 500 جرام",
+    cat: "groceries-food",
+    brand: "Generic",
+    price: 28,
+    store: 1,
+  },
+  {
+    en: "Yemeni Coffee Beans 250g",
+    ar: "حبوب قهوة يمنية 250 جرام",
+    cat: "groceries-food",
+    brand: "Generic",
+    price: 11,
+    store: 1,
+  },
+  {
+    en: "Baby Diapers Pack",
+    ar: "حفاضات أطفال",
+    cat: "baby-kids-toys",
+    brand: "Generic",
+    price: 19,
+    store: 1,
+  },
+  {
+    en: "Building Blocks Toy Set",
+    ar: "مكعبات بناء للأطفال",
+    cat: "baby-kids-toys",
+    brand: "Generic",
+    price: 16,
+    store: 1,
+  },
+  {
+    en: "Arabic Novel Collection",
+    ar: "مجموعة روايات عربية",
+    cat: "books-stationery",
+    brand: "Generic",
+    price: 24,
+    store: 1,
+  },
 ];
 
 type SeededVariant = { id: string; sku: string; price: number };
@@ -189,7 +345,10 @@ async function main() {
 
   // --- Shipping zones ---
   const zoneCentral = await prisma.shippingZone.create({
-    data: { name: "Sana'a & Central", governorates: ["Sana'a", "Amanat Al Asimah", "Dhamar", "Ibb"] },
+    data: {
+      name: "Sana'a & Central",
+      governorates: ["Sana'a", "Amanat Al Asimah", "Dhamar", "Ibb"],
+    },
   });
   const zoneSouth = await prisma.shippingZone.create({
     data: { name: "Aden & South", governorates: ["Aden", "Lahij", "Abyan"] },
@@ -337,10 +496,30 @@ async function main() {
     const isFashion = p.cat === "fashion-apparel";
     const variantData = isFashion
       ? [
-          { sku: `${slug}-s`, name: "Size S", attributes: { size: "S" }, price: p.price, stock: 20 },
-          { sku: `${slug}-l`, name: "Size L", attributes: { size: "L" }, price: p.price, stock: 15 },
+          {
+            sku: `${slug}-s`,
+            name: "Size S",
+            attributes: { size: "S" },
+            price: p.price,
+            stock: 20,
+          },
+          {
+            sku: `${slug}-l`,
+            name: "Size L",
+            attributes: { size: "L" },
+            price: p.price,
+            stock: 15,
+          },
         ]
-      : [{ sku: `${slug}-default`, name: "Default", attributes: {}, price: p.price, stock: 40 }];
+      : [
+          {
+            sku: `${slug}-default`,
+            name: "Default",
+            attributes: {},
+            price: p.price,
+            stock: 40,
+          },
+        ];
 
     const created = await prisma.product.create({
       data: {
@@ -349,14 +528,25 @@ async function main() {
         brandId: brandByName.get(p.brand)!,
         title: { ar: p.ar, en: p.en },
         slug,
-        description: { ar: `${p.ar} — وصف تجريبي.`, en: `${p.en} — sample description.` },
+        description: {
+          ar: `${p.ar} — وصف تجريبي.`,
+          en: `${p.en} — sample description.`,
+        },
         status: "ACTIVE",
         basePrice: p.price,
         variants: { create: variantData },
         images: {
           create: [
-            { url: `https://picsum.photos/seed/${slug}/600/600`, alt: p.en, position: 0 },
-            { url: `https://picsum.photos/seed/${slug}-2/600/600`, alt: p.en, position: 1 },
+            {
+              url: `https://picsum.photos/seed/${slug}/600/600`,
+              alt: p.en,
+              position: 0,
+            },
+            {
+              url: `https://picsum.photos/seed/${slug}-2/600/600`,
+              alt: p.en,
+              position: 1,
+            },
           ],
         },
       },
@@ -367,7 +557,11 @@ async function main() {
       slug,
       titleEn: p.en,
       storeId: created.storeId,
-      variants: created.variants.map((v) => ({ id: v.id, sku: v.sku, price: Number(v.price) })),
+      variants: created.variants.map((v) => ({
+        id: v.id,
+        sku: v.sku,
+        price: Number(v.price),
+      })),
     });
   }
 
@@ -384,7 +578,13 @@ async function main() {
     orderStatus: "COMPLETED" | "PROCESSING" | "SHIPPED";
     subStatus: "COMPLETED" | "PROCESSING" | "SHIPPED";
     shipmentStatus: "DELIVERED" | "PENDING" | "IN_TRANSIT";
-    lines: { variantId: string; sku: string; title: string; price: number; qty: number }[];
+    lines: {
+      variantId: string;
+      sku: string;
+      title: string;
+      price: number;
+      qty: number;
+    }[];
     shippingUsd: number;
   }) {
     const itemsTotal = opts.lines.reduce((sum, l) => sum + l.price * l.qty, 0);
@@ -394,7 +594,11 @@ async function main() {
     const completed = opts.subStatus === "COMPLETED";
 
     const paymentStatus =
-      opts.paymentMethod === "COD" && completed ? "CONFIRMED" : opts.paymentMethod === "COD" ? "PENDING" : "CONFIRMED";
+      opts.paymentMethod === "COD" && completed
+        ? "CONFIRMED"
+        : opts.paymentMethod === "COD"
+          ? "PENDING"
+          : "CONFIRMED";
 
     const order = await prisma.order.create({
       data: {
@@ -435,8 +639,10 @@ async function main() {
                   carrierId: localCourier.id,
                   trackingNumber: `YE${Math.floor(100000 + opts.shippingUsd * 1000)}`,
                   platformManaged: false,
-                  shippedAt: opts.shipmentStatus === "PENDING" ? null : new Date(),
-                  deliveredAt: opts.shipmentStatus === "DELIVERED" ? new Date() : null,
+                  shippedAt:
+                    opts.shipmentStatus === "PENDING" ? null : new Date(),
+                  deliveredAt:
+                    opts.shipmentStatus === "DELIVERED" ? new Date() : null,
                 },
               },
             },
@@ -449,13 +655,24 @@ async function main() {
             amountUsd: grandTotal,
             confirmedAt: paymentStatus === "CONFIRMED" ? new Date() : null,
             usdtNetwork: opts.paymentMethod === "USDT" ? "TRC20" : null,
-            usdtTxHash: opts.paymentMethod === "USDT" ? "0xseedtxhash1234567890" : null,
-            usdtAddress: opts.paymentMethod === "USDT" ? "TSeedUsdtAddr000000000000000000000" : null,
-            reference: opts.paymentMethod === "WALLET" ? "JAWALI-REF-88213" : null,
+            usdtTxHash:
+              opts.paymentMethod === "USDT" ? "0xseedtxhash1234567890" : null,
+            usdtAddress:
+              opts.paymentMethod === "USDT"
+                ? "TSeedUsdtAddr000000000000000000000"
+                : null,
+            reference:
+              opts.paymentMethod === "WALLET" ? "JAWALI-REF-88213" : null,
           },
         },
         history: {
-          create: [{ status: opts.orderStatus, actor: "system", note: `Seed order (${opts.orderStatus})` }],
+          create: [
+            {
+              status: opts.orderStatus,
+              actor: "system",
+              note: `Seed order (${opts.orderStatus})`,
+            },
+          ],
         },
       },
       include: { subOrders: true },
@@ -500,8 +717,20 @@ async function main() {
     shipmentStatus: "DELIVERED",
     shippingUsd: 3,
     lines: [
-      { variantId: products[2].variants[0].id, sku: products[2].variants[0].sku, title: products[2].titleEn, price: products[2].variants[0].price, qty: 1 },
-      { variantId: products[4].variants[0].id, sku: products[4].variants[0].sku, title: products[4].titleEn, price: products[4].variants[0].price, qty: 1 },
+      {
+        variantId: products[2].variants[0].id,
+        sku: products[2].variants[0].sku,
+        title: products[2].titleEn,
+        price: products[2].variants[0].price,
+        qty: 1,
+      },
+      {
+        variantId: products[4].variants[0].id,
+        sku: products[4].variants[0].sku,
+        title: products[4].titleEn,
+        price: products[4].variants[0].price,
+        qty: 1,
+      },
     ],
   });
 
@@ -517,8 +746,20 @@ async function main() {
     shipmentStatus: "PENDING",
     shippingUsd: 5,
     lines: [
-      { variantId: products[13].variants[0].id, sku: products[13].variants[0].sku, title: products[13].titleEn, price: products[13].variants[0].price, qty: 1 },
-      { variantId: products[10].variants[0].id, sku: products[10].variants[0].sku, title: products[10].titleEn, price: products[10].variants[0].price, qty: 2 },
+      {
+        variantId: products[13].variants[0].id,
+        sku: products[13].variants[0].sku,
+        title: products[13].titleEn,
+        price: products[13].variants[0].price,
+        qty: 1,
+      },
+      {
+        variantId: products[10].variants[0].id,
+        sku: products[10].variants[0].sku,
+        title: products[10].titleEn,
+        price: products[10].variants[0].price,
+        qty: 2,
+      },
     ],
   });
 
@@ -534,8 +775,20 @@ async function main() {
     shipmentStatus: "IN_TRANSIT",
     shippingUsd: 3,
     lines: [
-      { variantId: products[6].variants[0].id, sku: products[6].variants[0].sku, title: products[6].titleEn, price: products[6].variants[0].price, qty: 1 },
-      { variantId: products[7].variants[0].id, sku: products[7].variants[0].sku, title: products[7].titleEn, price: products[7].variants[0].price, qty: 1 },
+      {
+        variantId: products[6].variants[0].id,
+        sku: products[6].variants[0].sku,
+        title: products[6].titleEn,
+        price: products[6].variants[0].price,
+        qty: 1,
+      },
+      {
+        variantId: products[7].variants[0].id,
+        sku: products[7].variants[0].sku,
+        title: products[7].titleEn,
+        price: products[7].variants[0].price,
+        qty: 1,
+      },
     ],
   });
 
@@ -557,9 +810,24 @@ async function main() {
   // --- CMS pages, banner, coupon (light extras for later phases) ---
   await prisma.cmsPage.createMany({
     data: [
-      { slug: "about", title: { ar: "من نحن", en: "About" }, body: { ar: "عن هزلي", en: "About Hezalli" }, published: true },
-      { slug: "terms", title: { ar: "الشروط والأحكام", en: "Terms" }, body: { ar: "الشروط", en: "Terms of service" }, published: true },
-      { slug: "privacy", title: { ar: "سياسة الخصوصية", en: "Privacy" }, body: { ar: "الخصوصية", en: "Privacy policy" }, published: true },
+      {
+        slug: "about",
+        title: { ar: "من نحن", en: "About" },
+        body: { ar: "عن هزلي", en: "About Hezalli" },
+        published: true,
+      },
+      {
+        slug: "terms",
+        title: { ar: "الشروط والأحكام", en: "Terms" },
+        body: { ar: "الشروط", en: "Terms of service" },
+        published: true,
+      },
+      {
+        slug: "privacy",
+        title: { ar: "سياسة الخصوصية", en: "Privacy" },
+        body: { ar: "الخصوصية", en: "Privacy policy" },
+        published: true,
+      },
     ],
   });
   await prisma.banner.create({

@@ -32,7 +32,7 @@ export default async function HomePage({
         <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
           {t("heroTitle")}
         </h1>
-        <p className="max-w-xl text-pretty text-muted-foreground">
+        <p className="text-muted-foreground max-w-xl text-pretty">
           {t("heroSubtitle")}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -54,7 +54,7 @@ export default async function HomePage({
             <Link
               key={c.slug}
               href={`/c/${c.slug}`}
-              className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border bg-card p-4 text-center text-card-foreground transition-colors hover:border-foreground/30 hover:bg-muted"
+              className="bg-card text-card-foreground hover:border-foreground/30 hover:bg-muted flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center transition-colors"
             >
               <span className="text-sm font-medium">{cat(c.key)}</span>
             </Link>

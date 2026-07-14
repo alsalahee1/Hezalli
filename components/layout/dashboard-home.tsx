@@ -15,13 +15,18 @@ export function DashboardHome({ variant }: { variant: "seller" | "admin" }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("dashboard")}</h1>
-        <p className="text-sm text-muted-foreground">{c("comingSoonDesc")}</p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("dashboard")}
+        </h1>
+        <p className="text-muted-foreground text-sm">{c("comingSoonDesc")}</p>
       </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {cards.map((key) => (
-          <div key={key} className="rounded-lg border bg-card p-4 text-card-foreground">
-            <p className="text-sm text-muted-foreground">{t(key)}</p>
+          <div
+            key={key}
+            className="bg-card text-card-foreground rounded-lg border p-4"
+          >
+            <p className="text-muted-foreground text-sm">{t(key)}</p>
             <p className="mt-1 text-2xl font-semibold">—</p>
           </div>
         ))}

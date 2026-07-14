@@ -17,24 +17,27 @@ export function SiteFooter() {
   ] as const;
 
   return (
-    <footer className="mt-16 border-t bg-muted/30">
+    <footer className="bg-muted/30 mt-16 border-t">
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="max-w-sm space-y-2">
             <p className="text-lg font-bold">{c("appName")}</p>
-            <p className="text-sm text-muted-foreground">{c("tagline")}</p>
-            <p className="flex items-start gap-2 pt-2 text-sm text-muted-foreground">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-foreground" />
+            <p className="text-muted-foreground text-sm">{c("tagline")}</p>
+            <p className="text-muted-foreground flex items-start gap-2 pt-2 text-sm">
+              <ShieldCheck className="text-foreground mt-0.5 size-4 shrink-0" />
               {t("protection")}
             </p>
           </div>
 
           <nav>
             <p className="mb-3 text-sm font-semibold">{t("company")}</p>
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <ul className="text-muted-foreground space-y-2 text-sm">
               {links.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="hover:text-foreground hover:underline">
+                  <Link
+                    href={l.href}
+                    className="hover:text-foreground hover:underline"
+                  >
                     {t(l.key)}
                   </Link>
                 </li>
@@ -43,7 +46,7 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <p className="mt-8 border-t pt-6 text-xs text-muted-foreground">
+        <p className="text-muted-foreground mt-8 border-t pt-6 text-xs">
           {t("rights", { year })}
         </p>
       </div>

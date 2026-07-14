@@ -97,7 +97,7 @@ export function DashboardShell({
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-e bg-background md:block">
+      <aside className="bg-background hidden w-64 shrink-0 border-e md:block">
         {sidebar}
       </aside>
 
@@ -109,7 +109,7 @@ export function DashboardShell({
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <aside className="absolute inset-y-0 start-0 w-64 border-e bg-background shadow-lg">
+          <aside className="bg-background absolute inset-y-0 start-0 w-64 border-e shadow-lg">
             {sidebar}
           </aside>
         </div>
@@ -120,7 +120,7 @@ export function DashboardShell({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex size-9 items-center justify-center rounded-md hover:bg-muted md:hidden"
+            className="hover:bg-muted inline-flex size-9 items-center justify-center rounded-md md:hidden"
             aria-label="Open menu"
           >
             <Menu className="size-5" />
@@ -128,7 +128,7 @@ export function DashboardShell({
           <span className="font-semibold md:hidden">{t(titleKey)}</span>
           <Link
             href="/"
-            className="ms-auto text-sm text-muted-foreground hover:text-foreground hover:underline"
+            className="text-muted-foreground hover:text-foreground ms-auto text-sm hover:underline"
           >
             Hezalli
           </Link>

@@ -16,14 +16,14 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label={c("menu")}
           aria-expanded={menuOpen}
-          className="inline-flex size-9 items-center justify-center rounded-md hover:bg-muted md:hidden"
+          className="hover:bg-muted inline-flex size-9 items-center justify-center rounded-md md:hidden"
         >
           {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
@@ -33,18 +33,23 @@ export function SiteHeader() {
         </Link>
 
         <div className="relative hidden flex-1 md:block">
-          <Search className="pointer-events-none absolute inset-y-0 my-auto ms-3 size-4 text-muted-foreground" />
+          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
           <input
             type="search"
             placeholder={c("search")}
             aria-label={c("search")}
-            className="w-full rounded-md border bg-muted/40 py-2 pe-3 ps-9 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="bg-muted/40 focus-visible:ring-ring/50 w-full rounded-md border py-2 ps-9 pe-3 text-sm outline-none focus-visible:ring-[3px]"
           />
         </div>
 
         <div className="ms-auto flex items-center gap-1">
           <LanguageSwitcher />
-          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="hidden sm:inline-flex"
+          >
             <Link href="/seller">
               <Store className="size-4" />
               {t("becomeSeller")}
@@ -65,17 +70,20 @@ export function SiteHeader() {
 
       <div className="px-4 pb-3 md:hidden">
         <div className="relative">
-          <Search className="pointer-events-none absolute inset-y-0 my-auto ms-3 size-4 text-muted-foreground" />
+          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
           <input
             type="search"
             placeholder={c("search")}
             aria-label={c("search")}
-            className="w-full rounded-md border bg-muted/40 py-2 pe-3 ps-9 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="bg-muted/40 focus-visible:ring-ring/50 w-full rounded-md border py-2 ps-9 pe-3 text-sm outline-none focus-visible:ring-[3px]"
           />
         </div>
       </div>
 
-      <CategoryNav mobileOpen={menuOpen} onNavigate={() => setMenuOpen(false)} />
+      <CategoryNav
+        mobileOpen={menuOpen}
+        onNavigate={() => setMenuOpen(false)}
+      />
     </header>
   );
 }

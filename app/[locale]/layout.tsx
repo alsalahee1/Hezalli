@@ -43,8 +43,13 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={cairo.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+    <html
+      lang={locale}
+      dir={dir}
+      className={cairo.variable}
+      suppressHydrationWarning
+    >
+      <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
