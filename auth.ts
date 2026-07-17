@@ -28,7 +28,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { email, password } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user?.passwordHash || user.isSuspended) return null;
+        if (!user?.passwordHash || user.isSuspended || user.deletedAt)
+          return null;
 
         const ok = await verifyPassword(password, user.passwordHash);
         if (!ok) return null;

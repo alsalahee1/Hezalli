@@ -70,6 +70,7 @@ model User {
   roles         Role[]   @default([BUYER])
   locale        String   @default("ar")    // ar | en
   isSuspended   Boolean  @default(false)
+  deletedAt     DateTime?                   // soft-delete (account deletion)
 
   addresses     Address[]
   sellerProfile SellerProfile?

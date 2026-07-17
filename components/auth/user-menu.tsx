@@ -1,11 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut } from "lucide-react";
+import { Heart, LogOut, MapPin, ShoppingBag, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { signOutAction } from "@/lib/actions/auth";
+
+const MENU_LINKS = [
+  { href: "/account", key: "profile", icon: User },
+  { href: "/account/orders", key: "orders", icon: ShoppingBag },
+  { href: "/wishlist", key: "wishlist", icon: Heart },
+  { href: "/account/addresses", key: "addresses", icon: MapPin },
+] as const;
 
 type MenuUser = {
   name?: string | null;
@@ -64,14 +71,21 @@ export function UserMenu({ user }: { user: MenuUser }) {
               ) : null}
             </div>
             <div className="p-1">
-              <Link
-                href="/account"
-                role="menuitem"
-                onClick={() => setOpen(false)}
-                className="hover:bg-muted block rounded-sm px-3 py-2 text-sm"
-              >
-                {t("account")}
-              </Link>
+              {MENU_LINKS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="hover:bg-muted flex items-center gap-2 rounded-sm px-3 py-2 text-sm"
+                  >
+                    <Icon className="size-4" />
+                    {t(item.key)}
+                  </Link>
+                );
+              })}
             </div>
             <form action={signOutAction} className="border-t p-1">
               <button
