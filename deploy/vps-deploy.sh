@@ -56,6 +56,10 @@ if [ -n "$TRAEFIK_CID" ]; then
   # -------------------------------------------------------------------------
   log "Traefik detected (container $TRAEFIK_CID) — deploying Hezalli behind it."
 
+  # Detection uses grep/head/sed pipelines that legitimately return non-zero
+  # when a pattern doesn't match; relax errexit/pipefail so those don't abort.
+  set +e +o pipefail
+
   # Network: first non-default network attached to Traefik.
   TRAEFIK_NETWORK="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' "$TRAEFIK_CID" \
     | grep -vE '^(bridge|host|none)$' | head -1)"
@@ -75,9 +79,18 @@ $(cat "$m"/*.y*ml "$m"/*.toml 2>/dev/null)"
 
   CERTRESOLVER="$(printf '%s' "$TCONF" | grep -oiE 'certificatesresolvers[._-]?([a-z0-9_-]+)' | head -1 | sed -E 's/.*[._-]([a-z0-9_-]+)$/\1/')"
   [ -z "${CERTRESOLVER:-}" ] && CERTRESOLVER="$(printf '%s' "$TCONF" | grep -oiE 'certresolver=?[[:space:]"'\'':]*([a-z0-9_-]+)' | head -1 | grep -oiE '[a-z0-9_-]+$')"
+  # Last resort: other containers (e.g. n8n) are TLS-routed and name the resolver.
+  if [ -z "${CERTRESOLVER:-}" ]; then
+    CERTRESOLVER="$(docker ps -q | xargs -r docker inspect 2>/dev/null \
+      | grep -oiE 'certresolver["=:. ]+[a-z0-9_-]+' | grep -oiE '[a-z0-9_-]+$' \
+      | grep -viE '^(certresolver|true|false)$' | head -1)"
+  fi
 
   ENTRYPOINT="$(printf '%s' "$TCONF" | grep -oiE 'entrypoints[._-]([a-z0-9_-]+)[._-]address=?[[:space:]"'\'':]*:443' | head -1 | sed -E 's/entrypoints[._-]([a-z0-9_-]+).*/\1/')"
   [ -z "${ENTRYPOINT:-}" ] && ENTRYPOINT="websecure"
+
+  # Restore strict mode for the rest of the deploy.
+  set -e -o pipefail
 
   log "  network      = ${TRAEFIK_NETWORK:-<none found>}"
   log "  entrypoint   = ${ENTRYPOINT}"
