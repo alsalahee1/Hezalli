@@ -14,13 +14,20 @@ export default async function ShopLayout({
   const user = session?.user?.id
     ? await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { name: true, email: true, image: true },
+        select: { name: true, email: true, image: true, roles: true },
       })
     : null;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader user={user} />
+      <SiteHeader
+        user={
+          user
+            ? { name: user.name, email: user.email, image: user.image }
+            : null
+        }
+        isSeller={user?.roles.includes("SELLER") ?? false}
+      />
       <div className="flex-1">{children}</div>
       <SiteFooter />
     </div>

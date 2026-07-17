@@ -17,7 +17,13 @@ type HeaderUser = {
   image?: string | null;
 };
 
-export function SiteHeader({ user }: { user?: HeaderUser | null }) {
+export function SiteHeader({
+  user,
+  isSeller = false,
+}: {
+  user?: HeaderUser | null;
+  isSeller?: boolean;
+}) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -57,9 +63,9 @@ export function SiteHeader({ user }: { user?: HeaderUser | null }) {
             asChild
             className="hidden sm:inline-flex"
           >
-            <Link href="/seller">
+            <Link href={isSeller ? "/seller" : "/sell"}>
               <Store className="size-4" />
-              {t("becomeSeller")}
+              {isSeller ? t("sellerCenter") : t("becomeSeller")}
             </Link>
           </Button>
           {user ? (

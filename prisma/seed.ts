@@ -17,13 +17,7 @@ import "dotenv/config";
 
 import { hashPassword } from "../lib/password";
 import { prisma } from "../lib/prisma";
-
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/["']/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+import { slugify } from "../lib/slug";
 
 async function clearDatabase() {
   // Delete in child → parent order so foreign keys are satisfied.

@@ -1,22 +1,25 @@
 # 04 — Phase 4: Seller Onboarding & Stores
 
-**Goal:** A buyer can apply to become a seller, get approved by admin, and set up a public store.
+**Goal:** A buyer can open a store instantly (automatic approval — DECISIONS.md §7) and set up a public store; admin has post-moderation oversight.
 **Prerequisite:** Phase 3 complete.
 
 ---
 
-## Step 4.1 — "Become a seller" application
+## Step 4.1 — "Become a seller" (instant store opening)
 
-- "Sell on Hezalli" link in header/footer → application form: store name, store description, category of goods, country/city, phone, ID document upload + (optional) business license upload (KYC)
-- Submitting creates a `SellerProfile` with status **PENDING**
-- Applicant sees an "application under review" page
-- Basic admin approval screen at `/admin/sellers`: list pending applications, view documents, **Approve / Reject (with reason)** buttons
-- On approve: user role becomes SELLER, store status ACTIVE, notification email sent
-- On reject: email with reason; user may re-apply
+> ✏️ Rewritten to match **DECISIONS.md §7** (decided after this doc was first
+> drafted): seller approval is **automatic** — no admin review gate. KYC is
+> **not** required to list; it gates **payouts** (built in Phase 9, once file
+> upload/storage exists for ID documents).
+
+- "Sell on Hezalli" link in header + footer → `/sell` page: benefits pitch + form (store name, description, contact phone, seller-terms checkbox); signed-out visitors get a sign-in CTA that returns to `/sell`
+- Submitting **immediately**: adds the **SELLER** role, creates `SellerProfile` (kycStatus `NONE`) + `SellerBalance` + an **ACTIVE** `Store` (unique auto-generated slug), refreshes the session, and lands on `/seller`
+- A signed-in non-seller visiting `/seller/*` is redirected to `/sell` (invited to open a store) instead of a 403
+- Admin oversight screen at `/admin/sellers` (post-moderation): list all stores with seller, KYC badge, product count, status; **Suspend / Reactivate** (with optional reason, written to `AuditLog`)
 
 ✅ **Acceptance criteria**
-- [ ] A test buyer can apply; the seeded admin can approve; the user then sees the `/seller` dashboard
-- [ ] Rejected users see the reason and can re-apply
+- [ ] A test buyer can open a store from `/sell` and immediately sees the `/seller` dashboard (no re-login needed)
+- [ ] The seeded admin sees the new store at `/admin/sellers` and can suspend / reactivate it
 
 > **🔜 NEXT-STEP CARD**
 > - **Next step:** 4.2 — Store profile & settings

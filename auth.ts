@@ -11,7 +11,13 @@ import { authConfig } from "./auth.config";
 // Full server-side Auth.js setup (Node runtime). The Prisma adapter keeps the
 // Account/Session/VerificationToken tables ready for Google OAuth (Step 3.3);
 // with JWT sessions it is unused by credentials login but harmless.
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
+  unstable_update: updateSession,
+} = NextAuth({
   ...authConfig,
   // The generated client (custom output path) is structurally the Prisma
   // client the adapter expects, but its nominal type differs, so cast here.

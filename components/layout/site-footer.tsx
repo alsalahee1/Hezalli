@@ -12,6 +12,7 @@ export function SiteFooter() {
 
   const links = [
     { href: "/about", key: "about" },
+    { href: "/sell", key: "sellOnHezalli" },
     { href: "/terms", key: "terms" },
     { href: "/privacy", key: "privacy" },
   ] as const;
