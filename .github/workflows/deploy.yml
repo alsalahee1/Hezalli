@@ -7,15 +7,17 @@ name: Deploy
 # Actions):
 #   VPS_HOST        public IP or hostname of the server
 #   VPS_USER        SSH user (e.g. root or a sudo user)
-#   VPS_SSH_KEY     the PRIVATE SSH key that can log into the server
+#   VPS_PASSWORD    the server's root/user password (Hostinger default auth)
+#   VPS_SSH_KEY     (optional) private key, used if VPS_PASSWORD is not set
 #   VPS_PORT        (optional) SSH port, defaults to 22
 #   VPS_APP_DIR     (optional) path to the repo on the server,
 #                   defaults to /opt/hezalli
+#
+# NOTE: auto-deploy on push is intentionally DISABLED until the deployment has
+# been confirmed to coexist with the existing n8n stack on this server. Run it
+# manually from the Actions tab (workflow_dispatch) for now.
 
 on:
-  push:
-    branches:
-      - claude/deploy-hezalli-domain-j13af5
   workflow_dispatch:
 
 concurrency:
@@ -32,6 +34,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |

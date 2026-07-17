@@ -1,0 +1,60 @@
+name: Server Inspect
+
+# Read-only inspection of the VPS so we can deploy Hezalli WITHOUT disturbing
+# the existing n8n stack. Changes nothing on the server — only gathers facts.
+#
+# Requires repository secrets:
+#   VPS_HOST      public IP (82.112.226.12)
+#   VPS_USER      root
+#   VPS_PASSWORD  the server's root password  (or use VPS_SSH_KEY instead)
+#   VPS_SSH_KEY   (optional) private key, used if VPS_PASSWORD is not set
+#   VPS_PORT      (optional) SSH port, defaults to 22
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    name: Inspect server (read-only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gather server facts
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "===== OS ====="
+            . /etc/os-release 2>/dev/null && echo "$PRETTY_NAME"; uname -a
+            echo; echo "===== CPU / MEM / DISK ====="
+            nproc; free -h; df -h /
+            echo; echo "===== Listening TCP ports (who owns 80/443?) ====="
+            (ss -tlnp || netstat -tlnp) 2>/dev/null | grep -E ':(80|443|3000|5678|8080|5432|6379)\b' || echo "none of the common ports listening"
+            echo; echo "===== All listening ports ====="
+            (ss -tlnp || netstat -tlnp) 2>/dev/null | head -60
+            echo; echo "===== Docker present? ====="
+            command -v docker && docker --version || echo "docker NOT installed"
+            docker compose version 2>/dev/null || echo "compose plugin not found"
+            echo; echo "===== Running containers ====="
+            docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}' 2>/dev/null || echo "cannot list containers"
+            echo; echo "===== Docker compose projects ====="
+            docker compose ls 2>/dev/null || echo "no compose projects / not available"
+            echo; echo "===== Docker networks ====="
+            docker network ls 2>/dev/null || true
+            echo; echo "===== Reverse proxy hints ====="
+            for p in nginx caddy traefik; do command -v $p >/dev/null 2>&1 && echo "host binary: $p"; done
+            docker ps --format '{{.Image}}' 2>/dev/null | grep -Ei 'nginx|caddy|traefik|npm|nginx-proxy' || echo "no proxy container image obviously matched"
+            echo; echo "===== systemd web services ====="
+            systemctl list-units --type=service --state=running 2>/dev/null | grep -Ei 'nginx|caddy|traefik|apache|n8n' || echo "no matching systemd services"
+            echo; echo "===== /opt & /root & common app dirs ====="
+            ls -la /opt 2>/dev/null; ls -la /root 2>/dev/null | head -30; ls -la /srv 2>/dev/null
+            echo; echo "===== Look for existing compose files ====="
+            find /opt /root /srv /home -maxdepth 3 -iname 'docker-compose*.y*ml' -o -iname 'compose.y*ml' 2>/dev/null | head -20
+            echo; echo "===== DNS: does hezalli.com resolve to this box? ====="
+            echo "This server IP:"; curl -s https://api.ipify.org || echo "(couldn't fetch)"; echo
+            getent hosts hezalli.com || echo "hezalli.com does not resolve yet"
+            getent hosts www.hezalli.com || echo "www.hezalli.com does not resolve yet"
+            echo; echo "===== DONE (nothing was changed) ====="
