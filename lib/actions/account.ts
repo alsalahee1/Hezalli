@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { auth, signOut } from "@/auth";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { isOwnStorageUrl } from "@/lib/storage";
 import {
   addressSchema,
   passwordChangeSchema,
@@ -59,6 +60,32 @@ export async function updateProfile(
 
   revalidatePath(await accountPath());
   return { ok: true };
+}
+
+// --- Profile: avatar -----------------------------------------------------
+
+// Persists an avatar URL produced by /api/upload. Only our own storage URLs
+// are accepted so the field can't be pointed at an arbitrary external image.
+export async function updateAvatar(url: string): Promise<FormState> {
+  const userId = await currentUserId();
+  if (!userId) return { formError: "notSignedIn" };
+  if (!isOwnStorageUrl(url)) return { formError: "invalidImage" };
+
+  await prisma.user.update({ where: { id: userId }, data: { image: url } });
+
+  revalidatePath(await accountPath());
+  const locale = await getLocale();
+  revalidatePath(`/${locale}`, "layout"); // header avatar
+  return { ok: true };
+}
+
+export async function removeAvatar(): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) return;
+  await prisma.user.update({ where: { id: userId }, data: { image: null } });
+  revalidatePath(await accountPath());
+  const locale = await getLocale();
+  revalidatePath(`/${locale}`, "layout");
 }
 
 // --- Security: change password ------------------------------------------

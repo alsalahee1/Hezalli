@@ -170,6 +170,11 @@
     "status_SUSPENDED": "Suspended",
     "status_CLOSED": "Closed"
   },
+  "Upload": {
+    "upload": "Upload image",
+    "uploading": "Uploading…",
+    "failed": "Upload failed. Please try again."
+  },
   "Auth": {
     "loginTitle": "Welcome back",
     "loginSubtitle": "Sign in to your Hezalli account",
@@ -216,6 +221,9 @@
     "name": "Full name",
     "email": "Email",
     "emailReadonly": "Email can't be changed here.",
+    "uploadPhoto": "Upload photo",
+    "removePhoto": "Remove photo",
+    "invalidImage": "That image couldn't be used.",
     "phone": "Phone number",
     "save": "Save changes",
     "saving": "Saving…",

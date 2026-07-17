@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { AvatarUploader } from "@/components/account/avatar-uploader";
 import { ProfileForm } from "@/components/account/profile-form";
 
 export default async function ProfilePage() {
@@ -24,21 +25,7 @@ export default async function ProfilePage() {
         <p className="text-muted-foreground text-sm">{t("profileDesc")}</p>
       </div>
 
-      <div className="flex items-center gap-4">
-        {user?.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.image}
-            alt=""
-            className="size-16 rounded-full object-cover"
-          />
-        ) : (
-          <span className="bg-primary text-primary-foreground flex size-16 items-center justify-center rounded-full text-xl font-semibold">
-            {initial}
-          </span>
-        )}
-        <p className="text-muted-foreground text-xs">{t("photoSoon")}</p>
-      </div>
+      <AvatarUploader initialUrl={user?.image ?? null} initial={initial} />
 
       <ProfileForm
         defaultName={user?.name ?? ""}
