@@ -140,6 +140,36 @@ else
   warn "Tell me which proxy it is (nginx/caddy) and I'll generate the exact config."
 fi
 
+# --- Post-deploy verification (server-side; safe, read-only) ----------------
+set +e
+SERVER_IP="$(curl -s --max-time 10 https://api.ipify.org)"
+log "Verifying deployment ..."
+sleep 6
+
+# 1) App container up?
+APP_CID="$(docker ps -qf name=hezalli --filter status=running | head -1)"
+[ -z "$APP_CID" ] && APP_CID="$(docker ps --format '{{.ID}} {{.Names}}' | awk '/app/{print $1; exit}')"
+log "  app container: ${APP_CID:-NOT RUNNING}"
+
+# 2) Does Traefik route hezalli.com to the app on this host? (ignore cert with -k)
+for HOST in hezalli.com www.hezalli.com; do
+  CODE="$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$HOST:443:127.0.0.1" "https://$HOST/" --max-time 15)"
+  log "  Traefik route $HOST -> HTTP ${CODE:-none} (200/307/308 = app is being served)"
+done
+
+# 3) Public DNS: do the names resolve to THIS server yet?
+for HOST in hezalli.com www.hezalli.com; do
+  R="$(getent hosts "$HOST" | awk '{print $1}' | head -1)"
+  if [ -z "$R" ]; then log "  DNS $HOST: not resolving yet"
+  elif [ "$R" = "$SERVER_IP" ]; then log "  DNS $HOST -> $R ✅ (this server)"
+  else log "  DNS $HOST -> $R  (server is $SERVER_IP — not pointed here yet)"; fi
+done
+
+# 4) Public HTTPS + certificate (only meaningful once DNS points here)
+PUB="$(curl -sI https://hezalli.com --max-time 15 2>&1 | head -1)"
+log "  public https://hezalli.com : ${PUB:-no response yet}"
+set -e
+
 cat <<'EOF'
 
 -----------------------------------------------------------------------------
