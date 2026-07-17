@@ -46,13 +46,12 @@ jobs:
               echo "First deploy — cloning into $APP_DIR"
               git clone --branch "$BRANCH" \
                 https://github.com/${{ github.repository }}.git "$APP_DIR"
-              cd "$APP_DIR"
-              bash deploy/bootstrap.sh
             else
               cd "$APP_DIR"
               git fetch origin "$BRANCH"
               git checkout "$BRANCH"
               git reset --hard "origin/$BRANCH"
-              docker compose up -d --build
-              docker compose ps
             fi
+            cd "$APP_DIR"
+            # Smart deploy: detects Traefik/n8n and coexists safely.
+            bash deploy/vps-deploy.sh

@@ -8,6 +8,13 @@ only needs Docker installed — the bootstrap script handles even that.
 > working, bilingual (Arabic/English) skeleton site. Store features arrive in
 > later phases; re-deploy to ship them.
 
+> **Coexisting with n8n / Traefik:** if the server already runs a Traefik
+> reverse proxy (e.g. the Hostinger n8n VPS template), `deploy/vps-deploy.sh`
+> detects it and routes Hezalli **through the existing Traefik** — it does not
+> publish ports 80/443 and does not touch n8n. If nothing owns 80/443, it falls
+> back to the bundled Caddy stack for automatic HTTPS. This detection is
+> automatic; you do not choose.
+
 There are two ways to deploy. Pick one.
 
 ---
@@ -39,17 +46,13 @@ git clone --branch claude/deploy-hezalli-domain-j13af5 \
   https://github.com/alsalahee1/Hezalli.git /opt/hezalli
 cd /opt/hezalli
 
-sudo bash deploy/bootstrap.sh
+sudo bash deploy/vps-deploy.sh
 ```
 
-The script installs Docker if needed, generates a strong database password
-into `.env`, builds the images, and starts everything. Set a real
-`ACME_EMAIL` in `.env` (used for Let's Encrypt expiry notices):
-
-```bash
-nano .env          # edit ACME_EMAIL, then:
-docker compose up -d
-```
+The smart script installs Docker if needed, generates a strong database
+password into `.env`, **detects whether Traefik/n8n is already running**, and
+deploys Hezalli the safe way (through Traefik if present, otherwise with the
+bundled Caddy). n8n is never disturbed.
 
 **4. Watch the certificate issue and visit the site:**
 

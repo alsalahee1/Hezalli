@@ -1,0 +1,93 @@
+# =============================================================================
+# Hezalli — deployment that COEXISTS with the existing Traefik reverse proxy
+# (Hostinger n8n template). Traefik already owns ports 80/443; this stack does
+# NOT publish those ports. Instead the app joins Traefik's network and is
+# routed by labels, so n8n keeps working untouched and Hezalli gets automatic
+# HTTPS from the same Traefik/Let's Encrypt setup.
+#
+# The values in ${...} are auto-detected and written to .env by
+# deploy/vps-deploy.sh:
+#   TRAEFIK_NETWORK      external docker network Traefik watches
+#   TRAEFIK_ENTRYPOINT   Traefik entrypoint bound to :443 (usually websecure)
+#   TRAEFIK_CERTRESOLVER Traefik ACME cert resolver name
+#
+# Start with:
+#   docker compose -f deploy/docker-compose.traefik.yml --env-file .env up -d --build
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hezalli}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-hezalli}
+    volumes:
+      - hezalli-db-data:/var/lib/postgresql/data
+    networks:
+      - hezalli-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hezalli} -d ${POSTGRES_DB:-hezalli}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    networks:
+      - hezalli-internal
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://www.hezalli.com}
+      PORT: "3000"
+    networks:
+      - hezalli-internal
+      - traefik
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      # HTTPS router for the apex + www hostnames.
+      - "traefik.http.routers.hezalli.rule=Host(`hezalli.com`) || Host(`www.hezalli.com`)"
+      - "traefik.http.routers.hezalli.entrypoints=${TRAEFIK_ENTRYPOINT}"
+      - "traefik.http.routers.hezalli.tls=true"
+      - "traefik.http.routers.hezalli.tls.certresolver=${TRAEFIK_CERTRESOLVER}"
+      - "traefik.http.services.hezalli.loadbalancer.server.port=3000"
+      # Plain-HTTP router that redirects to HTTPS.
+      - "traefik.http.routers.hezalli-http.rule=Host(`hezalli.com`) || Host(`www.hezalli.com`)"
+      - "traefik.http.routers.hezalli-http.entrypoints=${TRAEFIK_ENTRYPOINT_HTTP:-web}"
+      - "traefik.http.routers.hezalli-http.middlewares=hezalli-redirect"
+      - "traefik.http.middlewares.hezalli-redirect.redirectscheme.scheme=https"
+
+networks:
+  hezalli-internal:
+    driver: bridge
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK}
+
+volumes:
+  hezalli-db-data:
