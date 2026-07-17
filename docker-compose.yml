@@ -1,0 +1,81 @@
+# =============================================================================
+# Hezalli — production stack (VPS)
+#
+#   db      → PostgreSQL 16 (data persisted in a named volume)
+#   migrate → runs `prisma migrate deploy` once, then exits
+#   app     → Next.js server (standalone), started after migrations succeed
+#   caddy   → reverse proxy with AUTOMATIC HTTPS (Let's Encrypt) for the domain
+#
+# Configuration comes from a `.env` file next to this file (see
+# `.env.production.example`). Bring the stack up with:
+#
+#   docker compose up -d --build
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hezalli}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-hezalli}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hezalli} -d ${POSTGRES_DB:-hezalli}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://www.hezalli.com}
+      PORT: "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Domain(s) and contact email used by Caddy for automatic TLS.
+      SITE_ADDRESS: ${SITE_ADDRESS:-hezalli.com, www.hezalli.com}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@hezalli.com}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,30 @@
+# Hezalli reverse proxy — automatic HTTPS via Let's Encrypt.
+#
+# {$SITE_ADDRESS} and {$ACME_EMAIL} are injected from the environment
+# (see docker-compose.yml → caddy service). Caddy obtains and renews the
+# TLS certificate for the domain automatically; no certbot needed.
+#
+# The domain must already point at this server's public IP (DNS A records
+# for both hezalli.com and www.hezalli.com) before certificates can issue.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# Forward everything to the Next.js container on the internal network.
+	reverse_proxy app:3000
+
+	# Send www → apex (or change to redirect apex → www if you prefer).
+	# By default both hostnames are served directly by the app above.
+
+	header {
+		# Sensible security headers.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
