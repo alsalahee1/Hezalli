@@ -5,6 +5,7 @@ import { Menu, Search, ShoppingCart, Store, User, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import type { NavCategory } from "@/lib/categories";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 
@@ -20,9 +21,11 @@ type HeaderUser = {
 export function SiteHeader({
   user,
   isSeller = false,
+  categories = [],
 }: {
   user?: HeaderUser | null;
   isSeller?: boolean;
+  categories?: NavCategory[];
 }) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
@@ -99,6 +102,7 @@ export function SiteHeader({
       </div>
 
       <CategoryNav
+        categories={categories}
         mobileOpen={menuOpen}
         onNavigate={() => setMenuOpen(false)}
       />

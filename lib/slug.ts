@@ -1,5 +1,8 @@
 // Slug helpers shared by the app and the seed script.
 
+// URL-safe handle: lowercase words separated by single dashes.
+export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export function slugify(s: string): string {
   return s
     .toLowerCase()

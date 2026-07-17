@@ -169,6 +169,7 @@ model Category {
   slug     String     @unique
   icon     String?
   position Int        @default(0)
+  isActive Boolean    @default(true)          // admin can hide from the storefront
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")
   products Product[]

@@ -1,20 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { localizedName } from "@/lib/categories";
+import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-
-const CATEGORIES = [
-  { slug: "electronics", key: "electronics" },
-  { slug: "phones-accessories", key: "phones" },
-  { slug: "fashion-apparel", key: "fashion" },
-  { slug: "home-kitchen", key: "home" },
-  { slug: "health-beauty", key: "beauty" },
-  { slug: "groceries-food", key: "groceries" },
-  { slug: "baby-kids-toys", key: "baby" },
-  { slug: "books-stationery", key: "books" },
-  { slug: "sports-outdoors", key: "sports" },
-  { slug: "automotive-tools", key: "automotive" },
-] as const;
 
 export default async function HomePage({
   params,
@@ -24,7 +13,12 @@ export default async function HomePage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("Home");
-  const cat = await getTranslations("Categories");
+
+  const categories = await prisma.category.findMany({
+    where: { parentId: null, isActive: true },
+    orderBy: { position: "asc" },
+    select: { slug: true, name: true, icon: true },
+  });
 
   return (
     <main className="mx-auto max-w-7xl px-4">
@@ -37,7 +31,7 @@ export default async function HomePage({
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" asChild>
-            <Link href="/c/electronics">{t("shopNow")}</Link>
+            <Link href="#categories">{t("shopNow")}</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <Link href="#categories">{t("browseCategories")}</Link>
@@ -45,22 +39,31 @@ export default async function HomePage({
         </div>
       </section>
 
-      <section id="categories" className="pb-16">
-        <h2 className="mb-6 text-2xl font-semibold tracking-tight">
-          {t("categoriesTitle")}
-        </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/c/${c.slug}`}
-              className="bg-card text-card-foreground hover:border-foreground/30 hover:bg-muted flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center transition-colors"
-            >
-              <span className="text-sm font-medium">{cat(c.key)}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {categories.length > 0 ? (
+        <section id="categories" className="pb-16">
+          <h2 className="mb-6 text-2xl font-semibold tracking-tight">
+            {t("categoriesTitle")}
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {categories.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/c/${c.slug}`}
+                className="bg-card text-card-foreground hover:border-foreground/30 hover:bg-muted flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center transition-colors"
+              >
+                {c.icon ? (
+                  <span className="text-2xl" aria-hidden>
+                    {c.icon}
+                  </span>
+                ) : null}
+                <span className="text-sm font-medium">
+                  {localizedName(c.name, locale)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

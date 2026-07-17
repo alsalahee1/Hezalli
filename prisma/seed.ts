@@ -75,31 +75,60 @@ async function clearDatabase() {
 }
 
 const CATEGORIES = [
-  { en: "Electronics", ar: "إلكترونيات", slug: "electronics" },
+  { en: "Electronics", ar: "إلكترونيات", slug: "electronics", icon: "💻" },
   {
     en: "Phones & Accessories",
     ar: "الهواتف والإكسسوارات",
     slug: "phones-accessories",
+    icon: "📱",
   },
-  { en: "Fashion & Apparel", ar: "الأزياء والملابس", slug: "fashion-apparel" },
-  { en: "Home & Kitchen", ar: "المنزل والمطبخ", slug: "home-kitchen" },
-  { en: "Health & Beauty", ar: "الصحة والجمال", slug: "health-beauty" },
-  { en: "Groceries & Food", ar: "البقالة والأغذية", slug: "groceries-food" },
-  { en: "Baby, Kids & Toys", ar: "الأطفال والألعاب", slug: "baby-kids-toys" },
+  {
+    en: "Fashion & Apparel",
+    ar: "الأزياء والملابس",
+    slug: "fashion-apparel",
+    icon: "👗",
+  },
+  {
+    en: "Home & Kitchen",
+    ar: "المنزل والمطبخ",
+    slug: "home-kitchen",
+    icon: "🏠",
+  },
+  {
+    en: "Health & Beauty",
+    ar: "الصحة والجمال",
+    slug: "health-beauty",
+    icon: "💄",
+  },
+  {
+    en: "Groceries & Food",
+    ar: "البقالة والأغذية",
+    slug: "groceries-food",
+    icon: "🛒",
+  },
+  {
+    en: "Baby, Kids & Toys",
+    ar: "الأطفال والألعاب",
+    slug: "baby-kids-toys",
+    icon: "🧸",
+  },
   {
     en: "Books & Stationery",
     ar: "الكتب والقرطاسية",
     slug: "books-stationery",
+    icon: "📚",
   },
   {
     en: "Sports & Outdoors",
     ar: "الرياضة والهواء الطلق",
     slug: "sports-outdoors",
+    icon: "⚽",
   },
   {
     en: "Automotive & Tools",
     ar: "السيارات والأدوات",
     slug: "automotive-tools",
+    icon: "🚗",
   },
 ];
 
@@ -307,7 +336,12 @@ async function main() {
   for (let i = 0; i < CATEGORIES.length; i++) {
     const c = CATEGORIES[i];
     const created = await prisma.category.create({
-      data: { name: { ar: c.ar, en: c.en }, slug: c.slug, position: i },
+      data: {
+        name: { ar: c.ar, en: c.en },
+        slug: c.slug,
+        icon: c.icon,
+        position: i,
+      },
     });
     categoryBySlug.set(c.slug, created.id);
   }

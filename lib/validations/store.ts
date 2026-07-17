@@ -1,10 +1,9 @@
 import { z } from "zod";
 
+import { SLUG_RE } from "@/lib/slug";
+
 // Error messages are stable KEYS translated by the client via the
 // `SellerSettings` i18n namespace (same pattern as lib/validations/auth.ts).
-
-// URL-safe store handle: lowercase words separated by single dashes.
-export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const storeSettingsSchema = z.object({
   name: z.string().trim().min(2, "nameShort").max(60, "nameLong"),
