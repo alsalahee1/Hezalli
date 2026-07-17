@@ -3,6 +3,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { setStoreStatus } from "@/lib/actions/seller";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -76,7 +77,12 @@ export default async function AdminSellersPage() {
                   <tr key={s.id} className="border-t align-top">
                     <td className="px-3 py-3">
                       <p className="font-medium">{s.name}</p>
-                      <p className="text-muted-foreground text-xs">/{s.slug}</p>
+                      <Link
+                        href={`/store/${s.slug}`}
+                        className="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                      >
+                        /{s.slug}
+                      </Link>
                     </td>
                     <td className="px-3 py-3">
                       <p>{s.seller.user.name ?? "—"}</p>
