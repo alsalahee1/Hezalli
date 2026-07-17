@@ -13,11 +13,14 @@ name: Deploy
 #   VPS_APP_DIR     (optional) path to the repo on the server,
 #                   defaults to /opt/hezalli
 #
-# NOTE: auto-deploy on push is intentionally DISABLED until the deployment has
-# been confirmed to coexist with the existing n8n stack on this server. Run it
-# manually from the Actions tab (workflow_dispatch) for now.
+# Deploys on push to the deploy branch. The deploy script (deploy/vps-deploy.sh)
+# is n8n-safe: it detects the existing Traefik proxy and routes Hezalli through
+# it instead of taking over ports 80/443.
 
 on:
+  push:
+    branches:
+      - claude/deploy-hezalli-domain-j13af5
   workflow_dispatch:
 
 concurrency:
