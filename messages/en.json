@@ -1349,6 +1349,7 @@
     "send": "Send",
     "thinking": "Thinking…",
     "error": "Something went wrong. Please try again.",
+    "busy": "The assistant is a bit busy right now. Please try again in a moment.",
     "unavailable": "The assistant is not available right now.",
     "suggest1": "Show me popular products",
     "suggest2": "Find headphones under $50",

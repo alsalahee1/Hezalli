@@ -76,6 +76,10 @@ export function AiAssistant() {
         setError(t("unavailable"));
         return;
       }
+      if (res.status === 429) {
+        setError(t("busy"));
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = (await res.json()) as {

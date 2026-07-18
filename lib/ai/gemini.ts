@@ -16,6 +16,17 @@ export function geminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
 }
 
+/** Error carrying the upstream HTTP status so callers can react (e.g. 429). */
+export class GeminiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "GeminiError";
+  }
+}
+
 // --- Wire types (a pragmatic subset of the Gemini schema) ---------------
 
 export type FunctionCall = { name: string; args: Record<string, unknown> };
@@ -80,7 +91,10 @@ export async function generateContent(opts: {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`Gemini API error ${res.status}: ${detail.slice(0, 500)}`);
+    throw new GeminiError(
+      `Gemini API error ${res.status}: ${detail.slice(0, 500)}`,
+      res.status,
+    );
   }
 
   const data = (await res.json()) as {
