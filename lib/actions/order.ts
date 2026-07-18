@@ -7,14 +7,20 @@ import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
 import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
-import { getCommissionRate, round2 } from "@/lib/finance";
+import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { quoteShippingForStores } from "@/lib/shipping";
 import { validateCoupon } from "@/lib/vouchers";
+import {
+  creditWalletTx,
+  getWalletId,
+  recomputeWalletBalance,
+} from "@/lib/wallet";
 
-export type PaymentMethodChoice = "COD" | "BANK_TRANSFER" | "USDT" | "WALLET";
+export type PaymentMethodChoice =
+  "COD" | "LOCAL_WALLET" | "BANK_TRANSFER" | "USDT" | "HEZALLI_BALANCE";
 export type PlaceOrderInput = {
   addressId: string;
   items: { variantId: string; quantity: number }[];
@@ -28,6 +34,7 @@ class StockError extends Error {}
 class PointsError extends Error {}
 class CouponError extends Error {}
 class FlashError extends Error {}
+class WalletError extends Error {}
 
 export async function placeOrder(
   input: PlaceOrderInput,
@@ -40,13 +47,17 @@ export async function placeOrder(
   const items = input.items.filter((i) => i.quantity > 0);
   if (items.length === 0) return { error: "emptyOrder" };
 
-  // Prepaid methods (bank / USDT / wallet) start unpaid: the order waits at
-  // PENDING until the buyer submits proof and an admin confirms it. COD is
-  // confirmed immediately (cash collected on delivery).
-  const prepaid = input.paymentMethod !== "COD";
+  // Manual prepaid methods (bank / USDT / local wallet) start unpaid: the order
+  // waits at PENDING until the buyer submits proof and an admin confirms it.
+  // HEZALLI_BALANCE and COD are confirmed immediately — the wallet is debited in
+  // the order transaction, and COD cash is collected on delivery.
+  const wallet = input.paymentMethod === "HEZALLI_BALANCE";
+  const manualPrepaid = input.paymentMethod !== "COD" && !wallet;
+  // Order + payment are confirmed at placement for COD and wallet payments.
+  const confirmedNow = !manualPrepaid;
 
   // Cash-on-delivery can be switched off platform-wide (admin settings).
-  if (!prepaid && !(await getSetting("cod_enabled"))) {
+  if (input.paymentMethod === "COD" && !(await getSetting("cod_enabled"))) {
     return { error: "codDisabled" };
   }
 
@@ -192,6 +203,7 @@ export async function placeOrder(
       id: true,
       seller: {
         select: {
+          id: true,
           commissionRate: true,
           user: { select: { id: true, locale: true } },
         },
@@ -199,6 +211,8 @@ export async function placeOrder(
     },
   });
   const sellerByStore = new Map(stores.map((s) => [s.id, s.seller.user]));
+  // Seller-profile id per store, for the post-payment escrow recompute below.
+  const sellerProfileByStore = new Map(stores.map((s) => [s.id, s.seller.id]));
   // A seller may carry a negotiated rate; otherwise the platform-wide rate.
   const rateByStore = new Map(
     stores.map((s) => [
@@ -208,6 +222,10 @@ export async function placeOrder(
         : platformRate,
     ]),
   );
+
+  // HezalliPay: ensure the buyer's wallet row exists so we can debit it
+  // atomically inside the order transaction.
+  const walletId = wallet ? await getWalletId(userId) : null;
 
   try {
     const orderId = await prisma.$transaction(async (tx) => {
@@ -236,7 +254,22 @@ export async function placeOrder(
         if (upd.count !== 1) throw new FlashError();
       }
 
-      const orderStatus = prepaid ? "PENDING" : "CONFIRMED";
+      // HezalliPay: atomically debit the wallet, guarding against overspend and
+      // concurrent double-spend (same pattern as the stock/points guards). The
+      // conditional decrement is the authoritative balance check.
+      if (walletId) {
+        const upd = await tx.wallet.updateMany({
+          where: {
+            id: walletId,
+            frozen: false,
+            availableUsd: { gte: grandTotal },
+          },
+          data: { availableUsd: { decrement: grandTotal } },
+        });
+        if (upd.count !== 1) throw new WalletError();
+      }
+
+      const orderStatus = confirmedNow ? "CONFIRMED" : "PENDING";
       const order = await tx.order.create({
         data: {
           buyer: { connect: { id: userId } },
@@ -276,8 +309,12 @@ export async function placeOrder(
           payment: {
             create: {
               method: input.paymentMethod,
-              status: "PENDING",
+              // Wallet payments are settled instantly; other methods stay
+              // PENDING until confirmed (COD on delivery, manual on proof).
+              status: wallet ? "CONFIRMED" : "PENDING",
               amountUsd: grandTotal,
+              confirmedAt: wallet ? new Date() : null,
+              confirmedBy: wallet ? "system:wallet" : null,
             },
           },
           history: {
@@ -285,15 +322,28 @@ export async function placeOrder(
               {
                 status: orderStatus,
                 actor: "buyer",
-                note: prepaid
-                  ? "Order placed (awaiting payment)"
-                  : "Order placed (COD)",
+                note: wallet
+                  ? "Order placed (paid from HezalliPay wallet)"
+                  : manualPrepaid
+                    ? "Order placed (awaiting payment)"
+                    : "Order placed (COD)",
               },
             ],
           },
         },
         select: { id: true },
       });
+
+      // HezalliPay: record the immutable wallet debit for this order. The
+      // balance was already decremented above; this keeps balance = Σ entries.
+      if (walletId) {
+        await creditWalletTx(tx, walletId, {
+          type: "PAYMENT",
+          amountUsd: -grandTotal,
+          orderId: order.id,
+          note: "Order payment from wallet",
+        });
+      }
 
       // Redeem the voucher atomically (guards the total-usage limit).
       if (couponId) {
@@ -327,9 +377,10 @@ export async function placeOrder(
         });
       }
 
-      // COD orders notify sellers immediately; prepaid orders notify sellers
-      // only once payment is confirmed (see confirmPayment).
-      if (!prepaid) {
+      // Confirmed-at-placement orders (COD, wallet) notify sellers immediately;
+      // manual-prepaid orders notify sellers only once payment is confirmed
+      // (see confirmPayment).
+      if (confirmedNow) {
         for (const g of groups) {
           const seller = sellerByStore.get(g.storeId);
           if (!seller) continue;
@@ -347,26 +398,34 @@ export async function placeOrder(
           });
         }
       }
+      const ar = locale === "ar";
+      const amt = grandTotal.toFixed(2);
+      const buyerNote = wallet
+        ? {
+            title: ar ? "تم الدفع من محفظتك" : "Paid from your wallet",
+            body: ar
+              ? `تم تأكيد طلبك بقيمة ${amt}$ (مدفوع من محفظة HezalliPay).`
+              : `Your $${amt} order is confirmed (paid from your HezalliPay balance).`,
+          }
+        : manualPrepaid
+          ? {
+              title: ar ? "طلبك بانتظار الدفع" : "Complete your payment",
+              body: ar
+                ? `أكمل دفع ${amt}$ وأرسل إثبات الدفع.`
+                : `Complete your $${amt} payment and submit proof.`,
+            }
+          : {
+              title: ar ? "تم استلام طلبك" : "Order placed",
+              body: ar
+                ? `تم تأكيد طلبك بقيمة ${amt}$ (الدفع عند الاستلام).`
+                : `Your order for $${amt} is confirmed (cash on delivery).`,
+            };
       await tx.notification.create({
         data: {
           userId,
-          type: prepaid ? "PAYMENT" : "ORDER",
-          title:
-            locale === "ar"
-              ? prepaid
-                ? "طلبك بانتظار الدفع"
-                : "تم استلام طلبك"
-              : prepaid
-                ? "Complete your payment"
-                : "Order placed",
-          body:
-            locale === "ar"
-              ? prepaid
-                ? `أكمل دفع ${grandTotal.toFixed(2)}$ وأرسل إثبات الدفع.`
-                : `تم تأكيد طلبك بقيمة ${grandTotal.toFixed(2)}$ (الدفع عند الاستلام).`
-              : prepaid
-                ? `Complete your $${grandTotal.toFixed(2)} payment and submit proof.`
-                : `Your order for $${grandTotal.toFixed(2)} is confirmed (cash on delivery).`,
+          type: manualPrepaid || wallet ? "PAYMENT" : "ORDER",
+          title: buyerNote.title,
+          body: buyerNote.body,
           data: { orderId: order.id, link: `/account/orders/${order.id}` },
         },
       });
@@ -379,6 +438,21 @@ export async function placeOrder(
       return order.id;
     });
 
+    // Wallet payments are settled instantly: recompute the buyer's wallet
+    // balance and each seller's escrow (their SALE credit is now held pending),
+    // mirroring confirmPayment for a manual prepaid order.
+    if (wallet) {
+      await recomputeWalletBalance(userId);
+      const sellerProfileIds = [
+        ...new Set(
+          groups
+            .map((g) => sellerProfileByStore.get(g.storeId))
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      for (const pid of sellerProfileIds) await recomputeBalance(pid);
+    }
+
     revalidatePath(`/${locale}/account/orders`);
     revalidatePath(`/${locale}/seller/orders`);
     return { orderId };
@@ -387,6 +461,7 @@ export async function placeOrder(
     if (e instanceof CouponError) return { error: "coupon_usedUp" };
     if (e instanceof FlashError) return { error: "flashUnavailable" };
     if (e instanceof PointsError) return { error: "pointsInsufficient" };
+    if (e instanceof WalletError) return { error: "insufficientBalance" };
     throw e;
   }
 }
@@ -412,13 +487,20 @@ export async function cancelOrder(
     select: {
       id: true,
       status: true,
+      buyerId: true,
+      paymentMethod: true,
+      grandTotal: true,
+      payment: { select: { id: true, status: true } },
       subOrders: {
         select: {
           id: true,
           store: {
             select: {
               seller: {
-                select: { user: { select: { id: true, locale: true } } },
+                select: {
+                  id: true,
+                  user: { select: { id: true, locale: true } },
+                },
               },
             },
           },
@@ -429,6 +511,13 @@ export async function cancelOrder(
   });
   if (!order) return { error: "notFound" };
   if (UNCANCELLABLE.has(order.status)) return { error: "tooLate" };
+
+  // A wallet-paid order is CONFIRMED (and thus cancellable) with the money
+  // already taken in-system — cancelling must return it to the wallet.
+  const refundWallet =
+    order.paymentMethod === "HEZALLI_BALANCE" &&
+    order.payment?.status === "CONFIRMED";
+  const walletId = refundWallet ? await getWalletId(order.buyerId) : null;
 
   await prisma.$transaction(async (tx) => {
     // Restore stock for every line.
@@ -448,12 +537,27 @@ export async function cancelOrder(
       where: { orderId: order.id },
       data: { status: "CANCELLED" },
     });
+    // Return wallet-paid funds and mark the payment refunded.
+    if (walletId && order.payment) {
+      await creditWalletTx(tx, walletId, {
+        type: "REFUND",
+        amountUsd: Number(order.grandTotal),
+        orderId: order.id,
+        note: "Order cancelled — refunded to wallet",
+      });
+      await tx.payment.update({
+        where: { id: order.payment.id },
+        data: { status: "REFUNDED" },
+      });
+    }
     await tx.orderStatusHistory.create({
       data: {
         orderId: order.id,
         status: "CANCELLED",
         actor: "buyer",
-        note: "Cancelled by buyer",
+        note: walletId
+          ? "Cancelled by buyer — refunded to wallet"
+          : "Cancelled by buyer",
       },
     });
     for (const sub of order.subOrders) {
@@ -472,6 +576,29 @@ export async function cancelOrder(
       });
     }
   });
+
+  // Wallet refund settled instantly: recompute the buyer's balance and drop the
+  // now-cancelled sub-orders from each seller's escrow.
+  if (walletId) {
+    await recomputeWalletBalance(order.buyerId);
+    const sellerProfileIds = [
+      ...new Set(order.subOrders.map((s) => s.store.seller.id)),
+    ];
+    for (const pid of sellerProfileIds) await recomputeBalance(pid);
+    await prisma.notification.create({
+      data: {
+        userId: order.buyerId,
+        type: "PAYMENT",
+        title:
+          locale === "ar" ? "تم رد المبلغ إلى محفظتك" : "Refunded to wallet",
+        body:
+          locale === "ar"
+            ? `تمت إعادة ${Number(order.grandTotal).toFixed(2)}$ إلى محفظتك.`
+            : `$${Number(order.grandTotal).toFixed(2)} was returned to your wallet.`,
+        data: { orderId: order.id, link: `/account/orders/${order.id}` },
+      },
+    });
+  }
 
   revalidatePath(`/${locale}/account/orders`);
   revalidatePath(`/${locale}/account/orders/${orderId}`);

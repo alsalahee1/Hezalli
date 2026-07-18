@@ -19,9 +19,15 @@ export type SettingsInput = {
   min_payout_usd: number;
   cod_enabled: boolean;
   maintenance_mode: boolean;
+  wallet_topup_min_usd: number;
+  wallet_topup_max_usd: number;
+  wallet_balance_cap_usd: number;
+  wallet_cashback_percent: number; // human percent, e.g. 2 = 2%
+  wallet_p2p_enabled: boolean;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
+const money2 = (n: unknown) => Math.round(Number(n) * 100) / 100;
 
 export async function savePlatformSettings(
   input: SettingsInput,
@@ -43,6 +49,20 @@ export async function savePlatformSettings(
   if (!Number.isFinite(minPayout) || minPayout < 0)
     return { error: "badPayout" };
 
+  const tMin = money2(input.wallet_topup_min_usd);
+  const tMax = money2(input.wallet_topup_max_usd);
+  const tCap = money2(input.wallet_balance_cap_usd);
+  if (
+    ![tMin, tMax, tCap].every((n) => Number.isFinite(n) && n >= 0) ||
+    tMin > tMax ||
+    tMax > tCap
+  )
+    return { error: "badWalletLimits" };
+
+  const cashPct = Number(input.wallet_cashback_percent);
+  if (!Number.isFinite(cashPct) || cashPct < 0 || cashPct >= 100)
+    return { error: "badCashback" };
+
   const values: PlatformSettings = {
     platform_name: (input.platform_name || "Hezalli").trim().slice(0, 80),
     platform_logo: (input.platform_logo || "").trim().slice(0, 500),
@@ -53,6 +73,11 @@ export async function savePlatformSettings(
     min_payout_usd: Math.round(minPayout * 100) / 100,
     cod_enabled: Boolean(input.cod_enabled),
     maintenance_mode: Boolean(input.maintenance_mode),
+    wallet_topup_min_usd: tMin,
+    wallet_topup_max_usd: tMax,
+    wallet_balance_cap_usd: tCap,
+    wallet_cashback_rate: Math.round(cashPct * 100) / 10000,
+    wallet_p2p_enabled: Boolean(input.wallet_p2p_enabled),
   };
 
   await prisma.$transaction(

@@ -40,7 +40,10 @@ export default async function CheckoutPage({
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { loyaltyPoints: true },
+      select: {
+        loyaltyPoints: true,
+        wallet: { select: { availableUsd: true } },
+      },
     }),
   ]);
   let stubs = cart?.items ?? [];
@@ -98,6 +101,7 @@ export default async function CheckoutPage({
         shippingByAddress={shippingByAddress}
         codEnabled={codEnabled}
         points={buyer?.loyaltyPoints ?? 0}
+        walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
       />
     </main>
   );

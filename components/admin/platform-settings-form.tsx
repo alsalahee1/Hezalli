@@ -30,8 +30,15 @@ export function PlatformSettingsForm({
     return_response_days: String(current.return_response_days),
     auto_complete_days: String(current.auto_complete_days),
     min_payout_usd: String(current.min_payout_usd),
+    wallet_topup_min_usd: String(current.wallet_topup_min_usd),
+    wallet_topup_max_usd: String(current.wallet_topup_max_usd),
+    wallet_balance_cap_usd: String(current.wallet_balance_cap_usd),
+    wallet_cashback_percent: String(
+      Math.round(current.wallet_cashback_rate * 10000) / 100,
+    ),
     cod_enabled: current.cod_enabled,
     maintenance_mode: current.maintenance_mode,
+    wallet_p2p_enabled: current.wallet_p2p_enabled,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -49,8 +56,13 @@ export function PlatformSettingsForm({
         return_response_days: Number(f.return_response_days),
         auto_complete_days: Number(f.auto_complete_days),
         min_payout_usd: Number(f.min_payout_usd),
+        wallet_topup_min_usd: Number(f.wallet_topup_min_usd),
+        wallet_topup_max_usd: Number(f.wallet_topup_max_usd),
+        wallet_balance_cap_usd: Number(f.wallet_balance_cap_usd),
+        wallet_cashback_percent: Number(f.wallet_cashback_percent),
         cod_enabled: f.cod_enabled,
         maintenance_mode: f.maintenance_mode,
+        wallet_p2p_enabled: f.wallet_p2p_enabled,
       });
       if (res.error) setErr(res.error);
       else {
@@ -121,6 +133,38 @@ export function PlatformSettingsForm({
             dir="ltr"
           />
         </Field>
+        <Field label={t("walletTopupMin")} hint={t("walletLimitsHint")}>
+          <Input
+            type="number"
+            value={f.wallet_topup_min_usd}
+            onChange={(e) => set("wallet_topup_min_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletTopupMax")} hint={t("walletLimitsHint")}>
+          <Input
+            type="number"
+            value={f.wallet_topup_max_usd}
+            onChange={(e) => set("wallet_topup_max_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletBalanceCap")} hint={t("walletCapHint")}>
+          <Input
+            type="number"
+            value={f.wallet_balance_cap_usd}
+            onChange={(e) => set("wallet_balance_cap_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletCashback")} hint={t("walletCashbackHint")}>
+          <Input
+            type="number"
+            value={f.wallet_cashback_percent}
+            onChange={(e) => set("wallet_cashback_percent", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
       </div>
 
       <div className="space-y-2 border-t pt-4">
@@ -144,6 +188,16 @@ export function PlatformSettingsForm({
           <span className="text-muted-foreground text-xs">
             {t("maintenanceHint")}
           </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.wallet_p2p_enabled}
+            onChange={(e) => set("wallet_p2p_enabled", e.target.checked)}
+          />
+          {t("walletP2p")}
+          <span className="text-xs text-amber-600">{t("walletP2pHint")}</span>
         </label>
       </div>
 

@@ -398,7 +398,8 @@
     "line1Required": "Enter the street address",
     "notSignedIn": "Please sign in and try again",
     "addressNotFound": "Address not found",
-    "loyalty": "Rewards"
+    "loyalty": "Rewards",
+    "wallet": "Wallet"
   },
   "Categories": {
     "all": "All categories",
@@ -835,7 +836,10 @@
     "redeemPoints": "Redeem my {points} points (up to −{usd})",
     "pointsDiscount": "Points ({points})",
     "err_pointsInsufficient": "You don’t have enough points.",
-    "err_pointsAndCoupon": "You can’t use points and a coupon on the same order."
+    "err_pointsAndCoupon": "You can’t use points and a coupon on the same order.",
+    "hezalliBalance": "HezalliPay balance",
+    "hezalliBalanceHint": "Pay instantly · Balance: {balance}",
+    "err_insufficientBalance": "Your wallet balance doesn’t cover this order."
   },
   "Orders": {
     "title": "My orders",
@@ -872,7 +876,7 @@
     "shipTo": "Ship to",
     "payment": "Payment",
     "method_COD": "Cash on Delivery",
-    "method_WALLET": "Wallet",
+    "method_LOCAL_WALLET": "Local wallet",
     "method_BANK_TRANSFER": "Bank transfer",
     "method_USDT": "USDT",
     "itemsTotal": "Items",
@@ -899,7 +903,8 @@
     "shipStatus_DELIVERED": "Delivered",
     "shipStatus_FAILED": "Delivery failed",
     "shipStatus_RETURNED": "Returned",
-    "contactSeller": "Contact seller"
+    "contactSeller": "Contact seller",
+    "method_HEZALLI_BALANCE": "HezalliPay wallet"
   },
   "Invoice": {
     "invoice": "Invoice",
@@ -975,8 +980,8 @@
     "dest_BANK_TRANSFER_body": "Hezalli Bank · Account 1234567890\nUse your order number as the transfer reference.",
     "dest_USDT_title": "USDT (Tether)",
     "dest_USDT_body": "TRC20 address: TXxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nSend the exact amount, then paste the transaction hash.",
-    "dest_WALLET_title": "Local wallet",
-    "dest_WALLET_body": "Jawali / Kuraimi: 77XXXXXXX\nSend the amount and paste the transfer reference.",
+    "dest_LOCAL_WALLET_title": "Local wallet",
+    "dest_LOCAL_WALLET_body": "Jawali / Kuraimi: 77XXXXXXX\nSend the amount and paste the transfer reference.",
     "awaiting": "Your payment is submitted and awaiting confirmation.",
     "reference": "Transfer reference",
     "txHash": "Transaction hash",
@@ -993,13 +998,17 @@
     "empty": "No payments awaiting confirmation.",
     "method_BANK_TRANSFER": "Bank transfer",
     "method_USDT": "USDT",
-    "method_WALLET": "Wallet",
+    "method_LOCAL_WALLET": "Local wallet",
     "method_COD": "COD",
     "reference": "Reference",
     "confirm": "Confirm payment",
     "reject": "Reject",
     "rejectReason": "Reason (optional)",
-    "confirmReject": "Confirm reject"
+    "confirmReject": "Confirm reject",
+    "method_HEZALLI_BALANCE": "HezalliPay wallet",
+    "topUpsTitle": "Wallet top-ups",
+    "topUpsDesc": "Confirm buyer cash-ins to their HezalliPay wallet.",
+    "topUpsEmpty": "No top-ups awaiting confirmation."
   },
   "SellerFinance": {
     "title": "Finance",
@@ -1033,7 +1042,11 @@
     "err_belowMin": "Below the minimum payout ($10).",
     "err_insufficient": "Not enough available balance.",
     "err_notSeller": "Seller account required.",
-    "err_unauthorized": "Please sign in."
+    "err_unauthorized": "Please sign in.",
+    "moveToWallet": "Move to wallet",
+    "moved": "Moved to your wallet.",
+    "type_WALLET_TRANSFER": "Moved to wallet",
+    "err_nothingToMove": "No available earnings to move."
   },
   "AdminOrders": {
     "title": "Orders",
@@ -1067,7 +1080,8 @@
     "forceStatus": "Force status",
     "forceNote": "Reason / note",
     "apply": "Apply",
-    "forced": "Status forced."
+    "forced": "Status forced.",
+    "refundToWallet": "Credit to buyer wallet"
   },
   "AdminPayouts": {
     "title": "Seller payouts",
@@ -1078,7 +1092,10 @@
     "reference": "Bank reference / note",
     "confirmPaid": "Confirm paid",
     "rejectReason": "Reason",
-    "confirmReject": "Confirm reject"
+    "confirmReject": "Confirm reject",
+    "withdrawalsTitle": "Wallet withdrawals",
+    "withdrawalsDesc": "Cash-outs from buyer HezalliPay wallets. Funds are already reserved; pay outside the system, then mark paid.",
+    "withdrawalsEmpty": "No wallet withdrawals awaiting action."
   },
   "AdminShippingZones": {
     "title": "Shipping zones",
@@ -1404,7 +1421,18 @@
     "err_forbidden": "You don’t have permission to do that.",
     "err_badCommission": "Commission must be between 0 and 100.",
     "err_badDays": "Day values must be between 0 and 365.",
-    "err_badPayout": "Minimum payout must be zero or more."
+    "err_badPayout": "Minimum payout must be zero or more.",
+    "walletTopupMin": "Min top-up (USD)",
+    "walletTopupMax": "Max top-up (USD)",
+    "walletBalanceCap": "Wallet balance cap (USD)",
+    "walletLimitsHint": "Per top-up transaction",
+    "walletCapHint": "Max standing balance for standard users (verified users get 5×)",
+    "err_badWalletLimits": "Wallet limits must be non-negative and min ≤ max ≤ cap.",
+    "walletCashback": "Wallet cashback (%)",
+    "walletCashbackHint": "Credited to the buyer wallet on order completion (0 = off)",
+    "err_badCashback": "Cashback must be between 0 and 100.",
+    "walletP2p": "Enable wallet transfers (P2P)",
+    "walletP2pHint": "⚠️ Money transmission — licensed only. Keep OFF until authorized."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1603,5 +1631,64 @@
     "refund": "Points returned",
     "adjust": "Adjustment",
     "empty": "No points activity yet — earn points on your next purchase."
+  },
+  "Wallet": {
+    "balance": "Wallet balance",
+    "subtitle": "Your HezalliPay balance. Refunds land here instantly.",
+    "frozen": "Your wallet is on hold. Please contact support.",
+    "history": "Activity",
+    "empty": "No wallet activity yet.",
+    "topUp": "Top up",
+    "payment": "Order payment",
+    "refund": "Refund",
+    "cashback": "Cashback",
+    "cashout": "Withdrawal",
+    "adjustment": "Adjustment",
+    "topUpTitle": "Add funds",
+    "topUpDesc": "Add money to your HezalliPay balance through a local rail. An admin confirms it after you send the transfer.",
+    "amount": "Amount (USD)",
+    "method_LOCAL_WALLET": "Local wallet (Jawali / Jaib / Kuraimi)",
+    "method_BANK_TRANSFER": "Bank transfer",
+    "method_USDT": "USDT (Tether)",
+    "limits": "Min {min} · Max {max} per top-up",
+    "topUpSubmit": "Submit for review",
+    "submitting": "Submitting…",
+    "cancel": "Cancel",
+    "pendingTitle": "Pending top-ups",
+    "pendingNote": "Awaiting review",
+    "err_unauthorized": "Please sign in and try again.",
+    "err_badMethod": "Choose a valid top-up method.",
+    "err_badAmount": "Enter a valid amount.",
+    "err_proofRequired": "Enter the transfer reference or transaction hash.",
+    "err_belowMin": "That amount is below the minimum withdrawal.",
+    "err_aboveMax": "That amount is above the per-top-up maximum.",
+    "err_frozen": "Your wallet is on hold. Please contact support.",
+    "err_capExceeded": "This would exceed your wallet balance limit.",
+    "withdraw": "Withdraw",
+    "withdrawTitle": "Withdraw funds",
+    "withdrawDesc": "Cash out your balance to your saved payout destination. An admin processes it.",
+    "withdrawAmount": "Amount (max {balance})",
+    "withdrawMin": "Minimum withdrawal {min}",
+    "withdrawTo": "Sending to",
+    "withdrawSubmit": "Request withdrawal",
+    "pendingWithdrawalsTitle": "Pending withdrawals",
+    "err_notVerified": "Sending requires a verified account.",
+    "err_noMethod": "Add a payout method first.",
+    "err_insufficient": "That is more than your available balance.",
+    "sellerEarnings": "Seller earnings",
+    "send": "Send",
+    "sendTitle": "Send to a user",
+    "sendDesc": "Transfer wallet funds to another Hezalli user, instantly.",
+    "sendRecipient": "Recipient email or phone",
+    "sendAmount": "Amount (max {balance})",
+    "sendNote": "Note (optional)",
+    "sendSubmit": "Send funds",
+    "transferOut": "Sent to user",
+    "transferIn": "Received from user",
+    "err_disabled": "Transfers are not available right now.",
+    "err_recipientRequired": "Enter a recipient.",
+    "err_recipientNotFound": "No user found with that email or phone.",
+    "err_cannotSendSelf": "You can’t send funds to yourself.",
+    "err_recipientUnavailable": "That recipient can’t receive funds right now."
   }
 }

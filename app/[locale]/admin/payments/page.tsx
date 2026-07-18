@@ -5,47 +5,85 @@ import {
   PaymentQueue,
   type PaymentRow,
 } from "@/components/admin/payment-queue";
+import { TopUpQueue, type TopUpRow } from "@/components/admin/topup-queue";
 
 export default async function AdminPaymentsPage() {
   const t = await getTranslations("AdminPayments");
   const format = await getFormatter();
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
 
-  const payments = await prisma.payment.findMany({
-    where: { status: "AWAITING_CONFIRMATION" },
-    orderBy: { updatedAt: "asc" },
-    select: {
-      id: true,
-      method: true,
-      amountUsd: true,
-      reference: true,
-      usdtNetwork: true,
-      usdtTxHash: true,
-      order: {
-        select: { id: true, buyer: { select: { name: true } } },
+  const [payments, topUps] = await Promise.all([
+    prisma.payment.findMany({
+      where: { status: "AWAITING_CONFIRMATION" },
+      orderBy: { updatedAt: "asc" },
+      select: {
+        id: true,
+        method: true,
+        amountUsd: true,
+        reference: true,
+        usdtNetwork: true,
+        usdtTxHash: true,
+        order: {
+          select: { id: true, buyer: { select: { name: true } } },
+        },
       },
-    },
-  });
+    }),
+    prisma.walletTopUp.findMany({
+      where: { status: "AWAITING_CONFIRMATION" },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        method: true,
+        amountUsd: true,
+        reference: true,
+        usdtNetwork: true,
+        usdtTxHash: true,
+        wallet: { select: { user: { select: { name: true } } } },
+      },
+    }),
+  ]);
 
   const rows: PaymentRow[] = payments.map((p) => ({
     id: p.id,
     orderCode: p.order.id.slice(-8).toUpperCase(),
     buyerName: p.order.buyer.name ?? "—",
     method: p.method,
-    amountLabel: format.number(Number(p.amountUsd), {
-      style: "currency",
-      currency: "USD",
-    }),
+    amountLabel: money(Number(p.amountUsd)),
+    reference: p.reference,
+    usdt: p.usdtTxHash ? `${p.usdtNetwork ?? ""} ${p.usdtTxHash}`.trim() : null,
+  }));
+
+  const topUpRows: TopUpRow[] = topUps.map((p) => ({
+    id: p.id,
+    buyerName: p.wallet.user.name ?? "—",
+    method: p.method,
+    amountLabel: money(Number(p.amountUsd)),
     reference: p.reference,
     usdt: p.usdtTxHash ? `${p.usdtNetwork ?? ""} ${p.usdtTxHash}`.trim() : null,
   }));
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("desc")}</p>
+    <div className="space-y-8">
+      <div className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("title")}
+          </h1>
+          <p className="text-muted-foreground text-sm">{t("desc")}</p>
+        </div>
+        <PaymentQueue rows={rows} />
       </div>
-      <PaymentQueue rows={rows} />
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t("topUpsTitle")}
+          </h2>
+          <p className="text-muted-foreground text-sm">{t("topUpsDesc")}</p>
+        </div>
+        <TopUpQueue rows={topUpRows} />
+      </div>
     </div>
   );
 }
