@@ -398,7 +398,8 @@
     "line1Required": "Enter the street address",
     "notSignedIn": "Please sign in and try again",
     "addressNotFound": "Address not found",
-    "loyalty": "Rewards"
+    "loyalty": "Rewards",
+    "wallet": "Wallet"
   },
   "Categories": {
     "all": "All categories",
@@ -1067,7 +1068,8 @@
     "forceStatus": "Force status",
     "forceNote": "Reason / note",
     "apply": "Apply",
-    "forced": "Status forced."
+    "forced": "Status forced.",
+    "refundToWallet": "Credit to buyer wallet"
   },
   "AdminPayouts": {
     "title": "Seller payouts",
@@ -1587,5 +1589,18 @@
     "refund": "Points returned",
     "adjust": "Adjustment",
     "empty": "No points activity yet — earn points on your next purchase."
+  },
+  "Wallet": {
+    "balance": "Wallet balance",
+    "subtitle": "Your HezalliPay balance. Refunds land here instantly.",
+    "frozen": "Your wallet is on hold. Please contact support.",
+    "history": "Activity",
+    "empty": "No wallet activity yet.",
+    "topUp": "Top-up",
+    "payment": "Order payment",
+    "refund": "Refund",
+    "cashback": "Cashback",
+    "cashout": "Withdrawal",
+    "adjustment": "Adjustment"
   }
 }

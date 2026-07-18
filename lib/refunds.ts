@@ -11,6 +11,11 @@ import {
 import { POINTS_PER_USD_REDEEMED } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
+import {
+  creditWalletTx,
+  getWalletId,
+  recomputeWalletBalance,
+} from "@/lib/wallet";
 
 export type ApplyRefundResult = {
   ok?: boolean;
@@ -26,6 +31,9 @@ export async function applyRefund(
     amountUsd?: number;
     actor: string;
     processedBy?: string | null;
+    // Step 19.1: credit the refunded amount to the buyer's HezalliPay wallet
+    // instead of returning the money outside the system.
+    toWallet?: boolean;
   },
 ): Promise<ApplyRefundResult> {
   const sub = await prisma.subOrder.findUnique({
@@ -77,6 +85,9 @@ export async function applyRefund(
     select: { id: true },
   });
   const balanceId = await getBalanceId(sub.store.sellerId);
+  // Ensure the buyer's wallet exists before the transaction so we can write an
+  // entry into it atomically with the refund.
+  const walletId = opts.toWallet ? await getWalletId(sub.order.buyerId) : null;
 
   let refundId = "";
   await prisma.$transaction(async (tx) => {
@@ -92,6 +103,17 @@ export async function applyRefund(
       select: { id: true },
     });
     refundId = refund.id;
+
+    // Step 19.1: credit the buyer's HezalliPay wallet with the refunded amount.
+    if (walletId) {
+      await creditWalletTx(tx, walletId, {
+        type: "REFUND",
+        amountUsd: amount,
+        orderId: sub.orderId,
+        subOrderId,
+        note: `Refund credited to wallet — ${opts.reason}`,
+      });
+    }
 
     if (settled) {
       if (sub.order.paymentMethod === "COD") {
@@ -187,14 +209,19 @@ export async function applyRefund(
         userId: sub.order.buyerId,
         type: "PAYMENT",
         title: bAr ? "تم استرداد مبلغ" : "Refund issued",
-        body: bAr
-          ? `تمت الموافقة على استرداد ${amount.toFixed(2)}$.`
-          : `A refund of $${amount.toFixed(2)} was issued.`,
+        body: opts.toWallet
+          ? bAr
+            ? `تمت إضافة ${amount.toFixed(2)}$ إلى محفظتك.`
+            : `$${amount.toFixed(2)} was added to your wallet.`
+          : bAr
+            ? `تمت الموافقة على استرداد ${amount.toFixed(2)}$.`
+            : `A refund of $${amount.toFixed(2)} was issued.`,
         data: { orderId: sub.orderId },
       },
     });
   });
 
   await recomputeBalance(sub.store.sellerId);
+  if (walletId) await recomputeWalletBalance(sub.order.buyerId);
   return { ok: true, refundId, amount };
 }

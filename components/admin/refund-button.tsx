@@ -22,6 +22,7 @@ export function RefundButton({
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [amount, setAmount] = useState("");
+  const [toWallet, setToWallet] = useState(false);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -38,6 +39,7 @@ export function RefundButton({
         subOrderId,
         reason,
         amount ? Number(amount) : undefined,
+        toWallet,
       );
       if (res.error) setErr(res.error);
       else {
@@ -72,6 +74,14 @@ export function RefundButton({
             className="h-9 w-56"
             dir="ltr"
           />
+          <label className="text-muted-foreground flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={toWallet}
+              onChange={(e) => setToWallet(e.target.checked)}
+            />
+            {t("refundToWallet")}
+          </label>
           <Button
             size="sm"
             disabled={pending || reason.trim().length < 3}
