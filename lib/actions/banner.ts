@@ -23,6 +23,7 @@ export type SaveBannerInput = {
   linkUrl?: string;
   position?: string;
   isActive: boolean;
+  sortOrder?: number;
   startsAt?: string; // "yyyy-mm-dd" or ""
   endsAt?: string;
 };
@@ -40,6 +41,9 @@ export async function saveBanner(
     linkUrl: input.linkUrl?.trim() || null,
     position: input.position?.trim() || "home_hero",
     isActive: input.isActive,
+    sortOrder: Number.isFinite(Number(input.sortOrder))
+      ? Math.trunc(Number(input.sortOrder))
+      : 0,
     startsAt: input.startsAt ? new Date(input.startsAt) : null,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
   };

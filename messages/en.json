@@ -418,7 +418,10 @@
     "privacy": "Privacy",
     "help": "Help Center",
     "rights": "© {year} Hezalli. All rights reserved.",
-    "protection": "Hezalli Buyer Protection — money back if it never arrives or isn't as described."
+    "protection": "Hezalli Buyer Protection — money back if it never arrives or isn't as described.",
+    "returns": "Returns",
+    "faq": "FAQ",
+    "contact": "Contact"
   },
   "Home": {
     "heroTitle": "Everything you need, from sellers across Yemen",
@@ -657,7 +660,8 @@
     "confirmDelete": "Delete this banner?",
     "untitled": "Untitled banner",
     "imageRequired": "Please upload an image.",
-    "forbidden": "You don't have permission to do that."
+    "forbidden": "You don't have permission to do that.",
+    "order": "Order"
   },
   "Cart": {
     "cart": "Cart",
@@ -751,7 +755,8 @@
     "removeCoupon": "Remove",
     "applying": "Applying…",
     "discount": "Discount",
-    "err_flashUnavailable": "A flash-sale item just sold out. Please review your cart and try again."
+    "err_flashUnavailable": "A flash-sale item just sold out. Please review your cart and try again.",
+    "err_codDisabled": "Cash on delivery is currently unavailable. Please choose another payment method."
   },
   "Orders": {
     "title": "My orders",
@@ -1284,7 +1289,27 @@
     "announcementActive": "Show the announcement bar",
     "save": "Save",
     "saving": "Saving…",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "platformTitle": "Platform settings",
+    "platformDesc": "Identity, commission, and the windows that drive returns, payouts and auto-completion.",
+    "name": "Platform name",
+    "logo": "Logo URL",
+    "logoHint": "Path or URL to the logo image.",
+    "commission": "Commission (%)",
+    "commissionHint": "Charged to sellers on completed orders.",
+    "minPayout": "Minimum payout (USD)",
+    "minPayoutHint": "Smallest amount a seller can withdraw.",
+    "returnWindow": "Return window (days)",
+    "returnResponse": "Seller response window (days)",
+    "autoComplete": "Auto-complete (days)",
+    "daysHint": "Number of days.",
+    "codEnabled": "Enable cash on delivery",
+    "maintenance": "Maintenance mode",
+    "maintenanceHint": "Storefront shows a maintenance notice to everyone except admins.",
+    "err_forbidden": "You don’t have permission to do that.",
+    "err_badCommission": "Commission must be between 0 and 100.",
+    "err_badDays": "Day values must be between 0 and 365.",
+    "err_badPayout": "Minimum payout must be zero or more."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1390,7 +1415,6 @@
     "title": "Dashboard",
     "subtitle": "Platform overview for this month.",
     "viewReports": "View reports →",
-    "gvmMonth": "GMV (month)",
     "gmvMonth": "GMV (month)",
     "today": "today",
     "orders": "Orders (month)",
@@ -1440,5 +1464,32 @@
     "entity": "Entity",
     "details": "Details",
     "empty": "No admin actions logged yet."
+  },
+  "AdminPages": {
+    "title": "Pages",
+    "desc": "Create and edit content pages shown at /p/[slug].",
+    "newPage": "New page",
+    "empty": "No pages yet.",
+    "published": "Published",
+    "draft": "Draft",
+    "close": "Close",
+    "edit": "Edit",
+    "slug": "Slug",
+    "publishedLabel": "Published",
+    "titleEn": "Title (English)",
+    "titleAr": "Title (Arabic)",
+    "bodyEn": "Body (English)",
+    "bodyAr": "Body (Arabic)",
+    "htmlHint": "Basic HTML is allowed (headings, paragraphs, lists, links).",
+    "save": "Save",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this page?",
+    "err_forbidden": "You don’t have permission to do that.",
+    "err_badSlug": "Use a lowercase slug like about-us.",
+    "err_titleRequired": "Enter a title."
+  },
+  "Maintenance": {
+    "title": "We’ll be right back",
+    "desc": "Hezalli is undergoing scheduled maintenance. Please check back shortly."
   }
 }

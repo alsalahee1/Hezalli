@@ -9,6 +9,7 @@ import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 import { quoteShippingForStores } from "@/lib/shipping";
 import { validateCoupon } from "@/lib/vouchers";
 
@@ -40,6 +41,11 @@ export async function placeOrder(
   // PENDING until the buyer submits proof and an admin confirms it. COD is
   // confirmed immediately (cash collected on delivery).
   const prepaid = input.paymentMethod !== "COD";
+
+  // Cash-on-delivery can be switched off platform-wide (admin settings).
+  if (!prepaid && !(await getSetting("cod_enabled"))) {
+    return { error: "codDisabled" };
+  }
 
   const address = await prisma.address.findFirst({
     where: { id: input.addressId, userId },

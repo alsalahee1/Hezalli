@@ -47,7 +47,7 @@ export default async function HomePage({
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
       },
-      orderBy: { id: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     }),
     prisma.category.findMany({
       where: { parentId: null, isActive: true },

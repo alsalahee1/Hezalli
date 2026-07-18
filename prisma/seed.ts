@@ -16,6 +16,7 @@
  */
 import "dotenv/config";
 
+import { CMS_SEEDS } from "../lib/cms-content";
 import { hashPassword } from "../lib/password";
 import { prisma } from "../lib/prisma";
 import { slugify } from "../lib/slug";
@@ -1339,27 +1340,15 @@ async function main() {
   });
 
   // --- CMS pages, banner, coupon (light extras for later phases) ---
+  // Real draft legal/content pages (About, Terms, Privacy, Returns, FAQ,
+  // Contact) — see lib/cms-content.ts. Admins can edit them at /admin/pages.
   await prisma.cmsPage.createMany({
-    data: [
-      {
-        slug: "about",
-        title: { ar: "من نحن", en: "About" },
-        body: { ar: "عن هزلي", en: "About Hezalli" },
-        published: true,
-      },
-      {
-        slug: "terms",
-        title: { ar: "الشروط والأحكام", en: "Terms" },
-        body: { ar: "الشروط", en: "Terms of service" },
-        published: true,
-      },
-      {
-        slug: "privacy",
-        title: { ar: "سياسة الخصوصية", en: "Privacy" },
-        body: { ar: "الخصوصية", en: "Privacy policy" },
-        published: true,
-      },
-    ],
+    data: CMS_SEEDS.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      body: p.body,
+      published: true,
+    })),
   });
   await prisma.banner.create({
     data: {

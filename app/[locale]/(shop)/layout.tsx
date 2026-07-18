@@ -1,10 +1,12 @@
-import { getLocale } from "next-intl/server";
+import { Wrench } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { getAnnouncement } from "@/lib/actions/announcement";
 import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 import type { Locale } from "@/i18n/routing";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
@@ -49,6 +51,20 @@ export default async function ShopLayout({
 
   const categories = toNavCategories(catRows, locale as Locale);
   const announcement = await getAnnouncement();
+
+  // Maintenance mode: the storefront is closed to everyone except admins, who
+  // keep full access so they can verify the site before reopening it.
+  const isAdmin = user?.roles.includes("ADMIN") ?? false;
+  if ((await getSetting("maintenance_mode")) && !isAdmin) {
+    const mt = await getTranslations("Maintenance");
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <Wrench className="text-muted-foreground size-10" />
+        <h1 className="text-2xl font-semibold tracking-tight">{mt("title")}</h1>
+        <p className="text-muted-foreground max-w-md">{mt("desc")}</p>
+      </div>
+    );
+  }
 
   return (
     <CartProvider isAuthed={Boolean(session?.user?.id)} initial={initialCart}>

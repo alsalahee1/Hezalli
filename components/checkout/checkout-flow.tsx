@@ -26,15 +26,19 @@ export function CheckoutFlow({
   lines,
   addresses,
   shippingByAddress,
+  codEnabled = true,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
   shippingByAddress: Record<string, Record<string, number>>;
+  codEnabled?: boolean;
 }) {
   const t = useTranslations("Checkout");
   const locale = useLocale();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
-  const [method, setMethod] = useState<PaymentMethodChoice>("COD");
+  const [method, setMethod] = useState<PaymentMethodChoice>(
+    codEnabled ? "COD" : "BANK_TRANSFER",
+  );
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,8 +48,14 @@ export function CheckoutFlow({
   const [couponErr, setCouponErr] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
 
-  const METHODS: { key: PaymentMethodChoice; label: string; hint: string }[] = [
-    { key: "COD", label: t("cod"), hint: t("codHint") },
+  const METHODS: {
+    key: PaymentMethodChoice;
+    label: string;
+    hint: string;
+  }[] = [
+    ...(codEnabled
+      ? [{ key: "COD" as const, label: t("cod"), hint: t("codHint") }]
+      : []),
     { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
     { key: "USDT", label: t("usdt"), hint: t("usdtHint") },
     { key: "WALLET", label: t("wallet"), hint: t("walletHint") },

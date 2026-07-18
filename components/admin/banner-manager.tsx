@@ -24,6 +24,7 @@ export type BannerRow = {
   linkUrl: string;
   position: string;
   isActive: boolean;
+  sortOrder: number;
   startsAt: string; // yyyy-mm-dd or ""
   endsAt: string;
 };
@@ -36,6 +37,7 @@ const EMPTY: BannerRow = {
   linkUrl: "",
   position: "home_hero",
   isActive: true,
+  sortOrder: 0,
   startsAt: "",
   endsAt: "",
 };
@@ -95,6 +97,7 @@ export function BannerManager({ banners }: { banners: BannerRow[] }) {
                 linkUrl: editing.linkUrl,
                 position: editing.position,
                 isActive: editing.isActive,
+                sortOrder: editing.sortOrder,
                 startsAt: editing.startsAt,
                 endsAt: editing.endsAt,
               };
@@ -257,6 +260,15 @@ function BannerForm({
           >
             <option value="home_hero">{t("posHomeHero")}</option>
           </select>
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block font-medium">{t("order")}</span>
+          <Input
+            type="number"
+            value={String(value.sortOrder)}
+            dir="ltr"
+            onChange={(e) => set({ sortOrder: Number(e.target.value) })}
+          />
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium">{t("startsAt")}</span>

@@ -938,14 +938,15 @@ model CmsPage {
 }
 
 model Banner {
-  id       String    @id @default(cuid())
-  image    String
-  linkUrl  String?
-  title    Json?
-  position String
-  isActive Boolean   @default(true)
-  startsAt DateTime?
-  endsAt   DateTime?
+  id        String    @id @default(cuid())
+  image     String
+  linkUrl   String?
+  title     Json?
+  position  String
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  startsAt  DateTime?
+  endsAt    DateTime?
 }
 
 model AuditLog {

@@ -9,7 +9,9 @@ function toDateInput(d: Date | null): string {
 }
 
 export default async function AdminBannersPage() {
-  const banners = await prisma.banner.findMany({ orderBy: { id: "asc" } });
+  const banners = await prisma.banner.findMany({
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+  });
   const rows: BannerRow[] = banners.map((b) => {
     const title = (b.title ?? {}) as { en?: string; ar?: string };
     return {
@@ -20,6 +22,7 @@ export default async function AdminBannersPage() {
       linkUrl: b.linkUrl ?? "",
       position: b.position,
       isActive: b.isActive,
+      sortOrder: b.sortOrder,
       startsAt: toDateInput(b.startsAt),
       endsAt: toDateInput(b.endsAt),
     };
