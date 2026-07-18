@@ -43,6 +43,20 @@ else
   log ".env already present — keeping it."
 fi
 
+# --- 2b. AUTH_SECRET (required by the app at boot; see lib/env.ts) -----------
+# next-auth needs a secret in production, and the app crashes on startup
+# without it. Generate one once and persist to .env so older .env files from
+# the scaffold-era deploy are healed automatically on the next deploy.
+if ! grep -qE '^AUTH_SECRET=.+' .env 2>/dev/null; then
+  AUTH_SECRET_VAL="$(openssl rand -hex 32)"
+  if grep -q '^AUTH_SECRET=' .env 2>/dev/null; then
+    sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=${AUTH_SECRET_VAL}|" .env
+  else
+    echo "AUTH_SECRET=${AUTH_SECRET_VAL}" >> .env
+  fi
+  log "Generated AUTH_SECRET into .env"
+fi
+
 # --- 3. Detect the existing web-facing setup --------------------------------
 port_owner() { (ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep -E "[:.]$1 " || true; }
 
