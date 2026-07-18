@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { RequestPayoutButton } from "@/components/seller/request-payout-button";
+import { MoveToWalletButton } from "@/components/seller/move-to-wallet-button";
 
 const PAYOUT_BADGE: Record<string, string> = {
   REQUESTED: "bg-amber-500/15 text-amber-600",
@@ -50,7 +51,9 @@ export default async function SellerFinancePage() {
   const outstanding = payouts
     .filter((p) => p.status === "REQUESTED" || p.status === "APPROVED")
     .reduce((s, p) => s + Number(p.amountUsd), 0);
-  const canRequest = Boolean(method) && available - outstanding >= 10;
+  const free = available - outstanding;
+  const canRequest = Boolean(method) && free >= 10;
+  const canMove = free > 0;
 
   return (
     <div className="space-y-6">
@@ -84,7 +87,10 @@ export default async function SellerFinancePage() {
       <div className="rounded-lg border p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">{t("payouts")}</h2>
-          <RequestPayoutButton disabled={!canRequest} />
+          <div className="flex flex-wrap items-start gap-2">
+            <MoveToWalletButton disabled={!canMove} />
+            <RequestPayoutButton disabled={!canRequest} />
+          </div>
         </div>
         {!method ? (
           <p className="text-muted-foreground text-sm">

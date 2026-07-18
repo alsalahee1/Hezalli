@@ -140,6 +140,7 @@ enum LedgerType {
   PAYOUT
   ADJUSTMENT
   COD_COMMISSION_DUE
+  WALLET_TRANSFER // moved to the seller's HezalliPay wallet (Step 19.5+)
 }
 
 enum PayoutStatus {
@@ -714,9 +715,10 @@ enum WalletEntryType {
   TOP_UP // cash-in via a rail, admin-confirmed (Step 19.3)
   PAYMENT // spent on an order (Step 19.2)
   REFUND // order refunded to wallet (Step 19.1)
-  CASHBACK // loyalty / promo credit
+  CASHBACK // loyalty / promo credit (Step 19.5)
   CASHOUT // withdrawn to a rail (Step 19.4)
   ADJUSTMENT // admin correction (audited)
+  SELLER_EARNINGS // swept in from the seller balance (Step 19.5+)
 }
 
 enum WalletTopUpStatus {

@@ -322,8 +322,13 @@ Lowest value-per-risk. Ship this first.
 - [ ] With a rate set, completing an order credits cashback exactly once
 - [ ] Rate 0 is a no-op; re-settling never double-credits
 
-> Remaining 19.5+ (not built): unify seller earnings into the same wallet, and
-> P2P transfer — **licensed only**, gate behind the e-money authorization.
+> **Seller-wallet unification (built):** a seller can sweep available earnings
+> into their HezalliPay wallet from `/seller/finance` ("Move to wallet"). It
+> bridges the two ledgers — a `WALLET_TRANSFER` debit on the seller balance and a
+> `SELLER_EARNINGS` credit on the wallet, in one transaction — without merging or
+> refactoring either. The seller then has one balance to spend, top up, or cash
+> out. Remaining 19.5+: **P2P transfer — licensed only**, gate behind the e-money
+> authorization.
 
 ---
 
@@ -336,7 +341,8 @@ Lowest value-per-risk. Ship this first.
 | 19.3 Top-up | Cash-in | **High — legal first** | ✅ built, ⚠️ legal-gated |
 | 19.4 Cash-out | Withdrawal | **High — legal first** | ✅ built, ⚠️ legal-gated |
 | 19.5 Cashback | Growth loop | Low (off by default) | ✅ shipped |
-| 19.5+ Seller-wallet unify / P2P | Growth loops | P2P = licensed only | ⏭️ deferred |
+| 19.5+ Seller-wallet unify | One balance for sellers | Low | ✅ shipped |
+| 19.5+ P2P transfer | Growth loop | **Licensed only** | ⏭️ deferred |
 
 **Bottom line:** 19.1–19.5 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in

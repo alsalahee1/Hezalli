@@ -32,6 +32,7 @@ const ENTRY_LABEL: Record<string, string> = {
   CASHBACK: "cashback",
   CASHOUT: "cashout",
   ADJUSTMENT: "adjustment",
+  SELLER_EARNINGS: "sellerEarnings",
 };
 
 export default async function WalletPage() {

@@ -1042,7 +1042,11 @@
     "err_belowMin": "أقل من الحد الأدنى للسحب (10$).",
     "err_insufficient": "الرصيد المتاح غير كافٍ.",
     "err_notSeller": "يتطلب حساب بائع.",
-    "err_unauthorized": "يرجى تسجيل الدخول."
+    "err_unauthorized": "يرجى تسجيل الدخول.",
+    "moveToWallet": "نقل إلى المحفظة",
+    "moved": "تم النقل إلى محفظتك.",
+    "type_WALLET_TRANSFER": "نُقل إلى المحفظة",
+    "err_nothingToMove": "لا توجد أرباح متاحة للنقل."
   },
   "AdminOrders": {
     "title": "الطلبات",
@@ -1652,6 +1656,7 @@
     "pendingWithdrawalsTitle": "عمليات سحب قيد المعالجة",
     "err_notVerified": "يتطلب السحب حساباً موثّقاً.",
     "err_noMethod": "أضف طريقة دفع أولاً.",
-    "err_insufficient": "هذا أكثر من رصيدك المتاح."
+    "err_insufficient": "هذا أكثر من رصيدك المتاح.",
+    "sellerEarnings": "أرباح البائع"
   }
 }

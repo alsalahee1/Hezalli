@@ -157,6 +157,57 @@ describe("wallet top-up ledger (Step 19.3)", () => {
   });
 });
 
+describe("seller earnings → wallet bridge (Step 19.5+)", () => {
+  it("debits the seller ledger and credits the wallet by the same amount", async () => {
+    const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
+    try {
+      // Settle a prepaid order → seller earns $90 (100 − 10 commission).
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "BANK_TRANSFER",
+      });
+      await settleSubOrder(subOrderId);
+
+      const balanceId = fx.balanceId;
+      // Earnings move into the SELLER's own wallet.
+      const walletId = await getWalletId(fx.sellerUserId);
+
+      // Mirror transferEarningsToWallet's core: move $90 across the two ledgers.
+      await prisma.$transaction(async (tx) => {
+        await tx.ledgerEntry.create({
+          data: {
+            balanceId,
+            type: "WALLET_TRANSFER",
+            amountUsd: -90,
+            note: "test move",
+          },
+        });
+        await creditWalletTx(tx, walletId, {
+          type: "SELLER_EARNINGS",
+          amountUsd: 90,
+          note: "test move",
+        });
+      });
+      await recomputeWalletBalance(fx.sellerUserId);
+
+      // Seller available = Σ ledger = 90 − 90 = 0; wallet = 90.
+      const sellerAgg = await prisma.ledgerEntry.aggregate({
+        where: { balanceId },
+        _sum: { amountUsd: true },
+      });
+      expect(Number(sellerAgg._sum.amountUsd)).toBe(0);
+      expect((await getWalletView(fx.sellerUserId)).balance).toBe(90);
+    } finally {
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.sellerUserId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.sellerUserId } })
+        .catch(() => {});
+      await fx.cleanup();
+    }
+  });
+});
+
 describe("wallet cashback on completion (Step 19.5)", () => {
   it("credits the configured rate to the buyer wallet, once", async () => {
     const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
