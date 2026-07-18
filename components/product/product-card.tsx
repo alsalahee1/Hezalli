@@ -4,6 +4,7 @@ import type { ProductCardItem } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/product/star-rating";
+import { WishlistHeart } from "@/components/product/wishlist-heart";
 
 export function ProductCard({
   item,
@@ -40,10 +41,15 @@ export function ProductCard({
           </span>
         ) : null}
         {item.condition === "USED" ? (
-          <span className="bg-foreground/80 absolute end-2 top-2 rounded px-1.5 py-0.5 text-xs font-medium text-white">
+          <span className="bg-foreground/80 absolute end-2 top-9 rounded px-1.5 py-0.5 text-xs font-medium text-white">
             {t("used")}
           </span>
         ) : null}
+        <WishlistHeart
+          productId={item.id}
+          size={15}
+          className="absolute end-2 top-2 z-10"
+        />
         {item.outOfStock ? (
           <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-xs font-medium text-white">
             {t("outOfStock")}

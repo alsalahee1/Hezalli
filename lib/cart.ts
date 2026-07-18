@@ -58,16 +58,40 @@ export async function resolveCartLines(
   return lines;
 }
 
+export type CartData = { cart: CartLine[]; saved: CartLine[] };
+
+/** Active cart lines (excludes saved-for-later). */
 export async function getServerCart(
   userId: string,
   locale: string,
 ): Promise<CartLine[]> {
+  return (await getServerCartData(userId, locale)).cart;
+}
+
+/** Both the active cart and the saved-for-later list. */
+export async function getServerCartData(
+  userId: string,
+  locale: string,
+): Promise<CartData> {
   const cart = await prisma.cart.findUnique({
     where: { userId },
     select: {
-      items: { select: { variantId: true, storeId: true, quantity: true } },
+      items: {
+        select: {
+          variantId: true,
+          storeId: true,
+          quantity: true,
+          savedForLater: true,
+        },
+      },
     },
   });
-  if (!cart) return [];
-  return resolveCartLines(cart.items, locale);
+  if (!cart) return { cart: [], saved: [] };
+  const active = cart.items.filter((i) => !i.savedForLater);
+  const saved = cart.items.filter((i) => i.savedForLater);
+  const [cartLines, savedLines] = await Promise.all([
+    resolveCartLines(active, locale),
+    resolveCartLines(saved, locale),
+  ]);
+  return { cart: cartLines, saved: savedLines };
 }

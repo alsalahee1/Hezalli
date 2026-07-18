@@ -1,7 +1,7 @@
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { getServerCart } from "@/lib/cart";
+import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import type { Locale } from "@/i18n/routing";
@@ -17,8 +17,8 @@ export default async function ShopLayout({
   const session = await auth();
   const locale = await getLocale();
   const initialCart = session?.user?.id
-    ? await getServerCart(session.user.id, locale)
-    : [];
+    ? await getServerCartData(session.user.id, locale)
+    : { cart: [], saved: [] };
 
   // Read the header identity from the DB so profile edits (name, and later the
   // avatar) show up immediately, rather than staying stale until the next login.

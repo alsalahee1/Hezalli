@@ -562,7 +562,8 @@
     "visitStore": "Visit store",
     "chat": "Chat",
     "related": "Related products",
-    "addedToCart": "Added to cart"
+    "addedToCart": "Added to cart",
+    "inWishlist": "In wishlist"
   },
   "Search": {
     "filters": "Filters",
@@ -639,6 +640,18 @@
     "viewCart": "View cart",
     "noticeRemoved": "{title} is no longer available and was removed.",
     "noticeStock": "{title} is now out of stock.",
-    "noticePrice": "The price of {title} has changed."
+    "noticePrice": "The price of {title} has changed.",
+    "saveForLater": "Save for later",
+    "savedTitle": "Saved for later ({count})",
+    "moveToCart": "Move to cart"
+  },
+  "Wishlist": {
+    "title": "Wishlist",
+    "empty": "Your wishlist is empty",
+    "browse": "Browse products",
+    "remove": "Remove",
+    "addToCart": "Add to cart",
+    "added": "Added",
+    "outOfStock": "Out of stock"
   }
 }

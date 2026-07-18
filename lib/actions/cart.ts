@@ -3,11 +3,13 @@
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { getServerCart } from "@/lib/cart";
-import type { CartLine, CartStub } from "@/lib/cart-types";
+import { getServerCartData, type CartData } from "@/lib/cart";
+import type { CartStub } from "@/lib/cart-types";
 import { prisma } from "@/lib/prisma";
 
-type CartResult = { lines: CartLine[]; error?: string };
+type CartResult = CartData & { error?: string };
+
+const EMPTY: CartData = { cart: [], saved: [] };
 
 async function ensureCart(userId: string) {
   return prisma.cart.upsert({
@@ -35,27 +37,26 @@ export async function addToCart(
 ): Promise<CartResult> {
   const session = await auth();
   const locale = await getLocale();
-  if (!session?.user?.id) return { lines: [], error: "unauthorized" };
+  if (!session?.user?.id) return { ...EMPTY, error: "unauthorized" };
 
   const v = await variantInfo(variantId);
   if (!v || !v.isActive || v.product.status !== "ACTIVE") {
     return {
-      lines: await getServerCart(session.user.id, locale),
+      ...(await getServerCartData(session.user.id, locale)),
       error: "unavailable",
     };
   }
   const cart = await ensureCart(session.user.id);
   const existing = await prisma.cartItem.findUnique({
     where: { cartId_variantId: { cartId: cart.id, variantId } },
-    select: { quantity: true },
+    select: { quantity: true, savedForLater: true },
   });
-  const desired = Math.min(
-    v.stock,
-    (existing?.quantity ?? 0) + Math.max(1, quantity),
-  );
+  // Adding always lands the item in the active cart.
+  const base = existing && !existing.savedForLater ? existing.quantity : 0;
+  const desired = Math.min(v.stock, base + Math.max(1, quantity));
   if (desired <= 0) {
     return {
-      lines: await getServerCart(session.user.id, locale),
+      ...(await getServerCartData(session.user.id, locale)),
       error: "outOfStock",
     };
   }
@@ -67,9 +68,9 @@ export async function addToCart(
       storeId: v.product.storeId,
       quantity: desired,
     },
-    update: { quantity: desired },
+    update: { quantity: desired, savedForLater: false },
   });
-  return { lines: await getServerCart(session.user.id, locale) };
+  return getServerCartData(session.user.id, locale);
 }
 
 export async function setCartQty(
@@ -78,12 +79,12 @@ export async function setCartQty(
 ): Promise<CartResult> {
   const session = await auth();
   const locale = await getLocale();
-  if (!session?.user?.id) return { lines: [] };
+  if (!session?.user?.id) return EMPTY;
   const cart = await prisma.cart.findUnique({
     where: { userId: session.user.id },
     select: { id: true },
   });
-  if (!cart) return { lines: [] };
+  if (!cart) return EMPTY;
 
   if (quantity <= 0) {
     await prisma.cartItem.deleteMany({ where: { cartId: cart.id, variantId } });
@@ -95,13 +96,13 @@ export async function setCartQty(
       data: { quantity: q },
     });
   }
-  return { lines: await getServerCart(session.user.id, locale) };
+  return getServerCartData(session.user.id, locale);
 }
 
 export async function removeFromCart(variantId: string): Promise<CartResult> {
   const session = await auth();
   const locale = await getLocale();
-  if (!session?.user?.id) return { lines: [] };
+  if (!session?.user?.id) return EMPTY;
   const cart = await prisma.cart.findUnique({
     where: { userId: session.user.id },
     select: { id: true },
@@ -109,18 +110,52 @@ export async function removeFromCart(variantId: string): Promise<CartResult> {
   if (cart) {
     await prisma.cartItem.deleteMany({ where: { cartId: cart.id, variantId } });
   }
-  return { lines: await getServerCart(session.user.id, locale) };
+  return getServerCartData(session.user.id, locale);
+}
+
+export async function saveForLater(variantId: string): Promise<CartResult> {
+  return setSaved(variantId, true);
+}
+export async function moveToCart(variantId: string): Promise<CartResult> {
+  return setSaved(variantId, false);
+}
+
+async function setSaved(
+  variantId: string,
+  savedForLater: boolean,
+): Promise<CartResult> {
+  const session = await auth();
+  const locale = await getLocale();
+  if (!session?.user?.id) return EMPTY;
+  const cart = await prisma.cart.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+  if (cart) {
+    await prisma.cartItem.updateMany({
+      where: { cartId: cart.id, variantId },
+      data: { savedForLater },
+    });
+  }
+  return getServerCartData(session.user.id, locale);
 }
 
 // Merge a guest's localStorage cart into the account cart on login.
-export async function mergeGuestCart(items: CartStub[]): Promise<CartResult> {
+export async function mergeGuestCart(
+  active: CartStub[],
+  saved: CartStub[] = [],
+): Promise<CartResult> {
   const session = await auth();
   const locale = await getLocale();
-  if (!session?.user?.id) return { lines: [] };
+  if (!session?.user?.id) return EMPTY;
 
-  if (items.length > 0) {
+  const all = [
+    ...active.map((i) => ({ ...i, savedForLater: false })),
+    ...saved.map((i) => ({ ...i, savedForLater: true })),
+  ];
+  if (all.length > 0) {
     const cart = await ensureCart(session.user.id);
-    const ids = items.map((i) => i.variantId);
+    const ids = all.map((i) => i.variantId);
     const variants = await prisma.productVariant.findMany({
       where: { id: { in: ids }, isActive: true, product: { status: "ACTIVE" } },
       select: { id: true, stock: true, product: { select: { storeId: true } } },
@@ -132,7 +167,7 @@ export async function mergeGuestCart(items: CartStub[]): Promise<CartResult> {
     });
     const exByVar = new Map(existing.map((e) => [e.variantId, e.quantity]));
 
-    for (const it of items) {
+    for (const it of all) {
       const v = vById.get(it.variantId);
       if (!v) continue;
       const merged = Math.min(
@@ -149,10 +184,11 @@ export async function mergeGuestCart(items: CartStub[]): Promise<CartResult> {
           variantId: it.variantId,
           storeId: v.product.storeId,
           quantity: merged,
+          savedForLater: it.savedForLater,
         },
         update: { quantity: merged },
       });
     }
   }
-  return { lines: await getServerCart(session.user.id, locale) };
+  return getServerCartData(session.user.id, locale);
 }

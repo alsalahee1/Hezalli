@@ -73,6 +73,7 @@ export default async function ProductPage({
 
   // Track recently-viewed for signed-in users (guests are tracked client-side).
   const session = await auth();
+  let inWishlist = false;
   if (session?.user?.id) {
     await prisma.recentlyViewed.upsert({
       where: {
@@ -81,6 +82,11 @@ export default async function ProductPage({
       create: { userId: session.user.id, productId: product.id },
       update: { viewedAt: new Date() },
     });
+    const w = await prisma.wishlistItem.findFirst({
+      where: { productId: product.id, wishlist: { userId: session.user.id } },
+      select: { id: true },
+    });
+    inWishlist = Boolean(w);
   }
 
   const locale = await getLocale();
@@ -223,7 +229,7 @@ export default async function ProductPage({
             }}
           />
 
-          <ProductShare />
+          <ProductShare productId={product.id} initialInWishlist={inWishlist} />
 
           {/* Seller card */}
           <div className="flex items-center gap-3 rounded-lg border p-3">

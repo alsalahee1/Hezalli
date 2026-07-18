@@ -562,7 +562,8 @@
     "visitStore": "زيارة المتجر",
     "chat": "محادثة",
     "related": "منتجات ذات صلة",
-    "addedToCart": "أُضيف إلى السلة"
+    "addedToCart": "أُضيف إلى السلة",
+    "inWishlist": "في المفضلة"
   },
   "Search": {
     "filters": "التصفية",
@@ -639,6 +640,18 @@
     "viewCart": "عرض السلة",
     "noticeRemoved": "{title} لم يعد متاحاً وتمت إزالته.",
     "noticeStock": "{title} غير متوفر الآن.",
-    "noticePrice": "تغيّر سعر {title}."
+    "noticePrice": "تغيّر سعر {title}.",
+    "saveForLater": "حفظ لوقت لاحق",
+    "savedTitle": "محفوظ لوقت لاحق ({count})",
+    "moveToCart": "نقل إلى السلة"
+  },
+  "Wishlist": {
+    "title": "المفضلة",
+    "empty": "قائمة مفضّلتك فارغة",
+    "browse": "تصفّح المنتجات",
+    "remove": "إزالة",
+    "addToCart": "أضف إلى السلة",
+    "added": "أُضيف",
+    "outOfStock": "غير متوفر"
   }
 }

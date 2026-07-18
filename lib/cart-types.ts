@@ -23,6 +23,9 @@ export type CartStub = {
 };
 
 export const GUEST_CART_KEY = "hezalli:cart";
+export const GUEST_SAVED_KEY = "hezalli:saved";
+
+export type CartData = { cart: CartLine[]; saved: CartLine[] };
 
 export function cartCount(lines: { quantity: number }[]): number {
   return lines.reduce((n, l) => n + l.quantity, 0);

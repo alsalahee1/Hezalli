@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   const products = await prisma.product.findMany({
     where: { slug: { in: slugs }, status: "ACTIVE" },
     select: {
+      id: true,
       slug: true,
       title: true,
       condition: true,

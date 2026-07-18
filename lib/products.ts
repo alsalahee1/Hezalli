@@ -41,6 +41,7 @@ export function priceInfo(variants: VariantLike[]) {
 }
 
 export type ProductCardItem = {
+  id: string;
   slug: string;
   title: string;
   cover: string | null;
@@ -56,6 +57,7 @@ export type ProductCardItem = {
 };
 
 type CardSource = {
+  id: string;
   slug: string;
   title: unknown;
   condition: "NEW" | "USED";
@@ -70,6 +72,7 @@ type CardSource = {
 export function toCardItem(p: CardSource, locale: string): ProductCardItem {
   const { min, max, compareAt, pctOff, totalStock } = priceInfo(p.variants);
   return {
+    id: p.id,
     slug: p.slug,
     title: localizedName(p.title, locale),
     cover: p.images[0]?.url ?? null,

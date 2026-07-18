@@ -13,6 +13,7 @@ import { RecentlyViewed } from "@/components/home/recently-viewed";
 export const dynamic = "force-dynamic";
 
 const CARD_SELECT = {
+  id: true,
   slug: true,
   title: true,
   condition: true,
@@ -193,13 +194,13 @@ async function BestSellersSection({ locale }: { locale: string }) {
     where: { status: "ACTIVE", id: { notIn: rankedIds } },
     orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
     take: TAKE,
-    select: { id: true, ...CARD_SELECT },
+    select: CARD_SELECT,
   });
   const bestIds = [...rankedIds, ...fill.map((f) => f.id)].slice(0, TAKE);
 
   const products = await prisma.product.findMany({
     where: { id: { in: bestIds }, status: "ACTIVE" },
-    select: { id: true, ...CARD_SELECT },
+    select: CARD_SELECT,
   });
   const order = new Map(bestIds.map((id, i) => [id, i]));
   const items: ProductCardItem[] = products

@@ -13,7 +13,16 @@ import { useCart, type CartNotice } from "./cart-provider";
 export function CartView() {
   const t = useTranslations("Cart");
   const locale = useLocale();
-  const { lines, ready, setQty, remove, refresh } = useCart();
+  const {
+    lines,
+    saved,
+    ready,
+    setQty,
+    remove,
+    saveForLater,
+    moveToCart,
+    refresh,
+  } = useCart();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [notices, setNotices] = useState<CartNotice[]>([]);
   const [initialised, setInitialised] = useState(false);
@@ -76,7 +85,7 @@ export function CartView() {
   const total = selectedLines.reduce((s, l) => s + l.price * l.quantity, 0);
   const selectedCount = selectedLines.reduce((s, l) => s + l.quantity, 0);
 
-  if (ready && lines.length === 0) {
+  if (ready && lines.length === 0 && saved.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-20 text-center">
         <StoreIcon className="text-muted-foreground size-10" />
@@ -177,15 +186,24 @@ export function CartView() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex flex-col items-end justify-between">
-                      <button
-                        type="button"
-                        onClick={() => remove(l.variantId)}
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label={t("remove")}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                    <div className="flex flex-col items-end justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => saveForLater(l.variantId)}
+                          className="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                        >
+                          {t("saveForLater")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => remove(l.variantId)}
+                          className="text-muted-foreground hover:text-destructive"
+                          aria-label={t("remove")}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
                       <div className="flex items-center rounded-md border">
                         <button
                           type="button"
@@ -214,6 +232,67 @@ export function CartView() {
             </ul>
           </div>
         ))}
+
+        {saved.length > 0 ? (
+          <div className="rounded-lg border">
+            <div className="border-b px-4 py-2.5 text-sm font-medium">
+              {t("savedTitle", { count: saved.length })}
+            </div>
+            <ul className="divide-y">
+              {saved.map((l) => (
+                <li key={l.variantId} className="flex items-center gap-3 p-4">
+                  <Link
+                    href={`/product/${l.productSlug}`}
+                    className="bg-muted size-16 shrink-0 overflow-hidden rounded"
+                  >
+                    {l.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={l.image}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    ) : null}
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/product/${l.productSlug}`}
+                      className="line-clamp-1 text-sm font-medium hover:underline"
+                    >
+                      {l.title}
+                    </Link>
+                    <p className="font-semibold" dir="ltr">
+                      {formatUsd(l.price, locale)}
+                    </p>
+                    {l.stock <= 0 ? (
+                      <p className="text-destructive text-xs">
+                        {t("outOfStock")}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => remove(l.variantId)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label={t("remove")}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={l.stock <= 0}
+                      onClick={() => moveToCart(l.variantId)}
+                    >
+                      {t("moveToCart")}
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
 
       {/* Summary */}
