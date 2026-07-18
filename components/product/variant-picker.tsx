@@ -258,8 +258,9 @@ export function VariantPicker({
           className="flex-1"
           disabled={stock <= 0 || busy}
           onClick={async () => {
+            if (!current || stock <= 0) return;
             await addLine();
-            router.push("/cart");
+            router.push(`/checkout?items=${current.id}`);
           }}
         >
           <Zap className="size-4" />

@@ -314,7 +314,13 @@ export function CartView() {
           asChild={selectedLines.length > 0}
         >
           {selectedLines.length > 0 ? (
-            <Link href="/checkout">{t("checkout")}</Link>
+            <Link
+              href={`/checkout?items=${selectedLines
+                .map((l) => l.variantId)
+                .join(",")}`}
+            >
+              {t("checkout")}
+            </Link>
           ) : (
             <span>{t("checkout")}</span>
           )}

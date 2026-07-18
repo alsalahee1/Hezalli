@@ -1,6 +1,69 @@
-import { ComingSoon } from "@/components/coming-soon";
+import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
-// Placeholder until Phase 8 (checkout & orders).
-export default function CheckoutPage() {
-  return <ComingSoon ns="Cart" titleKey="checkout" />;
+import { auth } from "@/auth";
+import { resolveCartLines } from "@/lib/cart";
+import { prisma } from "@/lib/prisma";
+import {
+  CheckoutFlow,
+  type CheckoutAddress,
+} from "@/components/checkout/checkout-flow";
+
+export default async function CheckoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ items?: string }>;
+}) {
+  const session = await auth();
+  const locale = await getLocale();
+  if (!session?.user?.id) {
+    redirect(`/${locale}/login?callbackUrl=/${locale}/checkout`);
+  }
+  const t = await getTranslations("Checkout");
+  const sp = await searchParams;
+  const selected = (sp.items ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const cart = await prisma.cart.findUnique({
+    where: { userId: session.user.id },
+    select: {
+      items: {
+        where: { savedForLater: false },
+        select: { variantId: true, storeId: true, quantity: true },
+      },
+    },
+  });
+  let stubs = cart?.items ?? [];
+  if (selected.length > 0) {
+    stubs = stubs.filter((i) => selected.includes(i.variantId));
+  }
+  const lines = await resolveCartLines(stubs, locale);
+  if (lines.length === 0) {
+    redirect(`/${locale}/cart`);
+  }
+
+  const addrRows = await prisma.address.findMany({
+    where: { userId: session.user.id },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+  const addresses: CheckoutAddress[] = addrRows.map((a) => ({
+    id: a.id,
+    fullName: a.fullName,
+    phone: a.phone,
+    governorate: a.governorate,
+    city: a.city,
+    line1: a.line1,
+    line2: a.line2,
+  }));
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-6">
+      <h1 className="mb-5 text-2xl font-semibold tracking-tight">
+        {t("title")}
+      </h1>
+      <CheckoutFlow lines={lines} addresses={addresses} />
+    </main>
+  );
 }
