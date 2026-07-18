@@ -604,7 +604,8 @@
     "addedToCart": "أُضيف إلى السلة",
     "inWishlist": "في المفضلة",
     "seeAllReviews": "عرض جميع المراجعات",
-    "flashSale": "عرض خاطف"
+    "flashSale": "عرض خاطف",
+    "alsoBought": "اشترى العملاء أيضاً"
   },
   "Search": {
     "filters": "التصفية",

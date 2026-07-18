@@ -9,6 +9,7 @@ import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { toCardItem } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
+import { coPurchasedProductIds } from "@/lib/recommendations";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -158,8 +159,17 @@ export default async function ProductPage({
   const title = localizedName(product.title, locale);
   const description = localizedName(product.description, locale);
 
+  const CARD_INCLUDE = {
+    images: { orderBy: { position: "asc" as const }, take: 1 },
+    variants: {
+      where: { isActive: true },
+      select: { price: true, compareAtPrice: true, stock: true },
+    },
+    store: { select: { name: true } },
+  };
+
   const variantIds = product.variants.map((v) => v.id);
-  const [soldAgg, related] = await Promise.all([
+  const [soldAgg, related, coBoughtIds] = await Promise.all([
     variantIds.length
       ? prisma.orderItem.aggregate({
           _sum: { quantity: true },
@@ -177,16 +187,25 @@ export default async function ProductPage({
       },
       orderBy: { ratingAvg: "desc" },
       take: 6,
-      include: {
-        images: { orderBy: { position: "asc" }, take: 1 },
-        variants: {
-          where: { isActive: true },
-          select: { price: true, compareAtPrice: true, stock: true },
-        },
-        store: { select: { name: true } },
-      },
+      include: CARD_INCLUDE,
     }),
+    coPurchasedProductIds(product.id, 6),
   ]);
+
+  // "Customers also bought" — load the co-purchased products, keep their rank.
+  const coBoughtRows = coBoughtIds.length
+    ? await prisma.product.findMany({
+        where: {
+          id: { in: coBoughtIds },
+          status: "ACTIVE",
+          store: { status: "ACTIVE" },
+        },
+        include: CARD_INCLUDE,
+      })
+    : [];
+  const coBought = coBoughtIds
+    .map((id) => coBoughtRows.find((p) => p.id === id))
+    .filter((p): p is (typeof coBoughtRows)[number] => Boolean(p));
   const sold = soldAgg._sum.quantity ?? 0;
 
   // Live flash pricing overrides the normal price while stock remains.
@@ -396,6 +415,20 @@ export default async function ProductPage({
         myReview={myReview}
         isStoreOwner={isStoreOwner}
       />
+
+      {/* Customers also bought (co-purchase) */}
+      {coBought.length > 0 ? (
+        <section className="mt-12">
+          <h2 className="mb-4 text-xl font-semibold tracking-tight">
+            {t("alsoBought")}
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {coBought.map((p) => (
+              <ProductCard key={p.id} item={toCardItem(p, locale)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Related */}
       {related.length > 0 ? (
