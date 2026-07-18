@@ -1,9 +1,11 @@
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getServerCart } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import type { Locale } from "@/i18n/routing";
+import { CartProvider } from "@/components/cart/cart-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
@@ -14,6 +16,9 @@ export default async function ShopLayout({
 }) {
   const session = await auth();
   const locale = await getLocale();
+  const initialCart = session?.user?.id
+    ? await getServerCart(session.user.id, locale)
+    : [];
 
   // Read the header identity from the DB so profile edits (name, and later the
   // avatar) show up immediately, rather than staying stale until the next login.
@@ -43,18 +48,20 @@ export default async function ShopLayout({
   const categories = toNavCategories(catRows, locale as Locale);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader
-        user={
-          user
-            ? { name: user.name, email: user.email, image: user.image }
-            : null
-        }
-        isSeller={user?.roles.includes("SELLER") ?? false}
-        categories={categories}
-      />
-      <div className="flex-1">{children}</div>
-      <SiteFooter />
-    </div>
+    <CartProvider isAuthed={Boolean(session?.user?.id)} initial={initialCart}>
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader
+          user={
+            user
+              ? { name: user.name, email: user.email, image: user.image }
+              : null
+          }
+          isSeller={user?.roles.includes("SELLER") ?? false}
+          categories={categories}
+        />
+        <div className="flex-1">{children}</div>
+        <SiteFooter />
+      </div>
+    </CartProvider>
   );
 }

@@ -6,6 +6,8 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { formatUsd } from "@/lib/products";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/components/cart/cart-provider";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 
 export type PickerVariant = {
@@ -17,15 +19,33 @@ export type PickerVariant = {
   stock: number;
 };
 
+export type PickerProduct = {
+  slug: string;
+  title: string;
+  image: string | null;
+  storeId: string;
+  storeName: string;
+  storeSlug: string;
+};
+
 const OPTION_LABELS: Record<string, { en: string; ar: string }> = {
   color: { en: "Color", ar: "اللون" },
   size: { en: "Size", ar: "المقاس" },
   storage: { en: "Storage", ar: "السعة" },
 };
 
-export function VariantPicker({ variants }: { variants: PickerVariant[] }) {
+export function VariantPicker({
+  variants,
+  product,
+}: {
+  variants: PickerVariant[];
+  product: PickerProduct;
+}) {
   const t = useTranslations("Product");
   const locale = useLocale();
+  const cart = useCart();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
   const optLabel = (key: string) => {
     const m = OPTION_LABELS[key];
     return m ? (locale === "ar" ? m.ar : m.en) : key;
@@ -86,6 +106,32 @@ export function VariantPicker({ variants }: { variants: PickerVariant[] }) {
   const flash = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 2500);
+  };
+
+  const addLine = async () => {
+    if (!current || stock <= 0) return;
+    setBusy(true);
+    try {
+      await cart.addItem(
+        {
+          variantId: current.id,
+          storeId: product.storeId,
+          storeName: product.storeName,
+          storeSlug: product.storeSlug,
+          productSlug: product.slug,
+          title: product.title,
+          variantName: current.name,
+          image: product.image,
+          price: current.price,
+          compareAtPrice: current.compareAtPrice ?? null,
+          stock: current.stock,
+          quantity: clampedQty,
+        },
+        clampedQty,
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -197,8 +243,11 @@ export function VariantPicker({ variants }: { variants: PickerVariant[] }) {
         <Button
           size="lg"
           className="flex-1"
-          disabled={stock <= 0}
-          onClick={() => flash(t("cartComingSoon"))}
+          disabled={stock <= 0 || busy}
+          onClick={async () => {
+            await addLine();
+            flash(t("addedToCart"));
+          }}
         >
           <ShoppingCart className="size-4" />
           {t("addToCart")}
@@ -207,8 +256,11 @@ export function VariantPicker({ variants }: { variants: PickerVariant[] }) {
           size="lg"
           variant="outline"
           className="flex-1"
-          disabled={stock <= 0}
-          onClick={() => flash(t("cartComingSoon"))}
+          disabled={stock <= 0 || busy}
+          onClick={async () => {
+            await addLine();
+            router.push("/cart");
+          }}
         >
           <Zap className="size-4" />
           {t("buyNow")}

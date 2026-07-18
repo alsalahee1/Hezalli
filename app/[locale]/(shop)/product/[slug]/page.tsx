@@ -211,7 +211,17 @@ export default async function ProductPage({
             </div>
           </div>
 
-          <VariantPicker variants={pickerVariants} />
+          <VariantPicker
+            variants={pickerVariants}
+            product={{
+              slug: product.slug,
+              title,
+              image: product.images[0]?.url ?? null,
+              storeId: product.storeId,
+              storeName: product.store.name,
+              storeSlug: product.store.slug,
+            }}
+          />
 
           <ProductShare />
 

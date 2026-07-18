@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, ShoppingCart, Store, User, X } from "lucide-react";
+import { Menu, Store, User, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import type { NavCategory } from "@/lib/categories";
+import { CartButton } from "@/components/cart/cart-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 
@@ -74,11 +75,7 @@ export function SiteHeader({
               </Link>
             </Button>
           )}
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/cart" aria-label={t("cart")}>
-              <ShoppingCart className="size-5" />
-            </Link>
-          </Button>
+          <CartButton />
         </div>
       </div>
 

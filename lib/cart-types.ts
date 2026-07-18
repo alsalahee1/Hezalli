@@ -1,0 +1,29 @@
+// Pure cart types shared by client + server (no Prisma import).
+
+export type CartLine = {
+  variantId: string;
+  storeId: string;
+  storeName: string;
+  storeSlug: string;
+  productSlug: string;
+  title: string;
+  variantName: string;
+  image: string | null;
+  price: number;
+  compareAtPrice: number | null;
+  stock: number;
+  quantity: number;
+};
+
+// The minimal shape persisted in localStorage for guests.
+export type CartStub = {
+  variantId: string;
+  storeId: string;
+  quantity: number;
+};
+
+export const GUEST_CART_KEY = "hezalli:cart";
+
+export function cartCount(lines: { quantity: number }[]): number {
+  return lines.reduce((n, l) => n + l.quantity, 0);
+}

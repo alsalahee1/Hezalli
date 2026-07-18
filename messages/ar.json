@@ -561,7 +561,8 @@
     "newStore": "متجر جديد",
     "visitStore": "زيارة المتجر",
     "chat": "محادثة",
-    "related": "منتجات ذات صلة"
+    "related": "منتجات ذات صلة",
+    "addedToCart": "أُضيف إلى السلة"
   },
   "Search": {
     "filters": "التصفية",
@@ -619,5 +620,25 @@
     "untitled": "لافتة بدون عنوان",
     "imageRequired": "يرجى رفع صورة.",
     "forbidden": "ليس لديك صلاحية للقيام بذلك."
+  },
+  "Cart": {
+    "cart": "السلة",
+    "title": "سلة التسوق",
+    "empty": "سلتك فارغة",
+    "emptyHint": "تصفّح المنتجات وأضفها إلى سلتك.",
+    "browse": "تصفّح المنتجات",
+    "selectAll": "تحديد الكل",
+    "remove": "إزالة",
+    "outOfStock": "غير متوفر",
+    "subtotal": "المجموع الفرعي",
+    "summary": "ملخص الطلب",
+    "selectedItems": "{count} عناصر محددة",
+    "total": "الإجمالي",
+    "checkout": "إتمام الشراء",
+    "checkoutNote": "يُحسب الشحن عند الدفع.",
+    "viewCart": "عرض السلة",
+    "noticeRemoved": "{title} لم يعد متاحاً وتمت إزالته.",
+    "noticeStock": "{title} غير متوفر الآن.",
+    "noticePrice": "تغيّر سعر {title}."
   }
 }

@@ -561,7 +561,8 @@
     "newStore": "New store",
     "visitStore": "Visit store",
     "chat": "Chat",
-    "related": "Related products"
+    "related": "Related products",
+    "addedToCart": "Added to cart"
   },
   "Search": {
     "filters": "Filters",
@@ -619,5 +620,25 @@
     "untitled": "Untitled banner",
     "imageRequired": "Please upload an image.",
     "forbidden": "You don't have permission to do that."
+  },
+  "Cart": {
+    "cart": "Cart",
+    "title": "Shopping cart",
+    "empty": "Your cart is empty",
+    "emptyHint": "Browse products and add them to your cart.",
+    "browse": "Browse products",
+    "selectAll": "Select all",
+    "remove": "Remove",
+    "outOfStock": "Out of stock",
+    "subtotal": "Subtotal",
+    "summary": "Order summary",
+    "selectedItems": "{count} items selected",
+    "total": "Total",
+    "checkout": "Checkout",
+    "checkoutNote": "Shipping is calculated at checkout.",
+    "viewCart": "View cart",
+    "noticeRemoved": "{title} is no longer available and was removed.",
+    "noticeStock": "{title} is now out of stock.",
+    "noticePrice": "The price of {title} has changed."
   }
 }
