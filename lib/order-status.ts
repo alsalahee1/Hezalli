@@ -30,6 +30,33 @@ export function statusToTab(status: string): OrderTab {
   }
 }
 
+export const SELLER_TABS = [
+  "all",
+  "new",
+  "processing",
+  "shipped",
+  "completed",
+  "cancelled",
+] as const;
+export type SellerTab = (typeof SELLER_TABS)[number];
+
+export function subStatusToSellerTab(status: string): SellerTab {
+  switch (status) {
+    case "PENDING":
+    case "CONFIRMED":
+      return "new";
+    case "PROCESSING":
+      return "processing";
+    case "SHIPPED":
+    case "DELIVERED":
+      return "shipped";
+    case "COMPLETED":
+      return "completed";
+    default:
+      return "cancelled";
+  }
+}
+
 export const STATUS_BADGE: Record<string, string> = {
   PENDING: "bg-amber-500/15 text-amber-600",
   CONFIRMED: "bg-blue-500/15 text-blue-600",
@@ -47,4 +74,28 @@ export function canBuyerCancel(status: string): boolean {
   return (
     status === "PENDING" || status === "CONFIRMED" || status === "PROCESSING"
   );
+}
+
+const RANK = [
+  "PENDING",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "COMPLETED",
+];
+
+// The overall order status is that of its least-advanced non-cancelled
+// sub-order (an order is only "shipped" once every seller has shipped).
+export function aggregateOrderStatus(subStatuses: string[]): string {
+  const active = subStatuses.filter(
+    (s) => s !== "CANCELLED" && s !== "RETURNED" && s !== "REFUNDED",
+  );
+  if (active.length === 0) return "CANCELLED";
+  let minRank = RANK.length - 1;
+  for (const s of active) {
+    const r = RANK.indexOf(s);
+    if (r >= 0 && r < minRank) minRank = r;
+  }
+  return RANK[minRank] ?? "CONFIRMED";
 }
