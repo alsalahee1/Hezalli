@@ -4,7 +4,11 @@ import { useState, useTransition } from "react";
 import { ExternalLink, Truck } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { editTracking, shipSubOrder } from "@/lib/actions/shipment";
+import {
+  editTracking,
+  markDelivered,
+  shipSubOrder,
+} from "@/lib/actions/shipment";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,15 +155,25 @@ export function ShipOrderForm({
             ) : null}
           </p>
           {status === "SHIPPED" ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-2"
-              onClick={() => setEditing(true)}
-            >
-              {t("editTracking")}
-            </Button>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                disabled={pending}
+                onClick={() => submit(() => markDelivered(subOrderId))}
+              >
+                {t("markDelivered")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setEditing(true)}
+              >
+                {t("editTracking")}
+              </Button>
+            </div>
           ) : null}
+          {errLine}
         </div>
       ) : (
         <div className="space-y-3">

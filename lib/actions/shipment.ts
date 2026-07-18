@@ -138,6 +138,117 @@ export async function shipSubOrder(
   return { ok: true };
 }
 
+async function autoCompleteDays(): Promise<number> {
+  const row = await prisma.platformSetting.findUnique({
+    where: { key: "auto_complete_days" },
+    select: { value: true },
+  });
+  const n = Number(row?.value);
+  return Number.isFinite(n) && n >= 0 ? n : 7;
+}
+
+// Seller (or courier) marks a shipped sub-order DELIVERED. Starts the
+// auto-complete countdown and, for COD, records the cash as collected.
+export async function markDelivered(subOrderId: string): Promise<Result> {
+  const gate = await requireSellerStore();
+  if (!gate) return { error: "forbidden" };
+  const locale = await getLocale();
+
+  const sub = await prisma.subOrder.findFirst({
+    where: { id: subOrderId, storeId: gate.storeId },
+    select: {
+      id: true,
+      orderId: true,
+      status: true,
+      store: { select: { name: true } },
+      shipment: { select: { id: true } },
+      order: {
+        select: {
+          id: true,
+          buyerId: true,
+          paymentMethod: true,
+          buyer: { select: { locale: true } },
+          payment: { select: { id: true, status: true } },
+        },
+      },
+    },
+  });
+  if (!sub) return { error: "notFound" };
+  if (sub.status !== "SHIPPED") return { error: "badState" };
+
+  const days = await autoCompleteDays();
+  const autoCompleteAt = new Date(Date.now() + days * 86_400_000);
+  const ar = sub.order.buyer.locale === "ar";
+  const isCod = sub.order.paymentMethod === "COD";
+
+  await prisma.$transaction(async (tx) => {
+    if (sub.shipment) {
+      await tx.shipment.update({
+        where: { id: sub.shipment.id },
+        data: { status: "DELIVERED", deliveredAt: new Date() },
+      });
+      await tx.shipmentEvent.create({
+        data: { shipmentId: sub.shipment.id, status: "DELIVERED" },
+      });
+    }
+
+    await tx.subOrder.update({
+      where: { id: subOrderId },
+      data: { status: "DELIVERED", autoCompleteAt },
+    });
+
+    // COD: cash collected on delivery.
+    if (
+      isCod &&
+      sub.order.payment &&
+      sub.order.payment.status !== "CONFIRMED"
+    ) {
+      await tx.payment.update({
+        where: { id: sub.order.payment.id },
+        data: { status: "CONFIRMED", confirmedAt: new Date() },
+      });
+    }
+
+    const subs = await tx.subOrder.findMany({
+      where: { orderId: sub.orderId },
+      select: { status: true },
+    });
+    await tx.order.update({
+      where: { id: sub.orderId },
+      data: {
+        status: aggregateOrderStatus(subs.map((s) => s.status)) as never,
+      },
+    });
+
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId: sub.orderId,
+        status: "DELIVERED",
+        actor: "seller",
+        note: `${sub.store.name}: delivered`,
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: sub.order.buyerId,
+        type: "SHIPMENT",
+        title: ar ? "تم توصيل طلبك" : "Your order was delivered",
+        body: ar
+          ? `وصل طلبك من ${sub.store.name}. أكِّد الاستلام لإتمام الطلب.`
+          : `Your order from ${sub.store.name} arrived. Confirm receipt to complete it.`,
+        data: { orderId: sub.orderId },
+      },
+    });
+  });
+
+  revalidatePath(`/${locale}/seller/orders`);
+  revalidatePath(`/${locale}/seller/orders/${subOrderId}`);
+  revalidatePath(`/${locale}/account/orders`);
+  revalidatePath(`/${locale}/account/orders/${sub.orderId}`);
+  return { ok: true };
+}
+
 // Seller corrects a wrong carrier/tracking on an already-shipped order.
 // Audit-logged so the change is traceable.
 export async function editTracking(

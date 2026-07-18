@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, ExternalLink, Printer, Truck } from "lucide-react";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE, canBuyerCancel } from "@/lib/order-status";
+import { buildTrackingUrl } from "@/lib/tracking";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,16 @@ export default async function OrderDetailPage({
       payment: true,
       history: { orderBy: { createdAt: "asc" } },
       subOrders: {
-        include: { store: { select: { name: true, slug: true } }, items: true },
+        include: {
+          store: { select: { name: true, slug: true } },
+          items: true,
+          shipment: {
+            include: {
+              carrier: true,
+              events: { orderBy: { createdAt: "asc" } },
+            },
+          },
+        },
       },
     },
   });
@@ -112,7 +122,6 @@ export default async function OrderDetailPage({
         {canBuyerCancel(order.status) ? (
           <CancelOrderButton orderId={order.id} />
         ) : null}
-        {futureBtn(t("track"), t("trackHint"))}
         {order.subOrders.some(
           (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
         ) ? (
@@ -122,6 +131,11 @@ export default async function OrderDetailPage({
         )}
         {futureBtn(t("review"), t("reviewHint"))}
         {futureBtn(t("returnItem"), t("returnHint"))}
+        {order.subOrders.some(
+          (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
+        )
+          ? futureBtn(t("notReceived"), t("notReceivedHint"))
+          : null}
         <Button asChild size="sm" variant="ghost">
           <a href={`/${locale}/invoice/${order.id}`} target="_blank">
             <Printer className="size-4" /> {t("invoice")}
@@ -166,52 +180,126 @@ export default async function OrderDetailPage({
       </section>
 
       {/* Items per seller */}
-      {order.subOrders.map((s) => (
-        <section key={s.id} className="rounded-lg border">
-          <div className="border-b px-4 py-2.5 text-sm font-medium">
-            {s.store.name}
-          </div>
-          <ul className="divide-y">
-            {s.items.map((it) => {
-              const meta = metaByVariant.get(it.variantId);
-              return (
-                <li key={it.id} className="flex gap-3 p-4">
-                  <span className="bg-muted size-16 shrink-0 overflow-hidden rounded">
-                    {meta?.url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={meta.url}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    ) : null}
-                  </span>
-                  <div className="min-w-0 flex-1 text-sm">
-                    {meta?.slug ? (
-                      <Link
-                        href={`/product/${meta.slug}`}
-                        className="line-clamp-2 font-medium hover:underline"
+      {order.subOrders.map((s) => {
+        const trackUrl = buildTrackingUrl(
+          s.shipment?.carrier?.trackingUrl,
+          s.shipment?.trackingNumber,
+        );
+        return (
+          <section key={s.id} className="rounded-lg border">
+            <div className="flex items-center justify-between border-b px-4 py-2.5 text-sm">
+              <span className="font-medium">{s.store.name}</span>
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-xs font-medium",
+                  STATUS_BADGE[s.status] ?? "bg-muted",
+                )}
+              >
+                {t(`status_${s.status}`)}
+              </span>
+            </div>
+            <ul className="divide-y">
+              {s.items.map((it) => {
+                const meta = metaByVariant.get(it.variantId);
+                return (
+                  <li key={it.id} className="flex gap-3 p-4">
+                    <span className="bg-muted size-16 shrink-0 overflow-hidden rounded">
+                      {meta?.url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={meta.url}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : null}
+                    </span>
+                    <div className="min-w-0 flex-1 text-sm">
+                      {meta?.slug ? (
+                        <Link
+                          href={`/product/${meta.slug}`}
+                          className="line-clamp-2 font-medium hover:underline"
+                        >
+                          {it.titleSnapshot}
+                        </Link>
+                      ) : (
+                        <span className="line-clamp-2 font-medium">
+                          {it.titleSnapshot}
+                        </span>
+                      )}
+                      <p className="text-muted-foreground text-xs">
+                        {it.skuSnapshot} · ×{it.quantity}
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium" dir="ltr">
+                      {money(it.lineTotal)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {s.shipment ? (
+              <div className="space-y-3 border-t p-4 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  <Truck className="size-4" /> {t("trackingTitle")}
+                </div>
+                <div className="space-y-1">
+                  <p>
+                    <span className="text-muted-foreground">
+                      {t("carrier")}:{" "}
+                    </span>
+                    {s.shipment.carrier?.name ?? "—"}
+                  </p>
+                  <p className="flex flex-wrap items-center gap-2">
+                    <span className="text-muted-foreground">
+                      {t("trackingNumber")}:{" "}
+                    </span>
+                    <span dir="ltr">{s.shipment.trackingNumber ?? "—"}</span>
+                    {trackUrl ? (
+                      <a
+                        href={trackUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary inline-flex items-center gap-1 hover:underline"
                       >
-                        {it.titleSnapshot}
-                      </Link>
-                    ) : (
-                      <span className="line-clamp-2 font-medium">
-                        {it.titleSnapshot}
-                      </span>
-                    )}
-                    <p className="text-muted-foreground text-xs">
-                      {it.skuSnapshot} · ×{it.quantity}
-                    </p>
-                  </div>
-                  <span className="text-sm font-medium" dir="ltr">
-                    {money(it.lineTotal)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+                        {t("trackPackage")}
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    ) : null}
+                  </p>
+                </div>
+                {s.shipment.events.length > 0 ? (
+                  <ol className="space-y-2 border-t pt-3">
+                    {s.shipment.events.map((ev) => (
+                      <li key={ev.id} className="flex gap-3">
+                        <span className="bg-primary mt-1.5 size-2 shrink-0 rounded-full" />
+                        <span>
+                          <span className="font-medium">
+                            {t(`shipStatus_${ev.status}`)}
+                          </span>
+                          {ev.note ? (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              — {ev.note}
+                            </span>
+                          ) : null}
+                          <br />
+                          <span className="text-muted-foreground text-xs">
+                            {format.dateTime(ev.createdAt, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Address */}

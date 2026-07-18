@@ -748,7 +748,21 @@
     "err_notFound": "Order not found.",
     "err_unauthorized": "Please sign in.",
     "confirmReceivedConfirm": "Confirm you received this order? This releases payment to the seller.",
-    "err_badState": "This action isn't available right now."
+    "err_badState": "This action isn't available right now.",
+    "trackingTitle": "Tracking",
+    "carrier": "Carrier",
+    "trackingNumber": "Tracking number",
+    "trackPackage": "Track package",
+    "notReceived": "Not received?",
+    "notReceivedHint": "Open a dispute if your order never arrived (coming in Phase 11).",
+    "shipStatus_PENDING": "Pending",
+    "shipStatus_LABEL_CREATED": "Label created",
+    "shipStatus_PICKED_UP": "Picked up",
+    "shipStatus_IN_TRANSIT": "In transit",
+    "shipStatus_OUT_FOR_DELIVERY": "Out for delivery",
+    "shipStatus_DELIVERED": "Delivered",
+    "shipStatus_FAILED": "Delivery failed",
+    "shipStatus_RETURNED": "Returned"
   },
   "Invoice": {
     "invoice": "Invoice",
@@ -994,6 +1008,7 @@
     "err_notFound": "Order not found.",
     "err_badState": "This order can't be shipped from its current status.",
     "err_carrierRequired": "Choose a carrier.",
-    "err_trackingRequired": "Enter a valid tracking number."
+    "err_trackingRequired": "Enter a valid tracking number.",
+    "markDelivered": "Mark delivered"
   }
 }

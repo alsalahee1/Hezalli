@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { autoCompleteDeliveredOrders } from "@/lib/actions/completion";
 import { expireStaleOrders } from "@/lib/actions/payment";
 import { prisma } from "@/lib/prisma";
 import {
@@ -20,8 +21,10 @@ export default async function AccountOrdersPage({
 }) {
   const session = await auth();
   if (!session?.user?.id) return null;
-  // Lazily clean up any prepaid orders that were never paid (restores stock).
+  // Lazily clean up any prepaid orders that were never paid (restores stock)
+  // and auto-complete delivered orders past their grace window.
   await expireStaleOrders().catch(() => {});
+  await autoCompleteDeliveredOrders().catch(() => {});
   const t = await getTranslations("Orders");
   const format = await getFormatter();
 

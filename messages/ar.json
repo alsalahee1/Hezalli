@@ -748,7 +748,21 @@
     "err_notFound": "الطلب غير موجود.",
     "err_unauthorized": "يرجى تسجيل الدخول.",
     "confirmReceivedConfirm": "تأكيد استلامك لهذا الطلب؟ سيؤدي ذلك إلى تحرير الدفعة للبائع.",
-    "err_badState": "هذا الإجراء غير متاح حالياً."
+    "err_badState": "هذا الإجراء غير متاح حالياً.",
+    "trackingTitle": "التتبع",
+    "carrier": "شركة الشحن",
+    "trackingNumber": "رقم التتبع",
+    "trackPackage": "تتبع الشحنة",
+    "notReceived": "لم يصل الطلب؟",
+    "notReceivedHint": "افتح نزاعاً إذا لم يصل طلبك (يأتي في المرحلة 11).",
+    "shipStatus_PENDING": "قيد الانتظار",
+    "shipStatus_LABEL_CREATED": "تم إنشاء البطاقة",
+    "shipStatus_PICKED_UP": "تم الاستلام",
+    "shipStatus_IN_TRANSIT": "قيد النقل",
+    "shipStatus_OUT_FOR_DELIVERY": "خارج للتوصيل",
+    "shipStatus_DELIVERED": "تم التوصيل",
+    "shipStatus_FAILED": "فشل التوصيل",
+    "shipStatus_RETURNED": "مُرتجع"
   },
   "Invoice": {
     "invoice": "فاتورة",
@@ -994,6 +1008,7 @@
     "err_notFound": "الطلب غير موجود.",
     "err_badState": "لا يمكن شحن هذا الطلب من حالته الحالية.",
     "err_carrierRequired": "اختر شركة شحن.",
-    "err_trackingRequired": "أدخل رقم تتبع صحيح."
+    "err_trackingRequired": "أدخل رقم تتبع صحيح.",
+    "markDelivered": "تحديد كمُسلَّم"
   }
 }
