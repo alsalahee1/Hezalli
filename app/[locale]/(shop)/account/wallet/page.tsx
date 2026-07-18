@@ -3,7 +3,10 @@ import { Wallet } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { getWalletView } from "@/lib/wallet";
+import { prisma } from "@/lib/prisma";
+import { getWalletId, getWalletView } from "@/lib/wallet";
+import { getWalletLimits } from "@/lib/wallet-limits";
+import { WalletTopUpForm } from "@/components/wallet/wallet-topup-form";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +29,21 @@ export default async function WalletPage() {
   const t = await getTranslations("Wallet");
   const format = await getFormatter();
 
-  const { balance, frozen, entries } = await getWalletView(session.user.id);
+  const userId = session.user.id;
+  const { balance, frozen, entries } = await getWalletView(userId);
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
+
+  // Top-up controls + any in-flight requests awaiting admin confirmation.
+  const walletId = await getWalletId(userId);
+  const [limits, pendingTopUps] = await Promise.all([
+    getWalletLimits(userId),
+    prisma.walletTopUp.findMany({
+      where: { walletId, status: "AWAITING_CONFIRMATION" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, amountUsd: true, method: true, createdAt: true },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -47,6 +62,33 @@ export default async function WalletPage() {
         <p className="border-destructive/40 text-destructive bg-destructive/5 rounded-lg border p-3 text-sm">
           {t("frozen")}
         </p>
+      ) : (
+        <WalletTopUpForm min={limits.min} max={limits.max} />
+      )}
+
+      {pendingTopUps.length > 0 ? (
+        <section className="space-y-2">
+          <h2 className="font-medium">{t("pendingTitle")}</h2>
+          <ul className="divide-y rounded-lg border">
+            {pendingTopUps.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+              >
+                <div>
+                  <p className="font-medium">{t(`method_${p.method}`)}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t("pendingNote")} ·{" "}
+                    {format.dateTime(p.createdAt, { dateStyle: "medium" })}
+                  </p>
+                </div>
+                <span className="font-semibold text-amber-600" dir="ltr">
+                  {money(Number(p.amountUsd))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section className="space-y-3">

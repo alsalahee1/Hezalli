@@ -1005,7 +1005,10 @@
     "reject": "رفض",
     "rejectReason": "السبب (اختياري)",
     "confirmReject": "تأكيد الرفض",
-    "method_HEZALLI_BALANCE": "محفظة HezalliPay"
+    "method_HEZALLI_BALANCE": "محفظة HezalliPay",
+    "topUpsTitle": "عمليات شحن المحفظة",
+    "topUpsDesc": "أكّد عمليات إيداع المشترين في محافظ HezalliPay.",
+    "topUpsEmpty": "لا توجد عمليات شحن بانتظار التأكيد."
   },
   "SellerFinance": {
     "title": "المالية",
@@ -1395,7 +1398,13 @@
     "err_forbidden": "ليس لديك صلاحية للقيام بذلك.",
     "err_badCommission": "يجب أن تكون العمولة بين 0 و100.",
     "err_badDays": "يجب أن تكون قيم الأيام بين 0 و365.",
-    "err_badPayout": "يجب أن يكون الحد الأدنى للتحويل صفراً أو أكثر."
+    "err_badPayout": "يجب أن يكون الحد الأدنى للتحويل صفراً أو أكثر.",
+    "walletTopupMin": "الحد الأدنى للشحن (دولار)",
+    "walletTopupMax": "الحد الأقصى للشحن (دولار)",
+    "walletBalanceCap": "سقف رصيد المحفظة (دولار)",
+    "walletLimitsHint": "لكل عملية شحن",
+    "walletCapHint": "أقصى رصيد للمستخدمين العاديين (الموثّقون يحصلون على 5 أضعاف)",
+    "err_badWalletLimits": "يجب أن تكون حدود المحفظة غير سالبة وأن يكون الأدنى ≤ الأقصى ≤ السقف."
   },
   "Vouchers": {
     "platformTitle": "قسائم المنصة",
@@ -1601,11 +1610,31 @@
     "frozen": "محفظتك موقوفة مؤقتاً. يرجى التواصل مع الدعم.",
     "history": "النشاط",
     "empty": "لا يوجد نشاط في المحفظة بعد.",
-    "topUp": "شحن رصيد",
+    "topUp": "شحن الرصيد",
     "payment": "دفع طلب",
     "refund": "استرداد",
     "cashback": "استرداد نقدي",
     "cashout": "سحب",
-    "adjustment": "تعديل"
+    "adjustment": "تعديل",
+    "topUpTitle": "إضافة رصيد",
+    "topUpDesc": "أضف أموالاً إلى رصيد HezalliPay عبر إحدى القنوات المحلية. يؤكدها المشرف بعد إرسالك للتحويل.",
+    "amount": "المبلغ (دولار)",
+    "method_LOCAL_WALLET": "محفظة محلية (جوالي / جيب / الكريمي)",
+    "method_BANK_TRANSFER": "تحويل بنكي",
+    "method_USDT": "USDT (تيثر)",
+    "limits": "الحد الأدنى {min} · الحد الأقصى {max} لكل عملية",
+    "topUpSubmit": "إرسال للمراجعة",
+    "submitting": "جارٍ الإرسال…",
+    "cancel": "إلغاء",
+    "pendingTitle": "عمليات شحن قيد المراجعة",
+    "pendingNote": "بانتظار المراجعة",
+    "err_unauthorized": "يرجى تسجيل الدخول والمحاولة مرة أخرى.",
+    "err_badMethod": "اختر طريقة شحن صحيحة.",
+    "err_badAmount": "أدخل مبلغاً صحيحاً.",
+    "err_proofRequired": "أدخل مرجع التحويل أو رقم العملية.",
+    "err_belowMin": "المبلغ أقل من الحد الأدنى للشحن.",
+    "err_aboveMax": "المبلغ أعلى من الحد الأقصى للعملية الواحدة.",
+    "err_frozen": "محفظتك موقوفة مؤقتاً. يرجى التواصل مع الدعم.",
+    "err_capExceeded": "سيتجاوز هذا حد رصيد محفظتك."
   }
 }

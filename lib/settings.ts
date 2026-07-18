@@ -14,6 +14,12 @@ export type PlatformSettings = {
   min_payout_usd: number;
   cod_enabled: boolean;
   maintenance_mode: boolean;
+  // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
+  // that limits how much unverified users may hold; VERIFIED users get a
+  // multiple of the cap (see lib/wallet-limits.ts).
+  wallet_topup_min_usd: number;
+  wallet_topup_max_usd: number;
+  wallet_balance_cap_usd: number;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -26,6 +32,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   min_payout_usd: 10,
   cod_enabled: true,
   maintenance_mode: false,
+  wallet_topup_min_usd: 1,
+  wallet_topup_max_usd: 500,
+  wallet_balance_cap_usd: 2000,
 };
 
 export const SETTING_KEYS = Object.keys(

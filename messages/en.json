@@ -1005,7 +1005,10 @@
     "reject": "Reject",
     "rejectReason": "Reason (optional)",
     "confirmReject": "Confirm reject",
-    "method_HEZALLI_BALANCE": "HezalliPay wallet"
+    "method_HEZALLI_BALANCE": "HezalliPay wallet",
+    "topUpsTitle": "Wallet top-ups",
+    "topUpsDesc": "Confirm buyer cash-ins to their HezalliPay wallet.",
+    "topUpsEmpty": "No top-ups awaiting confirmation."
   },
   "SellerFinance": {
     "title": "Finance",
@@ -1395,7 +1398,13 @@
     "err_forbidden": "You don’t have permission to do that.",
     "err_badCommission": "Commission must be between 0 and 100.",
     "err_badDays": "Day values must be between 0 and 365.",
-    "err_badPayout": "Minimum payout must be zero or more."
+    "err_badPayout": "Minimum payout must be zero or more.",
+    "walletTopupMin": "Min top-up (USD)",
+    "walletTopupMax": "Max top-up (USD)",
+    "walletBalanceCap": "Wallet balance cap (USD)",
+    "walletLimitsHint": "Per top-up transaction",
+    "walletCapHint": "Max standing balance for standard users (verified users get 5×)",
+    "err_badWalletLimits": "Wallet limits must be non-negative and min ≤ max ≤ cap."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1601,11 +1610,31 @@
     "frozen": "Your wallet is on hold. Please contact support.",
     "history": "Activity",
     "empty": "No wallet activity yet.",
-    "topUp": "Top-up",
+    "topUp": "Top up",
     "payment": "Order payment",
     "refund": "Refund",
     "cashback": "Cashback",
     "cashout": "Withdrawal",
-    "adjustment": "Adjustment"
+    "adjustment": "Adjustment",
+    "topUpTitle": "Add funds",
+    "topUpDesc": "Add money to your HezalliPay balance through a local rail. An admin confirms it after you send the transfer.",
+    "amount": "Amount (USD)",
+    "method_LOCAL_WALLET": "Local wallet (Jawali / Jaib / Kuraimi)",
+    "method_BANK_TRANSFER": "Bank transfer",
+    "method_USDT": "USDT (Tether)",
+    "limits": "Min {min} · Max {max} per top-up",
+    "topUpSubmit": "Submit for review",
+    "submitting": "Submitting…",
+    "cancel": "Cancel",
+    "pendingTitle": "Pending top-ups",
+    "pendingNote": "Awaiting review",
+    "err_unauthorized": "Please sign in and try again.",
+    "err_badMethod": "Choose a valid top-up method.",
+    "err_badAmount": "Enter a valid amount.",
+    "err_proofRequired": "Enter the transfer reference or transaction hash.",
+    "err_belowMin": "That amount is below the minimum top-up.",
+    "err_aboveMax": "That amount is above the per-top-up maximum.",
+    "err_frozen": "Your wallet is on hold. Please contact support.",
+    "err_capExceeded": "This would exceed your wallet balance limit."
   }
 }

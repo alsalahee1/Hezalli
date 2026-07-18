@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import { settleSubOrder } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { applyRefund } from "@/lib/refunds";
-import { getWalletView } from "@/lib/wallet";
+import {
+  creditWalletTx,
+  getWalletId,
+  getWalletView,
+  recomputeWalletBalance,
+} from "@/lib/wallet";
 import { makeFixture } from "./factory";
 
 describe("refund to wallet (Step 19.1)", () => {
@@ -92,6 +97,55 @@ describe("refund to wallet (Step 19.1)", () => {
       const { balance } = await getWalletView(fx.buyerId);
       expect(balance).toBe(40);
     } finally {
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await fx.cleanup();
+    }
+  });
+});
+
+describe("wallet top-up ledger (Step 19.3)", () => {
+  it("a confirmed TOP_UP credit keeps balance = Σ entries", async () => {
+    const fx = await makeFixture();
+    try {
+      const walletId = await getWalletId(fx.buyerId);
+      // Mirror confirmTopUp's core: mark a top-up confirmed + write the entry.
+      const topUp = await prisma.walletTopUp.create({
+        data: {
+          walletId,
+          method: "LOCAL_WALLET",
+          amountUsd: 75,
+          status: "AWAITING_CONFIRMATION",
+          reference: "JAWALI-TEST",
+        },
+      });
+      await prisma.$transaction(async (tx) => {
+        await tx.walletTopUp.update({
+          where: { id: topUp.id },
+          data: { status: "CONFIRMED", confirmedAt: new Date() },
+        });
+        await creditWalletTx(tx, walletId, {
+          type: "TOP_UP",
+          amountUsd: 75,
+          note: "test top-up",
+        });
+      });
+      await recomputeWalletBalance(fx.buyerId);
+
+      const entries = await prisma.walletEntry.findMany({
+        where: { walletId, type: "TOP_UP" },
+      });
+      expect(entries).toHaveLength(1);
+      const { balance } = await getWalletView(fx.buyerId);
+      expect(balance).toBe(75);
+    } finally {
+      await prisma.walletTopUp
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
       await prisma.walletEntry
         .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
         .catch(() => {});

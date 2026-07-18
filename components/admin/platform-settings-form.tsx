@@ -30,6 +30,9 @@ export function PlatformSettingsForm({
     return_response_days: String(current.return_response_days),
     auto_complete_days: String(current.auto_complete_days),
     min_payout_usd: String(current.min_payout_usd),
+    wallet_topup_min_usd: String(current.wallet_topup_min_usd),
+    wallet_topup_max_usd: String(current.wallet_topup_max_usd),
+    wallet_balance_cap_usd: String(current.wallet_balance_cap_usd),
     cod_enabled: current.cod_enabled,
     maintenance_mode: current.maintenance_mode,
   });
@@ -49,6 +52,9 @@ export function PlatformSettingsForm({
         return_response_days: Number(f.return_response_days),
         auto_complete_days: Number(f.auto_complete_days),
         min_payout_usd: Number(f.min_payout_usd),
+        wallet_topup_min_usd: Number(f.wallet_topup_min_usd),
+        wallet_topup_max_usd: Number(f.wallet_topup_max_usd),
+        wallet_balance_cap_usd: Number(f.wallet_balance_cap_usd),
         cod_enabled: f.cod_enabled,
         maintenance_mode: f.maintenance_mode,
       });
@@ -118,6 +124,30 @@ export function PlatformSettingsForm({
             type="number"
             value={f.auto_complete_days}
             onChange={(e) => set("auto_complete_days", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletTopupMin")} hint={t("walletLimitsHint")}>
+          <Input
+            type="number"
+            value={f.wallet_topup_min_usd}
+            onChange={(e) => set("wallet_topup_min_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletTopupMax")} hint={t("walletLimitsHint")}>
+          <Input
+            type="number"
+            value={f.wallet_topup_max_usd}
+            onChange={(e) => set("wallet_topup_max_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletBalanceCap")} hint={t("walletCapHint")}>
+          <Input
+            type="number"
+            value={f.wallet_balance_cap_usd}
+            onChange={(e) => set("wallet_balance_cap_usd", e.target.value)}
             dir="ltr"
           />
         </Field>
