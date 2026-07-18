@@ -1339,6 +1339,21 @@
     "messagePlaceholder": "Type a message…",
     "hint": "Enter to send · Shift+Enter for a new line"
   },
+  "Assistant": {
+    "title": "Hezalli Assistant",
+    "subtitle": "AI shopping helper",
+    "open": "Open shopping assistant",
+    "close": "Close",
+    "greeting": "Hi! I can help you find products, compare prices, and check your orders. What are you looking for?",
+    "placeholder": "Ask me anything…",
+    "send": "Send",
+    "thinking": "Thinking…",
+    "error": "Something went wrong. Please try again.",
+    "unavailable": "The assistant is not available right now.",
+    "suggest1": "Show me popular products",
+    "suggest2": "Find headphones under $50",
+    "suggest3": "Where is my order?"
+  },
   "NotifPrefs": {
     "title": "Notification settings",
     "desc": "Choose which emails you'd like to receive. In-app notifications always show in your bell.",
