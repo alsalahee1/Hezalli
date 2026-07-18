@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { notifyWishlistWatchers } from "@/lib/alerts";
 import { prisma } from "@/lib/prisma";
 import { slugifyWithFallback } from "@/lib/slug";
 
@@ -50,7 +51,7 @@ export async function quickUpdateVariant(input: {
 
   const variant = await prisma.productVariant.findFirst({
     where: { id: input.variantId, product: { storeId } },
-    select: { id: true, productId: true },
+    select: { id: true, productId: true, price: true, stock: true },
   });
   if (!variant) return { error: "forbidden" };
 
@@ -59,11 +60,41 @@ export async function quickUpdateVariant(input: {
   if (!Number.isFinite(price) || price < 0) return { error: "priceInvalid" };
   if (!Number.isInteger(stock) || stock < 0) return { error: "stockInvalid" };
 
+  const oldPrice = Number(variant.price);
+  const oldStock = variant.stock;
+  // Other active variants decide whether this is a *product-level* restock or a
+  // new lowest price (headline price drop) worth alerting wishlist watchers.
+  const others = await prisma.productVariant.findMany({
+    where: {
+      productId: variant.productId,
+      id: { not: variant.id },
+      isActive: true,
+    },
+    select: { price: true, stock: true },
+  });
+  const otherStock = others.reduce((s, v) => s + v.stock, 0);
+  const otherMinPrice = others.length
+    ? Math.min(...others.map((v) => Number(v.price)))
+    : Infinity;
+
   await prisma.productVariant.update({
     where: { id: variant.id },
     data: { price, stock },
   });
   await refreshBasePrice(variant.productId);
+
+  // Wishlist re-engagement alerts (best-effort — never block the edit).
+  try {
+    if (oldStock === 0 && stock > 0 && otherStock === 0) {
+      await notifyWishlistWatchers(variant.productId, "restock");
+    }
+    if (price < oldPrice && price <= otherMinPrice) {
+      await notifyWishlistWatchers(variant.productId, "priceDrop");
+    }
+  } catch {
+    // ignore — the price/stock update already succeeded
+  }
+
   await revalidate();
   return { ok: true };
 }
