@@ -9,6 +9,7 @@ import { getWalletId, getWalletView } from "@/lib/wallet";
 import { getWalletLimits } from "@/lib/wallet-limits";
 import { WalletTopUpForm } from "@/components/wallet/wallet-topup-form";
 import { WalletWithdrawForm } from "@/components/wallet/wallet-withdraw-form";
+import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ const ENTRY_LABEL: Record<string, string> = {
   CASHOUT: "cashout",
   ADJUSTMENT: "adjustment",
   SELLER_EARNINGS: "sellerEarnings",
+  TRANSFER_OUT: "transferOut",
+  TRANSFER_IN: "transferIn",
 };
 
 export default async function WalletPage() {
@@ -51,37 +54,44 @@ export default async function WalletPage() {
 
   // Top-up + cash-out controls and any in-flight requests.
   const walletId = await getWalletId(userId);
-  const [limits, minPayout, profile, pendingTopUps, pendingWithdrawals] =
-    await Promise.all([
-      getWalletLimits(userId),
-      getSetting("min_payout_usd"),
-      prisma.sellerProfile.findUnique({
-        where: { userId },
-        select: {
-          kycStatus: true,
-          payoutMethods: { where: { isDefault: true }, take: 1 },
-        },
-      }),
-      prisma.walletTopUp.findMany({
-        where: { walletId, status: "AWAITING_CONFIRMATION" },
-        orderBy: { createdAt: "desc" },
-        select: { id: true, amountUsd: true, method: true, createdAt: true },
-      }),
-      prisma.walletWithdrawal.findMany({
-        where: { walletId, status: { in: ["REQUESTED", "APPROVED"] } },
-        orderBy: { createdAt: "desc" },
-        select: { id: true, amountUsd: true, method: true, createdAt: true },
-      }),
-    ]);
+  const [
+    limits,
+    minPayout,
+    p2pEnabled,
+    profile,
+    pendingTopUps,
+    pendingWithdrawals,
+  ] = await Promise.all([
+    getWalletLimits(userId),
+    getSetting("min_payout_usd"),
+    getSetting("wallet_p2p_enabled"),
+    prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: {
+        kycStatus: true,
+        payoutMethods: { where: { isDefault: true }, take: 1 },
+      },
+    }),
+    prisma.walletTopUp.findMany({
+      where: { walletId, status: "AWAITING_CONFIRMATION" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, amountUsd: true, method: true, createdAt: true },
+    }),
+    prisma.walletWithdrawal.findMany({
+      where: { walletId, status: { in: ["REQUESTED", "APPROVED"] } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, amountUsd: true, method: true, createdAt: true },
+    }),
+  ]);
 
   // Cash-out is offered to VERIFIED users with a saved payout method and enough
   // balance (Step 19.4 — regulation-gated).
   const payoutMethod = profile?.payoutMethods[0];
+  const verified = profile?.kycStatus === "VERIFIED";
   const canWithdraw =
-    !frozen &&
-    profile?.kycStatus === "VERIFIED" &&
-    !!payoutMethod &&
-    balance >= minPayout;
+    !frozen && verified && !!payoutMethod && balance >= minPayout;
+  // P2P send: only when licensed feature is on, sender is verified, funds exist.
+  const canSend = !frozen && p2pEnabled && verified && balance > 0;
 
   return (
     <div className="space-y-6">
@@ -113,6 +123,7 @@ export default async function WalletPage() {
               )}
             />
           ) : null}
+          {canSend ? <WalletSendForm balance={balance} /> : null}
         </div>
       )}
 

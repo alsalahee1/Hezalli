@@ -157,6 +157,68 @@ describe("wallet top-up ledger (Step 19.3)", () => {
   });
 });
 
+describe("P2P wallet transfer (Step 19.5+)", () => {
+  it("moves funds between two wallets, both ledgers consistent", async () => {
+    const fx = await makeFixture();
+    try {
+      // Seed the sender (buyer) with $50 and prepare the recipient (seller).
+      const fromWalletId = await getWalletId(fx.buyerId);
+      const toWalletId = await getWalletId(fx.sellerUserId);
+      await prisma.walletEntry.create({
+        data: { walletId: fromWalletId, type: "TOP_UP", amountUsd: 50 },
+      });
+      await recomputeWalletBalance(fx.buyerId);
+
+      // Mirror sendWalletFunds' core: debit sender, credit recipient.
+      await prisma.$transaction(async (tx) => {
+        const upd = await tx.wallet.updateMany({
+          where: { id: fromWalletId, availableUsd: { gte: 30 } },
+          data: { availableUsd: { decrement: 30 } },
+        });
+        expect(upd.count).toBe(1);
+        const tr = await tx.walletTransfer.create({
+          data: { fromWalletId, toWalletId, amountUsd: 30 },
+        });
+        await creditWalletTx(tx, fromWalletId, {
+          type: "TRANSFER_OUT",
+          amountUsd: -30,
+          note: tr.id,
+        });
+        await creditWalletTx(tx, toWalletId, {
+          type: "TRANSFER_IN",
+          amountUsd: 30,
+          note: tr.id,
+        });
+      });
+      await recomputeWalletBalance(fx.buyerId);
+      await recomputeWalletBalance(fx.sellerUserId);
+
+      expect((await getWalletView(fx.buyerId)).balance).toBe(20);
+      expect((await getWalletView(fx.sellerUserId)).balance).toBe(30);
+    } finally {
+      await prisma.walletTransfer
+        .deleteMany({
+          where: {
+            OR: [
+              { fromWallet: { userId: fx.buyerId } },
+              { toWallet: { userId: fx.sellerUserId } },
+            ],
+          },
+        })
+        .catch(() => {});
+      for (const uid of [fx.buyerId, fx.sellerUserId]) {
+        await prisma.walletEntry
+          .deleteMany({ where: { wallet: { userId: uid } } })
+          .catch(() => {});
+        await prisma.wallet
+          .deleteMany({ where: { userId: uid } })
+          .catch(() => {});
+      }
+      await fx.cleanup();
+    }
+  });
+});
+
 describe("seller earnings → wallet bridge (Step 19.5+)", () => {
   it("debits the seller ledger and credits the wallet by the same amount", async () => {
     const fx = await makeFixture({ price: 100, commissionRate: 0.1 });

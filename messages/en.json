@@ -1414,7 +1414,9 @@
     "err_badWalletLimits": "Wallet limits must be non-negative and min ≤ max ≤ cap.",
     "walletCashback": "Wallet cashback (%)",
     "walletCashbackHint": "Credited to the buyer wallet on order completion (0 = off)",
-    "err_badCashback": "Cashback must be between 0 and 100."
+    "err_badCashback": "Cashback must be between 0 and 100.",
+    "walletP2p": "Enable wallet transfers (P2P)",
+    "walletP2pHint": "⚠️ Money transmission — licensed only. Keep OFF until authorized."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1654,9 +1656,23 @@
     "withdrawTo": "Sending to",
     "withdrawSubmit": "Request withdrawal",
     "pendingWithdrawalsTitle": "Pending withdrawals",
-    "err_notVerified": "Withdrawals require a verified account.",
+    "err_notVerified": "Sending requires a verified account.",
     "err_noMethod": "Add a payout method first.",
     "err_insufficient": "That is more than your available balance.",
-    "sellerEarnings": "Seller earnings"
+    "sellerEarnings": "Seller earnings",
+    "send": "Send",
+    "sendTitle": "Send to a user",
+    "sendDesc": "Transfer wallet funds to another Hezalli user, instantly.",
+    "sendRecipient": "Recipient email or phone",
+    "sendAmount": "Amount (max {balance})",
+    "sendNote": "Note (optional)",
+    "sendSubmit": "Send funds",
+    "transferOut": "Sent to user",
+    "transferIn": "Received from user",
+    "err_disabled": "Transfers are not available right now.",
+    "err_recipientRequired": "Enter a recipient.",
+    "err_recipientNotFound": "No user found with that email or phone.",
+    "err_cannotSendSelf": "You can’t send funds to yourself.",
+    "err_recipientUnavailable": "That recipient can’t receive funds right now."
   }
 }

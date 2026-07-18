@@ -1414,7 +1414,9 @@
     "err_badWalletLimits": "يجب أن تكون حدود المحفظة غير سالبة وأن يكون الأدنى ≤ الأقصى ≤ السقف.",
     "walletCashback": "استرداد نقدي للمحفظة (%)",
     "walletCashbackHint": "يُضاف إلى محفظة المشتري عند إتمام الطلب (0 = معطّل)",
-    "err_badCashback": "يجب أن يكون الاسترداد بين 0 و100."
+    "err_badCashback": "يجب أن يكون الاسترداد بين 0 و100.",
+    "walletP2p": "تفعيل تحويلات المحفظة (بين المستخدمين)",
+    "walletP2pHint": "⚠️ تحويل أموال — يتطلب ترخيصاً. أبقِه معطّلاً حتى الحصول على الإذن."
   },
   "Vouchers": {
     "platformTitle": "قسائم المنصة",
@@ -1654,9 +1656,23 @@
     "withdrawTo": "الإرسال إلى",
     "withdrawSubmit": "طلب السحب",
     "pendingWithdrawalsTitle": "عمليات سحب قيد المعالجة",
-    "err_notVerified": "يتطلب السحب حساباً موثّقاً.",
+    "err_notVerified": "يتطلب الإرسال حساباً موثّقاً.",
     "err_noMethod": "أضف طريقة دفع أولاً.",
     "err_insufficient": "هذا أكثر من رصيدك المتاح.",
-    "sellerEarnings": "أرباح البائع"
+    "sellerEarnings": "أرباح البائع",
+    "send": "إرسال",
+    "sendTitle": "إرسال إلى مستخدم",
+    "sendDesc": "حوّل أموال المحفظة إلى مستخدم آخر في هزلي فوراً.",
+    "sendRecipient": "بريد أو هاتف المستلم",
+    "sendAmount": "المبلغ (بحد أقصى {balance})",
+    "sendNote": "ملاحظة (اختياري)",
+    "sendSubmit": "إرسال الأموال",
+    "transferOut": "أُرسل إلى مستخدم",
+    "transferIn": "استُلم من مستخدم",
+    "err_disabled": "التحويلات غير متاحة حالياً.",
+    "err_recipientRequired": "أدخل المستلم.",
+    "err_recipientNotFound": "لا يوجد مستخدم بهذا البريد أو الهاتف.",
+    "err_cannotSendSelf": "لا يمكنك إرسال أموال إلى نفسك.",
+    "err_recipientUnavailable": "لا يمكن لهذا المستلم استلام الأموال حالياً."
   }
 }

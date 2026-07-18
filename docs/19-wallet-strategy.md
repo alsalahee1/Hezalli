@@ -327,8 +327,15 @@ Lowest value-per-risk. Ship this first.
 > bridges the two ledgers — a `WALLET_TRANSFER` debit on the seller balance and a
 > `SELLER_EARNINGS` credit on the wallet, in one transaction — without merging or
 > refactoring either. The seller then has one balance to spend, top up, or cash
-> out. Remaining 19.5+: **P2P transfer — licensed only**, gate behind the e-money
-> authorization.
+> out.
+>
+> **P2P transfer (built, LICENSED ONLY):** a VERIFIED user can send wallet funds
+> to another user by email/phone (`sendWalletFunds`, `lib/actions/wallet-p2p.ts`)
+> — sender debited atomically, recipient credited, a `WalletTransfer` row for
+> audit. It is **money transmission**, so it ships **off** behind the
+> `wallet_p2p_enabled` admin setting (default false, flagged in the settings UI)
+> and must not be enabled without the appropriate money-transmitter / e-money
+> licence.
 
 ---
 
@@ -342,7 +349,7 @@ Lowest value-per-risk. Ship this first.
 | 19.4 Cash-out | Withdrawal | **High — legal first** | ✅ built, ⚠️ legal-gated |
 | 19.5 Cashback | Growth loop | Low (off by default) | ✅ shipped |
 | 19.5+ Seller-wallet unify | One balance for sellers | Low | ✅ shipped |
-| 19.5+ P2P transfer | Growth loop | **Licensed only** | ⏭️ deferred |
+| 19.5+ P2P transfer | Growth loop | **Licensed only** | ✅ built, ⚠️ off by default |
 
 **Bottom line:** 19.1–19.5 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in

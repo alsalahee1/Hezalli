@@ -23,6 +23,9 @@ export type PlatformSettings = {
   // Wallet cashback (Step 19.5): fraction of items total credited to the
   // buyer's wallet on order completion. 0 = off (default).
   wallet_cashback_rate: number;
+  // Peer-to-peer wallet transfers (Step 19.5+). LICENSED ONLY — money
+  // transmission is regulated; keep false until authorized. Default off.
+  wallet_p2p_enabled: boolean;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -39,6 +42,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,
   wallet_cashback_rate: 0,
+  wallet_p2p_enabled: false,
 };
 
 export const SETTING_KEYS = Object.keys(

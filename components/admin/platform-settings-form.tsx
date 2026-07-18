@@ -38,6 +38,7 @@ export function PlatformSettingsForm({
     ),
     cod_enabled: current.cod_enabled,
     maintenance_mode: current.maintenance_mode,
+    wallet_p2p_enabled: current.wallet_p2p_enabled,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -61,6 +62,7 @@ export function PlatformSettingsForm({
         wallet_cashback_percent: Number(f.wallet_cashback_percent),
         cod_enabled: f.cod_enabled,
         maintenance_mode: f.maintenance_mode,
+        wallet_p2p_enabled: f.wallet_p2p_enabled,
       });
       if (res.error) setErr(res.error);
       else {
@@ -186,6 +188,16 @@ export function PlatformSettingsForm({
           <span className="text-muted-foreground text-xs">
             {t("maintenanceHint")}
           </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.wallet_p2p_enabled}
+            onChange={(e) => set("wallet_p2p_enabled", e.target.checked)}
+          />
+          {t("walletP2p")}
+          <span className="text-xs text-amber-600">{t("walletP2pHint")}</span>
         </label>
       </div>
 

@@ -23,6 +23,7 @@ export type SettingsInput = {
   wallet_topup_max_usd: number;
   wallet_balance_cap_usd: number;
   wallet_cashback_percent: number; // human percent, e.g. 2 = 2%
+  wallet_p2p_enabled: boolean;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -76,6 +77,7 @@ export async function savePlatformSettings(
     wallet_topup_max_usd: tMax,
     wallet_balance_cap_usd: tCap,
     wallet_cashback_rate: Math.round(cashPct * 100) / 10000,
+    wallet_p2p_enabled: Boolean(input.wallet_p2p_enabled),
   };
 
   await prisma.$transaction(
