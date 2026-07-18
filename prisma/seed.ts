@@ -17,6 +17,7 @@
 import "dotenv/config";
 
 import { CMS_SEEDS } from "../lib/cms-content";
+import { LAUNCH_CATEGORIES as CATEGORIES } from "../lib/launch-categories";
 import { hashPassword } from "../lib/password";
 import { prisma } from "../lib/prisma";
 import { slugify } from "../lib/slug";
@@ -75,64 +76,6 @@ async function clearDatabase() {
   await prisma.auditLog.deleteMany();
   await prisma.user.deleteMany();
 }
-
-const CATEGORIES = [
-  { en: "Electronics", ar: "إلكترونيات", slug: "electronics", icon: "💻" },
-  {
-    en: "Phones & Accessories",
-    ar: "الهواتف والإكسسوارات",
-    slug: "phones-accessories",
-    icon: "📱",
-  },
-  {
-    en: "Fashion & Apparel",
-    ar: "الأزياء والملابس",
-    slug: "fashion-apparel",
-    icon: "👗",
-  },
-  {
-    en: "Home & Kitchen",
-    ar: "المنزل والمطبخ",
-    slug: "home-kitchen",
-    icon: "🏠",
-  },
-  {
-    en: "Health & Beauty",
-    ar: "الصحة والجمال",
-    slug: "health-beauty",
-    icon: "💄",
-  },
-  {
-    en: "Groceries & Food",
-    ar: "البقالة والأغذية",
-    slug: "groceries-food",
-    icon: "🛒",
-  },
-  {
-    en: "Baby, Kids & Toys",
-    ar: "الأطفال والألعاب",
-    slug: "baby-kids-toys",
-    icon: "🧸",
-  },
-  {
-    en: "Books & Stationery",
-    ar: "الكتب والقرطاسية",
-    slug: "books-stationery",
-    icon: "📚",
-  },
-  {
-    en: "Sports & Outdoors",
-    ar: "الرياضة والهواء الطلق",
-    slug: "sports-outdoors",
-    icon: "⚽",
-  },
-  {
-    en: "Automotive & Tools",
-    ar: "السيارات والأدوات",
-    slug: "automotive-tools",
-    icon: "🚗",
-  },
-];
 
 const BRANDS = [
   "Samsung",

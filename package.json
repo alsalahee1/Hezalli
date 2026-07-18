@@ -20,6 +20,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:if-empty": "tsx prisma/seed-if-empty.ts",
+    "db:ensure-categories": "tsx prisma/ensure-categories.ts",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"
   },

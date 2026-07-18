@@ -38,7 +38,7 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: builder
-    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed-if-empty.ts"
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed-if-empty.ts && npx tsx prisma/ensure-categories.ts"
     environment:
       DATABASE_URL: ${DATABASE_URL}
     networks:
