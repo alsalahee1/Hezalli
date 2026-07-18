@@ -1,0 +1,183 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+
+import { savePlatformSettings } from "@/lib/actions/settings";
+import type { PlatformSettings } from "@/lib/settings";
+import { useRouter } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+export function PlatformSettingsForm({
+  current,
+}: {
+  current: PlatformSettings;
+}) {
+  const t = useTranslations("AdminSettings");
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const [f, setF] = useState({
+    platform_name: current.platform_name,
+    platform_logo: current.platform_logo,
+    commission_percent: String(
+      Math.round(current.commission_rate * 10000) / 100,
+    ),
+    return_window_days: String(current.return_window_days),
+    return_response_days: String(current.return_response_days),
+    auto_complete_days: String(current.auto_complete_days),
+    min_payout_usd: String(current.min_payout_usd),
+    cod_enabled: current.cod_enabled,
+    maintenance_mode: current.maintenance_mode,
+  });
+  const set = (k: keyof typeof f, v: string | boolean) => {
+    setF((s) => ({ ...s, [k]: v }));
+    setDone(false);
+  };
+
+  const submit = () =>
+    start(async () => {
+      setErr(null);
+      const res = await savePlatformSettings({
+        platform_name: f.platform_name,
+        platform_logo: f.platform_logo,
+        commission_percent: Number(f.commission_percent),
+        return_window_days: Number(f.return_window_days),
+        return_response_days: Number(f.return_response_days),
+        auto_complete_days: Number(f.auto_complete_days),
+        min_payout_usd: Number(f.min_payout_usd),
+        cod_enabled: f.cod_enabled,
+        maintenance_mode: f.maintenance_mode,
+      });
+      if (res.error) setErr(res.error);
+      else {
+        setDone(true);
+        router.refresh();
+      }
+    });
+
+  return (
+    <section className="space-y-5 rounded-lg border p-5">
+      <div>
+        <h2 className="font-medium">{t("platformTitle")}</h2>
+        <p className="text-muted-foreground text-sm">{t("platformDesc")}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t("name")}>
+          <Input
+            value={f.platform_name}
+            onChange={(e) => set("platform_name", e.target.value)}
+          />
+        </Field>
+        <Field label={t("logo")} hint={t("logoHint")}>
+          <Input
+            value={f.platform_logo}
+            onChange={(e) => set("platform_logo", e.target.value)}
+            dir="ltr"
+            placeholder="/logo.svg"
+          />
+        </Field>
+        <Field label={t("commission")} hint={t("commissionHint")}>
+          <Input
+            type="number"
+            value={f.commission_percent}
+            onChange={(e) => set("commission_percent", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("minPayout")} hint={t("minPayoutHint")}>
+          <Input
+            type="number"
+            value={f.min_payout_usd}
+            onChange={(e) => set("min_payout_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("returnWindow")} hint={t("daysHint")}>
+          <Input
+            type="number"
+            value={f.return_window_days}
+            onChange={(e) => set("return_window_days", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("returnResponse")} hint={t("daysHint")}>
+          <Input
+            type="number"
+            value={f.return_response_days}
+            onChange={(e) => set("return_response_days", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("autoComplete")} hint={t("daysHint")}>
+          <Input
+            type="number"
+            value={f.auto_complete_days}
+            onChange={(e) => set("auto_complete_days", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+      </div>
+
+      <div className="space-y-2 border-t pt-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.cod_enabled}
+            onChange={(e) => set("cod_enabled", e.target.checked)}
+          />
+          {t("codEnabled")}
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.maintenance_mode}
+            onChange={(e) => set("maintenance_mode", e.target.checked)}
+          />
+          {t("maintenance")}
+          <span className="text-muted-foreground text-xs">
+            {t("maintenanceHint")}
+          </span>
+        </label>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={submit} disabled={pending}>
+          {pending ? t("saving") : t("save")}
+        </Button>
+        {done ? (
+          <span className="text-sm text-emerald-600">{t("saved")}</span>
+        ) : null}
+        {err ? (
+          <span className="text-destructive text-sm">{t(`err_${err}`)}</span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+      {hint ? (
+        <span className="text-muted-foreground block text-xs">{hint}</span>
+      ) : null}
+    </label>
+  );
+}

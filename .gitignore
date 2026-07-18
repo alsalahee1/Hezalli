@@ -44,3 +44,11 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# Local storage driver (dev uploads)
+.uploads/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

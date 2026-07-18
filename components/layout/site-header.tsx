@@ -1,16 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, Search, ShoppingCart, Store, User, X } from "lucide-react";
+import { Menu, Store, User, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import type { NavCategory } from "@/lib/categories";
+import { CartButton } from "@/components/cart/cart-button";
+import { UserMenu } from "@/components/auth/user-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ChatIcon } from "@/components/chat/chat-icon";
 import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
 import { LanguageSwitcher } from "./language-switcher";
+import { SearchBar } from "./search-bar";
 
-export function SiteHeader() {
+type HeaderUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+export function SiteHeader({
+  user,
+  isSeller = false,
+  categories = [],
+}: {
+  user?: HeaderUser | null;
+  isSeller?: boolean;
+  categories?: NavCategory[];
+}) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -32,15 +52,7 @@ export function SiteHeader() {
           {c("appName")}
         </Link>
 
-        <div className="relative hidden flex-1 md:block">
-          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
-          <input
-            type="search"
-            placeholder={c("search")}
-            aria-label={c("search")}
-            className="bg-muted/40 focus-visible:ring-ring/50 w-full rounded-md border py-2 ps-9 pe-3 text-sm outline-none focus-visible:ring-[3px]"
-          />
-        </div>
+        <SearchBar className="relative hidden flex-1 md:block" />
 
         <div className="ms-auto flex items-center gap-1">
           <LanguageSwitcher />
@@ -50,37 +62,35 @@ export function SiteHeader() {
             asChild
             className="hidden sm:inline-flex"
           >
-            <Link href="/seller">
+            <Link href={isSeller ? "/seller" : "/sell"}>
               <Store className="size-4" />
-              {t("becomeSeller")}
+              {isSeller ? t("sellerCenter") : t("becomeSeller")}
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/account" aria-label={t("account")}>
-              <User className="size-5" />
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/cart" aria-label={t("cart")}>
-              <ShoppingCart className="size-5" />
-            </Link>
-          </Button>
+          {user ? (
+            <>
+              <ChatIcon variant="buyer" />
+              <NotificationBell variant="buyer" />
+              <UserMenu user={user} />
+            </>
+          ) : (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">
+                <User className="size-4" />
+                <span className="hidden sm:inline">{t("signIn")}</span>
+              </Link>
+            </Button>
+          )}
+          <CartButton />
         </div>
       </div>
 
       <div className="px-4 pb-3 md:hidden">
-        <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
-          <input
-            type="search"
-            placeholder={c("search")}
-            aria-label={c("search")}
-            className="bg-muted/40 focus-visible:ring-ring/50 w-full rounded-md border py-2 ps-9 pe-3 text-sm outline-none focus-visible:ring-[3px]"
-          />
-        </div>
+        <SearchBar className="relative" />
       </div>
 
       <CategoryNav
+        categories={categories}
         mobileOpen={menuOpen}
         onNavigate={() => setMenuOpen(false)}
       />

@@ -1,0 +1,118 @@
+"use server";
+
+import { headers } from "next/headers";
+import { AuthError } from "next-auth";
+import { getLocale } from "next-intl/server";
+
+import { signIn, signOut } from "@/auth";
+import { hashPassword } from "@/lib/password";
+import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
+import {
+  fieldErrors,
+  loginSchema,
+  registerSchema,
+} from "@/lib/validations/auth";
+
+// Best-effort client IP for rate-limiting (behind the platform's proxy).
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  const fwd = h.get("x-forwarded-for");
+  return (fwd?.split(",")[0] || h.get("x-real-ip") || "unknown").trim();
+}
+
+// Shape returned to the client forms (via useActionState). Message values are
+// i18n KEYS under the `Auth` namespace; the forms translate them.
+export type AuthFormState = {
+  errors?: Record<string, string>;
+  formError?: string;
+};
+
+function safeCallbackUrl(value: FormDataEntryValue | null): string | undefined {
+  // Only allow same-site relative paths to avoid open redirects.
+  const raw = typeof value === "string" ? value : "";
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  return undefined;
+}
+
+export async function authenticate(
+  _prev: AuthFormState | undefined,
+  formData: FormData,
+): Promise<AuthFormState> {
+  // Throttle brute-force: at most 8 attempts per IP per 5 minutes.
+  if (!rateLimit(`login:${await clientIp()}`, 8, 5 * 60_000).ok) {
+    return { formError: "tooManyAttempts" };
+  }
+
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    remember: formData.get("remember") === "on",
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+
+  const locale = await getLocale();
+  const redirectTo =
+    safeCallbackUrl(formData.get("callbackUrl")) ?? `/${locale}`;
+
+  try {
+    await signIn("credentials", {
+      email: parsed.data.email,
+      password: parsed.data.password,
+      redirectTo,
+    });
+  } catch (error) {
+    // A successful sign-in throws a NEXT_REDIRECT that must propagate.
+    if (error instanceof AuthError) return { formError: "invalidCredentials" };
+    throw error;
+  }
+  return {};
+}
+
+export async function registerUser(
+  _prev: AuthFormState | undefined,
+  formData: FormData,
+): Promise<AuthFormState> {
+  // Throttle account-creation abuse: at most 5 per IP per 15 minutes.
+  if (!rateLimit(`register:${await clientIp()}`, 5, 15 * 60_000).ok) {
+    return { formError: "tooManyAttempts" };
+  }
+
+  const parsed = registerSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+    acceptTerms: formData.get("acceptTerms") === "on",
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+
+  const { name, email, password } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) return { errors: { email: "emailTaken" } };
+
+  const locale = await getLocale();
+  const passwordHash = await hashPassword(password);
+  await prisma.user.create({
+    data: { name, email, passwordHash, roles: ["BUYER"], locale },
+  });
+
+  try {
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: `/${locale}`,
+    });
+  } catch (error) {
+    // Account was created; if auto-login fails, send them to log in manually.
+    if (error instanceof AuthError)
+      return { formError: "registeredLoginManually" };
+    throw error;
+  }
+  return {};
+}
+
+export async function signOutAction(): Promise<void> {
+  await signOut({ redirectTo: "/" });
+}

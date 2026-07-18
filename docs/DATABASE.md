@@ -34,6 +34,7 @@ enum AddressType     { SHIPPING STORE_PICKUP }
 enum KycStatus       { NONE PENDING VERIFIED REJECTED }
 enum StoreStatus     { ACTIVE SUSPENDED CLOSED }
 enum ProductStatus   { DRAFT ACTIVE HIDDEN REMOVED }
+enum ProductCondition { NEW USED }
 
 enum OrderStatus     { PENDING CONFIRMED PROCESSING SHIPPED DELIVERED COMPLETED CANCELLED REFUNDED }
 enum SubOrderStatus  { PENDING CONFIRMED PROCESSING SHIPPED DELIVERED COMPLETED CANCELLED RETURNED REFUNDED }
@@ -70,6 +71,7 @@ model User {
   roles         Role[]   @default([BUYER])
   locale        String   @default("ar")    // ar | en
   isSuspended   Boolean  @default(false)
+  deletedAt     DateTime?                   // soft-delete (account deletion)
 
   addresses     Address[]
   sellerProfile SellerProfile?
@@ -168,6 +170,7 @@ model Category {
   slug     String     @unique
   icon     String?
   position Int        @default(0)
+  isActive Boolean    @default(true)          // admin can hide from the storefront
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")
   products Product[]
@@ -190,7 +193,11 @@ model Product {
   slug        String        @unique
   description Json?                            // { ar, en }
   status      ProductStatus @default(ACTIVE)  // instant publish
+  condition   ProductCondition @default(NEW)  // NEW | USED (eBay-style)
   basePrice   Decimal       @db.Decimal(12,2) // USD
+  lowStockThreshold Int     @default(0)       // low-stock badge threshold
+  weightGrams Int?                            // shipping (Phase 10)
+  dimensions  Json?                           // { l, w, h } cm — shipping
   moderatedBy String?
   moderationReason String?
   ratingAvg   Float         @default(0)
@@ -209,6 +216,7 @@ model ProductVariant {
   name       String                           // e.g. "Red / L"
   attributes Json?                            // { color, size, ... }
   price      Decimal @db.Decimal(12,2)        // USD (overrides basePrice)
+  compareAtPrice Decimal? @db.Decimal(12,2)   // "was" price for discounts
   stock      Int     @default(0)
   isActive   Boolean @default(true)
   product    Product @relation(fields: [productId], references: [id])

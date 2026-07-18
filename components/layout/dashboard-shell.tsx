@@ -4,7 +4,12 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  Banknote,
+  BarChart3,
+  History,
+  Images,
   LayoutDashboard,
+  MapPin,
   Menu,
   MessageSquare,
   Package,
@@ -13,14 +18,21 @@ import {
   Shapes,
   ShieldAlert,
   ShoppingBag,
+  Star,
   Store,
   Tag,
+  Tags,
+  Truck,
   Users,
+  Wallet,
+  Zap,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ChatIcon } from "@/components/chat/chat-icon";
 
 type NavItem = { href: string; key: string; icon: LucideIcon };
 
@@ -28,6 +40,7 @@ const SELLER_NAV: NavItem[] = [
   { href: "/seller", key: "dashboard", icon: LayoutDashboard },
   { href: "/seller/products", key: "products", icon: Package },
   { href: "/seller/orders", key: "orders", icon: ShoppingBag },
+  { href: "/seller/finance", key: "finance", icon: Wallet },
   { href: "/seller/returns", key: "returns", icon: ArrowLeftRight },
   { href: "/seller/chat", key: "chat", icon: MessageSquare },
   { href: "/seller/promotions", key: "promotions", icon: Tag },
@@ -36,14 +49,24 @@ const SELLER_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", key: "dashboard", icon: LayoutDashboard },
+  { href: "/admin/reports", key: "reports", icon: BarChart3 },
   { href: "/admin/users", key: "users", icon: Users },
   { href: "/admin/sellers", key: "sellers", icon: Store },
   { href: "/admin/products", key: "products", icon: Package },
   { href: "/admin/orders", key: "orders", icon: ShoppingBag },
+  { href: "/admin/reviews", key: "reviews", icon: Star },
+  { href: "/admin/payments", key: "payments", icon: Wallet },
+  { href: "/admin/payouts", key: "payouts", icon: Banknote },
+  { href: "/admin/shipping-zones", key: "shippingZones", icon: MapPin },
+  { href: "/admin/carriers", key: "carriers", icon: Truck },
   { href: "/admin/disputes", key: "disputes", icon: ShieldAlert },
   { href: "/admin/categories", key: "categories", icon: Shapes },
+  { href: "/admin/brands", key: "brands", icon: Tags },
   { href: "/admin/promotions", key: "promotions", icon: Tag },
+  { href: "/admin/flash-sales", key: "flashSales", icon: Zap },
   { href: "/admin/pages", key: "pages", icon: ScrollText },
+  { href: "/admin/banners", key: "banners", icon: Images },
+  { href: "/admin/audit", key: "audit", icon: History },
   { href: "/admin/settings", key: "settings", icon: Settings },
 ];
 
@@ -126,12 +149,16 @@ export function DashboardShell({
             <Menu className="size-5" />
           </button>
           <span className="font-semibold md:hidden">{t(titleKey)}</span>
-          <Link
-            href="/"
-            className="text-muted-foreground hover:text-foreground ms-auto text-sm hover:underline"
-          >
-            Hezalli
-          </Link>
+          <div className="ms-auto flex items-center gap-1">
+            {variant === "seller" ? <ChatIcon variant="seller" /> : null}
+            <NotificationBell variant={variant} />
+            <Link
+              href="/"
+              className="text-muted-foreground hover:text-foreground text-sm hover:underline"
+            >
+              Hezalli
+            </Link>
+          </div>
         </div>
         <main className="flex-1 p-6">{children}</main>
       </div>
