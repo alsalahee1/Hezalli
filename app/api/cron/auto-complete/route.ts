@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { autoCompleteDeliveredOrders } from "@/lib/actions/completion";
+import { expireStaleOrders } from "@/lib/actions/payment";
 import { autoApproveReturns } from "@/lib/actions/return";
 
 // Scheduled endpoint (e.g. Vercel Cron) that completes delivered orders past
@@ -17,11 +18,12 @@ async function run(req: Request) {
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const [completed, autoApproved] = await Promise.all([
+  const [completed, autoApproved, expired] = await Promise.all([
     autoCompleteDeliveredOrders(),
     autoApproveReturns(),
+    expireStaleOrders(),
   ]);
-  return NextResponse.json({ ok: true, completed, autoApproved });
+  return NextResponse.json({ ok: true, completed, autoApproved, expired });
 }
 
 export async function GET(req: Request) {

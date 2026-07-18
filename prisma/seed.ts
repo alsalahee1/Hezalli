@@ -723,6 +723,19 @@ type SeededProduct = {
 };
 
 async function main() {
+  // Safety guard: this seed WIPES the database (clearDatabase) and inserts fake
+  // test data. It must never run against production. Refuse unless explicitly
+  // allowed via SEED_ALLOWED=true, and always refuse when NODE_ENV=production.
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.SEED_ALLOWED !== "true"
+  ) {
+    console.error(
+      "❌ Refusing to seed: NODE_ENV=production. Set SEED_ALLOWED=true to override (destructive — clears all data).",
+    );
+    process.exit(1);
+  }
+
   // Dev login password shared by every seeded user (see file header). Hashed
   // via the same helper the app uses so seeded users can sign in.
   const PASSWORD = await hashPassword("hezalli123");
