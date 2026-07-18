@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   Banknote,
+  BarChart3,
   Images,
   LayoutDashboard,
   MapPin,
@@ -47,6 +48,7 @@ const SELLER_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", key: "dashboard", icon: LayoutDashboard },
+  { href: "/admin/reports", key: "reports", icon: BarChart3 },
   { href: "/admin/users", key: "users", icon: Users },
   { href: "/admin/sellers", key: "sellers", icon: Store },
   { href: "/admin/products", key: "products", icon: Package },

@@ -444,7 +444,8 @@
     "shippingZones": "Shipping zones",
     "carriers": "Carriers",
     "reviews": "Reviews",
-    "flashSales": "Flash sales"
+    "flashSales": "Flash sales",
+    "reports": "Reports"
   },
   "AdminProducts": {
     "title": "Products",
@@ -1359,5 +1360,35 @@
     "title": "Deals",
     "desc": "Discounted products across Hezalli.",
     "empty": "No deals right now — check back soon!"
+  },
+  "AdminDash": {
+    "title": "Dashboard",
+    "subtitle": "Platform overview for this month.",
+    "viewReports": "View reports →",
+    "gvmMonth": "GMV (month)",
+    "gmvMonth": "GMV (month)",
+    "today": "today",
+    "orders": "Orders (month)",
+    "newUsers": "New users",
+    "newSellers": "New sellers",
+    "disputes": "Active disputes",
+    "payouts": "Pending payouts",
+    "salesOverTime": "Sales (last 14 days)",
+    "ordersByStatus": "Orders by status",
+    "noData": "No data yet."
+  },
+  "AdminReports": {
+    "title": "Reports",
+    "desc": "Sales, commission, refunds and payouts by date range.",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply",
+    "exportCsv": "Export CSV",
+    "sales": "Sales",
+    "orders": "Orders",
+    "commission": "Commission earned",
+    "discounts": "Discounts",
+    "refunds": "Refunds",
+    "payouts": "Payouts paid"
   }
 }
