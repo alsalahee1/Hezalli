@@ -85,9 +85,12 @@ export async function applyRefund(
     select: { id: true },
   });
   const balanceId = await getBalanceId(sub.store.sellerId);
-  // Ensure the buyer's wallet exists before the transaction so we can write an
-  // entry into it atomically with the refund.
-  const walletId = opts.toWallet ? await getWalletId(sub.order.buyerId) : null;
+  // Wallet-paid orders always refund back to the wallet (that is where the
+  // money came from); other methods do so only when the caller asks. Ensure the
+  // wallet row exists before the transaction so we can write into it atomically.
+  const refundToWallet =
+    opts.toWallet || sub.order.paymentMethod === "HEZALLI_BALANCE";
+  const walletId = refundToWallet ? await getWalletId(sub.order.buyerId) : null;
 
   let refundId = "";
   await prisma.$transaction(async (tx) => {
@@ -209,7 +212,7 @@ export async function applyRefund(
         userId: sub.order.buyerId,
         type: "PAYMENT",
         title: bAr ? "تم استرداد مبلغ" : "Refund issued",
-        body: opts.toWallet
+        body: walletId
           ? bAr
             ? `تمت إضافة ${amount.toFixed(2)}$ إلى محفظتك.`
             : `$${amount.toFixed(2)} was added to your wallet.`

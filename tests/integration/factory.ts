@@ -11,7 +11,8 @@ const uid = (p: string) => {
   return `${p}-t${Date.now().toString(36)}-${seq}`;
 };
 
-export type PaymentChoice = "COD" | "BANK_TRANSFER" | "USDT" | "WALLET";
+export type PaymentChoice =
+  "COD" | "BANK_TRANSFER" | "USDT" | "LOCAL_WALLET" | "HEZALLI_BALANCE";
 
 export async function makeFixture(
   opts: { stock?: number; price?: number; commissionRate?: number } = {},

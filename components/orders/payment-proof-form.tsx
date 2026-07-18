@@ -14,7 +14,7 @@ export function PaymentProofForm({
   paymentStatus,
 }: {
   orderId: string;
-  method: "BANK_TRANSFER" | "USDT" | "WALLET";
+  method: "BANK_TRANSFER" | "USDT" | "LOCAL_WALLET";
   paymentStatus: string;
 }) {
   const t = useTranslations("Payment");

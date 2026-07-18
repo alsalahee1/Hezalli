@@ -29,12 +29,14 @@ export function CheckoutFlow({
   shippingByAddress,
   codEnabled = true,
   points = 0,
+  walletBalance = 0,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
   shippingByAddress: Record<string, Record<string, number>>;
   codEnabled?: boolean;
   points?: number;
+  walletBalance?: number;
 }) {
   const t = useTranslations("Checkout");
   const locale = useLocale();
@@ -51,19 +53,6 @@ export function CheckoutFlow({
   const [couponErr, setCouponErr] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [usePoints, setUsePoints] = useState(false);
-
-  const METHODS: {
-    key: PaymentMethodChoice;
-    label: string;
-    hint: string;
-  }[] = [
-    ...(codEnabled
-      ? [{ key: "COD" as const, label: t("cod"), hint: t("codHint") }]
-      : []),
-    { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
-    { key: "USDT", label: t("usdt"), hint: t("usdtHint") },
-    { key: "WALLET", label: t("wallet"), hint: t("walletHint") },
-  ];
 
   const groups = useMemo(() => {
     const map = new Map<
@@ -98,6 +87,40 @@ export function CheckoutFlow({
     0,
     itemsTotal + shippingTotal - discount - redeem.discountUsd,
   );
+
+  // HezalliPay is offered only when the wallet can cover the whole order; it is
+  // shown disabled (with the balance) otherwise so buyers know it exists.
+  const walletAffordable = walletBalance >= grandTotal && grandTotal > 0;
+  const METHODS: {
+    key: PaymentMethodChoice;
+    label: string;
+    hint: string;
+    disabled?: boolean;
+  }[] = [
+    ...(codEnabled
+      ? [{ key: "COD" as const, label: t("cod"), hint: t("codHint") }]
+      : []),
+    {
+      key: "HEZALLI_BALANCE",
+      label: t("hezalliBalance"),
+      hint: t("hezalliBalanceHint", {
+        balance: formatUsd(walletBalance, locale),
+      }),
+      disabled: !walletAffordable,
+    },
+    { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
+    { key: "USDT", label: t("usdt"), hint: t("usdtHint") },
+    { key: "LOCAL_WALLET", label: t("wallet"), hint: t("walletHint") },
+  ];
+
+  // If the selected wallet method became unaffordable (a coupon/points change
+  // raised the total), fall back to the first available method for submission
+  // without discarding the user's explicit choice.
+  const fallbackMethod: PaymentMethodChoice = codEnabled
+    ? "COD"
+    : "BANK_TRANSFER";
+  const effectiveMethod: PaymentMethodChoice =
+    method === "HEZALLI_BALANCE" && !walletAffordable ? fallbackMethod : method;
 
   const applyCoupon = async () => {
     setCouponErr(null);
@@ -143,7 +166,7 @@ export function CheckoutFlow({
         variantId: l.variantId,
         quantity: l.quantity,
       })),
-      paymentMethod: method,
+      paymentMethod: effectiveMethod,
       couponCode: appliedCode || undefined,
       redeemPoints: redeem.pointsUsed || undefined,
     });
@@ -153,11 +176,13 @@ export function CheckoutFlow({
       return;
     }
     // Full navigation so the cart provider re-reads the now-empty server cart.
-    // Prepaid orders go to the order page to submit payment proof.
-    const dest =
-      method === "COD"
-        ? `/${locale}/checkout/success?order=${res.orderId}`
-        : `/${locale}/account/orders/${res.orderId}`;
+    // Instantly-settled orders (COD, wallet) go to the success page; manual
+    // prepaid orders go to the order page to submit payment proof.
+    const instant =
+      effectiveMethod === "COD" || effectiveMethod === "HEZALLI_BALANCE";
+    const dest = instant
+      ? `/${locale}/checkout/success?order=${res.orderId}`
+      : `/${locale}/account/orders/${res.orderId}`;
     window.location.assign(dest);
   };
 
@@ -255,17 +280,21 @@ export function CheckoutFlow({
               <label
                 key={m.key}
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm",
-                  method === m.key
+                  "flex items-center gap-3 rounded-md border p-3 text-sm",
+                  m.disabled
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer",
+                  effectiveMethod === m.key
                     ? "border-primary bg-primary/5"
-                    : "hover:border-muted-foreground/40",
+                    : !m.disabled && "hover:border-muted-foreground/40",
                 )}
               >
                 <input
                   type="radio"
                   name="method"
                   className="size-4"
-                  checked={method === m.key}
+                  checked={effectiveMethod === m.key}
+                  disabled={m.disabled}
                   onChange={() => setMethod(m.key)}
                 />
                 <span className="font-medium">{m.label}</span>
@@ -273,7 +302,8 @@ export function CheckoutFlow({
               </label>
             ))}
           </div>
-          {method !== "COD" ? (
+          {effectiveMethod !== "COD" &&
+          effectiveMethod !== "HEZALLI_BALANCE" ? (
             <p className="text-muted-foreground mt-2 text-xs">
               {t("prepaidNote")}
             </p>

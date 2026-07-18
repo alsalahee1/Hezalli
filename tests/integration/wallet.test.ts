@@ -43,6 +43,36 @@ describe("refund to wallet (Step 19.1)", () => {
     }
   });
 
+  it("auto-refunds a wallet-paid order back to the wallet", async () => {
+    // A HEZALLI_BALANCE order must return funds to the wallet even when the
+    // caller does not pass toWallet — that is where the money came from.
+    const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
+    try {
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "HEZALLI_BALANCE",
+      });
+      await settleSubOrder(subOrderId);
+
+      const res = await applyRefund(subOrderId, {
+        reason: "wallet order",
+        actor: "admin",
+        // note: no toWallet flag
+      });
+      expect(res.amount).toBe(100);
+
+      const { balance } = await getWalletView(fx.buyerId);
+      expect(balance).toBe(100);
+    } finally {
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await fx.cleanup();
+    }
+  });
+
   it("credits only a partial amount when asked", async () => {
     const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
     try {

@@ -85,9 +85,10 @@ enum SubOrderStatus {
 
 enum PaymentMethod {
   COD
-  WALLET
+  LOCAL_WALLET // external Yemeni rails: Jawali, Jaib, Floosak, Kuraimi (was WALLET)
   BANK_TRANSFER
   USDT
+  HEZALLI_BALANCE // pay from the internal HezalliPay wallet — instant, no admin confirm
 }
 
 enum PaymentStatus {

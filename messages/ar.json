@@ -836,7 +836,10 @@
     "redeemPoints": "استبدل {points} نقطة (حتى −{usd})",
     "pointsDiscount": "النقاط ({points})",
     "err_pointsInsufficient": "ليس لديك نقاط كافية.",
-    "err_pointsAndCoupon": "لا يمكنك استخدام النقاط وقسيمة في الطلب نفسه."
+    "err_pointsAndCoupon": "لا يمكنك استخدام النقاط وقسيمة في الطلب نفسه.",
+    "hezalliBalance": "رصيد HezalliPay",
+    "hezalliBalanceHint": "دفع فوري · الرصيد: {balance}",
+    "err_insufficientBalance": "رصيد محفظتك لا يغطي هذا الطلب."
   },
   "Orders": {
     "title": "طلباتي",
@@ -873,7 +876,7 @@
     "shipTo": "التوصيل إلى",
     "payment": "الدفع",
     "method_COD": "الدفع عند الاستلام",
-    "method_WALLET": "محفظة",
+    "method_LOCAL_WALLET": "محفظة محلية",
     "method_BANK_TRANSFER": "تحويل بنكي",
     "method_USDT": "USDT",
     "itemsTotal": "المنتجات",
@@ -900,7 +903,8 @@
     "shipStatus_DELIVERED": "تم التوصيل",
     "shipStatus_FAILED": "فشل التوصيل",
     "shipStatus_RETURNED": "مُرتجع",
-    "contactSeller": "تواصل مع البائع"
+    "contactSeller": "تواصل مع البائع",
+    "method_HEZALLI_BALANCE": "محفظة HezalliPay"
   },
   "Invoice": {
     "invoice": "فاتورة",
@@ -976,8 +980,8 @@
     "dest_BANK_TRANSFER_body": "بنك هزلي · حساب 1234567890\nاستخدم رقم طلبك كمرجع للتحويل.",
     "dest_USDT_title": "USDT (تيثر)",
     "dest_USDT_body": "عنوان TRC20: TXxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nأرسل المبلغ بدقة ثم الصق رقم العملية.",
-    "dest_WALLET_title": "محفظة محلية",
-    "dest_WALLET_body": "جوالي / الكريمي: 77XXXXXXX\nأرسل المبلغ والصق مرجع التحويل.",
+    "dest_LOCAL_WALLET_title": "محفظة محلية",
+    "dest_LOCAL_WALLET_body": "جوالي / الكريمي: 77XXXXXXX\nأرسل المبلغ والصق مرجع التحويل.",
     "awaiting": "تم إرسال دفعتك وهي بانتظار التأكيد.",
     "reference": "مرجع التحويل",
     "txHash": "رقم العملية",
@@ -994,13 +998,14 @@
     "empty": "لا توجد مدفوعات بانتظار التأكيد.",
     "method_BANK_TRANSFER": "تحويل بنكي",
     "method_USDT": "USDT",
-    "method_WALLET": "محفظة",
+    "method_LOCAL_WALLET": "محفظة محلية",
     "method_COD": "الدفع عند الاستلام",
     "reference": "المرجع",
     "confirm": "تأكيد الدفع",
     "reject": "رفض",
     "rejectReason": "السبب (اختياري)",
-    "confirmReject": "تأكيد الرفض"
+    "confirmReject": "تأكيد الرفض",
+    "method_HEZALLI_BALANCE": "محفظة HezalliPay"
   },
   "SellerFinance": {
     "title": "المالية",
