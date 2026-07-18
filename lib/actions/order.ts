@@ -8,10 +8,11 @@ import { localizedName } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import { standardShipping } from "@/lib/shipping";
 
+export type PaymentMethodChoice = "COD" | "BANK_TRANSFER" | "USDT" | "WALLET";
 export type PlaceOrderInput = {
   addressId: string;
   items: { variantId: string; quantity: number }[];
-  paymentMethod: "COD";
+  paymentMethod: PaymentMethodChoice;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
 
@@ -29,6 +30,11 @@ export async function placeOrder(
 
   const items = input.items.filter((i) => i.quantity > 0);
   if (items.length === 0) return { error: "emptyOrder" };
+
+  // Prepaid methods (bank / USDT / wallet) start unpaid: the order waits at
+  // PENDING until the buyer submits proof and an admin confirms it. COD is
+  // confirmed immediately (cash collected on delivery).
+  const prepaid = input.paymentMethod !== "COD";
 
   const address = await prisma.address.findFirst({
     where: { id: input.addressId, userId },
@@ -113,12 +119,13 @@ export async function placeOrder(
         if (upd.count !== 1) throw new StockError(it.variantId);
       }
 
+      const orderStatus = prepaid ? "PENDING" : "CONFIRMED";
       const order = await tx.order.create({
         data: {
           buyer: { connect: { id: userId } },
           address: { connect: { id: input.addressId } },
-          status: "CONFIRMED", // COD needs no prepayment
-          paymentMethod: "COD",
+          status: orderStatus,
+          paymentMethod: input.paymentMethod,
           itemsTotal,
           shippingTotal,
           grandTotal,
@@ -128,7 +135,7 @@ export async function placeOrder(
           subOrders: {
             create: groups.map((g) => ({
               store: { connect: { id: g.storeId } },
-              status: "CONFIRMED",
+              status: orderStatus,
               itemsTotal: g.itemsTotal,
               shippingTotal: g.shipping,
               commissionRate: COMMISSION_RATE,
@@ -148,7 +155,7 @@ export async function placeOrder(
           },
           payment: {
             create: {
-              method: "COD",
+              method: input.paymentMethod,
               status: "PENDING",
               amountUsd: grandTotal,
             },
@@ -156,9 +163,11 @@ export async function placeOrder(
           history: {
             create: [
               {
-                status: "CONFIRMED",
+                status: orderStatus,
                 actor: "buyer",
-                note: "Order placed (COD)",
+                note: prepaid
+                  ? "Order placed (awaiting payment)"
+                  : "Order placed (COD)",
               },
             ],
           },
@@ -166,32 +175,46 @@ export async function placeOrder(
         select: { id: true },
       });
 
-      // Notify each seller + the buyer (in-app; email lands with Phase 3.2).
-      for (const g of groups) {
-        const seller = sellerByStore.get(g.storeId);
-        if (!seller) continue;
-        const ar = seller.locale === "ar";
-        await tx.notification.create({
-          data: {
-            userId: seller.id,
-            type: "ORDER",
-            title: ar ? "طلب جديد" : "New order",
-            body: ar
-              ? `لديك طلب جديد بقيمة ${g.itemsTotal.toFixed(2)}$.`
-              : `You have a new order worth $${g.itemsTotal.toFixed(2)}.`,
-            data: { orderId: order.id },
-          },
-        });
+      // COD orders notify sellers immediately; prepaid orders notify sellers
+      // only once payment is confirmed (see confirmPayment).
+      if (!prepaid) {
+        for (const g of groups) {
+          const seller = sellerByStore.get(g.storeId);
+          if (!seller) continue;
+          const ar = seller.locale === "ar";
+          await tx.notification.create({
+            data: {
+              userId: seller.id,
+              type: "ORDER",
+              title: ar ? "طلب جديد" : "New order",
+              body: ar
+                ? `لديك طلب جديد بقيمة ${g.itemsTotal.toFixed(2)}$.`
+                : `You have a new order worth $${g.itemsTotal.toFixed(2)}.`,
+              data: { orderId: order.id },
+            },
+          });
+        }
       }
       await tx.notification.create({
         data: {
           userId,
-          type: "ORDER",
-          title: locale === "ar" ? "تم استلام طلبك" : "Order placed",
+          type: prepaid ? "PAYMENT" : "ORDER",
+          title:
+            locale === "ar"
+              ? prepaid
+                ? "طلبك بانتظار الدفع"
+                : "تم استلام طلبك"
+              : prepaid
+                ? "Complete your payment"
+                : "Order placed",
           body:
             locale === "ar"
-              ? `تم تأكيد طلبك بقيمة ${grandTotal.toFixed(2)}$ (الدفع عند الاستلام).`
-              : `Your order for $${grandTotal.toFixed(2)} is confirmed (cash on delivery).`,
+              ? prepaid
+                ? `أكمل دفع ${grandTotal.toFixed(2)}$ وأرسل إثبات الدفع.`
+                : `تم تأكيد طلبك بقيمة ${grandTotal.toFixed(2)}$ (الدفع عند الاستلام).`
+              : prepaid
+                ? `Complete your $${grandTotal.toFixed(2)} payment and submit proof.`
+                : `Your order for $${grandTotal.toFixed(2)} is confirmed (cash on delivery).`,
           data: { orderId: order.id },
         },
       });

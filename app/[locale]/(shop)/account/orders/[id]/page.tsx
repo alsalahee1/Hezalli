@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
+import { PaymentProofForm } from "@/components/orders/payment-proof-form";
 
 export default async function OrderDetailPage({
   params,
@@ -120,6 +121,17 @@ export default async function OrderDetailPage({
           </a>
         </Button>
       </div>
+
+      {/* Payment (unpaid prepaid orders) */}
+      {order.status === "PENDING" &&
+      order.paymentMethod !== "COD" &&
+      order.payment ? (
+        <PaymentProofForm
+          orderId={order.id}
+          method={order.paymentMethod as "BANK_TRANSFER" | "USDT" | "WALLET"}
+          paymentStatus={order.payment.status}
+        />
+      ) : null}
 
       {/* Timeline */}
       <section className="rounded-lg border p-4">

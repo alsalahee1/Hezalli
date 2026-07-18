@@ -18,6 +18,7 @@ import {
   Tag,
   Tags,
   Users,
+  Wallet,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -42,6 +43,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/sellers", key: "sellers", icon: Store },
   { href: "/admin/products", key: "products", icon: Package },
   { href: "/admin/orders", key: "orders", icon: ShoppingBag },
+  { href: "/admin/payments", key: "payments", icon: Wallet },
   { href: "/admin/disputes", key: "disputes", icon: ShieldAlert },
   { href: "/admin/categories", key: "categories", icon: Shapes },
   { href: "/admin/brands", key: "brands", icon: Tags },

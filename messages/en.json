@@ -431,7 +431,8 @@
     "promotions": "Promotions",
     "pages": "Pages",
     "settings": "Settings",
-    "banners": "Banners"
+    "banners": "Banners",
+    "payments": "Payments"
   },
   "AdminProducts": {
     "title": "Products",
@@ -684,7 +685,14 @@
     "items": "Items",
     "sellers": "Sellers",
     "viewOrders": "View my orders",
-    "continueShopping": "Continue shopping"
+    "continueShopping": "Continue shopping",
+    "bank": "Bank transfer",
+    "usdt": "USDT (Tether)",
+    "wallet": "Local wallet",
+    "bankHint": "Transfer & submit proof",
+    "usdtHint": "Send USDT, submit tx hash",
+    "walletHint": "Jawali / Jaib / Kuraimi …",
+    "prepaidNote": "You'll pay after placing the order and submit proof; the seller ships once it's confirmed."
   },
   "Orders": {
     "title": "My orders",
@@ -799,5 +807,37 @@
     "sku": "SKU",
     "qty": "Qty",
     "footer": "Please include this slip in the package."
+  },
+  "Payment": {
+    "payTitle": "Complete your payment",
+    "dest_BANK_TRANSFER_title": "Bank transfer",
+    "dest_BANK_TRANSFER_body": "Hezalli Bank · Account 1234567890\nUse your order number as the transfer reference.",
+    "dest_USDT_title": "USDT (Tether)",
+    "dest_USDT_body": "TRC20 address: TXxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nSend the exact amount, then paste the transaction hash.",
+    "dest_WALLET_title": "Local wallet",
+    "dest_WALLET_body": "Jawali / Kuraimi: 77XXXXXXX\nSend the amount and paste the transfer reference.",
+    "awaiting": "Your payment is submitted and awaiting confirmation.",
+    "reference": "Transfer reference",
+    "txHash": "Transaction hash",
+    "submitProof": "Submit payment",
+    "resubmit": "Update payment info",
+    "err_proofRequired": "Please provide your payment reference.",
+    "err_badState": "This order can't be paid right now.",
+    "err_notFound": "Order not found.",
+    "err_unauthorized": "Please sign in."
+  },
+  "AdminPayments": {
+    "title": "Payments",
+    "desc": "Confirm manual payments (bank / USDT / wallet).",
+    "empty": "No payments awaiting confirmation.",
+    "method_BANK_TRANSFER": "Bank transfer",
+    "method_USDT": "USDT",
+    "method_WALLET": "Wallet",
+    "method_COD": "COD",
+    "reference": "Reference",
+    "confirm": "Confirm payment",
+    "reject": "Reject",
+    "rejectReason": "Reason (optional)",
+    "confirmReject": "Confirm reject"
   }
 }

@@ -431,7 +431,8 @@
     "promotions": "العروض",
     "pages": "الصفحات",
     "settings": "الإعدادات",
-    "banners": "اللافتات"
+    "banners": "اللافتات",
+    "payments": "المدفوعات"
   },
   "AdminProducts": {
     "title": "المنتجات",
@@ -684,7 +685,14 @@
     "items": "المنتجات",
     "sellers": "البائعون",
     "viewOrders": "عرض طلباتي",
-    "continueShopping": "مواصلة التسوق"
+    "continueShopping": "مواصلة التسوق",
+    "bank": "تحويل بنكي",
+    "usdt": "USDT (تيثر)",
+    "wallet": "محفظة محلية",
+    "bankHint": "حوّل وأرسل الإثبات",
+    "usdtHint": "أرسل USDT وأدخل رقم العملية",
+    "walletHint": "جوالي / جيب / الكريمي …",
+    "prepaidNote": "ستدفع بعد تأكيد الطلب وترسل الإثبات؛ يشحن البائع بعد التأكيد."
   },
   "Orders": {
     "title": "طلباتي",
@@ -799,5 +807,37 @@
     "sku": "SKU",
     "qty": "الكمية",
     "footer": "يرجى إرفاق هذه القائمة مع الطرد."
+  },
+  "Payment": {
+    "payTitle": "أكمل الدفع",
+    "dest_BANK_TRANSFER_title": "تحويل بنكي",
+    "dest_BANK_TRANSFER_body": "بنك هزلي · حساب 1234567890\nاستخدم رقم طلبك كمرجع للتحويل.",
+    "dest_USDT_title": "USDT (تيثر)",
+    "dest_USDT_body": "عنوان TRC20: TXxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nأرسل المبلغ بدقة ثم الصق رقم العملية.",
+    "dest_WALLET_title": "محفظة محلية",
+    "dest_WALLET_body": "جوالي / الكريمي: 77XXXXXXX\nأرسل المبلغ والصق مرجع التحويل.",
+    "awaiting": "تم إرسال دفعتك وهي بانتظار التأكيد.",
+    "reference": "مرجع التحويل",
+    "txHash": "رقم العملية",
+    "submitProof": "إرسال الدفع",
+    "resubmit": "تحديث بيانات الدفع",
+    "err_proofRequired": "يرجى إدخال مرجع الدفع.",
+    "err_badState": "لا يمكن دفع هذا الطلب الآن.",
+    "err_notFound": "الطلب غير موجود.",
+    "err_unauthorized": "يرجى تسجيل الدخول."
+  },
+  "AdminPayments": {
+    "title": "المدفوعات",
+    "desc": "تأكيد المدفوعات اليدوية (بنك / USDT / محفظة).",
+    "empty": "لا توجد مدفوعات بانتظار التأكيد.",
+    "method_BANK_TRANSFER": "تحويل بنكي",
+    "method_USDT": "USDT",
+    "method_WALLET": "محفظة",
+    "method_COD": "الدفع عند الاستلام",
+    "reference": "المرجع",
+    "confirm": "تأكيد الدفع",
+    "reject": "رفض",
+    "rejectReason": "السبب (اختياري)",
+    "confirmReject": "تأكيد الرفض"
   }
 }

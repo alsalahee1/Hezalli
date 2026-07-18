@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { MapPin, Plus, Store as StoreIcon, Truck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-import { placeOrder } from "@/lib/actions/order";
+import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
 import type { CartLine } from "@/lib/cart-types";
 import { formatUsd } from "@/lib/products";
 import { standardShipping } from "@/lib/shipping";
@@ -32,8 +32,16 @@ export function CheckoutFlow({
   const t = useTranslations("Checkout");
   const locale = useLocale();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
+  const [method, setMethod] = useState<PaymentMethodChoice>("COD");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const METHODS: { key: PaymentMethodChoice; label: string; hint: string }[] = [
+    { key: "COD", label: t("cod"), hint: t("codHint") },
+    { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
+    { key: "USDT", label: t("usdt"), hint: t("usdtHint") },
+    { key: "WALLET", label: t("wallet"), hint: t("walletHint") },
+  ];
 
   const groups = useMemo(() => {
     const map = new Map<string, { storeName: string; lines: CartLine[] }>();
@@ -65,7 +73,7 @@ export function CheckoutFlow({
         variantId: l.variantId,
         quantity: l.quantity,
       })),
-      paymentMethod: "COD",
+      paymentMethod: method,
     });
     if (res.error) {
       setError(res.error);
@@ -73,7 +81,12 @@ export function CheckoutFlow({
       return;
     }
     // Full navigation so the cart provider re-reads the now-empty server cart.
-    window.location.assign(`/${locale}/checkout/success?order=${res.orderId}`);
+    // Prepaid orders go to the order page to submit payment proof.
+    const dest =
+      method === "COD"
+        ? `/${locale}/checkout/success?order=${res.orderId}`
+        : `/${locale}/account/orders/${res.orderId}`;
+    window.location.assign(dest);
   };
 
   return (
@@ -165,11 +178,34 @@ export function CheckoutFlow({
         {/* Step 3 — Payment */}
         <section className="rounded-lg border p-4">
           <h2 className="mb-3 font-semibold">{t("paymentTitle")}</h2>
-          <label className="border-primary bg-primary/5 flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm">
-            <input type="radio" checked readOnly className="size-4" />
-            <span className="font-medium">{t("cod")}</span>
-            <span className="text-muted-foreground">{t("codHint")}</span>
-          </label>
+          <div className="space-y-2">
+            {METHODS.map((m) => (
+              <label
+                key={m.key}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm",
+                  method === m.key
+                    ? "border-primary bg-primary/5"
+                    : "hover:border-muted-foreground/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="method"
+                  className="size-4"
+                  checked={method === m.key}
+                  onChange={() => setMethod(m.key)}
+                />
+                <span className="font-medium">{m.label}</span>
+                <span className="text-muted-foreground">{m.hint}</span>
+              </label>
+            ))}
+          </div>
+          {method !== "COD" ? (
+            <p className="text-muted-foreground mt-2 text-xs">
+              {t("prepaidNote")}
+            </p>
+          ) : null}
           <div className="mt-3 flex gap-2">
             <input
               disabled

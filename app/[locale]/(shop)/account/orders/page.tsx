@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { expireStaleOrders } from "@/lib/actions/payment";
 import { prisma } from "@/lib/prisma";
 import {
   ORDER_TABS,
@@ -19,6 +20,8 @@ export default async function AccountOrdersPage({
 }) {
   const session = await auth();
   if (!session?.user?.id) return null;
+  // Lazily clean up any prepaid orders that were never paid (restores stock).
+  await expireStaleOrders().catch(() => {});
   const t = await getTranslations("Orders");
   const format = await getFormatter();
 
