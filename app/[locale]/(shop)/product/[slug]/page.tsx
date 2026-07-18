@@ -9,6 +9,7 @@ import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { toCardItem } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
+import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
@@ -19,6 +20,7 @@ import { RecordView } from "@/components/product/record-view";
 import { ProductShare } from "@/components/product/product-share";
 import { ProductTabs, type Spec } from "@/components/product/product-tabs";
 import { ProductReviews } from "@/components/product/product-reviews";
+import { JsonLd } from "@/components/seo/json-ld";
 import { type ReviewDraft } from "@/components/product/review-form";
 import { StarRating } from "@/components/product/star-rating";
 import {
@@ -242,8 +244,35 @@ export default async function ProductPage({
   const shippingText = policies.shipping || t("shippingDefault");
   const returnsText = policies.returns || t("returnsDefault");
 
+  // Structured data (JSON-LD) for rich search results.
+  const prices = pickerVariants.map((v) => v.price);
+  const productLd = productJsonLd({
+    locale,
+    slug: product.slug,
+    name: title,
+    description,
+    images: product.images.map((i) => i.url),
+    sku: product.variants[0]?.sku ?? null,
+    brand: product.brand?.name ?? null,
+    lowPrice: prices.length ? Math.min(...prices) : 0,
+    highPrice: prices.length ? Math.max(...prices) : 0,
+    inStock: pickerVariants.some((v) => v.stock > 0),
+    ratingAvg: product.ratingAvg,
+    ratingCount: product.ratingCount,
+  });
+  const breadcrumbLd = breadcrumbJsonLd(locale, [
+    { name: "Hezalli", path: "" },
+    {
+      name: localizedName(product.category.name, locale),
+      path: `/c/${product.category.slug}`,
+    },
+    { name: title, path: `/product/${product.slug}` },
+  ]);
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
+      <JsonLd data={productLd} />
+      <JsonLd data={breadcrumbLd} />
       <RecordView slug={product.slug} />
       {/* Breadcrumb */}
       <nav className="text-muted-foreground mb-4 flex flex-wrap items-center gap-1 text-sm">

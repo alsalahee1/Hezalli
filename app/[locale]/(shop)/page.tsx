@@ -6,8 +6,10 @@ import { localizedName } from "@/lib/categories";
 import { getFlashSales } from "@/lib/flash";
 import { prisma } from "@/lib/prisma";
 import { toCardItem, type ProductCardItem } from "@/lib/products";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { Link } from "@/i18n/navigation";
 import { HeroCarousel, type HeroBanner } from "@/components/home/hero-carousel";
+import { JsonLd } from "@/components/seo/json-ld";
 import { ProductStrip } from "@/components/home/product-strip";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
 import { FlashSection } from "@/components/promotions/flash-section";
@@ -65,6 +67,8 @@ export default async function HomePage({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-4">
+      <JsonLd data={websiteJsonLd(locale)} />
+      <JsonLd data={organizationJsonLd()} />
       {heroBanners.length > 0 ? (
         <HeroCarousel banners={heroBanners} />
       ) : (
