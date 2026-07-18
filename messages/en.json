@@ -1200,5 +1200,36 @@
     "back": "Back",
     "messagePlaceholder": "Type a message…",
     "hint": "Enter to send · Shift+Enter for a new line"
+  },
+  "NotifPrefs": {
+    "title": "Notification settings",
+    "desc": "Choose which emails you'd like to receive. In-app notifications always show in your bell.",
+    "cat_orders": "Orders",
+    "desc_orders": "Order placed, confirmed, completed",
+    "cat_shipping": "Shipping",
+    "desc_shipping": "Shipped, delivered, tracking updates",
+    "cat_payments": "Payments",
+    "desc_payments": "Payment confirmations and refunds",
+    "cat_returns": "Returns & disputes",
+    "desc_returns": "Return updates and dispute activity",
+    "cat_chat": "Messages",
+    "desc_chat": "New chat messages from sellers or buyers",
+    "cat_promotions": "Promotions",
+    "desc_promotions": "Deals, coupons, and announcements",
+    "save": "Save preferences",
+    "saving": "Saving…",
+    "saved": "Preferences saved.",
+    "link": "Notification settings"
+  },
+  "AdminSettings": {
+    "title": "Settings",
+    "desc": "Platform-wide settings and tools.",
+    "announcementTitle": "Announcement bar",
+    "announcementDesc": "Show a dismissible message across the storefront.",
+    "announcementPlaceholder": "e.g. Free shipping this weekend on orders over $50!",
+    "announcementActive": "Show the announcement bar",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved."
   }
 }

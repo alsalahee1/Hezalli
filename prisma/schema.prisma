@@ -185,6 +185,7 @@ model User {
   image         String?
   roles         Role[]    @default([BUYER])
   locale        String    @default("ar")
+  notificationPrefs Json?
   isSuspended   Boolean   @default(false)
   deletedAt     DateTime?
   createdAt     DateTime  @default(now())

@@ -15,6 +15,7 @@ export default async function NotificationsPage() {
     redirect(`/${locale}/login?callbackUrl=/${locale}/account/notifications`);
   }
   const t = await getTranslations("Notifications");
+  const tp = await getTranslations("NotifPrefs");
   const format = await getFormatter();
 
   const [items, unread] = await Promise.all([
@@ -40,7 +41,15 @@ export default async function NotificationsPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">{t("title")}</h1>
-        {unread > 0 ? <MarkAllReadButton /> : null}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/account/settings/notifications"
+            className="text-primary text-sm hover:underline"
+          >
+            {tp("link")}
+          </Link>
+          {unread > 0 ? <MarkAllReadButton /> : null}
+        </div>
       </div>
 
       {items.length === 0 ? (

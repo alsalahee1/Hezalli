@@ -5,6 +5,7 @@
 // route derived from ids in `data`.
 import { sendEmail } from "@/lib/email";
 import type { NotificationType, Prisma } from "@/lib/generated/prisma/client";
+import { isEmailEnabled } from "@/lib/notif-prefs";
 import { prisma } from "@/lib/prisma";
 
 export type NotifyInput = {
@@ -34,9 +35,10 @@ export async function notify(input: NotifyInput): Promise<void> {
   if (input.email !== false) {
     const user = await prisma.user.findUnique({
       where: { id: input.userId },
-      select: { email: true },
+      select: { email: true, notificationPrefs: true },
     });
-    if (user?.email) {
+    // In-app is always delivered; email honours the user's category toggles.
+    if (user?.email && isEmailEnabled(user.notificationPrefs, input.type)) {
       await sendEmail({
         to: user.email,
         subject: input.title,

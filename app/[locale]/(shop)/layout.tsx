@@ -1,11 +1,13 @@
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getAnnouncement } from "@/lib/actions/announcement";
 import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import type { Locale } from "@/i18n/routing";
 import { CartProvider } from "@/components/cart/cart-provider";
+import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
@@ -46,10 +48,14 @@ export default async function ShopLayout({
   ]);
 
   const categories = toNavCategories(catRows, locale as Locale);
+  const announcement = await getAnnouncement();
 
   return (
     <CartProvider isAuthed={Boolean(session?.user?.id)} initial={initialCart}>
       <div className="flex min-h-screen flex-col">
+        {announcement.active && announcement.text ? (
+          <AnnouncementBanner text={announcement.text} />
+        ) : null}
         <SiteHeader
           user={
             user
