@@ -6,7 +6,7 @@ import { storage } from "@/lib/storage";
 
 // Authenticated image upload. Bytes are proxied through the server (simple,
 // no bucket CORS needed) and stored via the active storage driver.
-const FOLDERS = new Set(["avatars", "stores", "products"]);
+const FOLDERS = new Set(["avatars", "stores", "products", "banners"]);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB (images are compressed client-side)
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",

@@ -14,7 +14,7 @@ export function ImageUploader({
   label,
   className,
 }: {
-  folder: "avatars" | "stores" | "products";
+  folder: "avatars" | "stores" | "products" | "banners";
   onUploaded: (url: string) => void;
   label?: string;
   className?: string;

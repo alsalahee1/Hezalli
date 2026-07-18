@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  Images,
   LayoutDashboard,
   Menu,
   MessageSquare,
@@ -46,6 +47,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/brands", key: "brands", icon: Tags },
   { href: "/admin/promotions", key: "promotions", icon: Tag },
   { href: "/admin/pages", key: "pages", icon: ScrollText },
+  { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/settings", key: "settings", icon: Settings },
 ];
 

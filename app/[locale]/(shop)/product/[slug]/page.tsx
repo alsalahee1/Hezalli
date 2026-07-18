@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MessageCircle, Store as StoreIcon } from "lucide-react";
 
+import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
 import { toCardItem } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGallery } from "@/components/product/product-gallery";
+import { RecordView } from "@/components/product/record-view";
 import { ProductShare } from "@/components/product/product-share";
 import { ProductTabs, type Spec } from "@/components/product/product-tabs";
 import { StarRating } from "@/components/product/star-rating";
@@ -68,6 +70,18 @@ export default async function ProductPage({
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) notFound();
+
+  // Track recently-viewed for signed-in users (guests are tracked client-side).
+  const session = await auth();
+  if (session?.user?.id) {
+    await prisma.recentlyViewed.upsert({
+      where: {
+        userId_productId: { userId: session.user.id, productId: product.id },
+      },
+      create: { userId: session.user.id, productId: product.id },
+      update: { viewedAt: new Date() },
+    });
+  }
 
   const locale = await getLocale();
   const t = await getTranslations("Product");
@@ -153,6 +167,7 @@ export default async function ProductPage({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
+      <RecordView slug={product.slug} />
       {/* Breadcrumb */}
       <nav className="text-muted-foreground mb-4 flex flex-wrap items-center gap-1 text-sm">
         <Link href="/" className="hover:text-foreground">

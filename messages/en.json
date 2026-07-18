@@ -400,7 +400,12 @@
     "heroSubtitle": "Shop electronics, fashion, groceries and more. Pay by cash on delivery, local wallet, bank transfer, or USDT.",
     "shopNow": "Shop now",
     "browseCategories": "Browse categories",
-    "categoriesTitle": "Shop by category"
+    "categoriesTitle": "Shop by category",
+    "newArrivals": "New arrivals",
+    "bestSellers": "Best sellers",
+    "deals": "Deals",
+    "recentlyViewed": "Recently viewed",
+    "seeAll": "See all"
   },
   "Seller": {
     "center": "Seller Center",
@@ -425,7 +430,8 @@
     "brands": "Brands",
     "promotions": "Promotions",
     "pages": "Pages",
-    "settings": "Settings"
+    "settings": "Settings",
+    "banners": "Banners"
   },
   "AdminProducts": {
     "title": "Products",
@@ -590,5 +596,28 @@
     "noResultsHint": "Try different keywords or browse a category.",
     "resultsFor": "Results for \"{query}\"",
     "allProducts": "All products"
+  },
+  "AdminBanners": {
+    "title": "Banners",
+    "desc": "Manage the home page hero banners.",
+    "add": "Add banner",
+    "image": "Image",
+    "imageHint": "Landscape image, recommended 1200×450.",
+    "titleEn": "Title (English)",
+    "titleAr": "Title (Arabic)",
+    "linkUrl": "Link URL",
+    "position": "Placement",
+    "posHomeHero": "Home hero",
+    "startsAt": "Starts (optional)",
+    "endsAt": "Ends (optional)",
+    "active": "Active",
+    "inactive": "Hidden",
+    "save": "Save",
+    "cancel": "Cancel",
+    "empty": "No banners yet. Add one to feature it on the home page.",
+    "confirmDelete": "Delete this banner?",
+    "untitled": "Untitled banner",
+    "imageRequired": "Please upload an image.",
+    "forbidden": "You don't have permission to do that."
   }
 }
