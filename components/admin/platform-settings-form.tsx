@@ -33,6 +33,9 @@ export function PlatformSettingsForm({
     wallet_topup_min_usd: String(current.wallet_topup_min_usd),
     wallet_topup_max_usd: String(current.wallet_topup_max_usd),
     wallet_balance_cap_usd: String(current.wallet_balance_cap_usd),
+    wallet_cashback_percent: String(
+      Math.round(current.wallet_cashback_rate * 10000) / 100,
+    ),
     cod_enabled: current.cod_enabled,
     maintenance_mode: current.maintenance_mode,
   });
@@ -55,6 +58,7 @@ export function PlatformSettingsForm({
         wallet_topup_min_usd: Number(f.wallet_topup_min_usd),
         wallet_topup_max_usd: Number(f.wallet_topup_max_usd),
         wallet_balance_cap_usd: Number(f.wallet_balance_cap_usd),
+        wallet_cashback_percent: Number(f.wallet_cashback_percent),
         cod_enabled: f.cod_enabled,
         maintenance_mode: f.maintenance_mode,
       });
@@ -148,6 +152,14 @@ export function PlatformSettingsForm({
             type="number"
             value={f.wallet_balance_cap_usd}
             onChange={(e) => set("wallet_balance_cap_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletCashback")} hint={t("walletCashbackHint")}>
+          <Input
+            type="number"
+            value={f.wallet_cashback_percent}
+            onChange={(e) => set("wallet_cashback_percent", e.target.value)}
             dir="ltr"
           />
         </Field>

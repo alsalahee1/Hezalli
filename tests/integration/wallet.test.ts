@@ -157,6 +157,46 @@ describe("wallet top-up ledger (Step 19.3)", () => {
   });
 });
 
+describe("wallet cashback on completion (Step 19.5)", () => {
+  it("credits the configured rate to the buyer wallet, once", async () => {
+    const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
+    // Enable 5% cashback for this test.
+    await prisma.platformSetting.upsert({
+      where: { key: "wallet_cashback_rate" },
+      create: { key: "wallet_cashback_rate", value: 0.05 },
+      update: { value: 0.05 },
+    });
+    try {
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "BANK_TRANSFER",
+      });
+      await settleSubOrder(subOrderId);
+      // Second settle must not double-credit cashback.
+      await settleSubOrder(subOrderId);
+
+      const entries = await prisma.walletEntry.findMany({
+        where: { wallet: { userId: fx.buyerId }, type: "CASHBACK" },
+      });
+      expect(entries).toHaveLength(1);
+      expect(Number(entries[0].amountUsd)).toBe(5); // 5% of 100
+
+      const { balance } = await getWalletView(fx.buyerId);
+      expect(balance).toBe(5);
+    } finally {
+      await prisma.platformSetting
+        .deleteMany({ where: { key: "wallet_cashback_rate" } })
+        .catch(() => {});
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await fx.cleanup();
+    }
+  });
+});
+
 describe("wallet withdrawal reserve/return (Step 19.4)", () => {
   it("reserves on request and returns the funds on rejection", async () => {
     const fx = await makeFixture();

@@ -20,6 +20,9 @@ export type PlatformSettings = {
   wallet_topup_min_usd: number;
   wallet_topup_max_usd: number;
   wallet_balance_cap_usd: number;
+  // Wallet cashback (Step 19.5): fraction of items total credited to the
+  // buyer's wallet on order completion. 0 = off (default).
+  wallet_cashback_rate: number;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -35,6 +38,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,
+  wallet_cashback_rate: 0,
 };
 
 export const SETTING_KEYS = Object.keys(

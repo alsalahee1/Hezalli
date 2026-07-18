@@ -302,7 +302,7 @@ Lowest value-per-risk. Ship this first.
 - [ ] Non-KYC user cannot withdraw
 
 > **🔜 NEXT-STEP CARD — WALLET CORE COMPLETE 🎉**
-> - **Next step (optional 19.5+):** cashback into wallet (reuse `LoyaltyTransaction`),
+> - **Next step (optional 19.5+):** cashback into wallet (done — see Step 19.5),
 >   unify seller earnings into one wallet, P2P transfer (**only if licensed**).
 > - **Model:** Claude Sonnet 5
 > - **Thinking level:** Medium
@@ -310,16 +310,36 @@ Lowest value-per-risk. Ship this first.
 
 ---
 
-## 8. Build order summary (value per risk)
+## Step 19.5 — Purchase cashback into wallet ✅
 
-| Phase | Ships | Regulatory risk | Ops burden change |
+- `wallet_cashback_rate` platform setting (admin settings; **0 = off by default**).
+- On order completion, `settleSubOrder` credits `rate × items total` to the
+  buyer's wallet as an idempotent `CASHBACK` entry (`lib/wallet-cashback.ts`).
+- Parity with loyalty EARN points: not clawed back on a later refund (exposure
+  bounded by the small rate; completion means receipt was confirmed).
+
+✅ **Acceptance criteria**
+- [ ] With a rate set, completing an order credits cashback exactly once
+- [ ] Rate 0 is a no-op; re-settling never double-credits
+
+> Remaining 19.5+ (not built): unify seller earnings into the same wallet, and
+> P2P transfer — **licensed only**, gate behind the e-money authorization.
+
+---
+
+## 8. Build order summary (value per risk) — status
+
+| Phase | Ships | Regulatory risk | Status |
 |---|---|---|---|
-| 19.1 Refund-to-wallet | Instant refunds | Low | ⬇️ less cash-back handling |
-| 19.2 Pay with wallet | Instant checkout | Low | ⬇️ no per-order confirm |
-| 19.3 Top-up | Cash-in | **High — legal first** | ⬆️ confirm top-ups |
-| 19.4 Cash-out | Withdrawal | **High — legal first** | ⬆️ payout ops |
-| 19.5+ Cashback / P2P | Growth loops | P2P = licensed only | varies |
+| 19.1 Refund-to-wallet | Instant refunds | Low | ✅ shipped |
+| 19.2 Pay with wallet | Instant checkout | Low | ✅ shipped |
+| 19.3 Top-up | Cash-in | **High — legal first** | ✅ built, ⚠️ legal-gated |
+| 19.4 Cash-out | Withdrawal | **High — legal first** | ✅ built, ⚠️ legal-gated |
+| 19.5 Cashback | Growth loop | Low (off by default) | ✅ shipped |
+| 19.5+ Seller-wallet unify / P2P | Growth loops | P2P = licensed only | ⏭️ deferred |
 
-**Bottom line:** build 19.1–19.2 now (high value, low risk, mostly reuse); get a
-Central Bank of Yemen e-money read before 19.3–19.4. The wallet lives in this
-repo; the mobile app is a separate client on the same API.
+**Bottom line:** 19.1–19.5 are implemented. 19.1/19.2/19.5 are safe to run now;
+**get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
+production** — the code is built and gated, the remaining blocker is legal, not
+technical. The wallet lives in this repo; the mobile app is a separate client on
+the same API.

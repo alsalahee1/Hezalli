@@ -1407,7 +1407,10 @@
     "walletBalanceCap": "Wallet balance cap (USD)",
     "walletLimitsHint": "Per top-up transaction",
     "walletCapHint": "Max standing balance for standard users (verified users get 5×)",
-    "err_badWalletLimits": "Wallet limits must be non-negative and min ≤ max ≤ cap."
+    "err_badWalletLimits": "Wallet limits must be non-negative and min ≤ max ≤ cap.",
+    "walletCashback": "Wallet cashback (%)",
+    "walletCashbackHint": "Credited to the buyer wallet on order completion (0 = off)",
+    "err_badCashback": "Cashback must be between 0 and 100."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
