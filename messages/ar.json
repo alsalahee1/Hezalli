@@ -442,6 +442,7 @@
   "Seller": {
     "center": "مركز البائع",
     "dashboard": "لوحة التحكم",
+    "analytics": "التحليلات",
     "products": "المنتجات",
     "orders": "الطلبات",
     "returns": "المرتجعات",
@@ -475,6 +476,26 @@
     "err_tooMany": "عدد الصفوف كبير جداً — استورد حتى 500 منتج في المرة الواحدة.",
     "err_badHeader": "يجب أن يتضمن صف العناوين title_en وcategory_slug وprice.",
     "err_forbidden": "ليس لديك متجر بائع."
+  },
+  "SellerAnalytics": {
+    "title": "التحليلات",
+    "desc": "أداء المبيعات خلال آخر {days} يوماً.",
+    "periodDays": "{days} يوم",
+    "revenue": "الإيرادات",
+    "netEarnings": "صافي الأرباح",
+    "orders": "الطلبات",
+    "units": "الوحدات المباعة",
+    "aov": "متوسط قيمة الطلب",
+    "vsPrev": "مقارنةً بالسابق",
+    "salesOverTime": "المبيعات عبر الوقت",
+    "topProducts": "أفضل المنتجات",
+    "topProductsDesc": "الأكثر مبيعاً هذه الفترة، مع مشاهدات العمر ومعدل التحويل.",
+    "noSales": "لا توجد مبيعات في هذه الفترة بعد.",
+    "colProduct": "المنتج",
+    "colUnits": "الوحدات",
+    "colRevenue": "الإيرادات",
+    "colViews": "المشاهدات",
+    "colConversion": "التحويل"
   },
   "Admin": {
     "panel": "لوحة الإدارة",

@@ -39,6 +39,7 @@ type NavItem = { href: string; key: string; icon: LucideIcon };
 
 const SELLER_NAV: NavItem[] = [
   { href: "/seller", key: "dashboard", icon: LayoutDashboard },
+  { href: "/seller/analytics", key: "analytics", icon: BarChart3 },
   { href: "/seller/products", key: "products", icon: Package },
   { href: "/seller/orders", key: "orders", icon: ShoppingBag },
   { href: "/seller/finance", key: "finance", icon: Wallet },

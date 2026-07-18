@@ -418,6 +418,7 @@ model Product {
   isFeatured       Boolean          @default(false)
   ratingAvg        Float            @default(0)
   ratingCount      Int              @default(0)
+  views            Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   store            Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)

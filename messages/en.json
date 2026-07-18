@@ -442,6 +442,7 @@
   "Seller": {
     "center": "Seller Center",
     "dashboard": "Dashboard",
+    "analytics": "Analytics",
     "products": "Products",
     "orders": "Orders",
     "returns": "Returns",
@@ -475,6 +476,26 @@
     "err_tooMany": "Too many rows — import up to 500 products at a time.",
     "err_badHeader": "Header must include title_en, category_slug, and price.",
     "err_forbidden": "You don't have a seller store."
+  },
+  "SellerAnalytics": {
+    "title": "Analytics",
+    "desc": "Sales performance over the last {days} days.",
+    "periodDays": "{days}d",
+    "revenue": "Revenue",
+    "netEarnings": "Net earnings",
+    "orders": "Orders",
+    "units": "Units sold",
+    "aov": "Avg. order value",
+    "vsPrev": "vs previous",
+    "salesOverTime": "Sales over time",
+    "topProducts": "Top products",
+    "topProductsDesc": "Best sellers this period, with lifetime views and conversion.",
+    "noSales": "No sales in this period yet.",
+    "colProduct": "Product",
+    "colUnits": "Units",
+    "colRevenue": "Revenue",
+    "colViews": "Views",
+    "colConversion": "Conversion"
   },
   "Admin": {
     "panel": "Admin Panel",
