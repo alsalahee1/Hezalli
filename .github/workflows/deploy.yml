@@ -20,7 +20,7 @@ name: Deploy
 on:
   push:
     branches:
-      - claude/deploy-hezalli-domain-j13af5
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -43,7 +43,7 @@ jobs:
           script: |
             set -euo pipefail
             APP_DIR="${{ secrets.VPS_APP_DIR || '/opt/hezalli' }}"
-            BRANCH="claude/deploy-hezalli-domain-j13af5"
+            BRANCH="main"
 
             if [ ! -d "$APP_DIR/.git" ]; then
               echo "First deploy — cloning into $APP_DIR"

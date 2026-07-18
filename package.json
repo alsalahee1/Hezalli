@@ -19,6 +19,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:if-empty": "tsx prisma/seed-if-empty.ts",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"
   },
