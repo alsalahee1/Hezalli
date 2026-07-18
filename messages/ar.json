@@ -416,7 +416,8 @@
     "chat": "المحادثات",
     "promotions": "العروض",
     "settings": "الإعدادات",
-    "viewStore": "عرض المتجر"
+    "viewStore": "عرض المتجر",
+    "finance": "المالية"
   },
   "Admin": {
     "panel": "لوحة الإدارة",
@@ -739,7 +740,9 @@
     "cancelConfirm": "إلغاء هذا الطلب؟ ستتم إعادة الكمية إلى البائعين.",
     "err_tooLate": "لا يمكن إلغاء هذا الطلب بعد الآن.",
     "err_notFound": "الطلب غير موجود.",
-    "err_unauthorized": "يرجى تسجيل الدخول."
+    "err_unauthorized": "يرجى تسجيل الدخول.",
+    "confirmReceivedConfirm": "تأكيد استلامك لهذا الطلب؟ سيؤدي ذلك إلى تحرير الدفعة للبائع.",
+    "err_badState": "هذا الإجراء غير متاح حالياً."
   },
   "Invoice": {
     "invoice": "فاتورة",
@@ -839,5 +842,24 @@
     "reject": "رفض",
     "rejectReason": "السبب (اختياري)",
     "confirmReject": "تأكيد الرفض"
+  },
+  "SellerFinance": {
+    "title": "المالية",
+    "available": "الرصيد المتاح",
+    "availableHint": "قابل للسحب الآن",
+    "pending": "قيد الانتظار (ضمان)",
+    "pendingHint": "محجوز حتى اكتمال الطلبات",
+    "ledger": "دفتر الحسابات",
+    "date": "التاريخ",
+    "type": "النوع",
+    "note": "ملاحظة",
+    "amount": "المبلغ",
+    "empty": "لا توجد معاملات بعد.",
+    "type_SALE": "بيع",
+    "type_COMMISSION": "عمولة",
+    "type_REFUND": "استرداد",
+    "type_PAYOUT": "سحب",
+    "type_ADJUSTMENT": "تسوية",
+    "type_COD_COMMISSION_DUE": "عمولة الدفع عند الاستلام"
   }
 }

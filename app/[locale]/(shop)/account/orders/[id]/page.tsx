@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
+import { ConfirmReceivedButton } from "@/components/orders/confirm-received-button";
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
 
 export default async function OrderDetailPage({
@@ -112,7 +113,13 @@ export default async function OrderDetailPage({
           <CancelOrderButton orderId={order.id} />
         ) : null}
         {futureBtn(t("track"), t("trackHint"))}
-        {futureBtn(t("confirmReceived"), t("confirmHint"))}
+        {order.subOrders.some(
+          (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
+        ) ? (
+          <ConfirmReceivedButton orderId={order.id} />
+        ) : (
+          futureBtn(t("confirmReceived"), t("confirmHint"))
+        )}
         {futureBtn(t("review"), t("reviewHint"))}
         {futureBtn(t("returnItem"), t("returnHint"))}
         <Button asChild size="sm" variant="ghost">

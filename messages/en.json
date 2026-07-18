@@ -416,7 +416,8 @@
     "chat": "Chat",
     "promotions": "Promotions",
     "settings": "Settings",
-    "viewStore": "View store"
+    "viewStore": "View store",
+    "finance": "Finance"
   },
   "Admin": {
     "panel": "Admin Panel",
@@ -739,7 +740,9 @@
     "cancelConfirm": "Cancel this order? Stock will be restored to the sellers.",
     "err_tooLate": "This order can no longer be cancelled.",
     "err_notFound": "Order not found.",
-    "err_unauthorized": "Please sign in."
+    "err_unauthorized": "Please sign in.",
+    "confirmReceivedConfirm": "Confirm you received this order? This releases payment to the seller.",
+    "err_badState": "This action isn't available right now."
   },
   "Invoice": {
     "invoice": "Invoice",
@@ -839,5 +842,24 @@
     "reject": "Reject",
     "rejectReason": "Reason (optional)",
     "confirmReject": "Confirm reject"
+  },
+  "SellerFinance": {
+    "title": "Finance",
+    "available": "Available balance",
+    "availableHint": "Withdrawable now",
+    "pending": "Pending (escrow)",
+    "pendingHint": "Held until orders are completed",
+    "ledger": "Ledger",
+    "date": "Date",
+    "type": "Type",
+    "note": "Note",
+    "amount": "Amount",
+    "empty": "No transactions yet.",
+    "type_SALE": "Sale",
+    "type_COMMISSION": "Commission",
+    "type_REFUND": "Refund",
+    "type_PAYOUT": "Payout",
+    "type_ADJUSTMENT": "Adjustment",
+    "type_COD_COMMISSION_DUE": "COD commission"
   }
 }

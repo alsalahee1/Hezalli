@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { getCommissionRate } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { standardShipping } from "@/lib/shipping";
 
@@ -15,8 +16,6 @@ export type PlaceOrderInput = {
   paymentMethod: PaymentMethodChoice;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
-
-const COMMISSION_RATE = 0.1;
 
 class StockError extends Error {}
 
@@ -97,6 +96,7 @@ export async function placeOrder(
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
   const grandTotal = Number((itemsTotal + shippingTotal).toFixed(2));
+  const commissionRate = await getCommissionRate();
 
   // Seller users (for notifications), by store.
   const stores = await prisma.store.findMany({
@@ -138,7 +138,7 @@ export async function placeOrder(
               status: orderStatus,
               itemsTotal: g.itemsTotal,
               shippingTotal: g.shipping,
-              commissionRate: COMMISSION_RATE,
+              commissionRate,
               commissionAmt: 0,
               sellerNet: 0,
               items: {
