@@ -25,6 +25,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Wrench,
   Zap,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -44,6 +45,7 @@ const SELLER_NAV: NavItem[] = [
   { href: "/seller/returns", key: "returns", icon: ArrowLeftRight },
   { href: "/seller/chat", key: "chat", icon: MessageSquare },
   { href: "/seller/promotions", key: "promotions", icon: Tag },
+  { href: "/seller/tools", key: "tools", icon: Wrench },
   { href: "/seller/settings", key: "settings", icon: Settings },
 ];
 

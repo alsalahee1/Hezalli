@@ -31,7 +31,11 @@ import {
 
 async function getProduct(slug: string) {
   return prisma.product.findFirst({
-    where: { slug, status: "ACTIVE", store: { status: "ACTIVE" } },
+    where: {
+      slug,
+      status: "ACTIVE",
+      store: { status: "ACTIVE", isOnVacation: false },
+    },
     include: {
       images: { orderBy: { position: "asc" } },
       variants: { where: { isActive: true }, orderBy: { sku: "asc" } },

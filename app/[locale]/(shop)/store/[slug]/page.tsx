@@ -116,6 +116,17 @@ export default async function StorePage({ params }: Props) {
         />
       </div>
 
+      {store.isOnVacation ? (
+        <div className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-center text-sm">
+          <p className="font-medium text-amber-700">{t("onVacation")}</p>
+          {store.vacationMessage ? (
+            <p className="text-muted-foreground mt-1">
+              {store.vacationMessage}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Stats */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="bg-card rounded-lg border p-3 text-center">

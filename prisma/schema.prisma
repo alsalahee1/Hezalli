@@ -331,6 +331,10 @@ model Store {
   policies      Json?
   status        StoreStatus    @default(ACTIVE)
   isFeatured    Boolean        @default(false)
+  // Seller tools (Step 17.7): temporary self-close + chat auto-reply.
+  isOnVacation  Boolean        @default(false)
+  vacationMessage  String?
+  autoReplyMessage String?
   ratingAvg     Float          @default(0)
   ratingCount   Int            @default(0)
   createdAt     DateTime       @default(now())

@@ -244,7 +244,8 @@
     "shippingPolicy": "Shipping policy",
     "contact": "Customer service",
     "follow": "Follow",
-    "following": "Following"
+    "following": "Following",
+    "onVacation": "This store is on vacation and not accepting orders right now."
   },
   "AdminSellers": {
     "title": "Sellers",
@@ -446,9 +447,34 @@
     "returns": "Returns",
     "chat": "Chat",
     "promotions": "Promotions",
+    "tools": "Tools",
     "settings": "Settings",
     "viewStore": "View store",
     "finance": "Finance"
+  },
+  "SellerTools": {
+    "title": "Seller tools",
+    "desc": "Vacation mode, chat auto-reply, and bulk product import.",
+    "vacationTitle": "Vacation mode",
+    "vacationDesc": "Hide all your products from the storefront while you're away. Existing orders are unaffected.",
+    "vacationToggle": "Enable vacation mode",
+    "vacationPlaceholder": "Optional message shown to buyers (e.g. Back on July 25)",
+    "autoReplyTitle": "Chat auto-reply",
+    "autoReplyDesc": "Automatically reply to a buyer's first message so they know you'll respond soon.",
+    "autoReplyPlaceholder": "Thanks for your message! We usually reply within 24 hours.",
+    "csvTitle": "Bulk import products",
+    "csvDesc": "Paste CSV rows to create products as drafts. Review and publish them from Products.",
+    "csvHeader": "Header row",
+    "csvSample": "Load sample",
+    "csvCreated": "Created {count, plural, one {# product} other {# products}} as drafts.",
+    "import": "Import",
+    "importing": "Importing…",
+    "save": "Save",
+    "saved": "Saved",
+    "err_empty": "Paste a header row plus at least one product row.",
+    "err_tooMany": "Too many rows — import up to 500 products at a time.",
+    "err_badHeader": "Header must include title_en, category_slug, and price.",
+    "err_forbidden": "You don't have a seller store."
   },
   "Admin": {
     "panel": "Admin Panel",
