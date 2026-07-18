@@ -6,7 +6,8 @@
  *   - 10 launch categories (from docs/DECISIONS.md)
  *   - brands, carriers, shipping zones + rates
  *   - 1 admin, 2 sellers (+ stores + balances), 3 buyers (+ addresses)
- *   - 20 products with variants and placeholder images
+ *   - ~60 products across all categories: variants (colour/size/storage),
+ *     sale prices, used goods, drafts, and one moderated (hidden) listing
  *   - a few orders (COD / USDT / wallet) with sub-orders, payments, ledger
  *   - CMS pages, a banner, and a platform coupon
  *
@@ -132,10 +133,50 @@ const CATEGORIES = [
   },
 ];
 
-const BRANDS = ["Samsung", "Apple", "Anker", "Adidas", "Generic"];
+const BRANDS = [
+  "Samsung",
+  "Apple",
+  "Anker",
+  "Adidas",
+  "Sony",
+  "LG",
+  "HP",
+  "Xiaomi",
+  "JBL",
+  "Nike",
+  "Philips",
+  "Bosch",
+  "Nivea",
+  "Wilson",
+  "Lego",
+  "Generic",
+];
+
+/**
+ * A seed product definition. `options` describes variant axes (e.g. colour ×
+ * size); the loader builds one variant per combination (Cartesian product).
+ * Without `options` a single default variant is created (fashion items still
+ * fall back to S/L for backward compatibility). `compareAt` seeds a strike-
+ * through "was" price, `condition` marks used goods, and `status` +
+ * `moderationReason` let the seed reflect draft / moderated states.
+ */
+type SeedProductDef = {
+  en: string;
+  ar: string;
+  cat: string;
+  brand: string;
+  price: number;
+  store: number;
+  condition?: "NEW" | "USED";
+  compareAt?: number;
+  stock?: number;
+  status?: "ACTIVE" | "DRAFT" | "HIDDEN";
+  moderationReason?: string;
+  options?: { name: string; values: string[] }[];
+};
 
 // storeIdx: 0 = Sana'a Electronics, 1 = Aden Fashion House
-const PRODUCTS = [
+const PRODUCTS: SeedProductDef[] = [
   {
     en: 'Samsung 55" 4K Smart TV',
     ar: "تلفزيون سامسونج ذكي 55 بوصة 4K",
@@ -296,6 +337,379 @@ const PRODUCTS = [
     price: 24,
     store: 1,
   },
+
+  // ---- Additional catalogue (indices 20+). The first 20 above are
+  // referenced by index in the order seeding below and must not move. ----
+
+  // Electronics (store 0)
+  {
+    en: "Sony WH-1000XM5 Headphones",
+    ar: "سماعات سوني WH-1000XM5",
+    cat: "electronics",
+    brand: "Sony",
+    price: 349,
+    compareAt: 399,
+    store: 0,
+    options: [{ name: "color", values: ["Black", "Silver"] }],
+  },
+  {
+    en: 'LG 27" Gaming Monitor',
+    ar: "شاشة ألعاب LG 27 بوصة",
+    cat: "electronics",
+    brand: "LG",
+    price: 219,
+    store: 0,
+  },
+  {
+    en: "HP Pavilion Laptop 15",
+    ar: "لابتوب HP Pavilion 15",
+    cat: "electronics",
+    brand: "HP",
+    price: 649,
+    store: 0,
+    options: [{ name: "storage", values: ["256GB", "512GB"] }],
+  },
+  {
+    en: "JBL Flip 6 Bluetooth Speaker",
+    ar: "مكبر صوت JBL Flip 6",
+    cat: "electronics",
+    brand: "JBL",
+    price: 99,
+    compareAt: 129,
+    store: 0,
+    options: [{ name: "color", values: ["Black", "Blue", "Red"] }],
+  },
+
+  // Phones & Accessories (store 0)
+  {
+    en: "Xiaomi Redmi Note 13",
+    ar: "شاومي ريدمي نوت 13",
+    cat: "phones-accessories",
+    brand: "Xiaomi",
+    price: 199,
+    store: 0,
+    options: [{ name: "storage", values: ["128GB", "256GB"] }],
+  },
+  {
+    en: "Samsung Galaxy A54 5G",
+    ar: "سامسونج جالكسي A54 الجيل الخامس",
+    cat: "phones-accessories",
+    brand: "Samsung",
+    price: 349,
+    store: 0,
+    options: [
+      { name: "color", values: ["Black", "Violet"] },
+      { name: "storage", values: ["128GB", "256GB"] },
+    ],
+  },
+  {
+    en: "Anker USB-C Charger 65W",
+    ar: "شاحن أنكر USB-C 65 واط",
+    cat: "phones-accessories",
+    brand: "Anker",
+    price: 29,
+    store: 0,
+  },
+  {
+    en: "Tempered Glass Screen Protector",
+    ar: "واقي شاشة زجاجي",
+    cat: "phones-accessories",
+    brand: "Generic",
+    price: 5,
+    stock: 6,
+    store: 0,
+  },
+
+  // Home & Kitchen (store 0)
+  {
+    en: "Philips Air Fryer 4.1L",
+    ar: "قلاية هوائية فيليبس 4.1 لتر",
+    cat: "home-kitchen",
+    brand: "Philips",
+    price: 119,
+    compareAt: 149,
+    store: 0,
+  },
+  {
+    en: "Robot Vacuum Cleaner",
+    ar: "مكنسة روبوت ذكية",
+    cat: "home-kitchen",
+    brand: "Xiaomi",
+    price: 179,
+    store: 0,
+  },
+  {
+    en: "Non-Stick Frying Pan 28cm",
+    ar: "مقلاة غير لاصقة 28 سم",
+    cat: "home-kitchen",
+    brand: "Generic",
+    price: 17,
+    store: 0,
+  },
+
+  // Sports & Outdoors (store 0)
+  {
+    en: "Adjustable Dumbbell Set 20kg",
+    ar: "طقم دمبل قابل للتعديل 20 كجم",
+    cat: "sports-outdoors",
+    brand: "Generic",
+    price: 89,
+    store: 0,
+  },
+  {
+    en: "Wilson Tennis Racket",
+    ar: "مضرب تنس ويلسون",
+    cat: "sports-outdoors",
+    brand: "Wilson",
+    price: 59,
+    compareAt: 79,
+    condition: "USED",
+    store: 0,
+  },
+  {
+    en: "Camping Tent 4-Person",
+    ar: "خيمة تخييم لـ 4 أشخاص",
+    cat: "sports-outdoors",
+    brand: "Generic",
+    price: 79,
+    store: 0,
+    options: [{ name: "color", values: ["Green", "Blue"] }],
+  },
+  {
+    en: "Insulated Water Bottle 1L",
+    ar: "زجاجة ماء حرارية 1 لتر",
+    cat: "sports-outdoors",
+    brand: "Generic",
+    price: 14,
+    store: 0,
+    options: [{ name: "color", values: ["Black", "Silver", "Pink"] }],
+  },
+  {
+    en: "Football Size 5",
+    ar: "كرة قدم مقاس 5",
+    cat: "sports-outdoors",
+    brand: "Nike",
+    price: 25,
+    store: 0,
+  },
+
+  // Automotive & Tools (store 0)
+  {
+    en: "Portable Car Vacuum Cleaner",
+    ar: "مكنسة سيارة محمولة",
+    cat: "automotive-tools",
+    brand: "Generic",
+    price: 24,
+    store: 0,
+  },
+  {
+    en: "Cordless Drill 18V",
+    ar: "مثقاب لاسلكي 18 فولت",
+    cat: "automotive-tools",
+    brand: "Bosch",
+    price: 69,
+    store: 0,
+  },
+  {
+    en: "Car Dash Cam Full HD",
+    ar: "كاميرا سيارة أمامية Full HD",
+    cat: "automotive-tools",
+    brand: "Generic",
+    price: 39,
+    store: 0,
+  },
+  {
+    en: "Digital Tire Inflator",
+    ar: "منفاخ إطارات رقمي",
+    cat: "automotive-tools",
+    brand: "Generic",
+    price: 32,
+    store: 0,
+    status: "DRAFT",
+  },
+  {
+    en: "Socket Wrench Set 40pc",
+    ar: "طقم مفاتيح ربط 40 قطعة",
+    cat: "automotive-tools",
+    brand: "Bosch",
+    price: 45,
+    compareAt: 60,
+    condition: "USED",
+    store: 0,
+  },
+
+  // Fashion & Apparel (store 1)
+  {
+    en: "Women's Silk Hijab",
+    ar: "حجاب حريري نسائي",
+    cat: "fashion-apparel",
+    brand: "Generic",
+    price: 15,
+    store: 1,
+    options: [{ name: "color", values: ["Black", "Navy", "Beige", "Rose"] }],
+  },
+  {
+    en: "Men's Leather Belt",
+    ar: "حزام جلدي رجالي",
+    cat: "fashion-apparel",
+    brand: "Generic",
+    price: 19,
+    store: 1,
+    options: [{ name: "size", values: ["M", "L", "XL"] }],
+  },
+  {
+    en: "Nike Running Shoes",
+    ar: "حذاء نايكي للجري",
+    cat: "fashion-apparel",
+    brand: "Nike",
+    price: 89,
+    compareAt: 109,
+    store: 1,
+    options: [{ name: "size", values: ["40", "41", "42", "43"] }],
+  },
+  {
+    en: "Women's Handbag",
+    ar: "حقيبة يد نسائية",
+    cat: "fashion-apparel",
+    brand: "Generic",
+    price: 39,
+    store: 1,
+    options: [{ name: "color", values: ["Black", "Brown"] }],
+  },
+
+  // Health & Beauty (store 1)
+  {
+    en: "Nivea Body Lotion 400ml",
+    ar: "لوشن نيفيا للجسم 400 مل",
+    cat: "health-beauty",
+    brand: "Nivea",
+    price: 8,
+    store: 1,
+  },
+  {
+    en: "Hair Dryer 2200W",
+    ar: "مجفف شعر 2200 واط",
+    cat: "health-beauty",
+    brand: "Philips",
+    price: 34,
+    store: 1,
+  },
+  {
+    en: "Vitamin C Serum 30ml",
+    ar: "سيروم فيتامين سي 30 مل",
+    cat: "health-beauty",
+    brand: "Generic",
+    price: 22,
+    store: 1,
+    status: "HIDDEN",
+    moderationReason:
+      "Unverified health claims in the description — pending documentation.",
+  },
+  {
+    en: "Electric Beard Trimmer",
+    ar: "ماكينة حلاقة كهربائية للحية",
+    cat: "health-beauty",
+    brand: "Philips",
+    price: 42,
+    compareAt: 55,
+    store: 1,
+  },
+
+  // Groceries & Food (store 1)
+  {
+    en: "Premium Dates 1kg",
+    ar: "تمر فاخر 1 كجم",
+    cat: "groceries-food",
+    brand: "Generic",
+    price: 16,
+    store: 1,
+  },
+  {
+    en: "Green Cardamom 200g",
+    ar: "هيل أخضر 200 جرام",
+    cat: "groceries-food",
+    brand: "Generic",
+    price: 21,
+    store: 1,
+  },
+  {
+    en: "Mixed Nuts 500g",
+    ar: "مكسرات مشكلة 500 جرام",
+    cat: "groceries-food",
+    brand: "Generic",
+    price: 18,
+    store: 1,
+  },
+
+  // Baby, Kids & Toys (store 1)
+  {
+    en: "Lego Classic Bricks Box",
+    ar: "صندوق مكعبات ليغو كلاسيك",
+    cat: "baby-kids-toys",
+    brand: "Lego",
+    price: 34,
+    store: 1,
+  },
+  {
+    en: "Foldable Baby Stroller",
+    ar: "عربة أطفال قابلة للطي",
+    cat: "baby-kids-toys",
+    brand: "Generic",
+    price: 89,
+    compareAt: 119,
+    store: 1,
+  },
+  {
+    en: "Kids Educational Tablet",
+    ar: "تابلت تعليمي للأطفال",
+    cat: "baby-kids-toys",
+    brand: "Generic",
+    price: 45,
+    store: 1,
+  },
+
+  // Books & Stationery (store 1)
+  {
+    en: "The Prophet by Kahlil Gibran",
+    ar: "كتاب النبي لجبران خليل جبران",
+    cat: "books-stationery",
+    brand: "Generic",
+    price: 12,
+    store: 1,
+  },
+  {
+    en: "A5 Notebook Pack of 3",
+    ar: "دفتر A5 حزمة 3 قطع",
+    cat: "books-stationery",
+    brand: "Generic",
+    price: 7,
+    store: 1,
+  },
+  {
+    en: "Luxury Fountain Pen",
+    ar: "قلم حبر فاخر",
+    cat: "books-stationery",
+    brand: "Generic",
+    price: 28,
+    store: 1,
+    status: "DRAFT",
+  },
+  {
+    en: "Watercolor Paint Set 24 Colors",
+    ar: "طقم ألوان مائية 24 لون",
+    cat: "books-stationery",
+    brand: "Generic",
+    price: 16,
+    store: 1,
+  },
+  {
+    en: "Arabic-English Dictionary",
+    ar: "قاموس عربي إنجليزي",
+    cat: "books-stationery",
+    brand: "Generic",
+    price: 20,
+    store: 1,
+  },
 ];
 
 type SeededVariant = { id: string; sku: string; price: number };
@@ -379,7 +793,7 @@ async function main() {
   });
 
   // --- Admin ---
-  await prisma.user.create({
+  const admin = await prisma.user.create({
     data: {
       name: "Hezalli Admin",
       email: "admin@hezalli.com",
@@ -513,37 +927,88 @@ async function main() {
     city: "Taiz",
   });
 
+  // Expand a product's option axes into concrete variants (Cartesian product).
+  // No options → a single default variant, except legacy fashion items which
+  // keep their S/L pair for backward compatibility.
+  function buildVariants(p: SeedProductDef, slug: string) {
+    const compareAtPrice = p.compareAt ?? null;
+    const baseStock = p.stock ?? 40;
+
+    if (p.options && p.options.length > 0) {
+      let combos = [
+        {
+          label: [] as string[],
+          attrs: {} as Record<string, string>,
+          sku: [] as string[],
+        },
+      ];
+      for (const axis of p.options) {
+        combos = combos.flatMap((combo) =>
+          axis.values.map((value) => ({
+            label: [...combo.label, value],
+            attrs: { ...combo.attrs, [axis.name]: value },
+            sku: [...combo.sku, slugify(value)],
+          })),
+        );
+      }
+      return combos.map((c, i) => ({
+        sku: `${slug}-${c.sku.join("-")}`,
+        name: c.label.join(" / "),
+        attributes: c.attrs,
+        price: p.price,
+        compareAtPrice,
+        // Vary stock a little so inventory reads as organic (min 2).
+        stock: Math.max(2, baseStock - i * 4),
+      }));
+    }
+
+    if (p.cat === "fashion-apparel") {
+      return [
+        {
+          sku: `${slug}-s`,
+          name: "Size S",
+          attributes: { size: "S" },
+          price: p.price,
+          compareAtPrice,
+          stock: 20,
+        },
+        {
+          sku: `${slug}-l`,
+          name: "Size L",
+          attributes: { size: "L" },
+          price: p.price,
+          compareAtPrice,
+          stock: 15,
+        },
+      ];
+    }
+
+    return [
+      {
+        sku: `${slug}-default`,
+        name: "Default",
+        attributes: {},
+        price: p.price,
+        compareAtPrice,
+        stock: baseStock,
+      },
+    ];
+  }
+
   // --- Products (+ variants + images) ---
   const products: SeededProduct[] = [];
+  // Products the seed places in a HIDDEN (moderated) state, so we can also
+  // seed the matching seller notification + audit-log entry afterwards.
+  const moderatedSeed: {
+    productId: string;
+    storeIdx: number;
+    reason: string;
+  }[] = [];
   for (const p of PRODUCTS) {
     const slug = slugify(p.en);
-    const isFashion = p.cat === "fashion-apparel";
-    const variantData = isFashion
-      ? [
-          {
-            sku: `${slug}-s`,
-            name: "Size S",
-            attributes: { size: "S" },
-            price: p.price,
-            stock: 20,
-          },
-          {
-            sku: `${slug}-l`,
-            name: "Size L",
-            attributes: { size: "L" },
-            price: p.price,
-            stock: 15,
-          },
-        ]
-      : [
-          {
-            sku: `${slug}-default`,
-            name: "Default",
-            attributes: {},
-            price: p.price,
-            stock: 40,
-          },
-        ];
+    const status = p.status ?? "ACTIVE";
+    const moderated = status === "HIDDEN";
+    const reason = p.moderationReason ?? "";
 
     const created = await prisma.product.create({
       data: {
@@ -556,9 +1021,12 @@ async function main() {
           ar: `${p.ar} — وصف تجريبي.`,
           en: `${p.en} — sample description.`,
         },
-        status: "ACTIVE",
+        condition: p.condition ?? "NEW",
+        status,
+        moderatedBy: moderated ? admin.id : null,
+        moderationReason: moderated ? reason : null,
         basePrice: p.price,
-        variants: { create: variantData },
+        variants: { create: buildVariants(p, slug) },
         images: {
           create: [
             {
@@ -576,6 +1044,9 @@ async function main() {
       },
       include: { variants: true },
     });
+    if (moderated) {
+      moderatedSeed.push({ productId: created.id, storeIdx: p.store, reason });
+    }
     products.push({
       id: created.id,
       slug,
@@ -586,6 +1057,31 @@ async function main() {
         sku: v.sku,
         price: Number(v.price),
       })),
+    });
+  }
+
+  // Mirror the live moderation action (lib/actions/moderation.ts): each seeded
+  // HIDDEN product gets the seller notification + audit-log entry an admin
+  // hide would have produced. Seeded sellers are Arabic-locale.
+  const sellerUserByStore = [seller1.user.id, seller2.user.id];
+  for (const m of moderatedSeed) {
+    await prisma.notification.create({
+      data: {
+        userId: sellerUserByStore[m.storeIdx],
+        type: "SYSTEM",
+        title: "تم إخفاء منتجك من قبل إدارة هزلي",
+        body: `السبب: ${m.reason}. عدّل المنتج ليتوافق مع السياسات ثم تواصل معنا لإعادة نشره.`,
+        data: { productId: m.productId, action: "hide" },
+      },
+    });
+    await prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "product.hide",
+        entity: "Product",
+        entityId: m.productId,
+        meta: { reason: m.reason },
+      },
     });
   }
 

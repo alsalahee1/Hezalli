@@ -90,6 +90,11 @@ export default async function EditProductPage({
           </span>
         </h1>
       </div>
+      {product.moderationReason ? (
+        <div className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
+          {t("moderatedNotice", { reason: product.moderationReason })}
+        </div>
+      ) : null}
       <ProductForm
         product={edit}
         categories={categoryOptions(catRows, locale)}
