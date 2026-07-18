@@ -951,15 +951,26 @@ async function main() {
           })),
         );
       }
-      return combos.map((c, i) => ({
-        sku: `${slug}-${c.sku.join("-")}`,
-        name: c.label.join(" / "),
-        attributes: c.attrs,
-        price: p.price,
-        compareAtPrice,
-        // Vary stock a little so inventory reads as organic (min 2).
-        stock: Math.max(2, baseStock - i * 4),
-      }));
+      // Higher storage tiers cost more, so variant selection changes the price.
+      const STORAGE_PREMIUM: Record<string, number> = {
+        "128GB": 0,
+        "256GB": 30,
+        "512GB": 60,
+        "1TB": 120,
+      };
+      return combos.map((c, i) => {
+        const premium = STORAGE_PREMIUM[c.attrs.storage] ?? 0;
+        return {
+          sku: `${slug}-${c.sku.join("-")}`,
+          name: c.label.join(" / "),
+          attributes: c.attrs,
+          price: p.price + premium,
+          compareAtPrice:
+            compareAtPrice == null ? null : compareAtPrice + premium,
+          // Vary stock a little so inventory reads as organic (min 2).
+          stock: Math.max(2, baseStock - i * 4),
+        };
+      });
     }
 
     if (p.cat === "fashion-apparel") {

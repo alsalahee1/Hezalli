@@ -1,0 +1,267 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import { MessageCircle, Store as StoreIcon } from "lucide-react";
+
+import { localizedName } from "@/lib/categories";
+import { toCardItem } from "@/lib/products";
+import { prisma } from "@/lib/prisma";
+import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/product/product-card";
+import { ProductGallery } from "@/components/product/product-gallery";
+import { ProductShare } from "@/components/product/product-share";
+import { ProductTabs, type Spec } from "@/components/product/product-tabs";
+import { StarRating } from "@/components/product/star-rating";
+import {
+  VariantPicker,
+  type PickerVariant,
+} from "@/components/product/variant-picker";
+
+async function getProduct(slug: string) {
+  return prisma.product.findFirst({
+    where: { slug, status: "ACTIVE" },
+    include: {
+      images: { orderBy: { position: "asc" } },
+      variants: { where: { isActive: true }, orderBy: { sku: "asc" } },
+      brand: { select: { name: true, slug: true } },
+      category: { select: { name: true, slug: true } },
+      store: {
+        select: {
+          name: true,
+          slug: true,
+          logo: true,
+          ratingAvg: true,
+          ratingCount: true,
+          policies: true,
+        },
+      },
+    },
+  });
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string; locale: string }>;
+}): Promise<Metadata> {
+  const { slug, locale } = await params;
+  const product = await prisma.product.findFirst({
+    where: { slug, status: "ACTIVE" },
+    select: { title: true, description: true, images: { take: 1 } },
+  });
+  if (!product) return {};
+  const title = localizedName(product.title, locale);
+  const description = localizedName(product.description, locale).slice(0, 160);
+  return {
+    title: `${title} — Hezalli`,
+    description,
+    openGraph: { title, description, images: product.images.map((i) => i.url) },
+  };
+}
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) notFound();
+
+  const locale = await getLocale();
+  const t = await getTranslations("Product");
+
+  const title = localizedName(product.title, locale);
+  const description = localizedName(product.description, locale);
+
+  const variantIds = product.variants.map((v) => v.id);
+  const [soldAgg, related] = await Promise.all([
+    variantIds.length
+      ? prisma.orderItem.aggregate({
+          _sum: { quantity: true },
+          where: {
+            variantId: { in: variantIds },
+            subOrder: { status: "COMPLETED" },
+          },
+        })
+      : Promise.resolve({ _sum: { quantity: null } }),
+    prisma.product.findMany({
+      where: {
+        categoryId: product.categoryId,
+        status: "ACTIVE",
+        id: { not: product.id },
+      },
+      orderBy: { ratingAvg: "desc" },
+      take: 6,
+      include: {
+        images: { orderBy: { position: "asc" }, take: 1 },
+        variants: {
+          where: { isActive: true },
+          select: { price: true, compareAtPrice: true, stock: true },
+        },
+        store: { select: { name: true } },
+      },
+    }),
+  ]);
+  const sold = soldAgg._sum.quantity ?? 0;
+
+  const pickerVariants: PickerVariant[] = product.variants.map((v) => ({
+    id: v.id,
+    name: v.name,
+    attributes: (v.attributes ?? {}) as Record<string, string>,
+    price: Number(v.price),
+    compareAtPrice: v.compareAtPrice == null ? null : Number(v.compareAtPrice),
+    stock: v.stock,
+  }));
+
+  const galleryImages = product.images.map((i) => ({
+    url: i.url,
+    alt: i.alt ?? title,
+  }));
+
+  // Specs from structured product data + available option axes.
+  const specs: Spec[] = [];
+  if (product.brand)
+    specs.push({ label: t("brand"), value: product.brand.name });
+  specs.push({
+    label: t("category"),
+    value: localizedName(product.category.name, locale),
+  });
+  specs.push({
+    label: t("conditionLabel"),
+    value: product.condition === "USED" ? t("used") : t("new"),
+  });
+  if (product.weightGrams)
+    specs.push({ label: t("weight"), value: `${product.weightGrams} g` });
+  const axes: Record<string, Set<string>> = {};
+  for (const v of pickerVariants) {
+    for (const [k, val] of Object.entries(v.attributes)) {
+      (axes[k] ??= new Set()).add(val);
+    }
+  }
+  for (const [k, set] of Object.entries(axes)) {
+    specs.push({ label: k, value: [...set].join(", ") });
+  }
+
+  const policies = (product.store.policies ?? {}) as {
+    shipping?: string;
+    returns?: string;
+  };
+  const shippingText = policies.shipping || t("shippingDefault");
+  const returnsText = policies.returns || t("returnsDefault");
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6">
+      {/* Breadcrumb */}
+      <nav className="text-muted-foreground mb-4 flex flex-wrap items-center gap-1 text-sm">
+        <Link href="/" className="hover:text-foreground">
+          {t("home")}
+        </Link>
+        <span>/</span>
+        <Link
+          href={`/c/${product.category.slug}`}
+          className="hover:text-foreground"
+        >
+          {localizedName(product.category.name, locale)}
+        </Link>
+        <span>/</span>
+        <span className="text-foreground truncate">{title}</span>
+      </nav>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="min-w-0">
+          <ProductGallery images={galleryImages} />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="flex items-center gap-1">
+                <StarRating rating={product.ratingAvg} size={16} />
+                <span className="text-muted-foreground">
+                  {product.ratingCount > 0
+                    ? `${product.ratingAvg.toFixed(1)} (${product.ratingCount})`
+                    : t("noReviews")}
+                </span>
+              </span>
+              {sold > 0 ? (
+                <span className="text-muted-foreground">
+                  · {t("sold", { count: sold })}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <VariantPicker variants={pickerVariants} />
+
+          <ProductShare />
+
+          {/* Seller card */}
+          <div className="flex items-center gap-3 rounded-lg border p-3">
+            <div className="bg-muted flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full">
+              {product.store.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={product.store.logo}
+                  alt={product.store.name}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <StoreIcon className="text-muted-foreground size-5" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{product.store.name}</p>
+              <p className="text-muted-foreground text-xs">
+                {product.store.ratingCount > 0
+                  ? `${product.store.ratingAvg.toFixed(1)} ★ (${product.store.ratingCount})`
+                  : t("newStore")}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/store/${product.store.slug}`}>
+                  {t("visitStore")}
+                </Link>
+              </Button>
+              <Button size="sm" variant="ghost" disabled>
+                <MessageCircle className="size-4" />
+                {t("chat")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mt-10">
+        <ProductTabs
+          description={description}
+          specs={specs}
+          shipping={shippingText}
+          returns={returnsText}
+          ratingAvg={product.ratingAvg}
+          ratingCount={product.ratingCount}
+        />
+      </div>
+
+      {/* Related */}
+      {related.length > 0 ? (
+        <section className="mt-12">
+          <h2 className="mb-4 text-xl font-semibold tracking-tight">
+            {t("related")}
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {related.map((p) => (
+              <ProductCard key={p.id} item={toCardItem(p, locale)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </main>
+  );
+}
