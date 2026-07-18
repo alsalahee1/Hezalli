@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { ConfirmReceivedButton } from "@/components/orders/confirm-received-button";
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
+import { ChatLauncher } from "@/components/chat/chat-launcher";
 import {
   ReturnBlock,
   type ReturnView,
@@ -229,15 +230,22 @@ export default async function OrderDetailPage({
             Date.now() - new Date(returnBase).getTime() <= returnWindowMs);
         return (
           <section key={s.id} className="rounded-lg border">
-            <div className="flex items-center justify-between border-b px-4 py-2.5 text-sm">
+            <div className="flex items-center justify-between gap-2 border-b px-4 py-2 text-sm">
               <span className="font-medium">{s.store.name}</span>
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-xs font-medium",
-                  STATUS_BADGE[s.status] ?? "bg-muted",
-                )}
-              >
-                {t(`status_${s.status}`)}
+              <span className="flex items-center gap-2">
+                <ChatLauncher
+                  storeId={s.storeId}
+                  subOrderId={s.id}
+                  label={t("contactSeller")}
+                />
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-xs font-medium",
+                    STATUS_BADGE[s.status] ?? "bg-muted",
+                  )}
+                >
+                  {t(`status_${s.status}`)}
+                </span>
               </span>
             </div>
             <ul className="divide-y">

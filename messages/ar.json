@@ -764,7 +764,8 @@
     "shipStatus_OUT_FOR_DELIVERY": "خارج للتوصيل",
     "shipStatus_DELIVERED": "تم التوصيل",
     "shipStatus_FAILED": "فشل التوصيل",
-    "shipStatus_RETURNED": "مُرتجع"
+    "shipStatus_RETURNED": "مُرتجع",
+    "contactSeller": "تواصل مع البائع"
   },
   "Invoice": {
     "invoice": "فاتورة",
@@ -1189,5 +1190,15 @@
     "markAllRead": "تعليم الكل كمقروء",
     "empty": "لا جديد لديك.",
     "seeAll": "عرض جميع الإشعارات"
+  },
+  "Chat": {
+    "title": "الرسائل",
+    "chat": "محادثة",
+    "empty": "لا محادثات بعد.",
+    "noMessages": "لا رسائل بعد",
+    "selectConversation": "اختر محادثة لبدء الدردشة.",
+    "back": "رجوع",
+    "messagePlaceholder": "اكتب رسالة…",
+    "hint": "Enter للإرسال · Shift+Enter لسطر جديد"
   }
 }

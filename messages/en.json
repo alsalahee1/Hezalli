@@ -764,7 +764,8 @@
     "shipStatus_OUT_FOR_DELIVERY": "Out for delivery",
     "shipStatus_DELIVERED": "Delivered",
     "shipStatus_FAILED": "Delivery failed",
-    "shipStatus_RETURNED": "Returned"
+    "shipStatus_RETURNED": "Returned",
+    "contactSeller": "Contact seller"
   },
   "Invoice": {
     "invoice": "Invoice",
@@ -1189,5 +1190,15 @@
     "markAllRead": "Mark all read",
     "empty": "You're all caught up.",
     "seeAll": "See all notifications"
+  },
+  "Chat": {
+    "title": "Messages",
+    "chat": "Chat",
+    "empty": "No conversations yet.",
+    "noMessages": "No messages yet",
+    "selectConversation": "Select a conversation to start chatting.",
+    "back": "Back",
+    "messagePlaceholder": "Type a message…",
+    "hint": "Enter to send · Shift+Enter for a new line"
   }
 }

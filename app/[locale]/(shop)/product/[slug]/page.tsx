@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { MessageCircle, Store as StoreIcon } from "lucide-react";
+import { Store as StoreIcon } from "lucide-react";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
@@ -9,6 +9,7 @@ import { toCardItem } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { ChatLauncher } from "@/components/chat/chat-launcher";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { RecordView } from "@/components/product/record-view";
@@ -316,10 +317,9 @@ export default async function ProductPage({
                   {t("visitStore")}
                 </Link>
               </Button>
-              <Button size="sm" variant="ghost" disabled>
-                <MessageCircle className="size-4" />
-                {t("chat")}
-              </Button>
+              {isStoreOwner ? null : (
+                <ChatLauncher storeId={product.storeId} label={t("chat")} />
+              )}
             </div>
           </div>
         </div>

@@ -29,6 +29,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ChatIcon } from "@/components/chat/chat-icon";
 
 type NavItem = { href: string; key: string; icon: LucideIcon };
 
@@ -143,6 +144,7 @@ export function DashboardShell({
           </button>
           <span className="font-semibold md:hidden">{t(titleKey)}</span>
           <div className="ms-auto flex items-center gap-1">
+            {variant === "seller" ? <ChatIcon variant="seller" /> : null}
             <NotificationBell variant={variant} />
             <Link
               href="/"

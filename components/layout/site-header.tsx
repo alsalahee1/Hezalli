@@ -9,6 +9,7 @@ import type { NavCategory } from "@/lib/categories";
 import { CartButton } from "@/components/cart/cart-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ChatIcon } from "@/components/chat/chat-icon";
 import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
@@ -68,6 +69,7 @@ export function SiteHeader({
           </Button>
           {user ? (
             <>
+              <ChatIcon variant="buyer" />
               <NotificationBell variant="buyer" />
               <UserMenu user={user} />
             </>
