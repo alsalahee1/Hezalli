@@ -156,3 +156,69 @@ describe("wallet top-up ledger (Step 19.3)", () => {
     }
   });
 });
+
+describe("wallet withdrawal reserve/return (Step 19.4)", () => {
+  it("reserves on request and returns the funds on rejection", async () => {
+    const fx = await makeFixture();
+    try {
+      const walletId = await getWalletId(fx.buyerId);
+      // Seed a balance via a TOP_UP entry.
+      await prisma.walletEntry.create({
+        data: { walletId, type: "TOP_UP", amountUsd: 100, note: "seed" },
+      });
+      await recomputeWalletBalance(fx.buyerId);
+
+      // Reserve a $60 withdrawal (mirror requestWithdrawal's core).
+      const w = await prisma.$transaction(async (tx) => {
+        const upd = await tx.wallet.updateMany({
+          where: { id: walletId, availableUsd: { gte: 60 } },
+          data: { availableUsd: { decrement: 60 } },
+        });
+        expect(upd.count).toBe(1);
+        const wd = await tx.walletWithdrawal.create({
+          data: {
+            walletId,
+            amountUsd: 60,
+            method: "wallet",
+            destination: { provider: "Jawali", walletNumber: "770000000" },
+            status: "REQUESTED",
+          },
+        });
+        await creditWalletTx(tx, walletId, {
+          type: "CASHOUT",
+          amountUsd: -60,
+          note: "reserve",
+        });
+        return wd;
+      });
+      await recomputeWalletBalance(fx.buyerId);
+      expect((await getWalletView(fx.buyerId)).balance).toBe(40);
+
+      // Reject → return the reserved funds.
+      await prisma.$transaction(async (tx) => {
+        await tx.walletWithdrawal.update({
+          where: { id: w.id },
+          data: { status: "REJECTED" },
+        });
+        await creditWalletTx(tx, walletId, {
+          type: "ADJUSTMENT",
+          amountUsd: 60,
+          note: "return",
+        });
+      });
+      await recomputeWalletBalance(fx.buyerId);
+      expect((await getWalletView(fx.buyerId)).balance).toBe(100);
+    } finally {
+      await prisma.walletWithdrawal
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await fx.cleanup();
+    }
+  });
+});

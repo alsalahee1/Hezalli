@@ -1088,7 +1088,10 @@
     "reference": "Bank reference / note",
     "confirmPaid": "Confirm paid",
     "rejectReason": "Reason",
-    "confirmReject": "Confirm reject"
+    "confirmReject": "Confirm reject",
+    "withdrawalsTitle": "Wallet withdrawals",
+    "withdrawalsDesc": "Cash-outs from buyer HezalliPay wallets. Funds are already reserved; pay outside the system, then mark paid.",
+    "withdrawalsEmpty": "No wallet withdrawals awaiting action."
   },
   "AdminShippingZones": {
     "title": "Shipping zones",
@@ -1632,9 +1635,20 @@
     "err_badMethod": "Choose a valid top-up method.",
     "err_badAmount": "Enter a valid amount.",
     "err_proofRequired": "Enter the transfer reference or transaction hash.",
-    "err_belowMin": "That amount is below the minimum top-up.",
+    "err_belowMin": "That amount is below the minimum withdrawal.",
     "err_aboveMax": "That amount is above the per-top-up maximum.",
     "err_frozen": "Your wallet is on hold. Please contact support.",
-    "err_capExceeded": "This would exceed your wallet balance limit."
+    "err_capExceeded": "This would exceed your wallet balance limit.",
+    "withdraw": "Withdraw",
+    "withdrawTitle": "Withdraw funds",
+    "withdrawDesc": "Cash out your balance to your saved payout destination. An admin processes it.",
+    "withdrawAmount": "Amount (max {balance})",
+    "withdrawMin": "Minimum withdrawal {min}",
+    "withdrawTo": "Sending to",
+    "withdrawSubmit": "Request withdrawal",
+    "pendingWithdrawalsTitle": "Pending withdrawals",
+    "err_notVerified": "Withdrawals require a verified account.",
+    "err_noMethod": "Add a payout method first.",
+    "err_insufficient": "That is more than your available balance."
   }
 }

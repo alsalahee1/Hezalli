@@ -1088,7 +1088,10 @@
     "reference": "مرجع بنكي / ملاحظة",
     "confirmPaid": "تأكيد الدفع",
     "rejectReason": "السبب",
-    "confirmReject": "تأكيد الرفض"
+    "confirmReject": "تأكيد الرفض",
+    "withdrawalsTitle": "عمليات سحب المحفظة",
+    "withdrawalsDesc": "عمليات سحب من محافظ المشترين. المبالغ محجوزة مسبقاً؛ ادفع خارج النظام ثم علّمها كمدفوعة.",
+    "withdrawalsEmpty": "لا توجد عمليات سحب بانتظار الإجراء."
   },
   "AdminShippingZones": {
     "title": "مناطق الشحن",
@@ -1632,9 +1635,20 @@
     "err_badMethod": "اختر طريقة شحن صحيحة.",
     "err_badAmount": "أدخل مبلغاً صحيحاً.",
     "err_proofRequired": "أدخل مرجع التحويل أو رقم العملية.",
-    "err_belowMin": "المبلغ أقل من الحد الأدنى للشحن.",
+    "err_belowMin": "المبلغ أقل من الحد الأدنى للسحب.",
     "err_aboveMax": "المبلغ أعلى من الحد الأقصى للعملية الواحدة.",
     "err_frozen": "محفظتك موقوفة مؤقتاً. يرجى التواصل مع الدعم.",
-    "err_capExceeded": "سيتجاوز هذا حد رصيد محفظتك."
+    "err_capExceeded": "سيتجاوز هذا حد رصيد محفظتك.",
+    "withdraw": "سحب",
+    "withdrawTitle": "سحب الأموال",
+    "withdrawDesc": "اسحب رصيدك إلى وجهة الدفع المحفوظة. يقوم المشرف بمعالجتها.",
+    "withdrawAmount": "المبلغ (بحد أقصى {balance})",
+    "withdrawMin": "الحد الأدنى للسحب {min}",
+    "withdrawTo": "الإرسال إلى",
+    "withdrawSubmit": "طلب السحب",
+    "pendingWithdrawalsTitle": "عمليات سحب قيد المعالجة",
+    "err_notVerified": "يتطلب السحب حساباً موثّقاً.",
+    "err_noMethod": "أضف طريقة دفع أولاً.",
+    "err_insufficient": "هذا أكثر من رصيدك المتاح."
   }
 }
