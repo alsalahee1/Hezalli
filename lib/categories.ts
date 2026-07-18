@@ -24,6 +24,40 @@ type RawCategory = {
   children?: { slug: string; name: unknown }[];
 };
 
+// Flat, indented options for a category <select> (leaf and parent both
+// selectable). Rows must include id, parentId, name, and position.
+type OptionRow = {
+  id: string;
+  parentId: string | null;
+  name: unknown;
+  position: number;
+};
+
+export function categoryOptions(
+  rows: OptionRow[],
+  locale: string,
+): { id: string; label: string }[] {
+  const childrenOf = new Map<string | null, OptionRow[]>();
+  for (const r of rows) {
+    const list = childrenOf.get(r.parentId) ?? [];
+    list.push(r);
+    childrenOf.set(r.parentId, list);
+  }
+  for (const list of childrenOf.values())
+    list.sort((a, b) => a.position - b.position);
+
+  const out: { id: string; label: string }[] = [];
+  const walk = (parentId: string | null, depth: number) => {
+    for (const r of childrenOf.get(parentId) ?? []) {
+      const prefix = depth > 0 ? `${"— ".repeat(depth)}` : "";
+      out.push({ id: r.id, label: prefix + localizedName(r.name, locale) });
+      walk(r.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
+}
+
 export function toNavCategories(
   rows: RawCategory[],
   locale: Locale,

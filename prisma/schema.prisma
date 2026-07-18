@@ -55,6 +55,11 @@ enum ProductStatus {
   REMOVED
 }
 
+enum ProductCondition {
+  NEW
+  USED
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -359,7 +364,11 @@ model Product {
   slug             String           @unique
   description      Json?
   status           ProductStatus    @default(ACTIVE)
+  condition        ProductCondition @default(NEW)
   basePrice        Decimal          @db.Decimal(12, 2)
+  lowStockThreshold Int             @default(0)
+  weightGrams      Int?
+  dimensions       Json?
   moderatedBy      String?
   moderationReason String?
   ratingAvg        Float            @default(0)
@@ -387,6 +396,7 @@ model ProductVariant {
   name           String
   attributes     Json?
   price          Decimal         @db.Decimal(12, 2)
+  compareAtPrice Decimal?        @db.Decimal(12, 2)
   stock          Int             @default(0)
   isActive       Boolean         @default(true)
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
