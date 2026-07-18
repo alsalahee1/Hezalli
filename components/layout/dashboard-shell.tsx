@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  Banknote,
   Images,
   LayoutDashboard,
   Menu,
@@ -45,6 +46,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/products", key: "products", icon: Package },
   { href: "/admin/orders", key: "orders", icon: ShoppingBag },
   { href: "/admin/payments", key: "payments", icon: Wallet },
+  { href: "/admin/payouts", key: "payouts", icon: Banknote },
   { href: "/admin/disputes", key: "disputes", icon: ShieldAlert },
   { href: "/admin/categories", key: "categories", icon: Shapes },
   { href: "/admin/brands", key: "brands", icon: Tags },

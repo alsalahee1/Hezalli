@@ -433,7 +433,8 @@
     "pages": "Pages",
     "settings": "Settings",
     "banners": "Banners",
-    "payments": "Payments"
+    "payments": "Payments",
+    "payouts": "Payouts"
   },
   "AdminProducts": {
     "title": "Products",
@@ -860,7 +861,22 @@
     "type_REFUND": "Refund",
     "type_PAYOUT": "Payout",
     "type_ADJUSTMENT": "Adjustment",
-    "type_COD_COMMISSION_DUE": "COD commission"
+    "type_COD_COMMISSION_DUE": "COD commission",
+    "payouts": "Payouts",
+    "requestPayout": "Request payout",
+    "requested": "Payout requested",
+    "noMethodHint": "Add a payout method to withdraw your balance.",
+    "setUpPayout": "Set up payout",
+    "noPayouts": "No payouts yet.",
+    "payout_REQUESTED": "Requested",
+    "payout_APPROVED": "Approved",
+    "payout_PAID": "Paid",
+    "payout_REJECTED": "Rejected",
+    "err_noMethod": "Add a payout method first.",
+    "err_belowMin": "Below the minimum payout ($10).",
+    "err_insufficient": "Not enough available balance.",
+    "err_notSeller": "Seller account required.",
+    "err_unauthorized": "Please sign in."
   },
   "AdminOrders": {
     "title": "Orders",
@@ -891,5 +907,16 @@
     "status_CANCELLED": "Cancelled",
     "status_REFUNDED": "Refunded",
     "status_RETURNED": "Returned"
+  },
+  "AdminPayouts": {
+    "title": "Seller payouts",
+    "desc": "Pay sellers their available balance (manual bank transfer).",
+    "empty": "No payout requests.",
+    "markPaid": "Mark paid",
+    "reject": "Reject",
+    "reference": "Bank reference / note",
+    "confirmPaid": "Confirm paid",
+    "rejectReason": "Reason",
+    "confirmReject": "Confirm reject"
   }
 }

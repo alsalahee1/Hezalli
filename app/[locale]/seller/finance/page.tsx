@@ -3,6 +3,16 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { requireSellerStore } from "@/lib/authz";
 import { recomputeBalance } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
+import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
+import { RequestPayoutButton } from "@/components/seller/request-payout-button";
+
+const PAYOUT_BADGE: Record<string, string> = {
+  REQUESTED: "bg-amber-500/15 text-amber-600",
+  APPROVED: "bg-blue-500/15 text-blue-600",
+  PAID: "bg-emerald-500/15 text-emerald-600",
+  REJECTED: "bg-destructive/10 text-destructive",
+};
 
 export default async function SellerFinancePage() {
   const gate = await requireSellerStore();
@@ -17,15 +27,30 @@ export default async function SellerFinancePage() {
   if (!store) return null;
   await recomputeBalance(store.sellerId);
 
-  const balance = await prisma.sellerBalance.findUnique({
-    where: { sellerId: store.sellerId },
-    include: { entries: { orderBy: { createdAt: "desc" }, take: 100 } },
-  });
+  const [balance, payouts, method] = await Promise.all([
+    prisma.sellerBalance.findUnique({
+      where: { sellerId: store.sellerId },
+      include: { entries: { orderBy: { createdAt: "desc" }, take: 100 } },
+    }),
+    prisma.payout.findMany({
+      where: { sellerId: store.sellerId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.payoutMethod.findFirst({
+      where: { sellerId: store.sellerId, isDefault: true },
+      select: { id: true },
+    }),
+  ]);
 
   const money = (n: unknown) =>
     format.number(Number(n), { style: "currency", currency: "USD" });
   const available = Number(balance?.availableUsd ?? 0);
   const pending = Number(balance?.pendingUsd ?? 0);
+  const outstanding = payouts
+    .filter((p) => p.status === "REQUESTED" || p.status === "APPROVED")
+    .reduce((s, p) => s + Number(p.amountUsd), 0);
+  const canRequest = Boolean(method) && available - outstanding >= 10;
 
   return (
     <div className="space-y-6">
@@ -53,6 +78,50 @@ export default async function SellerFinancePage() {
             {t("pendingHint")}
           </p>
         </div>
+      </div>
+
+      {/* Payouts */}
+      <div className="rounded-lg border p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">{t("payouts")}</h2>
+          <RequestPayoutButton disabled={!canRequest} />
+        </div>
+        {!method ? (
+          <p className="text-muted-foreground text-sm">
+            {t("noMethodHint")}{" "}
+            <Link
+              href="/seller/settings"
+              className="text-primary hover:underline"
+            >
+              {t("setUpPayout")}
+            </Link>
+          </p>
+        ) : null}
+        {payouts.length > 0 ? (
+          <ul className="divide-y text-sm">
+            {payouts.map((p) => (
+              <li key={p.id} className="flex items-center justify-between py-2">
+                <span>
+                  {format.dateTime(p.createdAt, { dateStyle: "medium" })} ·{" "}
+                  {p.method}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span dir="ltr">{money(p.amountUsd)}</span>
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-xs font-medium",
+                      PAYOUT_BADGE[p.status] ?? "bg-muted",
+                    )}
+                  >
+                    {t(`payout_${p.status}`)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground text-sm">{t("noPayouts")}</p>
+        )}
       </div>
 
       <div>

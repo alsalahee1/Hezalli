@@ -433,7 +433,8 @@
     "pages": "الصفحات",
     "settings": "الإعدادات",
     "banners": "اللافتات",
-    "payments": "المدفوعات"
+    "payments": "المدفوعات",
+    "payouts": "مدفوعات البائعين"
   },
   "AdminProducts": {
     "title": "المنتجات",
@@ -860,7 +861,22 @@
     "type_REFUND": "استرداد",
     "type_PAYOUT": "سحب",
     "type_ADJUSTMENT": "تسوية",
-    "type_COD_COMMISSION_DUE": "عمولة الدفع عند الاستلام"
+    "type_COD_COMMISSION_DUE": "عمولة الدفع عند الاستلام",
+    "payouts": "عمليات السحب",
+    "requestPayout": "طلب سحب",
+    "requested": "تم إرسال طلب السحب",
+    "noMethodHint": "أضف طريقة سحب لسحب رصيدك.",
+    "setUpPayout": "إعداد السحب",
+    "noPayouts": "لا توجد عمليات سحب بعد.",
+    "payout_REQUESTED": "مطلوب",
+    "payout_APPROVED": "موافق عليه",
+    "payout_PAID": "مدفوع",
+    "payout_REJECTED": "مرفوض",
+    "err_noMethod": "أضف طريقة سحب أولاً.",
+    "err_belowMin": "أقل من الحد الأدنى للسحب (10$).",
+    "err_insufficient": "الرصيد المتاح غير كافٍ.",
+    "err_notSeller": "يتطلب حساب بائع.",
+    "err_unauthorized": "يرجى تسجيل الدخول."
   },
   "AdminOrders": {
     "title": "الطلبات",
@@ -891,5 +907,16 @@
     "status_CANCELLED": "ملغى",
     "status_REFUNDED": "مُسترد",
     "status_RETURNED": "مُرتجع"
+  },
+  "AdminPayouts": {
+    "title": "مدفوعات البائعين",
+    "desc": "ادفع للبائعين رصيدهم المتاح (تحويل بنكي يدوي).",
+    "empty": "لا توجد طلبات سحب.",
+    "markPaid": "تحديد كمدفوع",
+    "reject": "رفض",
+    "reference": "مرجع بنكي / ملاحظة",
+    "confirmPaid": "تأكيد الدفع",
+    "rejectReason": "السبب",
+    "confirmReject": "تأكيد الرفض"
   }
 }
