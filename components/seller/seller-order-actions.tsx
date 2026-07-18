@@ -3,11 +3,7 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
-import {
-  acceptSubOrder,
-  cancelSubOrder,
-  shipSubOrder,
-} from "@/lib/actions/seller-order";
+import { acceptSubOrder, cancelSubOrder } from "@/lib/actions/seller-order";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,15 +45,6 @@ export function SellerOrderActions({
             onClick={() => run(() => acceptSubOrder(subOrderId))}
           >
             {t("accept")}
-          </Button>
-        ) : null}
-        {status === "PROCESSING" ? (
-          <Button
-            size="sm"
-            disabled={pending}
-            onClick={() => run(() => shipSubOrder(subOrderId))}
-          >
-            {t("markShipped")}
           </Button>
         ) : null}
         {cancellable ? (

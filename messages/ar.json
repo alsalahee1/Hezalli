@@ -438,7 +438,8 @@
     "banners": "اللافتات",
     "payments": "المدفوعات",
     "payouts": "مدفوعات البائعين",
-    "shippingZones": "مناطق الشحن"
+    "shippingZones": "مناطق الشحن",
+    "carriers": "شركات الشحن"
   },
   "AdminProducts": {
     "title": "المنتجات",
@@ -803,7 +804,8 @@
     "status_COMPLETED": "مكتمل",
     "status_CANCELLED": "ملغى",
     "status_RETURNED": "مُرتجع",
-    "status_REFUNDED": "مُسترد"
+    "status_REFUNDED": "مُسترد",
+    "daysWaiting": "{count, plural, zero {بانتظار الشحن} one {بانتظار يوم} two {بانتظار يومين} few {بانتظار # أيام} many {بانتظار # يوماً} other {بانتظار # يوم}}"
   },
   "PackingSlip": {
     "packingSlip": "قائمة التغليف",
@@ -954,5 +956,44 @@
     "saved": "تم حفظ أسعار الشحن.",
     "noZones": "لا توجد مناطق شحن معرّفة بعد. اطلب من مشرف المنصة إضافة مناطق.",
     "defaultHint": "المناطق الفارغة تستخدم الإعداد الافتراضي للمنصة: {fee} لكل طلب، مجاني فوق {over}."
+  },
+  "AdminCarriers": {
+    "title": "شركات الشحن",
+    "desc": "شركات الشحن التي يمكن للبائعين اختيارها عند شحن الطلبات.",
+    "addCarrier": "إضافة شركة شحن",
+    "name": "اسم شركة الشحن",
+    "namePlaceholder": "مثال: مندوب محلي",
+    "trackingUrl": "قالب رابط التتبع",
+    "trackingHint": "اختياري. استخدم {tracking} مكان رقم التتبع.",
+    "platformManaged": "شركة شحن تديرها المنصة",
+    "platform": "المنصة",
+    "noTracking": "لا يوجد رابط تتبع",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "empty": "لا توجد شركات شحن بعد. أضف واحدة ليتمكن البائعون من الشحن.",
+    "err_forbidden": "ليس لديك صلاحية لهذا الإجراء.",
+    "err_nameRequired": "أدخل اسم شركة الشحن."
+  },
+  "Shipment": {
+    "shipTitle": "شحن هذا الطلب",
+    "shipmentTitle": "الشحنة",
+    "carrier": "شركة الشحن",
+    "trackingNumber": "رقم التتبع",
+    "note": "ملاحظة",
+    "notePlaceholder": "ملاحظة اختيارية (مثل تعليمات المناولة)",
+    "markShipped": "تحديد كمشحون",
+    "shipping": "جارٍ الشحن…",
+    "track": "تتبع",
+    "editTracking": "تعديل التتبع",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "cancel": "إلغاء",
+    "err_forbidden": "ليس لديك صلاحية لهذا الإجراء.",
+    "err_notFound": "الطلب غير موجود.",
+    "err_badState": "لا يمكن شحن هذا الطلب من حالته الحالية.",
+    "err_carrierRequired": "اختر شركة شحن.",
+    "err_trackingRequired": "أدخل رقم تتبع صحيح."
   }
 }

@@ -103,6 +103,12 @@ export default async function SellerOrdersPage({
         <div className="space-y-3">
           {filtered.map((s) => {
             const itemCount = s.items.reduce((n, i) => n + i.quantity, 0);
+            const daysWaiting = Math.floor(
+              (Date.now() - new Date(s.createdAt).getTime()) / 86_400_000,
+            );
+            const awaiting = ["PENDING", "CONFIRMED", "PROCESSING"].includes(
+              s.status,
+            );
             return (
               <div
                 key={s.id}
@@ -124,6 +130,11 @@ export default async function SellerOrdersPage({
                     {s.order.buyer.name} ·{" "}
                     {format.dateTime(s.createdAt, { dateStyle: "medium" })} ·{" "}
                     {t("itemCount", { count: itemCount })}
+                    {awaiting && daysWaiting >= 1 ? (
+                      <span className="ms-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                        {t("daysWaiting", { count: daysWaiting })}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

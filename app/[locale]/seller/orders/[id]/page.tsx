@@ -5,10 +5,12 @@ import { ArrowLeft, Printer } from "lucide-react";
 import { requireSellerStore } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE } from "@/lib/order-status";
+import { buildTrackingUrl } from "@/lib/tracking";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SellerOrderActions } from "@/components/seller/seller-order-actions";
+import { ShipOrderForm } from "@/components/seller/ship-order-form";
 
 export default async function SellerOrderDetailPage({
   params,
@@ -26,6 +28,7 @@ export default async function SellerOrderDetailPage({
     where: { id, storeId: gate.storeId },
     include: {
       items: true,
+      shipment: { include: { carrier: true } },
       order: {
         include: {
           address: true,
@@ -36,6 +39,25 @@ export default async function SellerOrderDetailPage({
     },
   });
   if (!sub) notFound();
+
+  const carriers = await prisma.carrier.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, trackingUrl: true },
+  });
+  const shipmentInfo = sub.shipment
+    ? {
+        carrierId: sub.shipment.carrierId,
+        carrierName: sub.shipment.carrier?.name ?? null,
+        trackingNumber: sub.shipment.trackingNumber,
+        trackingUrl: buildTrackingUrl(
+          sub.shipment.carrier?.trackingUrl,
+          sub.shipment.trackingNumber,
+        ),
+      }
+    : null;
+  const showShipping = ["PROCESSING", "SHIPPED", "DELIVERED"].includes(
+    sub.status,
+  );
 
   const money = (n: unknown) =>
     format.number(Number(n), { style: "currency", currency: "USD" });
@@ -80,6 +102,16 @@ export default async function SellerOrderDetailPage({
           </a>
         </Button>
       </div>
+
+      {/* Shipping / tracking */}
+      {showShipping ? (
+        <ShipOrderForm
+          subOrderId={sub.id}
+          status={sub.status}
+          carriers={carriers.map((c) => ({ id: c.id, name: c.name }))}
+          shipment={shipmentInfo}
+        />
+      ) : null}
 
       {/* Items */}
       <section className="rounded-lg border">

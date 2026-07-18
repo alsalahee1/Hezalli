@@ -19,6 +19,7 @@ import {
   Store,
   Tag,
   Tags,
+  Truck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -49,6 +50,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/payments", key: "payments", icon: Wallet },
   { href: "/admin/payouts", key: "payouts", icon: Banknote },
   { href: "/admin/shipping-zones", key: "shippingZones", icon: MapPin },
+  { href: "/admin/carriers", key: "carriers", icon: Truck },
   { href: "/admin/disputes", key: "disputes", icon: ShieldAlert },
   { href: "/admin/categories", key: "categories", icon: Shapes },
   { href: "/admin/brands", key: "brands", icon: Tags },

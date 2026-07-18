@@ -108,10 +108,6 @@ export async function acceptSubOrder(subOrderId: string): Promise<Result> {
   return transition(subOrderId, ["CONFIRMED"], "PROCESSING");
 }
 
-export async function shipSubOrder(subOrderId: string): Promise<Result> {
-  return transition(subOrderId, ["PROCESSING"], "SHIPPED");
-}
-
 export async function cancelSubOrder(
   subOrderId: string,
   reason: string,

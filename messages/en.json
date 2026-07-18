@@ -438,7 +438,8 @@
     "banners": "Banners",
     "payments": "Payments",
     "payouts": "Payouts",
-    "shippingZones": "Shipping zones"
+    "shippingZones": "Shipping zones",
+    "carriers": "Carriers"
   },
   "AdminProducts": {
     "title": "Products",
@@ -803,7 +804,8 @@
     "status_COMPLETED": "Completed",
     "status_CANCELLED": "Cancelled",
     "status_RETURNED": "Returned",
-    "status_REFUNDED": "Refunded"
+    "status_REFUNDED": "Refunded",
+    "daysWaiting": "{count, plural, one {# day waiting} other {# days waiting}}"
   },
   "PackingSlip": {
     "packingSlip": "Packing slip",
@@ -954,5 +956,44 @@
     "saved": "Shipping rates saved.",
     "noZones": "No shipping zones are defined yet. Ask the platform admin to add zones.",
     "defaultHint": "Zones left blank use the platform default: {fee} per order, free over {over}."
+  },
+  "AdminCarriers": {
+    "title": "Carriers",
+    "desc": "Shipping carriers sellers can choose when marking orders shipped.",
+    "addCarrier": "Add carrier",
+    "name": "Carrier name",
+    "namePlaceholder": "e.g. Local Courier",
+    "trackingUrl": "Tracking URL template",
+    "trackingHint": "Optional. Use {tracking} where the tracking number goes.",
+    "platformManaged": "Platform-managed carrier",
+    "platform": "Platform",
+    "noTracking": "No tracking link",
+    "save": "Save carrier",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "empty": "No carriers yet. Add one so sellers can ship orders.",
+    "err_forbidden": "You don't have permission to do this.",
+    "err_nameRequired": "Enter a carrier name."
+  },
+  "Shipment": {
+    "shipTitle": "Ship this order",
+    "shipmentTitle": "Shipment",
+    "carrier": "Carrier",
+    "trackingNumber": "Tracking number",
+    "note": "Note",
+    "notePlaceholder": "Optional note (e.g. handling instructions)",
+    "markShipped": "Mark shipped",
+    "shipping": "Shipping…",
+    "track": "Track",
+    "editTracking": "Edit tracking",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "err_forbidden": "You don't have permission to do this.",
+    "err_notFound": "Order not found.",
+    "err_badState": "This order can't be shipped from its current status.",
+    "err_carrierRequired": "Choose a carrier.",
+    "err_trackingRequired": "Enter a valid tracking number."
   }
 }
