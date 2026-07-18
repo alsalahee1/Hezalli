@@ -3,11 +3,10 @@
 // — for a full refund — marks the sub-order REFUNDED. Manual methods: the money
 // itself is returned outside the system. Not auth-gated; callers must authorize.
 import {
-  commissionOf,
   getBalanceId,
   recomputeBalance,
   round2,
-  sellerNetOf,
+  subEconomics,
 } from "@/lib/finance";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
@@ -36,6 +35,7 @@ export async function applyRefund(
       orderId: true,
       itemsTotal: true,
       shippingTotal: true,
+      discountTotal: true,
       commissionRate: true,
       store: { select: { sellerId: true } },
       order: {
@@ -44,6 +44,7 @@ export async function applyRefund(
           buyerId: true,
           buyer: { select: { locale: true } },
           payment: { select: { id: true } },
+          coupon: { select: { scope: true } },
         },
       },
     },
@@ -53,12 +54,21 @@ export async function applyRefund(
 
   const itemsTotal = Number(sub.itemsTotal);
   const shipping = Number(sub.shippingTotal);
-  const subTotal = round2(itemsTotal + shipping);
+  const sellerFunded = sub.order.coupon?.scope === "SELLER";
+  const eco = subEconomics(
+    itemsTotal,
+    shipping,
+    Number(sub.commissionRate),
+    Number(sub.discountTotal),
+    sellerFunded,
+  );
+  // Refund the amount actually paid (after any voucher discount).
+  const paid = eco.paid;
   const amount =
-    opts.amountUsd && opts.amountUsd > 0 && opts.amountUsd <= subTotal
+    opts.amountUsd && opts.amountUsd > 0 && opts.amountUsd <= paid
       ? round2(opts.amountUsd)
-      : subTotal;
-  const ratio = subTotal > 0 ? amount / subTotal : 1;
+      : paid;
+  const ratio = paid > 0 ? amount / paid : 1;
   const isFull = ratio >= 1;
 
   const settled = await prisma.ledgerEntry.findFirst({
@@ -83,28 +93,24 @@ export async function applyRefund(
     refundId = refund.id;
 
     if (settled) {
-      const commission = commissionOf(itemsTotal, Number(sub.commissionRate));
-      const sellerNet = sellerNetOf(
-        itemsTotal,
-        shipping,
-        Number(sub.commissionRate),
-      );
       if (sub.order.paymentMethod === "COD") {
+        // Reverse the COD ledger credit (commission owed, less platform funding).
         await tx.ledgerEntry.create({
           data: {
             balanceId,
             type: "REFUND",
-            amountUsd: round2(commission * ratio),
+            amountUsd: -round2(eco.codLedger * ratio),
             subOrderId,
             note: "COD commission reversed (refund)",
           },
         });
       } else {
+        // Claw back the seller's SALE credit.
         await tx.ledgerEntry.create({
           data: {
             balanceId,
             type: "REFUND",
-            amountUsd: -round2(sellerNet * ratio),
+            amountUsd: -round2(eco.sellerNet * ratio),
             subOrderId,
             note: "Sale reversed (refund)",
           },

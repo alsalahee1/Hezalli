@@ -5,19 +5,22 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
-import { getCommissionRate } from "@/lib/finance";
+import { getCommissionRate, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { quoteShippingForStores } from "@/lib/shipping";
+import { validateCoupon } from "@/lib/vouchers";
 
 export type PaymentMethodChoice = "COD" | "BANK_TRANSFER" | "USDT" | "WALLET";
 export type PlaceOrderInput = {
   addressId: string;
   items: { variantId: string; quantity: number }[];
   paymentMethod: PaymentMethodChoice;
+  couponCode?: string;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
 
 class StockError extends Error {}
+class CouponError extends Error {}
 
 export async function placeOrder(
   input: PlaceOrderInput,
@@ -94,13 +97,42 @@ export async function placeOrder(
     address.governorate,
     rawGroups.map((g) => ({ storeId: g.storeId, subtotal: g.itemsTotal })),
   );
-  const groups = rawGroups.map((g) => ({
+  const groupsBase = rawGroups.map((g) => ({
     ...g,
     shipping: shipQuote.get(g.storeId) ?? 0,
   }));
+
+  // Optional voucher: validate + compute per-store discount.
+  let couponId: string | null = null;
+  let couponMaxUses: number | null = null;
+  const discountByStore = new Map<string, number>();
+  const code = input.couponCode?.trim();
+  if (code) {
+    const res = await validateCoupon(
+      code,
+      userId,
+      groupsBase.map((g) => ({
+        storeId: g.storeId,
+        itemsTotal: g.itemsTotal,
+        shipping: g.shipping,
+      })),
+    );
+    if (!res.ok) return { error: `coupon_${res.error}` };
+    couponId = res.coupon.id;
+    couponMaxUses = res.coupon.maxUses;
+    for (const [sid, d] of Object.entries(res.discount.perStore)) {
+      discountByStore.set(sid, d);
+    }
+  }
+
+  const groups = groupsBase.map((g) => ({
+    ...g,
+    discount: discountByStore.get(g.storeId) ?? 0,
+  }));
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
-  const grandTotal = Number((itemsTotal + shippingTotal).toFixed(2));
+  const discountTotal = round2(groups.reduce((s, g) => s + g.discount, 0));
+  const grandTotal = round2(itemsTotal + shippingTotal - discountTotal);
   const commissionRate = await getCommissionRate();
 
   // Seller users (for notifications), by store.
@@ -133,7 +165,9 @@ export async function placeOrder(
           paymentMethod: input.paymentMethod,
           itemsTotal,
           shippingTotal,
+          discountTotal,
           grandTotal,
+          ...(couponId ? { coupon: { connect: { id: couponId } } } : {}),
           displayCurrency: "USD",
           exchangeRate: 1,
           displayTotal: grandTotal,
@@ -143,6 +177,7 @@ export async function placeOrder(
               status: orderStatus,
               itemsTotal: g.itemsTotal,
               shippingTotal: g.shipping,
+              discountTotal: g.discount,
               commissionRate,
               commissionAmt: 0,
               sellerNet: 0,
@@ -179,6 +214,20 @@ export async function placeOrder(
         },
         select: { id: true },
       });
+
+      // Redeem the voucher atomically (guards the total-usage limit).
+      if (couponId) {
+        const guard =
+          couponMaxUses != null ? { usedCount: { lt: couponMaxUses } } : {};
+        const upd = await tx.coupon.updateMany({
+          where: { id: couponId, isActive: true, ...guard },
+          data: { usedCount: { increment: 1 } },
+        });
+        if (upd.count !== 1) throw new CouponError();
+        await tx.couponRedemption.create({
+          data: { couponId, userId, orderId: order.id },
+        });
+      }
 
       // COD orders notify sellers immediately; prepaid orders notify sellers
       // only once payment is confirmed (see confirmPayment).
@@ -237,6 +286,7 @@ export async function placeOrder(
     return { orderId };
   } catch (e) {
     if (e instanceof StockError) return { error: "outOfStock" };
+    if (e instanceof CouponError) return { error: "coupon_usedUp" };
     throw e;
   }
 }

@@ -19,6 +19,33 @@ export function sellerNetOf(
   return round2(itemsTotal + shipping - commissionOf(itemsTotal, rate));
 }
 
+export type SubEconomics = {
+  commission: number;
+  paid: number; // what the buyer actually paid (after discount)
+  sellerNet: number; // prepaid SALE credit
+  codLedger: number; // COD ledger amount (commission owed, plus platform funding)
+};
+
+// Per-sub-order economics with a voucher discount. A seller-funded voucher
+// (store scope) comes out of the seller's proceeds; a platform-funded voucher
+// (platform scope) does not — the platform absorbs it (and, for COD, funds the
+// seller the discount so they aren't short the cash they never collected).
+export function subEconomics(
+  itemsTotal: number,
+  shipping: number,
+  rate: number,
+  discount: number,
+  sellerFunded: boolean,
+): SubEconomics {
+  const commission = commissionOf(itemsTotal, rate);
+  const paid = round2(itemsTotal + shipping - discount);
+  const sellerNet = round2(
+    itemsTotal + shipping - commission - (sellerFunded ? discount : 0),
+  );
+  const codLedger = round2(-commission + (sellerFunded ? 0 : discount));
+  return { commission, paid, sellerNet, codLedger };
+}
+
 /** Global platform commission rate (admin-configurable), fallback 10%. */
 export async function getCommissionRate(): Promise<number> {
   const row = await prisma.platformSetting.findUnique({
@@ -62,15 +89,24 @@ export async function recomputeBalance(sellerProfileId: string): Promise<void> {
         payment: { status: "CONFIRMED" },
       },
     },
-    select: { itemsTotal: true, shippingTotal: true, commissionRate: true },
+    select: {
+      itemsTotal: true,
+      shippingTotal: true,
+      discountTotal: true,
+      commissionRate: true,
+      order: { select: { coupon: { select: { scope: true } } } },
+    },
   });
   let pending = 0;
   for (const s of escrow) {
-    pending += sellerNetOf(
+    const sellerFunded = s.order.coupon?.scope === "SELLER";
+    pending += subEconomics(
       Number(s.itemsTotal),
       Number(s.shippingTotal),
       Number(s.commissionRate),
-    );
+      Number(s.discountTotal),
+      sellerFunded,
+    ).sellerNet;
   }
 
   await prisma.sellerBalance.update({
@@ -94,10 +130,16 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
       id: true,
       itemsTotal: true,
       shippingTotal: true,
+      discountTotal: true,
       commissionRate: true,
       completedAt: true,
       store: { select: { sellerId: true } },
-      order: { select: { paymentMethod: true } },
+      order: {
+        select: {
+          paymentMethod: true,
+          coupon: { select: { scope: true } },
+        },
+      },
     },
   });
   if (!sub) return;
@@ -110,8 +152,16 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
   const itemsTotal = Number(sub.itemsTotal);
   const shipping = Number(sub.shippingTotal);
   const rate = Number(sub.commissionRate);
-  const commission = commissionOf(itemsTotal, rate);
-  const sellerNet = sellerNetOf(itemsTotal, shipping, rate);
+  const sellerFunded = sub.order.coupon?.scope === "SELLER";
+  const eco = subEconomics(
+    itemsTotal,
+    shipping,
+    rate,
+    Number(sub.discountTotal),
+    sellerFunded,
+  );
+  const commission = eco.commission;
+  const sellerNet = eco.sellerNet;
   const balanceId = await getBalanceId(sub.store.sellerId);
 
   if (sub.order.paymentMethod === "COD") {
@@ -119,7 +169,7 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
       data: {
         balanceId,
         type: "COD_COMMISSION_DUE",
-        amountUsd: -commission,
+        amountUsd: eco.codLedger,
         subOrderId,
         note: "COD commission owed to platform",
       },

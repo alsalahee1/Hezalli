@@ -5,6 +5,7 @@ import { MapPin, Plus, Store as StoreIcon, Truck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
+import { previewCoupon } from "@/lib/actions/coupon";
 import type { CartLine } from "@/lib/cart-types";
 import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
@@ -37,6 +38,12 @@ export function CheckoutFlow({
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCode, setAppliedCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [couponErr, setCouponErr] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+
   const METHODS: { key: PaymentMethodChoice; label: string; hint: string }[] = [
     { key: "COD", label: t("cod"), hint: t("codHint") },
     { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
@@ -67,7 +74,38 @@ export function CheckoutFlow({
 
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
-  const grandTotal = itemsTotal + shippingTotal;
+  const grandTotal = Math.max(0, itemsTotal + shippingTotal - discount);
+
+  const applyCoupon = async () => {
+    setCouponErr(null);
+    const code = couponInput.trim();
+    if (!code) return;
+    setApplying(true);
+    const res = await previewCoupon(
+      code,
+      groups.map((g) => ({
+        storeId: g.storeId,
+        itemsTotal: g.itemsTotal,
+        shipping: g.shipping,
+      })),
+    );
+    setApplying(false);
+    if (res.ok && res.discount) {
+      setDiscount(res.discount);
+      setAppliedCode(code);
+    } else {
+      setDiscount(0);
+      setAppliedCode("");
+      setCouponErr(res.error ?? "notFound");
+    }
+  };
+
+  const clearCoupon = () => {
+    setDiscount(0);
+    setAppliedCode("");
+    setCouponInput("");
+    setCouponErr(null);
+  };
 
   const submit = async () => {
     setError(null);
@@ -83,6 +121,7 @@ export function CheckoutFlow({
         quantity: l.quantity,
       })),
       paymentMethod: method,
+      couponCode: appliedCode || undefined,
     });
     if (res.error) {
       setError(res.error);
@@ -215,15 +254,43 @@ export function CheckoutFlow({
               {t("prepaidNote")}
             </p>
           ) : null}
-          <div className="mt-3 flex gap-2">
-            <input
-              disabled
-              placeholder={t("couponPlaceholder")}
-              className="bg-muted/40 h-9 flex-1 rounded-md border px-3 text-sm"
-            />
-            <Button size="sm" variant="outline" disabled>
-              {t("apply")}
-            </Button>
+          <div className="mt-3">
+            {appliedCode ? (
+              <div className="flex items-center justify-between rounded-md border border-emerald-500/40 bg-emerald-500/5 px-3 py-2 text-sm">
+                <span className="font-medium text-emerald-600">
+                  {t("couponApplied", { code: appliedCode })}
+                </span>
+                <button
+                  type="button"
+                  onClick={clearCoupon}
+                  className="text-muted-foreground hover:text-foreground text-xs"
+                >
+                  {t("removeCoupon")}
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  placeholder={t("couponPlaceholder")}
+                  className="h-9 flex-1 rounded-md border px-3 text-sm uppercase outline-none"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={applying || !couponInput.trim()}
+                  onClick={applyCoupon}
+                >
+                  {applying ? t("applying") : t("apply")}
+                </Button>
+              </div>
+            )}
+            {couponErr ? (
+              <p className="text-destructive mt-1 text-xs">
+                {t(`coupon_${couponErr}`)}
+              </p>
+            ) : null}
           </div>
         </section>
       </div>
@@ -253,6 +320,12 @@ export function CheckoutFlow({
             <span className="text-muted-foreground">{t("shippingTotal")}</span>
             <span dir="ltr">{formatUsd(shippingTotal, locale)}</span>
           </div>
+          {discount > 0 ? (
+            <div className="flex justify-between text-emerald-600">
+              <span>{t("discount")}</span>
+              <span dir="ltr">−{formatUsd(discount, locale)}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between border-t pt-1 text-base font-semibold">
             <span>{t("grandTotal")}</span>
             <span dir="ltr">{formatUsd(grandTotal, locale)}</span>
