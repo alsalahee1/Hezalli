@@ -407,6 +407,9 @@ model Product {
   @@index([storeId])
   @@index([categoryId])
   @@index([status])
+  // Brand-filtered listings and the "featured" home strip.
+  @@index([brandId])
+  @@index([isFeatured])
 }
 
 model ProductVariant {
