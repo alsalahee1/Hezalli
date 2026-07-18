@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { resolveCartLines } from "@/lib/cart";
 import { prisma } from "@/lib/prisma";
+import { quoteShippingForStores } from "@/lib/shipping";
 import {
   CheckoutFlow,
   type CheckoutAddress,
@@ -58,12 +59,35 @@ export default async function CheckoutPage({
     line2: a.line2,
   }));
 
+  // Per-store subtotals, then a shipping quote for every saved address so the
+  // fee updates instantly when the buyer switches address (no round-trip).
+  const subtotals = new Map<string, number>();
+  for (const l of lines) {
+    subtotals.set(
+      l.storeId,
+      (subtotals.get(l.storeId) ?? 0) + l.price * l.quantity,
+    );
+  }
+  const shipGroups = [...subtotals.entries()].map(([storeId, subtotal]) => ({
+    storeId,
+    subtotal,
+  }));
+  const shippingByAddress: Record<string, Record<string, number>> = {};
+  for (const a of addrRows) {
+    const quote = await quoteShippingForStores(a.governorate, shipGroups);
+    shippingByAddress[a.id] = Object.fromEntries(quote);
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="mb-5 text-2xl font-semibold tracking-tight">
         {t("title")}
       </h1>
-      <CheckoutFlow lines={lines} addresses={addresses} />
+      <CheckoutFlow
+        lines={lines}
+        addresses={addresses}
+        shippingByAddress={shippingByAddress}
+      />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { BadgeCheck, ExternalLink } from "lucide-react";
+import { BadgeCheck, ExternalLink, Truck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
@@ -79,6 +79,19 @@ export default async function SellerSettingsPage() {
           {verified ? p("kycVerified") : p("kycPending")}
         </p>
         <PayoutForm current={payout} />
+      </section>
+
+      <section className="space-y-3 border-t pt-8">
+        <div>
+          <h2 className="text-lg font-semibold">{t("shippingTitle")}</h2>
+          <p className="text-muted-foreground text-sm">{t("shippingDesc")}</p>
+        </div>
+        <Link
+          href="/seller/settings/shipping"
+          className="hover:border-muted-foreground/40 inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium"
+        >
+          <Truck className="size-4" /> {t("shippingManage")}
+        </Link>
       </section>
     </div>
   );

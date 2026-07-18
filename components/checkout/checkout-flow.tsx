@@ -7,7 +7,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
 import type { CartLine } from "@/lib/cart-types";
 import { formatUsd } from "@/lib/products";
-import { standardShipping } from "@/lib/shipping";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,9 +24,11 @@ export type CheckoutAddress = {
 export function CheckoutFlow({
   lines,
   addresses,
+  shippingByAddress,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
+  shippingByAddress: Record<string, Record<string, number>>;
 }) {
   const t = useTranslations("Checkout");
   const locale = useLocale();
@@ -44,17 +45,25 @@ export function CheckoutFlow({
   ];
 
   const groups = useMemo(() => {
-    const map = new Map<string, { storeName: string; lines: CartLine[] }>();
+    const map = new Map<
+      string,
+      { storeId: string; storeName: string; lines: CartLine[] }
+    >();
     for (const l of lines) {
-      const g = map.get(l.storeId) ?? { storeName: l.storeName, lines: [] };
+      const g = map.get(l.storeId) ?? {
+        storeId: l.storeId,
+        storeName: l.storeName,
+        lines: [],
+      };
       g.lines.push(l);
       map.set(l.storeId, g);
     }
+    const fees = shippingByAddress[addressId] ?? {};
     return [...map.values()].map((g) => {
       const itemsTotal = g.lines.reduce((s, l) => s + l.price * l.quantity, 0);
-      return { ...g, itemsTotal, shipping: standardShipping(itemsTotal) };
+      return { ...g, itemsTotal, shipping: fees[g.storeId] ?? 0 };
     });
-  }, [lines]);
+  }, [lines, shippingByAddress, addressId]);
 
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);

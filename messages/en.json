@@ -131,7 +131,10 @@
     "policyLong": "Policy text is too long",
     "contactLong": "Contact is too long",
     "notSignedIn": "Please sign in and try again",
-    "notSeller": "You don't have a store yet"
+    "notSeller": "You don't have a store yet",
+    "shippingTitle": "Shipping",
+    "shippingDesc": "Set delivery fees per zone for your store.",
+    "shippingManage": "Manage shipping rates"
   },
   "SellerProducts": {
     "title": "Products",
@@ -434,7 +437,8 @@
     "settings": "Settings",
     "banners": "Banners",
     "payments": "Payments",
-    "payouts": "Payouts"
+    "payouts": "Payouts",
+    "shippingZones": "Shipping zones"
   },
   "AdminProducts": {
     "title": "Products",
@@ -918,5 +922,37 @@
     "confirmPaid": "Confirm paid",
     "rejectReason": "Reason",
     "confirmReject": "Confirm reject"
+  },
+  "AdminShippingZones": {
+    "title": "Shipping zones",
+    "desc": "Group governorates into delivery zones. Sellers set a per-zone shipping fee.",
+    "addZone": "Add zone",
+    "zoneName": "Zone name",
+    "zoneNamePlaceholder": "e.g. Sana'a & Central",
+    "governorates": "Governorates",
+    "save": "Save zone",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "empty": "No shipping zones yet. Add one to get started.",
+    "err_forbidden": "You don't have permission to do this.",
+    "err_nameRequired": "Enter a zone name.",
+    "err_govRequired": "Select at least one governorate.",
+    "err_conflict": "These governorates already belong to another zone"
+  },
+  "SellerShipping": {
+    "title": "Shipping rates",
+    "desc": "Set a delivery fee for each zone. Leave a zone blank to use the platform default.",
+    "backToSettings": "Back to settings",
+    "zone": "Zone",
+    "fee": "Fee (USD)",
+    "freeOver": "Free over (USD)",
+    "defaultPlaceholder": "Default",
+    "neverPlaceholder": "Never",
+    "save": "Save rates",
+    "saving": "Saving…",
+    "saved": "Shipping rates saved.",
+    "noZones": "No shipping zones are defined yet. Ask the platform admin to add zones.",
+    "defaultHint": "Zones left blank use the platform default: {fee} per order, free over {over}."
   }
 }

@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
 import { getCommissionRate } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
-import { standardShipping } from "@/lib/shipping";
+import { quoteShippingForStores } from "@/lib/shipping";
 
 export type PaymentMethodChoice = "COD" | "BANK_TRANSFER" | "USDT" | "WALLET";
 export type PlaceOrderInput = {
@@ -37,7 +37,7 @@ export async function placeOrder(
 
   const address = await prisma.address.findFirst({
     where: { id: input.addressId, userId },
-    select: { id: true },
+    select: { id: true, governorate: true },
   });
   if (!address) return { error: "addressRequired" };
 
@@ -84,15 +84,20 @@ export async function placeOrder(
     byStore.set(v.product.storeId, arr);
   }
 
-  const groups = [...byStore.entries()].map(([storeId, lines]) => {
-    const itemsTotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
-    return {
-      storeId,
-      lines,
-      itemsTotal,
-      shipping: standardShipping(itemsTotal),
-    };
-  });
+  const rawGroups = [...byStore.entries()].map(([storeId, lines]) => ({
+    storeId,
+    lines,
+    itemsTotal: lines.reduce((s, l) => s + l.price * l.qty, 0),
+  }));
+  // Authoritative shipping: zone-based rate for the destination governorate.
+  const shipQuote = await quoteShippingForStores(
+    address.governorate,
+    rawGroups.map((g) => ({ storeId: g.storeId, subtotal: g.itemsTotal })),
+  );
+  const groups = rawGroups.map((g) => ({
+    ...g,
+    shipping: shipQuote.get(g.storeId) ?? 0,
+  }));
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
   const grandTotal = Number((itemsTotal + shippingTotal).toFixed(2));
