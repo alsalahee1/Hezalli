@@ -3,12 +3,14 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { getFlashSales } from "@/lib/flash";
 import { prisma } from "@/lib/prisma";
 import { toCardItem, type ProductCardItem } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { HeroCarousel, type HeroBanner } from "@/components/home/hero-carousel";
 import { ProductStrip } from "@/components/home/product-strip";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
+import { FlashSection } from "@/components/promotions/flash-section";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +103,10 @@ export default async function HomePage({
         </div>
       </section>
 
+      <Suspense fallback={null}>
+        <FlashHomeSection />
+      </Suspense>
+
       <Suspense fallback={<StripSkeleton />}>
         <DealsSection locale={locale} />
       </Suspense>
@@ -117,6 +123,26 @@ export default async function HomePage({
         <CategoryStrips locale={locale} />
       </Suspense>
     </main>
+  );
+}
+
+async function FlashHomeSection() {
+  const t = await getTranslations("Flash");
+  const live = await getFlashSales("live");
+  if (live.length === 0) return null;
+  return (
+    <section className="py-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-xl font-semibold tracking-tight">{t("title")}</h2>
+        <Link
+          href="/flash-sale"
+          className="text-primary text-sm hover:underline"
+        >
+          {t("seeAll")}
+        </Link>
+      </div>
+      <FlashSection sale={live[0]} />
+    </section>
   );
 }
 

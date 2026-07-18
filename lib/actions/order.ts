@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { getFlashPricesFor } from "@/lib/flash";
 import { getCommissionRate, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { quoteShippingForStores } from "@/lib/shipping";
@@ -21,6 +22,7 @@ export type PlaceOrderResult = { orderId?: string; error?: string };
 
 class StockError extends Error {}
 class CouponError extends Error {}
+class FlashError extends Error {}
 
 export async function placeOrder(
   input: PlaceOrderInput,
@@ -60,6 +62,9 @@ export async function placeOrder(
   });
   const vById = new Map(variants.map((v) => [v.id, v]));
 
+  // Live flash pricing (optimistic; the atomic stock guard runs in the tx).
+  const flashMap = await getFlashPricesFor(variantIds);
+
   // Re-validate availability + build per-seller groups with price snapshots.
   type Line = {
     variantId: string;
@@ -79,7 +84,7 @@ export async function placeOrder(
       variantId: v.id,
       sku: v.sku,
       title: localizedName(v.product.title, locale),
-      price: Number(v.price),
+      price: flashMap.get(v.id)?.salePrice ?? Number(v.price),
       qty: it.quantity,
     };
     const arr = byStore.get(v.product.storeId) ?? [];
@@ -154,6 +159,22 @@ export async function placeOrder(
           data: { stock: { decrement: it.quantity } },
         });
         if (upd.count !== 1) throw new StockError(it.variantId);
+      }
+
+      // Atomically claim flash stock for flash-priced lines; if a concurrent
+      // order took the last units, abort so the buyer retries at normal price.
+      for (const it of items) {
+        const flash = flashMap.get(it.variantId);
+        if (!flash) continue;
+        const guard =
+          flash.stockLimit != null
+            ? { soldCount: { lte: flash.stockLimit - it.quantity } }
+            : {};
+        const upd = await tx.flashSaleItem.updateMany({
+          where: { id: flash.itemId, ...guard },
+          data: { soldCount: { increment: it.quantity } },
+        });
+        if (upd.count !== 1) throw new FlashError();
       }
 
       const orderStatus = prepaid ? "PENDING" : "CONFIRMED";
@@ -287,6 +308,7 @@ export async function placeOrder(
   } catch (e) {
     if (e instanceof StockError) return { error: "outOfStock" };
     if (e instanceof CouponError) return { error: "coupon_usedUp" };
+    if (e instanceof FlashError) return { error: "flashUnavailable" };
     throw e;
   }
 }

@@ -440,7 +440,8 @@
     "payouts": "مدفوعات البائعين",
     "shippingZones": "مناطق الشحن",
     "carriers": "شركات الشحن",
-    "reviews": "المراجعات"
+    "reviews": "المراجعات",
+    "flashSales": "عروض خاطفة"
   },
   "AdminProducts": {
     "title": "المنتجات",
@@ -573,7 +574,8 @@
     "related": "منتجات ذات صلة",
     "addedToCart": "أُضيف إلى السلة",
     "inWishlist": "في المفضلة",
-    "seeAllReviews": "عرض جميع المراجعات"
+    "seeAllReviews": "عرض جميع المراجعات",
+    "flashSale": "عرض خاطف"
   },
   "Search": {
     "filters": "التصفية",
@@ -723,7 +725,8 @@
     "couponApplied": "تم تطبيق الكوبون {code}",
     "removeCoupon": "إزالة",
     "applying": "جارٍ التطبيق…",
-    "discount": "الخصم"
+    "discount": "الخصم",
+    "err_flashUnavailable": "نفد أحد عناصر العرض الخاطف للتو. يرجى مراجعة سلتك والمحاولة مجدداً."
   },
   "Orders": {
     "title": "طلباتي",
@@ -1290,5 +1293,45 @@
     "err_forbidden": "ليس لديك صلاحية لهذا الإجراء.",
     "err_notFound": "القسيمة غير موجودة.",
     "err_unauthorized": "يرجى تسجيل الدخول."
+  },
+  "Flash": {
+    "title": "عرض خاطف",
+    "seeAll": "عرض الكل",
+    "liveNow": "مباشر الآن",
+    "upcoming": "قادم",
+    "none": "لا توجد عروض خاطفة الآن. عد قريباً!",
+    "endsIn": "ينتهي خلال",
+    "startsIn": "يبدأ خلال",
+    "ended": "انتهى",
+    "dayShort": "ي",
+    "claimed": "{pct}% مُطالب به",
+    "soldOut": "نفد",
+    "flashSale": "عرض خاطف"
+  },
+  "AdminFlash": {
+    "title": "العروض الخاطفة",
+    "desc": "أطلق عروضاً محدّدة بوقت بأسعار خاطفة وحدود مخزون.",
+    "createTitle": "إنشاء عرض خاطف",
+    "nameEn": "الاسم (إنجليزي)",
+    "nameAr": "الاسم (عربي)",
+    "starts": "يبدأ",
+    "ends": "ينتهي",
+    "createSale": "إنشاء العرض",
+    "empty": "لا عروض خاطفة بعد.",
+    "deleteSale": "حذف",
+    "sold": "مباع",
+    "product": "المنتج / الخيار",
+    "salePrice": "السعر الخاطف (دولار)",
+    "stockLimit": "مخزون العرض",
+    "unlimited": "غير محدود",
+    "addItem": "إضافة",
+    "enrollProduct": "إضافة منتج",
+    "err_forbidden": "ليس لديك صلاحية.",
+    "err_nameRequired": "أدخل اسماً.",
+    "err_badDates": "أدخل تواريخ صحيحة.",
+    "err_badWindow": "يجب أن يكون الانتهاء بعد البداية.",
+    "err_badPrice": "أدخل سعراً خاطفاً صحيحاً.",
+    "err_notFound": "الخيار غير موجود.",
+    "err_duplicate": "هذا الخيار موجود بالفعل في العرض."
   }
 }

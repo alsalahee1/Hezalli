@@ -440,7 +440,8 @@
     "payouts": "Payouts",
     "shippingZones": "Shipping zones",
     "carriers": "Carriers",
-    "reviews": "Reviews"
+    "reviews": "Reviews",
+    "flashSales": "Flash sales"
   },
   "AdminProducts": {
     "title": "Products",
@@ -573,7 +574,8 @@
     "related": "Related products",
     "addedToCart": "Added to cart",
     "inWishlist": "In wishlist",
-    "seeAllReviews": "See all reviews"
+    "seeAllReviews": "See all reviews",
+    "flashSale": "Flash sale"
   },
   "Search": {
     "filters": "Filters",
@@ -723,7 +725,8 @@
     "couponApplied": "Coupon {code} applied",
     "removeCoupon": "Remove",
     "applying": "Applying…",
-    "discount": "Discount"
+    "discount": "Discount",
+    "err_flashUnavailable": "A flash-sale item just sold out. Please review your cart and try again."
   },
   "Orders": {
     "title": "My orders",
@@ -1290,5 +1293,45 @@
     "err_forbidden": "You don't have permission to do this.",
     "err_notFound": "Voucher not found.",
     "err_unauthorized": "Please sign in."
+  },
+  "Flash": {
+    "title": "Flash sale",
+    "seeAll": "See all",
+    "liveNow": "Live now",
+    "upcoming": "Upcoming",
+    "none": "No flash sales right now. Check back soon!",
+    "endsIn": "Ends in",
+    "startsIn": "Starts in",
+    "ended": "Ended",
+    "dayShort": "d",
+    "claimed": "{pct}% claimed",
+    "soldOut": "Sold out",
+    "flashSale": "Flash sale"
+  },
+  "AdminFlash": {
+    "title": "Flash sales",
+    "desc": "Run time-boxed sales with flash prices and stock limits.",
+    "createTitle": "Create a flash sale",
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "starts": "Starts",
+    "ends": "Ends",
+    "createSale": "Create sale",
+    "empty": "No flash sales yet.",
+    "deleteSale": "Delete",
+    "sold": "sold",
+    "product": "Product / variant",
+    "salePrice": "Flash price (USD)",
+    "stockLimit": "Flash stock",
+    "unlimited": "Unlimited",
+    "addItem": "Add",
+    "enrollProduct": "Enroll a product",
+    "err_forbidden": "You don't have permission.",
+    "err_nameRequired": "Enter a name.",
+    "err_badDates": "Enter valid dates.",
+    "err_badWindow": "End must be after start.",
+    "err_badPrice": "Enter a valid flash price.",
+    "err_notFound": "Variant not found.",
+    "err_duplicate": "That variant is already in this sale."
   }
 }

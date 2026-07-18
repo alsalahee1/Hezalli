@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Store as StoreIcon } from "lucide-react";
+import { Store as StoreIcon, Zap } from "lucide-react";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { getFlashPricesFor } from "@/lib/flash";
 import { toCardItem } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
+import { Countdown } from "@/components/promotions/countdown";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { RecordView } from "@/components/product/record-view";
@@ -184,14 +186,27 @@ export default async function ProductPage({
   ]);
   const sold = soldAgg._sum.quantity ?? 0;
 
-  const pickerVariants: PickerVariant[] = product.variants.map((v) => ({
-    id: v.id,
-    name: v.name,
-    attributes: (v.attributes ?? {}) as Record<string, string>,
-    price: Number(v.price),
-    compareAtPrice: v.compareAtPrice == null ? null : Number(v.compareAtPrice),
-    stock: v.stock,
-  }));
+  // Live flash pricing overrides the normal price while stock remains.
+  const flashMap = await getFlashPricesFor(product.variants.map((v) => v.id));
+  let flashEndsAt: Date | null = null;
+  const pickerVariants: PickerVariant[] = product.variants.map((v) => {
+    const flash = flashMap.get(v.id);
+    if (flash && (!flashEndsAt || flash.endsAt < flashEndsAt)) {
+      flashEndsAt = flash.endsAt;
+    }
+    return {
+      id: v.id,
+      name: v.name,
+      attributes: (v.attributes ?? {}) as Record<string, string>,
+      price: flash ? flash.salePrice : Number(v.price),
+      compareAtPrice: flash
+        ? Number(v.price)
+        : v.compareAtPrice == null
+          ? null
+          : Number(v.compareAtPrice),
+      stock: v.stock,
+    };
+  });
 
   const galleryImages = product.images.map((i) => ({
     url: i.url,
@@ -258,6 +273,12 @@ export default async function ProductPage({
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               {title}
             </h1>
+            {flashEndsAt ? (
+              <span className="inline-flex w-fit items-center gap-2 rounded-md bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 py-1 text-sm font-medium text-white">
+                <Zap className="size-4 fill-white" /> {t("flashSale")}
+                <Countdown to={(flashEndsAt as Date).toISOString()} />
+              </span>
+            ) : null}
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="flex items-center gap-1">
                 <StarRating rating={product.ratingAvg} size={16} />
