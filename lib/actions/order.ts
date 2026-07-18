@@ -212,3 +212,91 @@ export async function placeOrder(
     throw e;
   }
 }
+
+// Statuses at or past which a buyer can no longer cancel.
+const UNCANCELLABLE = new Set([
+  "SHIPPED",
+  "DELIVERED",
+  "COMPLETED",
+  "CANCELLED",
+  "REFUNDED",
+]);
+
+export async function cancelOrder(
+  orderId: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const session = await auth();
+  const locale = await getLocale();
+  if (!session?.user?.id) return { error: "unauthorized" };
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, buyerId: session.user.id },
+    select: {
+      id: true,
+      status: true,
+      subOrders: {
+        select: {
+          id: true,
+          store: {
+            select: {
+              seller: {
+                select: { user: { select: { id: true, locale: true } } },
+              },
+            },
+          },
+          items: { select: { variantId: true, quantity: true } },
+        },
+      },
+    },
+  });
+  if (!order) return { error: "notFound" };
+  if (UNCANCELLABLE.has(order.status)) return { error: "tooLate" };
+
+  await prisma.$transaction(async (tx) => {
+    // Restore stock for every line.
+    for (const sub of order.subOrders) {
+      for (const it of sub.items) {
+        await tx.productVariant.updateMany({
+          where: { id: it.variantId },
+          data: { stock: { increment: it.quantity } },
+        });
+      }
+    }
+    await tx.order.update({
+      where: { id: order.id },
+      data: { status: "CANCELLED" },
+    });
+    await tx.subOrder.updateMany({
+      where: { orderId: order.id },
+      data: { status: "CANCELLED" },
+    });
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId: order.id,
+        status: "CANCELLED",
+        actor: "buyer",
+        note: "Cancelled by buyer",
+      },
+    });
+    for (const sub of order.subOrders) {
+      const seller = sub.store.seller.user;
+      const ar = seller.locale === "ar";
+      await tx.notification.create({
+        data: {
+          userId: seller.id,
+          type: "ORDER",
+          title: ar ? "أُلغي طلب" : "Order cancelled",
+          body: ar
+            ? "ألغى المشتري طلباً كان موجهاً لمتجرك."
+            : "A buyer cancelled an order for your store.",
+          data: { orderId: order.id },
+        },
+      });
+    }
+  });
+
+  revalidatePath(`/${locale}/account/orders`);
+  revalidatePath(`/${locale}/account/orders/${orderId}`);
+  revalidatePath(`/${locale}/seller/orders`);
+  return { ok: true };
+}
