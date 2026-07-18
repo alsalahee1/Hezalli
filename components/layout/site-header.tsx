@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, Search, ShoppingCart, Store, User, X } from "lucide-react";
+import { Menu, ShoppingCart, Store, User, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
 import { LanguageSwitcher } from "./language-switcher";
+import { SearchBar } from "./search-bar";
 
 type HeaderUser = {
   name?: string | null;
@@ -48,15 +49,7 @@ export function SiteHeader({
           {c("appName")}
         </Link>
 
-        <div className="relative hidden flex-1 md:block">
-          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
-          <input
-            type="search"
-            placeholder={c("search")}
-            aria-label={c("search")}
-            className="bg-muted/40 focus-visible:ring-ring/50 w-full rounded-md border py-2 ps-9 pe-3 text-sm outline-none focus-visible:ring-[3px]"
-          />
-        </div>
+        <SearchBar className="relative hidden flex-1 md:block" />
 
         <div className="ms-auto flex items-center gap-1">
           <LanguageSwitcher />
@@ -90,15 +83,7 @@ export function SiteHeader({
       </div>
 
       <div className="px-4 pb-3 md:hidden">
-        <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
-          <input
-            type="search"
-            placeholder={c("search")}
-            aria-label={c("search")}
-            className="bg-muted/40 focus-visible:ring-ring/50 w-full rounded-md border py-2 ps-9 pe-3 text-sm outline-none focus-visible:ring-[3px]"
-          />
-        </div>
+        <SearchBar className="relative" />
       </div>
 
       <CategoryNav
