@@ -1,0 +1,58 @@
+name: Migrate production DB
+
+# Applies committed Prisma migrations to the production database with
+# `prisma migrate deploy` (never `migrate dev` — deploy only forward-applies
+# what is already committed, and never resets data).
+#
+# Trigger it two ways:
+#   • Manually — Actions tab → "Migrate production DB" → "Run workflow"
+#     (works from the GitHub mobile app). Use this for the first run.
+#   • Automatically — on a push to the default branch that changes anything
+#     under prisma/ (so future migrations apply on merge).
+#
+# Requires one repository secret: DATABASE_URL (your production connection
+# string). Add it in Settings → Secrets and variables → Actions → New secret.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/ecommerce-platform-docs-9t3mfz # default branch
+    paths:
+      - "prisma/**"
+
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: prisma migrate deploy
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Fail early if the secret is missing
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is not set. Add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Show migration status
+        run: npx prisma migrate status
