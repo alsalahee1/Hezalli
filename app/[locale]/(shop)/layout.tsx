@@ -8,6 +8,7 @@ import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import type { Locale } from "@/i18n/routing";
+import { AiAssistant } from "@/components/ai/ai-assistant";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -83,6 +84,7 @@ export default async function ShopLayout({
         />
         <div className="flex-1">{children}</div>
         <SiteFooter />
+        {process.env.GEMINI_API_KEY ? <AiAssistant /> : null}
       </div>
     </CartProvider>
   );
