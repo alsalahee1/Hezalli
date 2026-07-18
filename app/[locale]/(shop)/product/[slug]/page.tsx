@@ -14,6 +14,8 @@ import { ProductGallery } from "@/components/product/product-gallery";
 import { RecordView } from "@/components/product/record-view";
 import { ProductShare } from "@/components/product/product-share";
 import { ProductTabs, type Spec } from "@/components/product/product-tabs";
+import { ProductReviews } from "@/components/product/product-reviews";
+import { type ReviewDraft } from "@/components/product/review-form";
 import { StarRating } from "@/components/product/star-rating";
 import {
   VariantPicker,
@@ -64,29 +66,84 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ rsort?: string; rpage?: string }>;
 }) {
   const { slug } = await params;
+  const { rsort, rpage } = await searchParams;
   const product = await getProduct(slug);
   if (!product) notFound();
 
   // Track recently-viewed for signed-in users (guests are tracked client-side).
   const session = await auth();
+  const userId = session?.user?.id;
   let inWishlist = false;
-  if (session?.user?.id) {
+  let canReview = false;
+  let reviewSubOrderId: string | undefined;
+  let myReview: ReviewDraft | null = null;
+  let isStoreOwner = false;
+  if (userId) {
     await prisma.recentlyViewed.upsert({
       where: {
-        userId_productId: { userId: session.user.id, productId: product.id },
+        userId_productId: { userId, productId: product.id },
       },
-      create: { userId: session.user.id, productId: product.id },
+      create: { userId, productId: product.id },
       update: { viewedAt: new Date() },
     });
     const w = await prisma.wishlistItem.findFirst({
-      where: { productId: product.id, wishlist: { userId: session.user.id } },
+      where: { productId: product.id, wishlist: { userId } },
       select: { id: true },
     });
     inWishlist = Boolean(w);
+
+    // Review eligibility: a COMPLETED purchase of this product not yet reviewed.
+    const allVariantIds = (
+      await prisma.productVariant.findMany({
+        where: { productId: product.id },
+        select: { id: true },
+      })
+    ).map((v) => v.id);
+    const [existingReview, reviewedSubs, ownStore] = await Promise.all([
+      prisma.review.findFirst({
+        where: { productId: product.id, buyerId: userId },
+        include: { images: true },
+      }),
+      prisma.review.findMany({
+        where: { productId: product.id, buyerId: userId },
+        select: { subOrderId: true },
+      }),
+      prisma.store.findFirst({
+        where: { id: product.storeId, seller: { userId } },
+        select: { id: true },
+      }),
+    ]);
+    isStoreOwner = Boolean(ownStore);
+    if (existingReview) {
+      myReview = {
+        reviewId: existingReview.id,
+        rating: existingReview.rating,
+        comment: existingReview.comment ?? "",
+        images: existingReview.images.map((i) => i.url),
+      };
+    } else if (allVariantIds.length > 0) {
+      const reviewedSet = new Set(reviewedSubs.map((r) => r.subOrderId));
+      const openSub = await prisma.subOrder.findFirst({
+        where: {
+          status: "COMPLETED",
+          order: { buyerId: userId },
+          items: { some: { variantId: { in: allVariantIds } } },
+          id: { notIn: [...reviewedSet] },
+        },
+        orderBy: { updatedAt: "desc" },
+        select: { id: true },
+      });
+      if (openSub) {
+        canReview = true;
+        reviewSubOrderId = openSub.id;
+      }
+    }
   }
 
   const locale = await getLocale();
@@ -279,6 +336,18 @@ export default async function ProductPage({
           ratingCount={product.ratingCount}
         />
       </div>
+
+      {/* Reviews */}
+      <ProductReviews
+        productId={product.id}
+        slug={product.slug}
+        sort={rsort}
+        page={rpage}
+        canReview={canReview}
+        reviewSubOrderId={reviewSubOrderId}
+        myReview={myReview}
+        isStoreOwner={isStoreOwner}
+      />
 
       {/* Related */}
       {related.length > 0 ? (

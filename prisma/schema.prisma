@@ -717,6 +717,7 @@ model Review {
   rating     Int
   comment    String?
   storeReply String?
+  hidden     Boolean       @default(false)
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   product    Product       @relation(fields: [productId], references: [id], onDelete: Cascade)

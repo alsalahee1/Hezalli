@@ -439,7 +439,8 @@
     "payments": "Payments",
     "payouts": "Payouts",
     "shippingZones": "Shipping zones",
-    "carriers": "Carriers"
+    "carriers": "Carriers",
+    "reviews": "Reviews"
   },
   "AdminProducts": {
     "title": "Products",
@@ -571,7 +572,8 @@
     "chat": "Chat",
     "related": "Related products",
     "addedToCart": "Added to cart",
-    "inWishlist": "In wishlist"
+    "inWishlist": "In wishlist",
+    "seeAllReviews": "See all reviews"
   },
   "Search": {
     "filters": "Filters",
@@ -1010,5 +1012,51 @@
     "err_carrierRequired": "Choose a carrier.",
     "err_trackingRequired": "Enter a valid tracking number.",
     "markDelivered": "Mark delivered"
+  },
+  "Reviews": {
+    "title": "Ratings & reviews",
+    "writeReview": "Write a review",
+    "editYourReview": "Edit your review",
+    "commentPlaceholder": "Share what you liked or disliked (optional)",
+    "addPhoto": "Add photo",
+    "removePhoto": "Remove photo",
+    "submit": "Submit review",
+    "submitting": "Submitting…",
+    "cancel": "Cancel",
+    "basedOn": "{count, plural, =0 {No reviews yet} one {Based on # review} other {Based on # reviews}}",
+    "sort_newest": "Newest",
+    "sort_highest": "Highest",
+    "sort_lowest": "Lowest",
+    "sort_photos": "With photos",
+    "empty": "No reviews yet. Be the first to review this product.",
+    "anonymous": "Anonymous",
+    "verified": "Verified purchase",
+    "sellerReply": "Seller's reply",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a public reply…",
+    "postReply": "Post reply",
+    "report": "Report",
+    "reported": "Reported — thank you",
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {pages}",
+    "err_ratingRequired": "Please choose a star rating.",
+    "err_unauthorized": "Please sign in.",
+    "err_notEligible": "You can only review products you've purchased and received.",
+    "err_alreadyReviewed": "You've already reviewed this item.",
+    "err_editWindowClosed": "The 30-day edit window has closed.",
+    "err_notFound": "Review not found.",
+    "err_replyRequired": "Write a reply first.",
+    "err_forbidden": "You don't have permission to do this."
+  },
+  "AdminReviews": {
+    "title": "Review moderation",
+    "desc": "Hide reviews that violate policy. Hidden reviews are excluded from ratings.",
+    "tab_all": "All",
+    "tab_hidden": "Hidden",
+    "hidden": "Hidden",
+    "hide": "Hide",
+    "unhide": "Unhide",
+    "empty": "No reviews to show."
   }
 }

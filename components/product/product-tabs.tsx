@@ -84,7 +84,9 @@ export function ProductTabs({
                 <span className="text-muted-foreground">({ratingCount})</span>
               </div>
             ) : null}
-            <p className="text-muted-foreground">{t("reviewsComingSoon")}</p>
+            <a href="#reviews" className="text-primary text-sm hover:underline">
+              {t("seeAllReviews")}
+            </a>
           </div>
         ) : null}
 

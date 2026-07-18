@@ -439,7 +439,8 @@
     "payments": "المدفوعات",
     "payouts": "مدفوعات البائعين",
     "shippingZones": "مناطق الشحن",
-    "carriers": "شركات الشحن"
+    "carriers": "شركات الشحن",
+    "reviews": "المراجعات"
   },
   "AdminProducts": {
     "title": "المنتجات",
@@ -571,7 +572,8 @@
     "chat": "محادثة",
     "related": "منتجات ذات صلة",
     "addedToCart": "أُضيف إلى السلة",
-    "inWishlist": "في المفضلة"
+    "inWishlist": "في المفضلة",
+    "seeAllReviews": "عرض جميع المراجعات"
   },
   "Search": {
     "filters": "التصفية",
@@ -1010,5 +1012,51 @@
     "err_carrierRequired": "اختر شركة شحن.",
     "err_trackingRequired": "أدخل رقم تتبع صحيح.",
     "markDelivered": "تحديد كمُسلَّم"
+  },
+  "Reviews": {
+    "title": "التقييمات والمراجعات",
+    "writeReview": "اكتب مراجعة",
+    "editYourReview": "تعديل مراجعتك",
+    "commentPlaceholder": "شارك ما أعجبك أو لم يعجبك (اختياري)",
+    "addPhoto": "إضافة صورة",
+    "removePhoto": "إزالة الصورة",
+    "submit": "إرسال المراجعة",
+    "submitting": "جارٍ الإرسال…",
+    "cancel": "إلغاء",
+    "basedOn": "{count, plural, =0 {لا مراجعات بعد} one {بناءً على مراجعة واحدة} two {بناءً على مراجعتين} few {بناءً على # مراجعات} many {بناءً على # مراجعة} other {بناءً على # مراجعة}}",
+    "sort_newest": "الأحدث",
+    "sort_highest": "الأعلى",
+    "sort_lowest": "الأدنى",
+    "sort_photos": "مع صور",
+    "empty": "لا مراجعات بعد. كن أول من يراجع هذا المنتج.",
+    "anonymous": "مجهول",
+    "verified": "عملية شراء موثّقة",
+    "sellerReply": "رد البائع",
+    "reply": "رد",
+    "replyPlaceholder": "اكتب رداً عاماً…",
+    "postReply": "نشر الرد",
+    "report": "إبلاغ",
+    "reported": "تم الإبلاغ — شكراً لك",
+    "prev": "السابق",
+    "next": "التالي",
+    "pageOf": "صفحة {page} من {pages}",
+    "err_ratingRequired": "يرجى اختيار تقييم بالنجوم.",
+    "err_unauthorized": "يرجى تسجيل الدخول.",
+    "err_notEligible": "يمكنك مراجعة المنتجات التي اشتريتها واستلمتها فقط.",
+    "err_alreadyReviewed": "لقد قمت بمراجعة هذا المنتج بالفعل.",
+    "err_editWindowClosed": "انتهت مهلة التعديل (30 يوماً).",
+    "err_notFound": "المراجعة غير موجودة.",
+    "err_replyRequired": "اكتب رداً أولاً.",
+    "err_forbidden": "ليس لديك صلاحية لهذا الإجراء."
+  },
+  "AdminReviews": {
+    "title": "إدارة المراجعات",
+    "desc": "أخفِ المراجعات المخالفة للسياسة. المراجعات المخفية تُستبعد من التقييمات.",
+    "tab_all": "الكل",
+    "tab_hidden": "المخفية",
+    "hidden": "مخفية",
+    "hide": "إخفاء",
+    "unhide": "إظهار",
+    "empty": "لا مراجعات للعرض."
   }
 }
