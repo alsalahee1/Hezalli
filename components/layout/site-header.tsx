@@ -8,6 +8,7 @@ import { Link } from "@/i18n/navigation";
 import type { NavCategory } from "@/lib/categories";
 import { CartButton } from "@/components/cart/cart-button";
 import { UserMenu } from "@/components/auth/user-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
@@ -66,7 +67,10 @@ export function SiteHeader({
             </Link>
           </Button>
           {user ? (
-            <UserMenu user={user} />
+            <>
+              <NotificationBell variant="buyer" />
+              <UserMenu user={user} />
+            </>
           ) : (
             <Button variant="ghost" size="sm" asChild>
               <Link href="/login">

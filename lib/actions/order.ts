@@ -195,7 +195,7 @@ export async function placeOrder(
               body: ar
                 ? `لديك طلب جديد بقيمة ${g.itemsTotal.toFixed(2)}$.`
                 : `You have a new order worth $${g.itemsTotal.toFixed(2)}.`,
-              data: { orderId: order.id },
+              data: { orderId: order.id, link: "/seller/orders" },
             },
           });
         }
@@ -220,7 +220,7 @@ export async function placeOrder(
               : prepaid
                 ? `Complete your $${grandTotal.toFixed(2)} payment and submit proof.`
                 : `Your order for $${grandTotal.toFixed(2)} is confirmed (cash on delivery).`,
-          data: { orderId: order.id },
+          data: { orderId: order.id, link: `/account/orders/${order.id}` },
         },
       });
 

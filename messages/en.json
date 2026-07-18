@@ -1183,5 +1183,11 @@
     "err_forbidden": "You don't have permission to do this.",
     "err_notFound": "Dispute not found.",
     "err_alreadyResolved": "This dispute is already resolved."
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "You're all caught up.",
+    "seeAll": "See all notifications"
   }
 }

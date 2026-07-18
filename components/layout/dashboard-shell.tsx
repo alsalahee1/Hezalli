@@ -28,6 +28,7 @@ import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type NavItem = { href: string; key: string; icon: LucideIcon };
 
@@ -141,12 +142,15 @@ export function DashboardShell({
             <Menu className="size-5" />
           </button>
           <span className="font-semibold md:hidden">{t(titleKey)}</span>
-          <Link
-            href="/"
-            className="text-muted-foreground hover:text-foreground ms-auto text-sm hover:underline"
-          >
-            Hezalli
-          </Link>
+          <div className="ms-auto flex items-center gap-1">
+            <NotificationBell variant={variant} />
+            <Link
+              href="/"
+              className="text-muted-foreground hover:text-foreground text-sm hover:underline"
+            >
+              Hezalli
+            </Link>
+          </div>
         </div>
         <main className="flex-1 p-6">{children}</main>
       </div>
