@@ -107,6 +107,10 @@ export default async function HomePage({
         <FlashHomeSection />
       </Suspense>
 
+      <Suspense fallback={null}>
+        <FeaturedSection locale={locale} />
+      </Suspense>
+
       <Suspense fallback={<StripSkeleton />}>
         <DealsSection locale={locale} />
       </Suspense>
@@ -146,6 +150,23 @@ async function FlashHomeSection() {
   );
 }
 
+async function FeaturedSection({ locale }: { locale: string }) {
+  const t = await getTranslations("Home");
+  const rows = await prisma.product.findMany({
+    where: { status: "ACTIVE", isFeatured: true },
+    orderBy: { updatedAt: "desc" },
+    take: 10,
+    select: CARD_SELECT,
+  });
+  if (rows.length === 0) return null;
+  return (
+    <ProductStrip
+      title={t("featured")}
+      items={rows.map((r) => toCardItem(r, locale))}
+    />
+  );
+}
+
 async function DealsSection({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
   const rows = await prisma.product.findMany({
@@ -161,7 +182,7 @@ async function DealsSection({ locale }: { locale: string }) {
     <ProductStrip
       title={t("deals")}
       items={rows.map((r) => toCardItem(r, locale))}
-      seeAllHref="/search?sort=newest"
+      seeAllHref="/deals"
       seeAllLabel={t("seeAll")}
     />
   );

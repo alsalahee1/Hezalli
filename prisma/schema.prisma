@@ -201,6 +201,7 @@ model User {
   returnRequests ReturnRequest[]
   notifications  Notification[]
   conversations  Conversation[]
+  follows        StoreFollow[]
   accounts       Account[]
   sessions       Session[]
 }
@@ -306,6 +307,7 @@ model Store {
   description   String?
   policies      Json?
   status        StoreStatus    @default(ACTIVE)
+  isFeatured    Boolean        @default(false)
   ratingAvg     Float          @default(0)
   ratingCount   Int            @default(0)
   createdAt     DateTime       @default(now())
@@ -316,6 +318,7 @@ model Store {
   subOrders     SubOrder[]
   conversations Conversation[]
   coupons       Coupon[]
+  followers     StoreFollow[]
 }
 
 model PayoutMethod {
@@ -357,6 +360,18 @@ model Brand {
   products Product[]
 }
 
+model StoreFollow {
+  id        String   @id @default(cuid())
+  userId    String
+  storeId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+}
+
 model Product {
   id               String           @id @default(cuid())
   storeId          String
@@ -373,6 +388,7 @@ model Product {
   dimensions       Json?
   moderatedBy      String?
   moderationReason String?
+  isFeatured       Boolean          @default(false)
   ratingAvg        Float            @default(0)
   ratingCount      Int              @default(0)
   createdAt        DateTime         @default(now())
@@ -399,6 +415,8 @@ model ProductVariant {
   attributes     Json?
   price          Decimal         @db.Decimal(12, 2)
   compareAtPrice Decimal?        @db.Decimal(12, 2)
+  saleStartsAt   DateTime?
+  saleEndsAt     DateTime?
   stock          Int             @default(0)
   isActive       Boolean         @default(true)
   product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)

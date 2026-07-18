@@ -242,7 +242,9 @@
     "policiesTitle": "سياسات المتجر",
     "returnPolicy": "سياسة الإرجاع",
     "shippingPolicy": "سياسة الشحن",
-    "contact": "خدمة العملاء"
+    "contact": "خدمة العملاء",
+    "follow": "متابعة",
+    "following": "متابَع"
   },
   "AdminSellers": {
     "title": "البائعون",
@@ -408,7 +410,8 @@
     "bestSellers": "الأكثر مبيعاً",
     "deals": "عروض",
     "recentlyViewed": "شوهدت مؤخراً",
-    "seeAll": "عرض الكل"
+    "seeAll": "عرض الكل",
+    "featured": "مميّزة"
   },
   "Seller": {
     "center": "مركز البائع",
@@ -1333,5 +1336,28 @@
     "err_badPrice": "أدخل سعراً خاطفاً صحيحاً.",
     "err_notFound": "الخيار غير موجود.",
     "err_duplicate": "هذا الخيار موجود بالفعل في العرض."
+  },
+  "Merch": {
+    "scheduleTitle": "جدولة خصم لمنتج",
+    "scheduleDesc": "حدّد نسبة خصم لفترة زمنية. يُفعّل وينتهي تلقائياً.",
+    "product": "المنتج",
+    "percentOff": "نسبة الخصم",
+    "starts": "يبدأ",
+    "ends": "ينتهي",
+    "schedule": "جدولة الخصم",
+    "clear": "إلغاء الخصم",
+    "saved": "تمت جدولة الخصم.",
+    "featuredTitle": "منتجات مميّزة",
+    "featuredDesc": "تظهر المنتجات المميّزة في قسم الصفحة الرئيسية.",
+    "err_forbidden": "ليس لديك صلاحية.",
+    "err_badPercent": "أدخل 1–90٪.",
+    "err_badDates": "أدخل تواريخ صحيحة.",
+    "err_badWindow": "يجب أن يكون الانتهاء بعد البداية.",
+    "err_notFound": "المنتج غير موجود."
+  },
+  "Deals": {
+    "title": "العروض",
+    "desc": "منتجات مخفّضة عبر هزلي.",
+    "empty": "لا عروض حالياً — عد قريباً!"
   }
 }

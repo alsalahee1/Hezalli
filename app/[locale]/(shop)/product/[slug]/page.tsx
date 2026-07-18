@@ -6,6 +6,7 @@ import { Store as StoreIcon, Zap } from "lucide-react";
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
 import { getFlashPricesFor } from "@/lib/flash";
+import { effectivePrice } from "@/lib/pricing";
 import { toCardItem } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
@@ -194,16 +195,13 @@ export default async function ProductPage({
     if (flash && (!flashEndsAt || flash.endsAt < flashEndsAt)) {
       flashEndsAt = flash.endsAt;
     }
+    const eff = effectivePrice(v);
     return {
       id: v.id,
       name: v.name,
       attributes: (v.attributes ?? {}) as Record<string, string>,
-      price: flash ? flash.salePrice : Number(v.price),
-      compareAtPrice: flash
-        ? Number(v.price)
-        : v.compareAtPrice == null
-          ? null
-          : Number(v.compareAtPrice),
+      price: flash ? flash.salePrice : eff.price,
+      compareAtPrice: flash ? Number(v.price) : eff.compareAt,
       stock: v.stock,
     };
   });

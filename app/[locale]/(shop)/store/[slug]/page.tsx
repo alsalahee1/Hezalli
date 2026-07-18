@@ -14,8 +14,10 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { StorePolicies } from "@/lib/validations/store";
+import { FollowButton } from "@/components/store/follow-button";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -24,7 +26,12 @@ async function getStore(slug: string) {
     where: { slug },
     include: {
       seller: { select: { kycStatus: true } },
-      _count: { select: { products: { where: { status: "ACTIVE" } } } },
+      _count: {
+        select: {
+          products: { where: { status: "ACTIVE" } },
+          followers: true,
+        },
+      },
     },
   });
   // Post-moderation model: suspended/closed stores disappear from the public
@@ -45,6 +52,19 @@ export default async function StorePage({ params }: Props) {
 
   const store = await getStore(slug);
   if (!store) notFound();
+
+  const session = await auth();
+  let following = false;
+  if (session?.user?.id) {
+    following = Boolean(
+      await prisma.storeFollow.findUnique({
+        where: {
+          userId_storeId: { userId: session.user.id, storeId: store.id },
+        },
+        select: { id: true },
+      }),
+    );
+  }
 
   const t = await getTranslations("StorePage");
   const format = await getFormatter();
@@ -89,6 +109,11 @@ export default async function StorePage({ params }: Props) {
             </p>
           ) : null}
         </div>
+        <FollowButton
+          storeId={store.id}
+          initialFollowing={following}
+          initialCount={store._count.followers}
+        />
       </div>
 
       {/* Stats */}
@@ -109,7 +134,7 @@ export default async function StorePage({ params }: Props) {
         </div>
         <div className="bg-card rounded-lg border p-3 text-center">
           <Users className="text-primary mx-auto mb-1 size-4" />
-          <p className="text-sm font-semibold">0</p>
+          <p className="text-sm font-semibold">{store._count.followers}</p>
           <p className="text-muted-foreground text-xs">{t("followers")}</p>
         </div>
         <div className="bg-card rounded-lg border p-3 text-center">

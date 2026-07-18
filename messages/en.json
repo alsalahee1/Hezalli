@@ -242,7 +242,9 @@
     "policiesTitle": "Store policies",
     "returnPolicy": "Return policy",
     "shippingPolicy": "Shipping policy",
-    "contact": "Customer service"
+    "contact": "Customer service",
+    "follow": "Follow",
+    "following": "Following"
   },
   "AdminSellers": {
     "title": "Sellers",
@@ -408,7 +410,8 @@
     "bestSellers": "Best sellers",
     "deals": "Deals",
     "recentlyViewed": "Recently viewed",
-    "seeAll": "See all"
+    "seeAll": "See all",
+    "featured": "Featured"
   },
   "Seller": {
     "center": "Seller Center",
@@ -1333,5 +1336,28 @@
     "err_badPrice": "Enter a valid flash price.",
     "err_notFound": "Variant not found.",
     "err_duplicate": "That variant is already in this sale."
+  },
+  "Merch": {
+    "scheduleTitle": "Schedule a product discount",
+    "scheduleDesc": "Set a % off for a date range. It activates and expires automatically.",
+    "product": "Product",
+    "percentOff": "Percent off",
+    "starts": "Starts",
+    "ends": "Ends",
+    "schedule": "Schedule discount",
+    "clear": "Clear discount",
+    "saved": "Discount scheduled.",
+    "featuredTitle": "Featured products",
+    "featuredDesc": "Featured products appear in the home page slot.",
+    "err_forbidden": "You don't have permission.",
+    "err_badPercent": "Enter 1–90%.",
+    "err_badDates": "Enter valid dates.",
+    "err_badWindow": "End must be after start.",
+    "err_notFound": "Product not found."
+  },
+  "Deals": {
+    "title": "Deals",
+    "desc": "Discounted products across Hezalli.",
+    "empty": "No deals right now — check back soon!"
   }
 }

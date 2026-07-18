@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
 import { getFlashPricesFor } from "@/lib/flash";
+import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { quoteShippingForStores } from "@/lib/shipping";
@@ -53,6 +54,9 @@ export async function placeOrder(
       id: true,
       sku: true,
       price: true,
+      compareAtPrice: true,
+      saleStartsAt: true,
+      saleEndsAt: true,
       stock: true,
       isActive: true,
       product: {
@@ -84,7 +88,8 @@ export async function placeOrder(
       variantId: v.id,
       sku: v.sku,
       title: localizedName(v.product.title, locale),
-      price: flashMap.get(v.id)?.salePrice ?? Number(v.price),
+      // Flash price wins; otherwise the scheduled (or normal) price applies.
+      price: flashMap.get(v.id)?.salePrice ?? effectivePrice(v).price,
       qty: it.quantity,
     };
     const arr = byStore.get(v.product.storeId) ?? [];
