@@ -326,7 +326,8 @@
     "registeredLoginManually": "Your account was created. Please sign in.",
     "forbiddenTitle": "Access denied",
     "forbiddenDesc": "You don't have permission to view this page.",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again."
   },
   "Account": {
     "title": "My account",

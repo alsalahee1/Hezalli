@@ -1,16 +1,25 @@
 "use server";
 
+import { headers } from "next/headers";
 import { AuthError } from "next-auth";
 import { getLocale } from "next-intl/server";
 
 import { signIn, signOut } from "@/auth";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   fieldErrors,
   loginSchema,
   registerSchema,
 } from "@/lib/validations/auth";
+
+// Best-effort client IP for rate-limiting (behind the platform's proxy).
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  const fwd = h.get("x-forwarded-for");
+  return (fwd?.split(",")[0] || h.get("x-real-ip") || "unknown").trim();
+}
 
 // Shape returned to the client forms (via useActionState). Message values are
 // i18n KEYS under the `Auth` namespace; the forms translate them.
@@ -30,6 +39,11 @@ export async function authenticate(
   _prev: AuthFormState | undefined,
   formData: FormData,
 ): Promise<AuthFormState> {
+  // Throttle brute-force: at most 8 attempts per IP per 5 minutes.
+  if (!rateLimit(`login:${await clientIp()}`, 8, 5 * 60_000).ok) {
+    return { formError: "tooManyAttempts" };
+  }
+
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -59,6 +73,11 @@ export async function registerUser(
   _prev: AuthFormState | undefined,
   formData: FormData,
 ): Promise<AuthFormState> {
+  // Throttle account-creation abuse: at most 5 per IP per 15 minutes.
+  if (!rateLimit(`register:${await clientIp()}`, 5, 15 * 60_000).ok) {
+    return { formError: "tooManyAttempts" };
+  }
+
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
