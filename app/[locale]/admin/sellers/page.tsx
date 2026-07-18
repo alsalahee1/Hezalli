@@ -76,10 +76,15 @@ export default async function AdminSellersPage() {
                 return (
                   <tr key={s.id} className="border-t align-top">
                     <td className="px-3 py-3">
-                      <p className="font-medium">{s.name}</p>
+                      <Link
+                        href={`/admin/sellers/${s.sellerId}`}
+                        className="font-medium hover:underline"
+                      >
+                        {s.name}
+                      </Link>
                       <Link
                         href={`/store/${s.slug}`}
-                        className="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                        className="text-muted-foreground hover:text-foreground block text-xs hover:underline"
                       >
                         /{s.slug}
                       </Link>

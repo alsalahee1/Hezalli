@@ -288,6 +288,8 @@ model SellerProfile {
   kycDocs       Json?
   kycReviewedBy String?
   kycReviewedAt DateTime?
+  // Per-seller commission override (null = use the platform-wide rate).
+  commissionRate Decimal?      @db.Decimal(5, 4)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)

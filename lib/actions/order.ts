@@ -143,17 +143,31 @@ export async function placeOrder(
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
   const discountTotal = round2(groups.reduce((s, g) => s + g.discount, 0));
   const grandTotal = round2(itemsTotal + shippingTotal - discountTotal);
-  const commissionRate = await getCommissionRate();
+  const platformRate = await getCommissionRate();
 
-  // Seller users (for notifications), by store.
+  // Seller users (for notifications) + per-seller commission override, by store.
   const stores = await prisma.store.findMany({
     where: { id: { in: groups.map((g) => g.storeId) } },
     select: {
       id: true,
-      seller: { select: { user: { select: { id: true, locale: true } } } },
+      seller: {
+        select: {
+          commissionRate: true,
+          user: { select: { id: true, locale: true } },
+        },
+      },
     },
   });
   const sellerByStore = new Map(stores.map((s) => [s.id, s.seller.user]));
+  // A seller may carry a negotiated rate; otherwise the platform-wide rate.
+  const rateByStore = new Map(
+    stores.map((s) => [
+      s.id,
+      s.seller.commissionRate != null
+        ? Number(s.seller.commissionRate)
+        : platformRate,
+    ]),
+  );
 
   try {
     const orderId = await prisma.$transaction(async (tx) => {
@@ -204,7 +218,7 @@ export async function placeOrder(
               itemsTotal: g.itemsTotal,
               shippingTotal: g.shipping,
               discountTotal: g.discount,
-              commissionRate,
+              commissionRate: rateByStore.get(g.storeId) ?? platformRate,
               commissionAmt: 0,
               sellerNet: 0,
               items: {

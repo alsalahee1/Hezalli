@@ -39,11 +39,16 @@ function buildWhere(
   ids: string[] | null,
   skip?: "category" | "brand" | "seller" | "price",
 ): Prisma.ProductWhereInput {
-  const where: Prisma.ProductWhereInput = { status: "ACTIVE" };
+  // Only show products from active stores (suspended stores are hidden).
+  const where: Prisma.ProductWhereInput = {
+    status: "ACTIVE",
+    store: { status: "ACTIVE" },
+  };
   if (ids) where.id = { in: ids };
   if (p.category && skip !== "category") where.category = { slug: p.category };
   if (p.brand && skip !== "brand") where.brand = { slug: p.brand };
-  if (p.seller && skip !== "seller") where.store = { slug: p.seller };
+  if (p.seller && skip !== "seller")
+    where.store = { slug: p.seller, status: "ACTIVE" };
   if (p.condition) where.condition = p.condition;
   if (p.rating != null) where.ratingAvg = { gte: p.rating };
 

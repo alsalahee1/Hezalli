@@ -6,6 +6,7 @@ import {
   ArrowLeftRight,
   Banknote,
   BarChart3,
+  History,
   Images,
   LayoutDashboard,
   MapPin,
@@ -65,6 +66,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/flash-sales", key: "flashSales", icon: Zap },
   { href: "/admin/pages", key: "pages", icon: ScrollText },
   { href: "/admin/banners", key: "banners", icon: Images },
+  { href: "/admin/audit", key: "audit", icon: History },
   { href: "/admin/settings", key: "settings", icon: Settings },
 ];
 

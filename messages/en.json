@@ -266,7 +266,27 @@
     "kyc_REJECTED": "Rejected",
     "status_ACTIVE": "Active",
     "status_SUSPENDED": "Suspended",
-    "status_CLOSED": "Closed"
+    "status_CLOSED": "Closed",
+    "back": "Back to sellers",
+    "ordersCol": "Orders",
+    "available": "Available",
+    "pending": "Pending",
+    "commission": "Commission",
+    "commissionDesc": "Override this seller’s commission rate. Applies to future orders only.",
+    "moderation": "Moderation",
+    "suspendHint": "Suspending a store hides all its products from buyers.",
+    "payouts": "Payout history",
+    "noPayouts": "No payouts yet.",
+    "date": "Date",
+    "amount": "Amount",
+    "method": "Method",
+    "save": "Save",
+    "clearOverride": "Use platform rate",
+    "overrideActive": "Custom rate: {rate}%",
+    "usingPlatform": "Using platform rate: {rate}%",
+    "err_forbidden": "You don’t have permission to do that.",
+    "err_notFound": "Seller not found.",
+    "err_badRate": "Enter a rate between 0 and 100."
   },
   "Upload": {
     "upload": "Upload image",
@@ -445,7 +465,8 @@
     "carriers": "Carriers",
     "reviews": "Reviews",
     "flashSales": "Flash sales",
-    "reports": "Reports"
+    "reports": "Reports",
+    "audit": "Audit log"
   },
   "AdminProducts": {
     "title": "Products",
@@ -958,7 +979,11 @@
     "status_COMPLETED": "Completed",
     "status_CANCELLED": "Cancelled",
     "status_REFUNDED": "Refunded",
-    "status_RETURNED": "Returned"
+    "status_RETURNED": "Returned",
+    "forceStatus": "Force status",
+    "forceNote": "Reason / note",
+    "apply": "Apply",
+    "forced": "Status forced."
   },
   "AdminPayouts": {
     "title": "Seller payouts",
@@ -1390,5 +1415,30 @@
     "discounts": "Discounts",
     "refunds": "Refunds",
     "payouts": "Payouts paid"
+  },
+  "AdminUsers": {
+    "title": "Users",
+    "desc": "Search users; suspend, change roles, or remove accounts.",
+    "searchPlaceholder": "Search name or email",
+    "empty": "No users found.",
+    "suspended": "Suspended",
+    "deleted": "Deleted",
+    "ordersCount": "{count, plural, one {# order} other {# orders}}",
+    "suspend": "Suspend",
+    "unsuspend": "Unsuspend",
+    "roles": "Roles",
+    "delete": "Delete",
+    "save": "Save",
+    "deleteConfirm": "Soft-delete this account? They won't be able to sign in."
+  },
+  "AdminAudit": {
+    "title": "Audit log",
+    "desc": "Every admin action, most recent first.",
+    "when": "When",
+    "actor": "Admin",
+    "action": "Action",
+    "entity": "Entity",
+    "details": "Details",
+    "empty": "No admin actions logged yet."
   }
 }

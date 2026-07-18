@@ -7,6 +7,7 @@ import { STATUS_BADGE } from "@/lib/order-status";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { RefundButton } from "@/components/admin/refund-button";
+import { ForceStatus } from "@/components/admin/force-status";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -66,14 +67,17 @@ export default async function AdminOrderDetailPage({
             {format.dateTime(order.createdAt, { dateStyle: "medium" })}
           </p>
         </div>
-        <span
-          className={cn(
-            "rounded px-2 py-1 text-sm font-medium",
-            STATUS_BADGE[order.status] ?? "bg-muted",
-          )}
-        >
-          {t(`status_${order.status}`)}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={cn(
+              "rounded px-2 py-1 text-sm font-medium",
+              STATUS_BADGE[order.status] ?? "bg-muted",
+            )}
+          >
+            {t(`status_${order.status}`)}
+          </span>
+          <ForceStatus orderId={order.id} current={order.status} />
+        </div>
       </div>
 
       {order.subOrders.map((s) => {
