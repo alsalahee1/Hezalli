@@ -8,7 +8,7 @@ import { registerUser, type AuthFormState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function RegisterForm() {
+export function RegisterForm({ refCode }: { refCode?: string }) {
   const t = useTranslations("Auth");
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
     registerUser,
@@ -17,6 +17,7 @@ export function RegisterForm() {
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
+      {refCode ? <input type="hidden" name="ref" value={refCode} /> : null}
       {state.formError ? (
         <p
           role="alert"

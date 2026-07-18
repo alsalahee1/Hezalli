@@ -396,7 +396,8 @@
     "cityRequired": "Enter the city or district",
     "line1Required": "Enter the street address",
     "notSignedIn": "Please sign in and try again",
-    "addressNotFound": "Address not found"
+    "addressNotFound": "Address not found",
+    "loyalty": "Rewards"
   },
   "Categories": {
     "all": "All categories",
@@ -758,7 +759,11 @@
     "applying": "Applying…",
     "discount": "Discount",
     "err_flashUnavailable": "A flash-sale item just sold out. Please review your cart and try again.",
-    "err_codDisabled": "Cash on delivery is currently unavailable. Please choose another payment method."
+    "err_codDisabled": "Cash on delivery is currently unavailable. Please choose another payment method.",
+    "redeemPoints": "Redeem my {points} points (up to −{usd})",
+    "pointsDiscount": "Points ({points})",
+    "err_pointsInsufficient": "You don’t have enough points.",
+    "err_pointsAndCoupon": "You can’t use points and a coupon on the same order."
   },
   "Orders": {
     "title": "My orders",
@@ -1493,5 +1498,22 @@
   "Maintenance": {
     "title": "We’ll be right back",
     "desc": "Hezalli is undergoing scheduled maintenance. Please check back shortly."
+  },
+  "Loyalty": {
+    "balance": "Your points balance",
+    "points": "{count, plural, =0 {0 points} one {# point} other {# points}}",
+    "rate": "{n} points = $1",
+    "referral": "Invite friends",
+    "referralDesc": "Share your link. When a friend signs up and completes their first order, you earn 200 points.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "referralsCount": "{count, plural, =0 {No friends have joined yet} one {# friend joined} other {# friends joined}}",
+    "history": "Points history",
+    "earn": "Purchase reward",
+    "redeem": "Redeemed at checkout",
+    "referralBonus": "Referral bonus",
+    "refund": "Points returned",
+    "adjust": "Adjustment",
+    "empty": "No points activity yet — earn points on your next purchase."
   }
 }

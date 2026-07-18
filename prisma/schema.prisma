@@ -188,6 +188,10 @@ model User {
   notificationPrefs Json?
   isSuspended   Boolean   @default(false)
   deletedAt     DateTime?
+  // Loyalty (Step 17.9): points balance + referral graph.
+  loyaltyPoints Int       @default(0)
+  referralCode  String?   @unique
+  referredById  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -204,6 +208,23 @@ model User {
   follows        StoreFollow[]
   accounts       Account[]
   sessions       Session[]
+  referredBy     User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals      User[]   @relation("Referrals")
+  loyaltyTxns    LoyaltyTransaction[]
+}
+
+model LoyaltyTransaction {
+  id         String   @id @default(cuid())
+  userId     String
+  points     Int // signed: + earned/refunded, − redeemed
+  type       String // EARN | REDEEM | REFERRAL | REFUND | ADJUST
+  orderId    String?
+  subOrderId String?
+  note       String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Account {

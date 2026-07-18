@@ -8,6 +8,7 @@ import { localizedName } from "@/lib/categories";
 import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, round2 } from "@/lib/finance";
+import { capRedemption } from "@/lib/loyalty";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { quoteShippingForStores } from "@/lib/shipping";
@@ -19,10 +20,12 @@ export type PlaceOrderInput = {
   items: { variantId: string; quantity: number }[];
   paymentMethod: PaymentMethodChoice;
   couponCode?: string;
+  redeemPoints?: number;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
 
 class StockError extends Error {}
+class PointsError extends Error {}
 class CouponError extends Error {}
 class FlashError extends Error {}
 
@@ -138,6 +141,37 @@ export async function placeOrder(
     couponMaxUses = res.coupon.maxUses;
     for (const [sid, d] of Object.entries(res.discount.perStore)) {
       discountByStore.set(sid, d);
+    }
+  }
+
+  // Loyalty redemption: a platform-funded discount, mutually exclusive with a
+  // coupon (keeps each order's discount single-source so settlement/refund math
+  // stays correct — a no-coupon discount is treated as platform-funded).
+  let pointsRedeemed = 0;
+  const wantRedeem = Math.floor(input.redeemPoints ?? 0);
+  if (wantRedeem > 0) {
+    if (couponId) return { error: "pointsAndCoupon" };
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { loyaltyPoints: true },
+    });
+    const itemsSubtotal = groupsBase.reduce((s, g) => s + g.itemsTotal, 0);
+    const { pointsUsed, discountUsd } = capRedemption(
+      wantRedeem,
+      u?.loyaltyPoints ?? 0,
+      itemsSubtotal,
+    );
+    if (discountUsd > 0 && itemsSubtotal > 0) {
+      pointsRedeemed = pointsUsed;
+      let allocated = 0;
+      groupsBase.forEach((g, i) => {
+        const share =
+          i === groupsBase.length - 1
+            ? round2(discountUsd - allocated)
+            : round2((discountUsd * g.itemsTotal) / itemsSubtotal);
+        if (i < groupsBase.length - 1) allocated = round2(allocated + share);
+        discountByStore.set(g.storeId, Math.max(0, share));
+      });
     }
   }
 
@@ -275,6 +309,24 @@ export async function placeOrder(
         });
       }
 
+      // Redeem loyalty points atomically (guards against concurrent double-spend).
+      if (pointsRedeemed > 0) {
+        const upd = await tx.user.updateMany({
+          where: { id: userId, loyaltyPoints: { gte: pointsRedeemed } },
+          data: { loyaltyPoints: { decrement: pointsRedeemed } },
+        });
+        if (upd.count !== 1) throw new PointsError();
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId,
+            points: -pointsRedeemed,
+            type: "REDEEM",
+            orderId: order.id,
+            note: "Checkout redemption",
+          },
+        });
+      }
+
       // COD orders notify sellers immediately; prepaid orders notify sellers
       // only once payment is confirmed (see confirmPayment).
       if (!prepaid) {
@@ -334,6 +386,7 @@ export async function placeOrder(
     if (e instanceof StockError) return { error: "outOfStock" };
     if (e instanceof CouponError) return { error: "coupon_usedUp" };
     if (e instanceof FlashError) return { error: "flashUnavailable" };
+    if (e instanceof PointsError) return { error: "pointsInsufficient" };
     throw e;
   }
 }

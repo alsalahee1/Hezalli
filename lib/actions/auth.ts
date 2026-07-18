@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 import { getLocale } from "next-intl/server";
 
 import { signIn, signOut } from "@/auth";
+import { generateReferralCode } from "@/lib/loyalty";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -92,10 +93,30 @@ export async function registerUser(
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { errors: { email: "emailTaken" } };
 
+  // Referral: a valid ?ref code links the new buyer to their referrer, who is
+  // rewarded once this account completes its first order (see awardPurchasePoints).
+  const refCode = String(formData.get("ref") ?? "").trim();
+  let referredById: string | null = null;
+  if (refCode) {
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode: refCode },
+      select: { id: true },
+    });
+    referredById = referrer?.id ?? null;
+  }
+
   const locale = await getLocale();
   const passwordHash = await hashPassword(password);
   await prisma.user.create({
-    data: { name, email, passwordHash, roles: ["BUYER"], locale },
+    data: {
+      name,
+      email,
+      passwordHash,
+      roles: ["BUYER"],
+      locale,
+      referralCode: generateReferralCode(),
+      referredById,
+    },
   });
 
   try {

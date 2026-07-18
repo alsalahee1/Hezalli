@@ -8,6 +8,7 @@ import {
   round2,
   subEconomics,
 } from "@/lib/finance";
+import { POINTS_PER_USD_REDEEMED } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
 
@@ -114,6 +115,31 @@ export async function applyRefund(
             subOrderId,
             note: "Sale reversed (refund)",
           },
+        });
+      }
+    }
+
+    // Restore loyalty points redeemed on this order. A points redemption is a
+    // platform-funded discount with no coupon, so a discount + no coupon means
+    // the buyer paid partly with points — give the proportional share back.
+    if (!sub.order.coupon && Number(sub.discountTotal) > 0) {
+      const restore = Math.round(
+        Number(sub.discountTotal) * ratio * POINTS_PER_USD_REDEEMED,
+      );
+      if (restore > 0) {
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId: sub.order.buyerId,
+            points: restore,
+            type: "REFUND",
+            orderId: sub.orderId,
+            subOrderId,
+            note: "Points restored on refund",
+          },
+        });
+        await tx.user.update({
+          where: { id: sub.order.buyerId },
+          data: { loyaltyPoints: { increment: restore } },
         });
       }
     }

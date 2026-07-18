@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
 import { previewCoupon } from "@/lib/actions/coupon";
 import type { CartLine } from "@/lib/cart-types";
+import { capRedemption, pointsToUsd } from "@/lib/loyalty-shared";
 import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -27,11 +28,13 @@ export function CheckoutFlow({
   addresses,
   shippingByAddress,
   codEnabled = true,
+  points = 0,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
   shippingByAddress: Record<string, Record<string, number>>;
   codEnabled?: boolean;
+  points?: number;
 }) {
   const t = useTranslations("Checkout");
   const locale = useLocale();
@@ -47,6 +50,7 @@ export function CheckoutFlow({
   const [discount, setDiscount] = useState(0);
   const [couponErr, setCouponErr] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [usePoints, setUsePoints] = useState(false);
 
   const METHODS: {
     key: PaymentMethodChoice;
@@ -84,7 +88,16 @@ export function CheckoutFlow({
 
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
-  const grandTotal = Math.max(0, itemsTotal + shippingTotal - discount);
+  // Points redeem as a discount, mutually exclusive with a coupon.
+  const canRedeem = points > 0 && !appliedCode;
+  const redeem =
+    usePoints && canRedeem
+      ? capRedemption(points, points, itemsTotal)
+      : { pointsUsed: 0, discountUsd: 0 };
+  const grandTotal = Math.max(
+    0,
+    itemsTotal + shippingTotal - discount - redeem.discountUsd,
+  );
 
   const applyCoupon = async () => {
     setCouponErr(null);
@@ -132,6 +145,7 @@ export function CheckoutFlow({
       })),
       paymentMethod: method,
       couponCode: appliedCode || undefined,
+      redeemPoints: redeem.pointsUsed || undefined,
     });
     if (res.error) {
       setError(res.error);
@@ -301,6 +315,29 @@ export function CheckoutFlow({
                 {t(`coupon_${couponErr}`)}
               </p>
             ) : null}
+
+            {points > 0 ? (
+              <label
+                className={cn(
+                  "mt-3 flex items-start gap-2 text-sm",
+                  !canRedeem && "opacity-50",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4"
+                  checked={usePoints && canRedeem}
+                  disabled={!canRedeem}
+                  onChange={(e) => setUsePoints(e.target.checked)}
+                />
+                <span>
+                  {t("redeemPoints", {
+                    points,
+                    usd: formatUsd(pointsToUsd(points), locale),
+                  })}
+                </span>
+              </label>
+            ) : null}
           </div>
         </section>
       </div>
@@ -334,6 +371,12 @@ export function CheckoutFlow({
             <div className="flex justify-between text-emerald-600">
               <span>{t("discount")}</span>
               <span dir="ltr">−{formatUsd(discount, locale)}</span>
+            </div>
+          ) : null}
+          {redeem.discountUsd > 0 ? (
+            <div className="flex justify-between text-emerald-600">
+              <span>{t("pointsDiscount", { points: redeem.pointsUsed })}</span>
+              <span dir="ltr">−{formatUsd(redeem.discountUsd, locale)}</span>
             </div>
           ) : null}
           <div className="flex justify-between border-t pt-1 text-base font-semibold">

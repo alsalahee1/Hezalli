@@ -2,6 +2,7 @@
 // sum of a seller's ledger entries, and pendingUsd is the escrow held for
 // prepaid, paid-but-not-completed sub-orders. Balances are recomputed, never
 // edited in place. All amounts are USD (USDT treated 1:1).
+import { awardPurchasePoints } from "@/lib/loyalty";
 import { prisma } from "@/lib/prisma";
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -128,6 +129,7 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
     where: { id: subOrderId },
     select: {
       id: true,
+      orderId: true,
       itemsTotal: true,
       shippingTotal: true,
       discountTotal: true,
@@ -136,6 +138,7 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
       store: { select: { sellerId: true } },
       order: {
         select: {
+          buyerId: true,
           paymentMethod: true,
           coupon: { select: { scope: true } },
         },
@@ -195,4 +198,12 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
     },
   });
   await recomputeBalance(sub.store.sellerId);
+
+  // Loyalty: reward the buyer for this completed purchase (idempotent).
+  await awardPurchasePoints(
+    sub.order.buyerId,
+    sub.orderId,
+    subOrderId,
+    Number(sub.itemsTotal),
+  );
 }
