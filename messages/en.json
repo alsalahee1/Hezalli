@@ -517,8 +517,33 @@
     "carriers": "Carriers",
     "reviews": "Reviews",
     "flashSales": "Flash sales",
+    "newsletter": "Newsletter",
     "reports": "Reports",
     "audit": "Audit log"
+  },
+  "Newsletter": {
+    "title": "Newsletter",
+    "desc": "Deals and new arrivals, straight to your inbox.",
+    "placeholder": "Your email",
+    "subscribe": "Subscribe",
+    "subscribing": "Subscribing…",
+    "thanks": "You're subscribed — thank you!",
+    "invalid": "Please enter a valid email address."
+  },
+  "AdminNewsletter": {
+    "title": "Newsletter",
+    "desc": "Subscribers and one-off broadcasts. Delivery runs through the email adapter (stubbed until a provider is connected).",
+    "active": "Active subscribers",
+    "total": "Total ever",
+    "compose": "Compose broadcast",
+    "composeDesc": "Sends to all {count} active subscribers.",
+    "subjectPlaceholder": "Subject",
+    "bodyPlaceholder": "Write your message…",
+    "send": "Send broadcast",
+    "sending": "Sending…",
+    "sentToast": "Queued to {count, plural, one {# subscriber} other {# subscribers}}.",
+    "err_empty": "Add a subject and a message first.",
+    "err_forbidden": "Admins only."
   },
   "AdminProducts": {
     "title": "Products",
