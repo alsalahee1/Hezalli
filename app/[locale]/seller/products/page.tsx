@@ -1,14 +1,30 @@
 import { Plus } from "lucide-react";
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { localizedName } from "@/lib/categories";
+import { categoryOptions, localizedName } from "@/lib/categories";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
+import { ProductFilters } from "@/components/seller/product-filters";
+import {
+  ProductTable,
+  type ProductRow,
+} from "@/components/seller/product-table";
 import { Button } from "@/components/ui/button";
 
-export default async function SellerProductsPage() {
+const PAGE_SIZE = 20;
+
+export default async function SellerProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    category?: string;
+    page?: string;
+  }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) return null;
 
@@ -19,26 +35,89 @@ export default async function SellerProductsPage() {
   const storeId = profile?.store?.id;
   if (!storeId) return null;
 
-  const products = await prisma.product.findMany({
-    where: { storeId, status: { not: "REMOVED" } },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      images: { orderBy: { position: "asc" }, take: 1 },
-      variants: { select: { price: true, stock: true } },
-    },
-  });
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim();
+  const statusFilter = ["ACTIVE", "DRAFT", "HIDDEN"].includes(sp.status ?? "")
+    ? (sp.status as "ACTIVE" | "DRAFT" | "HIDDEN")
+    : "";
+  const categoryFilter = sp.category ?? "";
+  const page = Math.max(1, Number(sp.page ?? "1") || 1);
+
+  const where: Prisma.ProductWhereInput = { storeId };
+  where.status = statusFilter ? statusFilter : { not: "REMOVED" };
+  if (categoryFilter) where.categoryId = categoryFilter;
+  if (q) {
+    where.OR = [
+      { title: { path: ["en"], string_contains: q } },
+      { title: { path: ["ar"], string_contains: q } },
+    ];
+  }
+
+  const [total, products, catRows] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        images: { orderBy: { position: "asc" }, take: 1 },
+        variants: { select: { id: true, price: true, stock: true } },
+      },
+    }),
+    prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, parentId: true, name: true, position: true },
+    }),
+  ]);
+
+  // Units sold per product (from order items).
+  const variantIds = products.flatMap((p) => p.variants.map((v) => v.id));
+  const sales = variantIds.length
+    ? await prisma.orderItem.groupBy({
+        by: ["variantId"],
+        where: { variantId: { in: variantIds } },
+        _sum: { quantity: true },
+      })
+    : [];
+  const soldByVariant = new Map(
+    sales.map((s) => [s.variantId, s._sum.quantity ?? 0]),
+  );
+
   const locale = await getLocale();
-  const format = await getFormatter();
   const t = await getTranslations("SellerProducts");
 
-  const money = (n: number) =>
-    format.number(n, { style: "currency", currency: "USD" });
+  const rows: ProductRow[] = products.map((p) => {
+    const prices = p.variants.map((v) => Number(v.price));
+    const title = (p.title ?? {}) as Record<string, string>;
+    return {
+      id: p.id,
+      title: localizedName(title, locale),
+      coverUrl: p.images[0]?.url ?? null,
+      status: p.status as ProductRow["status"],
+      minPrice: prices.length ? Math.min(...prices) : 0,
+      maxPrice: prices.length ? Math.max(...prices) : 0,
+      totalStock: p.variants.reduce((s, v) => s + v.stock, 0),
+      variantCount: p.variants.length,
+      singleVariantId: p.variants.length === 1 ? p.variants[0].id : null,
+      lowStockThreshold: p.lowStockThreshold,
+      salesCount: p.variants.reduce(
+        (s, v) => s + (soldByVariant.get(v.id) ?? 0),
+        0,
+      ),
+    };
+  });
 
-  const statusBadge: Record<string, string> = {
-    DRAFT: "bg-muted text-muted-foreground",
-    ACTIVE: "bg-emerald-500/15 text-emerald-600",
-    HIDDEN: "bg-amber-500/15 text-amber-600",
-  };
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageHref = (n: number) => ({
+    pathname: "/seller/products" as const,
+    query: {
+      ...(q ? { q } : {}),
+      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(categoryFilter ? { category: categoryFilter } : {}),
+      ...(n > 1 ? { page: String(n) } : {}),
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -57,93 +136,48 @@ export default async function SellerProductsPage() {
         </Button>
       </div>
 
-      {products.length === 0 ? (
+      <ProductFilters categories={categoryOptions(catRows, locale)} />
+
+      {rows.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed py-14 text-center text-sm">
-          {t("empty")}
+          {q || statusFilter || categoryFilter ? t("noMatches") : t("empty")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("product")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("price")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("stock")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("statusCol")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => {
-                const prices = p.variants.map((v) => Number(v.price));
-                const min = prices.length ? Math.min(...prices) : 0;
-                const max = prices.length ? Math.max(...prices) : 0;
-                const stock = p.variants.reduce((s, v) => s + v.stock, 0);
-                const title = (p.title ?? {}) as Record<string, string>;
-                return (
-                  <tr key={p.id} className="border-t">
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-muted size-10 shrink-0 overflow-hidden rounded">
-                          {p.images[0] ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={p.images[0].url}
-                              alt=""
-                              className="size-full object-cover"
-                            />
-                          ) : null}
-                        </div>
-                        <span className="font-medium">
-                          {localizedName(title, locale)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap" dir="ltr">
-                      {min === max
-                        ? money(min)
-                        : `${money(min)} – ${money(max)}`}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={cn(
-                          stock === 0 && "text-destructive font-medium",
-                        )}
-                      >
-                        {stock}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-xs font-medium",
-                          statusBadge[p.status] ?? "bg-muted",
-                        )}
-                      >
-                        {t(`status_${p.status}`)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-end">
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/seller/products/${p.id}/edit`}>
-                          {t("edit")}
-                        </Link>
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <ProductTable rows={rows} />
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {t("pageOf", { page, totalPages })}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1}
+                >
+                  <Link href={pageHref(page - 1)} aria-disabled={page <= 1}>
+                    {t("prev")}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  disabled={page >= totalPages}
+                >
+                  <Link
+                    href={pageHref(page + 1)}
+                    aria-disabled={page >= totalPages}
+                  >
+                    {t("next")}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );
