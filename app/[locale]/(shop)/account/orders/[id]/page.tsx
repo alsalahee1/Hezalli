@@ -12,6 +12,11 @@ import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { ConfirmReceivedButton } from "@/components/orders/confirm-received-button";
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
+import {
+  ReturnBlock,
+  type ReturnView,
+} from "@/components/returns/return-block";
+import type { ReturnType } from "@/lib/returns";
 
 export default async function OrderDetailPage({
   params,
@@ -41,11 +46,23 @@ export default async function OrderDetailPage({
               events: { orderBy: { createdAt: "asc" } },
             },
           },
+          return: { include: { dispute: { select: { id: true } } } },
         },
       },
     },
   });
   if (!order) notFound();
+
+  const returnWindowDays = Number(
+    (
+      await prisma.platformSetting.findUnique({
+        where: { key: "return_window_days" },
+        select: { value: true },
+      })
+    )?.value ?? 7,
+  );
+  const returnWindowMs =
+    (Number.isFinite(returnWindowDays) ? returnWindowDays : 7) * 86_400_000;
 
   const variantIds = order.subOrders.flatMap((s) =>
     s.items.map((i) => i.variantId),
@@ -130,7 +147,6 @@ export default async function OrderDetailPage({
           futureBtn(t("confirmReceived"), t("confirmHint"))
         )}
         {futureBtn(t("review"), t("reviewHint"))}
-        {futureBtn(t("returnItem"), t("returnHint"))}
         {order.subOrders.some(
           (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
         )
@@ -185,6 +201,32 @@ export default async function OrderDetailPage({
           s.shipment?.carrier?.trackingUrl,
           s.shipment?.trackingNumber,
         );
+        const ev = (s.return?.evidence ?? {}) as {
+          type?: ReturnType;
+          description?: string;
+          returnAddress?: string | null;
+          returnTracking?: string | null;
+        };
+        const retView: ReturnView = s.return
+          ? {
+              id: s.return.id,
+              status: s.return.status,
+              reason: s.return.reason,
+              resolution: s.return.resolution,
+              type:
+                ev.type === "refund_only" ? "refund_only" : "return_and_refund",
+              description: ev.description ?? "",
+              returnAddress: ev.returnAddress ?? null,
+              returnTracking: ev.returnTracking ?? null,
+              hasDispute: Boolean(s.return.dispute),
+            }
+          : null;
+        const returnBase = s.completedAt ?? s.shipment?.deliveredAt ?? null;
+        const canRequestReturn =
+          !s.return &&
+          (s.status === "DELIVERED" || s.status === "COMPLETED") &&
+          (!returnBase ||
+            Date.now() - new Date(returnBase).getTime() <= returnWindowMs);
         return (
           <section key={s.id} className="rounded-lg border">
             <div className="flex items-center justify-between border-b px-4 py-2.5 text-sm">
@@ -297,6 +339,12 @@ export default async function OrderDetailPage({
                 ) : null}
               </div>
             ) : null}
+
+            <ReturnBlock
+              subOrderId={s.id}
+              canRequest={canRequestReturn}
+              ret={retView}
+            />
           </section>
         );
       })}

@@ -197,6 +197,7 @@ model User {
   recentlyViewed RecentlyViewed[]
   orders         Order[]
   reviews        Review[]
+  returnRequests ReturnRequest[]
   notifications  Notification[]
   conversations  Conversation[]
   accounts       Account[]
@@ -750,8 +751,11 @@ model ReturnRequest {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   subOrder   SubOrder     @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  buyer      User         @relation(fields: [buyerId], references: [id])
   items      ReturnItem[]
   dispute    Dispute?
+
+  @@index([buyerId])
 }
 
 model ReturnItem {

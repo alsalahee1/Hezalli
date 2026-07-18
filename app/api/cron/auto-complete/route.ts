@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { autoCompleteDeliveredOrders } from "@/lib/actions/completion";
+import { autoApproveReturns } from "@/lib/actions/return";
 
 // Scheduled endpoint (e.g. Vercel Cron) that completes delivered orders past
 // their grace window. Protected by CRON_SECRET; the same work also runs lazily
@@ -16,8 +17,11 @@ async function run(req: Request) {
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const completed = await autoCompleteDeliveredOrders();
-  return NextResponse.json({ ok: true, completed });
+  const [completed, autoApproved] = await Promise.all([
+    autoCompleteDeliveredOrders(),
+    autoApproveReturns(),
+  ]);
+  return NextResponse.json({ ok: true, completed, autoApproved });
 }
 
 export async function GET(req: Request) {
