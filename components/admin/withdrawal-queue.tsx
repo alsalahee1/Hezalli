@@ -51,7 +51,7 @@ export function WithdrawalQueue({ rows }: { rows: WithdrawalRow[] }) {
               <p className="font-medium">
                 {p.buyerName} · {p.amountLabel}
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground break-all">
                 {p.method} · {p.destination}
               </p>
             </div>

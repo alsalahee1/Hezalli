@@ -215,7 +215,9 @@ export function ChatApp({
                         </div>
                       ) : null}
                       {m.body ? (
-                        <p className="whitespace-pre-wrap">{m.body}</p>
+                        <p className="whitespace-pre-wrap break-words">
+                          {m.body}
+                        </p>
                       ) : null}
                       <span
                         className={cn(

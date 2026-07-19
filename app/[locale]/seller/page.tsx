@@ -145,7 +145,28 @@ export default async function SellerDashboardPage() {
               {t("noOrders")}
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
+            <>
+            <ul className="space-y-3 md:hidden">
+              {recent.map((o) => (
+                <li key={o.id} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-mono text-xs">#{o.id.slice(-8)}</span>
+                    <span className="bg-muted rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap">
+                      {t(`status_${o.status}`)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">
+                      {format.dateTime(o.createdAt, { dateStyle: "medium" })}
+                    </span>
+                    <span className="font-medium" dir="ltr">
+                      {money(Number(o.itemsTotal) + Number(o.shippingTotal))}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
               <table className="w-full min-w-[480px] text-sm">
                 <thead>
                   <tr className="bg-muted/50">
@@ -185,6 +206,7 @@ export default async function SellerDashboardPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <p className="text-muted-foreground text-xs">{t("ordersNote")}</p>
         </div>

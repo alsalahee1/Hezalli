@@ -101,7 +101,7 @@ export function CartView() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="grid gap-6 md:grid-cols-[1fr_320px]">
       <div className="space-y-4">
         {notices.length > 0 ? (
           <div className="space-y-1 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700">
@@ -296,7 +296,7 @@ export function CartView() {
       </div>
 
       {/* Summary */}
-      <aside className="h-fit rounded-lg border p-4 lg:sticky lg:top-24">
+      <aside className="h-fit rounded-lg border p-4 md:sticky md:top-24">
         <h2 className="mb-3 font-semibold">{t("summary")}</h2>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">

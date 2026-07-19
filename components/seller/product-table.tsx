@@ -51,13 +51,17 @@ function StockBadges({
   return null;
 }
 
-function QuickCells({ row }: { row: ProductRow }) {
+function useQuickEdit(row: ProductRow) {
   const router = useRouter();
   const [price, setPrice] = useState(String(row.minPrice));
   const [stock, setStock] = useState(String(row.totalStock));
   const [saving, start] = useTransition();
   const [saved, setSaved] = useState(false);
   const dirty = useRef(false);
+
+  const markDirty = () => {
+    dirty.current = true;
+  };
 
   const save = () => {
     if (!dirty.current || !row.singleVariantId) return;
@@ -76,6 +80,22 @@ function QuickCells({ row }: { row: ProductRow }) {
     });
   };
 
+  return { price, setPrice, stock, setStock, saving, saved, markDirty, save };
+}
+
+function SaveIndicator({ saving, saved }: { saving: boolean; saved: boolean }) {
+  if (saving)
+    return (
+      <Loader2 className="text-muted-foreground ms-1 size-3.5 animate-spin" />
+    );
+  if (saved) return <Check className="ms-1 size-3.5 text-emerald-600" />;
+  return null;
+}
+
+function QuickCells({ row }: { row: ProductRow }) {
+  const { price, setPrice, stock, setStock, saving, saved, markDirty, save } =
+    useQuickEdit(row);
+
   return (
     <>
       <td className="px-3 py-2">
@@ -88,7 +108,7 @@ function QuickCells({ row }: { row: ProductRow }) {
           value={price}
           onChange={(e) => {
             setPrice(e.target.value);
-            dirty.current = true;
+            markDirty();
           }}
           onBlur={save}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
@@ -104,7 +124,7 @@ function QuickCells({ row }: { row: ProductRow }) {
             value={stock}
             onChange={(e) => {
               setStock(e.target.value);
-              dirty.current = true;
+              markDirty();
             }}
             onBlur={save}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
@@ -113,14 +133,207 @@ function QuickCells({ row }: { row: ProductRow }) {
             stock={Number(stock)}
             threshold={row.lowStockThreshold}
           />
-          {saving ? (
-            <Loader2 className="text-muted-foreground ms-1 size-3.5 animate-spin" />
-          ) : saved ? (
-            <Check className="ms-1 size-3.5 text-emerald-600" />
-          ) : null}
+          <SaveIndicator saving={saving} saved={saved} />
         </div>
       </td>
     </>
+  );
+}
+
+const STATUS_BADGE: Record<string, string> = {
+  DRAFT: "bg-muted text-muted-foreground",
+  ACTIVE: "bg-emerald-500/15 text-emerald-600",
+  HIDDEN: "bg-amber-500/15 text-amber-600",
+};
+
+function StatusPill({ status }: { status: ProductRow["status"] }) {
+  const t = useTranslations("SellerProducts");
+  return (
+    <span
+      className={cn(
+        "rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap",
+        STATUS_BADGE[status] ?? "bg-muted",
+      )}
+    >
+      {t(`status_${status}`)}
+    </span>
+  );
+}
+
+function RowActions({
+  row,
+  pending,
+  onDuplicate,
+  onArchive,
+}: {
+  row: ProductRow;
+  pending: boolean;
+  onDuplicate: (id: string) => void;
+  onArchive: (id: string) => void;
+}) {
+  const t = useTranslations("SellerProducts");
+  return (
+    <div className="flex items-center gap-1">
+      <Button asChild size="sm" variant="outline">
+        <Link href={`/seller/products/${row.id}/edit`}>{t("edit")}</Link>
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        title={t("duplicate")}
+        aria-label={t("duplicate")}
+        disabled={pending}
+        onClick={() => onDuplicate(row.id)}
+      >
+        <Copy className="size-4" />
+      </Button>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="text-destructive"
+        title={t("archive")}
+        aria-label={t("archive")}
+        disabled={pending}
+        onClick={() => onArchive(row.id)}
+      >
+        <Archive className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+/** Stacked card — the native-app-style layout used on small screens. */
+function ProductCard({
+  row,
+  selected,
+  onToggle,
+  pending,
+  onDuplicate,
+  onArchive,
+}: {
+  row: ProductRow;
+  selected: boolean;
+  onToggle: (id: string) => void;
+  pending: boolean;
+  onDuplicate: (id: string) => void;
+  onArchive: (id: string) => void;
+}) {
+  const t = useTranslations("SellerProducts");
+  const format = useFormatter();
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
+  const quick = useQuickEdit(row);
+
+  return (
+    <li className="rounded-lg border p-3">
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggle(row.id)}
+          aria-label={t("selectRow")}
+          className="mt-1 size-4 shrink-0"
+        />
+        <div className="bg-muted size-12 shrink-0 overflow-hidden rounded">
+          {row.coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={row.coverUrl}
+              alt=""
+              className="size-full object-cover"
+            />
+          ) : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <span className="font-medium break-words">{row.title}</span>
+            <StatusPill status={row.status} />
+          </div>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            {t("sold")}: {row.salesCount}
+          </p>
+        </div>
+      </div>
+
+      {row.singleVariantId ? (
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">{t("price")}</span>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              dir="ltr"
+              value={quick.price}
+              onChange={(e) => {
+                quick.setPrice(e.target.value);
+                quick.markDirty();
+              }}
+              onBlur={quick.save}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            />
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground flex items-center gap-1">
+              {t("stock")}
+              <StockBadges
+                stock={Number(quick.stock)}
+                threshold={row.lowStockThreshold}
+              />
+              <SaveIndicator saving={quick.saving} saved={quick.saved} />
+            </span>
+            <Input
+              type="number"
+              min={0}
+              dir="ltr"
+              value={quick.stock}
+              onChange={(e) => {
+                quick.setStock(e.target.value);
+                quick.markDirty();
+              }}
+              onBlur={quick.save}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            />
+          </label>
+        </div>
+      ) : (
+        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-muted-foreground text-xs">{t("price")}</dt>
+            <dd dir="ltr">
+              {money(row.minPrice)}
+              {row.maxPrice !== row.minPrice
+                ? ` – ${money(row.maxPrice)}`
+                : ""}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground text-xs">{t("stock")}</dt>
+            <dd className="flex flex-wrap items-center gap-1">
+              <span className={cn(row.totalStock === 0 && "text-destructive")}>
+                {row.totalStock}
+              </span>
+              <StockBadges
+                stock={row.totalStock}
+                threshold={row.lowStockThreshold}
+              />
+              <span className="text-muted-foreground text-xs">
+                {t("variantsN", { count: row.variantCount })}
+              </span>
+            </dd>
+          </div>
+        </dl>
+      )}
+
+      <div className="mt-3 flex justify-end border-t pt-3">
+        <RowActions
+          row={row}
+          pending={pending}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
+        />
+      </div>
+    </li>
   );
 }
 
@@ -134,11 +347,7 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const statusBadge: Record<string, string> = {
-    DRAFT: "bg-muted text-muted-foreground",
-    ACTIVE: "bg-emerald-500/15 text-emerald-600",
-    HIDDEN: "bg-amber-500/15 text-amber-600",
-  };
+  const statusBadge = STATUS_BADGE;
 
   const allSelected = rows.length > 0 && selected.size === rows.length;
   const toggleAll = () =>
@@ -212,7 +421,21 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg border">
+      <ul className="space-y-3 md:hidden">
+        {rows.map((row) => (
+          <ProductCard
+            key={row.id}
+            row={row}
+            selected={selected.has(row.id)}
+            onToggle={toggle}
+            pending={pending}
+            onDuplicate={runDuplicate}
+            onArchive={runArchive}
+          />
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="bg-muted/50">
