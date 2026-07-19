@@ -209,7 +209,7 @@ export function CheckoutFlow({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+    <div className="grid gap-6 md:grid-cols-[1fr_340px]">
       <div className="space-y-6">
         {/* Step 1 — Address */}
         <section className="rounded-lg border p-4">
@@ -484,7 +484,7 @@ export function CheckoutFlow({
       </div>
 
       {/* Summary */}
-      <aside className="h-fit rounded-lg border p-4 lg:sticky lg:top-24">
+      <aside className="h-fit rounded-lg border p-4 md:sticky md:top-24">
         <h2 className="mb-3 font-semibold">{t("summary")}</h2>
         <div className="max-h-48 space-y-2 overflow-auto">
           {lines.map((l) => (

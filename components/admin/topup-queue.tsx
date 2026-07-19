@@ -56,7 +56,7 @@ export function TopUpQueue({ rows }: { rows: TopUpRow[] }) {
                 </p>
               ) : null}
               {p.usdt ? (
-                <p className="text-muted-foreground text-xs" dir="ltr">
+                <p className="text-muted-foreground text-xs break-all" dir="ltr">
                   {p.usdt}
                 </p>
               ) : null}

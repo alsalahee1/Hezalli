@@ -47,7 +47,7 @@ export function CartButton() {
       </Button>
 
       {open ? (
-        <div className="bg-popover absolute end-0 z-50 mt-2 w-80 rounded-md border shadow-lg">
+        <div className="bg-popover fixed inset-x-2 top-16 z-50 rounded-md border shadow-lg sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-2 sm:w-80">
           {lines.length === 0 ? (
             <p className="text-muted-foreground p-6 text-center text-sm">
               {t("empty")}

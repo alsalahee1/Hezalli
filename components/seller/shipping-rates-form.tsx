@@ -73,7 +73,59 @@ export function ShippingRatesForm({
         })}
       </p>
       <p className="text-muted-foreground text-xs">{t("expressHint")}</p>
-      <div className="overflow-x-auto rounded-lg border">
+      <ul className="space-y-3 md:hidden">
+        {rows.map((r) => (
+          <li key={r.zoneId} className="space-y-3 rounded-lg border p-3">
+            <p className="font-medium">{r.zoneName}</p>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("fee")}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  inputMode="decimal"
+                  value={r.fee}
+                  onChange={(e) => set(r.zoneId, "fee", e.target.value)}
+                  placeholder={t("defaultPlaceholder")}
+                  className="h-9"
+                  dir="ltr"
+                />
+              </label>
+              <label className="space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("freeOver")}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  inputMode="decimal"
+                  value={r.freeOver}
+                  onChange={(e) => set(r.zoneId, "freeOver", e.target.value)}
+                  placeholder={t("neverPlaceholder")}
+                  className="h-9"
+                  dir="ltr"
+                />
+              </label>
+              <label className="space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("expressFee")}</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  inputMode="decimal"
+                  value={r.expressFee}
+                  onChange={(e) => set(r.zoneId, "expressFee", e.target.value)}
+                  placeholder={t("defaultPlaceholder")}
+                  className="h-9"
+                  dir="ltr"
+                />
+              </label>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full min-w-[440px] text-sm">
           <thead>
             <tr className="bg-muted/50">

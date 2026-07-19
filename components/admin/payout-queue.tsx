@@ -48,7 +48,7 @@ export function PayoutQueue({ rows }: { rows: PayoutRow[] }) {
               <p className="font-medium">
                 {p.sellerName} · {p.amountLabel}
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground break-all">
                 {p.method} · {p.destination}
               </p>
             </div>

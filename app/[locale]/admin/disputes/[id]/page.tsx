@@ -188,7 +188,7 @@ export default async function AdminDisputeDetailPage({
                     })}
                   </span>
                 </div>
-                <p className="whitespace-pre-line">{m.body}</p>
+                <p className="break-words whitespace-pre-line">{m.body}</p>
               </li>
             ))}
           </ul>

@@ -186,8 +186,92 @@ export function VariantEditor({
         </div>
       ) : null}
 
-      {/* Variant rows */}
-      <div className="overflow-x-auto rounded-lg border">
+      {/* Variant rows — cards on mobile, table on md+ */}
+      <ul className="space-y-3 md:hidden">
+        {variants.map((v, i) => (
+          <li key={sig(v.attributes) || i} className="rounded-lg border p-3">
+            {hasOptions ? (
+              <p className="mb-2 font-medium">{nameFrom(v.attributes)}</p>
+            ) : null}
+            <div className="space-y-3">
+              <label className="block space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("sku")}</span>
+                <Input
+                  value={v.sku}
+                  dir="ltr"
+                  className="font-mono"
+                  aria-invalid={Boolean(err(i, "sku"))}
+                  onChange={(e) => patch(i, { sku: e.target.value })}
+                />
+                {err(i, "sku") ? (
+                  <span className="text-destructive block">
+                    {t(err(i, "sku")!)}
+                  </span>
+                ) : null}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <label className="space-y-1 text-xs">
+                  <span className="text-muted-foreground">{t("price")}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    dir="ltr"
+                    value={v.price}
+                    aria-invalid={Boolean(err(i, "price"))}
+                    onChange={(e) => patch(i, { price: Number(e.target.value) })}
+                  />
+                  {err(i, "price") ? (
+                    <span className="text-destructive block">
+                      {t(err(i, "price")!)}
+                    </span>
+                  ) : null}
+                </label>
+                <label className="space-y-1 text-xs">
+                  <span className="text-muted-foreground">{t("compareAt")}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    dir="ltr"
+                    value={v.compareAtPrice ?? ""}
+                    aria-invalid={Boolean(err(i, "compareAtPrice"))}
+                    onChange={(e) =>
+                      patch(i, {
+                        compareAtPrice:
+                          e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                  {err(i, "compareAtPrice") ? (
+                    <span className="text-destructive block">
+                      {t(err(i, "compareAtPrice")!)}
+                    </span>
+                  ) : null}
+                </label>
+                <label className="space-y-1 text-xs">
+                  <span className="text-muted-foreground">{t("stock")}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    dir="ltr"
+                    value={v.stock}
+                    aria-invalid={Boolean(err(i, "stock"))}
+                    onChange={(e) => patch(i, { stock: Number(e.target.value) })}
+                  />
+                  {err(i, "stock") ? (
+                    <span className="text-destructive block">
+                      {t(err(i, "stock")!)}
+                    </span>
+                  ) : null}
+                </label>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full min-w-[560px] text-sm">
           <thead>
             <tr className="bg-muted/50">

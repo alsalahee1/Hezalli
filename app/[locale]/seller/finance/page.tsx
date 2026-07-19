@@ -133,7 +133,39 @@ export default async function SellerFinancePage() {
       <div>
         <h2 className="mb-3 font-semibold">{t("ledger")}</h2>
         {balance && balance.entries.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border">
+          <>
+            <ul className="space-y-3 md:hidden">
+              {balance.entries.map((e) => {
+                const amt = Number(e.amountUsd);
+                return (
+                  <li key={e.id} className="rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium">{t(`type_${e.type}`)}</p>
+                        <p className="text-muted-foreground text-xs whitespace-nowrap">
+                          {format.dateTime(e.createdAt, {
+                            dateStyle: "medium",
+                          })}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 font-medium ${amt < 0 ? "text-destructive" : "text-emerald-600"}`}
+                        dir="ltr"
+                      >
+                        {amt >= 0 ? "+" : ""}
+                        {money(amt)}
+                      </span>
+                    </div>
+                    {e.note ? (
+                      <p className="text-muted-foreground mt-1 text-xs break-words">
+                        {e.note}
+                      </p>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="bg-muted/50">
@@ -175,7 +207,8 @@ export default async function SellerFinancePage() {
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         ) : (
           <div className="text-muted-foreground rounded-lg border border-dashed py-14 text-center text-sm">
             {t("empty")}
