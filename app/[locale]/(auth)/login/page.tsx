@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { Link, redirect } from "@/i18n/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -20,8 +21,20 @@ export default async function LoginPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
+  // Only redirect a real, still-existing user away from the login page. A stale
+  // JWT (account deleted or DB reseeded while the browser kept its cookie) still
+  // looks authenticated and would otherwise trap the user: login bounces home,
+  // but the deleted account is unusable. Treat a missing user as logged-out so
+  // they can sign in fresh.
   const session = await auth();
-  if (session?.user) redirect({ href: "/", locale });
+  const sessionUserId = session?.user?.id;
+  const userExists =
+    !!sessionUserId &&
+    !!(await prisma.user.findUnique({
+      where: { id: sessionUserId },
+      select: { id: true },
+    }));
+  if (userExists) redirect({ href: "/", locale });
 
   const t = await getTranslations("Auth");
   const { callbackUrl } = await searchParams;

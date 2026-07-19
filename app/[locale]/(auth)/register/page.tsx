@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { Link, redirect } from "@/i18n/navigation";
 import { RegisterForm } from "@/components/auth/register-form";
 
@@ -21,8 +22,18 @@ export default async function RegisterPage({
   const { ref } = await searchParams;
   setRequestLocale(locale);
 
+  // Same guard as the login page: a stale JWT (deleted user / reseeded DB) must
+  // not trap the user by bouncing them home. Only redirect a user who still
+  // exists in the database.
   const session = await auth();
-  if (session?.user) redirect({ href: "/", locale });
+  const sessionUserId = session?.user?.id;
+  const userExists =
+    !!sessionUserId &&
+    !!(await prisma.user.findUnique({
+      where: { id: sessionUserId },
+      select: { id: true },
+    }));
+  if (userExists) redirect({ href: "/", locale });
 
   const t = await getTranslations("Auth");
 
