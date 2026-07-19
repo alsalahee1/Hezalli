@@ -895,6 +895,7 @@
     "err_badState": "هذا الإجراء غير متاح حالياً.",
     "trackingTitle": "التتبع",
     "expressBadge": "سريع",
+    "estimatedDelivery": "التوصيل المتوقع",
     "carrier": "شركة الشحن",
     "trackingNumber": "رقم التتبع",
     "trackPackage": "تتبع الشحنة",

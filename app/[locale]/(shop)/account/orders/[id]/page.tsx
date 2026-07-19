@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE, canBuyerCancel } from "@/lib/order-status";
 import { buildTrackingUrl } from "@/lib/tracking";
+import { getPlatformSettings } from "@/lib/settings";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -54,16 +55,16 @@ export default async function OrderDetailPage({
   });
   if (!order) notFound();
 
-  const returnWindowDays = Number(
-    (
-      await prisma.platformSetting.findUnique({
-        where: { key: "return_window_days" },
-        select: { value: true },
-      })
-    )?.value ?? 7,
-  );
+  const settings = await getPlatformSettings();
+  const returnWindowDays = settings.return_window_days;
   const returnWindowMs =
     (Number.isFinite(returnWindowDays) ? returnWindowDays : 7) * 86_400_000;
+  // Delivery-time estimate ranges (days) per tier, for shipped-not-yet-delivered
+  // sub-orders. Falls back to standard if a method is somehow unset.
+  const etaDaysByMethod: Record<string, [number, number]> = {
+    STANDARD: [settings.std_eta_min_days, settings.std_eta_max_days],
+    EXPRESS: [settings.express_eta_min_days, settings.express_eta_max_days],
+  };
 
   const variantIds = order.subOrders.flatMap((s) =>
     s.items.map((i) => i.variantId),
@@ -204,6 +205,18 @@ export default async function OrderDetailPage({
           s.shipment?.carrier?.trackingUrl,
           s.shipment?.trackingNumber,
         );
+        // Estimated delivery window for a shipped-but-not-delivered order:
+        // shippedAt + the tier's ETA range.
+        const shippedAt = s.shipment?.shippedAt ?? null;
+        const [etaMin, etaMax] =
+          etaDaysByMethod[s.shippingMethod] ?? etaDaysByMethod.STANDARD;
+        const deliveryEstimate =
+          s.status === "SHIPPED" && shippedAt
+            ? {
+                from: new Date(shippedAt.getTime() + etaMin * 86_400_000),
+                to: new Date(shippedAt.getTime() + etaMax * 86_400_000),
+              }
+            : null;
         const ev = (s.return?.evidence ?? {}) as {
           type?: ReturnType;
           description?: string;
@@ -326,6 +339,24 @@ export default async function OrderDetailPage({
                       </a>
                     ) : null}
                   </p>
+                  {deliveryEstimate ? (
+                    <p>
+                      <span className="text-muted-foreground">
+                        {t("estimatedDelivery")}:{" "}
+                      </span>
+                      <span className="font-medium">
+                        {etaMin === etaMax
+                          ? format.dateTime(deliveryEstimate.to, {
+                              dateStyle: "medium",
+                            })
+                          : `${format.dateTime(deliveryEstimate.from, {
+                              dateStyle: "medium",
+                            })} – ${format.dateTime(deliveryEstimate.to, {
+                              dateStyle: "medium",
+                            })}`}
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
                 {s.shipment.events.length > 0 ? (
                   <ol className="space-y-2 border-t pt-3">
