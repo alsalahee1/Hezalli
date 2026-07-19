@@ -170,7 +170,33 @@ export default async function AdminSellerDetailPage({
         {seller.payouts.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("noPayouts")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <>
+            <ul className="space-y-3 md:hidden">
+              {seller.payouts.map((p) => (
+                <li key={p.id} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">
+                      {format.dateTime(p.createdAt, { dateStyle: "medium" })}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap",
+                        payoutBadge[p.status] ?? "bg-muted",
+                      )}
+                    >
+                      {p.status}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="font-medium" dir="ltr">
+                      {money(p.amountUsd)}
+                    </span>
+                    <span className="text-muted-foreground">{p.method}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="bg-muted/50">
@@ -212,7 +238,8 @@ export default async function AdminSellerDetailPage({
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </section>
     </div>
