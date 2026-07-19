@@ -42,8 +42,14 @@ export default async function SellerOrderDetailPage({
 
   const carriers = await prisma.carrier.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, name: true, trackingUrl: true },
+    select: { id: true, name: true, trackingUrl: true, platformManaged: true },
   });
+  // For an express order, default the ship dialog to our own platform-managed
+  // carrier (Hezalli Express).
+  const isExpress = sub.shippingMethod === "EXPRESS";
+  const preferredCarrierId = isExpress
+    ? (carriers.find((c) => c.platformManaged)?.id ?? null)
+    : null;
   const shipmentInfo = sub.shipment
     ? {
         carrierId: sub.shipment.carrierId,
@@ -84,14 +90,21 @@ export default async function SellerOrderDetailPage({
             })}
           </p>
         </div>
-        <span
-          className={cn(
-            "rounded px-2 py-1 text-sm font-medium",
-            STATUS_BADGE[sub.status] ?? "bg-muted",
-          )}
-        >
-          {t(`status_${sub.status}`)}
-        </span>
+        <div className="flex items-center gap-2">
+          {isExpress ? (
+            <span className="rounded bg-amber-500/15 px-2 py-1 text-sm font-medium text-amber-600">
+              {t("expressBadge")}
+            </span>
+          ) : null}
+          <span
+            className={cn(
+              "rounded px-2 py-1 text-sm font-medium",
+              STATUS_BADGE[sub.status] ?? "bg-muted",
+            )}
+          >
+            {t(`status_${sub.status}`)}
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -115,6 +128,8 @@ export default async function SellerOrderDetailPage({
           status={sub.status}
           carriers={carriers.map((c) => ({ id: c.id, name: c.name }))}
           shipment={shipmentInfo}
+          shippingMethod={sub.shippingMethod}
+          preferredCarrierId={preferredCarrierId}
         />
       ) : null}
 

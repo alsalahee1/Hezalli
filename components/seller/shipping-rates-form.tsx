@@ -13,6 +13,7 @@ export type ZoneRate = {
   zoneName: string;
   fee: string; // "" = use platform default
   freeOver: string; // "" = never free
+  expressFee: string; // "" = use platform default express fee
 };
 
 export function ShippingRatesForm({
@@ -30,7 +31,11 @@ export function ShippingRatesForm({
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
 
-  const set = (zoneId: string, key: "fee" | "freeOver", value: string) =>
+  const set = (
+    zoneId: string,
+    key: "fee" | "freeOver" | "expressFee",
+    value: string,
+  ) =>
     setRows((rs) =>
       rs.map((r) => (r.zoneId === zoneId ? { ...r, [key]: value } : r)),
     );
@@ -43,6 +48,8 @@ export function ShippingRatesForm({
           zoneId: r.zoneId,
           feeUsd: r.fee.trim() === "" ? null : Number(r.fee),
           freeOver: r.freeOver.trim() === "" ? null : Number(r.freeOver),
+          expressFeeUsd:
+            r.expressFee.trim() === "" ? null : Number(r.expressFee),
         })),
       );
       setSaved(true);
@@ -65,6 +72,7 @@ export function ShippingRatesForm({
           over: `$${defaultFreeOver.toFixed(2)}`,
         })}
       </p>
+      <p className="text-muted-foreground text-xs">{t("expressHint")}</p>
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full min-w-[440px] text-sm">
           <thead>
@@ -73,6 +81,9 @@ export function ShippingRatesForm({
               <th className="px-3 py-2 text-start font-medium">{t("fee")}</th>
               <th className="px-3 py-2 text-start font-medium">
                 {t("freeOver")}
+              </th>
+              <th className="px-3 py-2 text-start font-medium">
+                {t("expressFee")}
               </th>
             </tr>
           </thead>
@@ -102,6 +113,21 @@ export function ShippingRatesForm({
                     value={r.freeOver}
                     onChange={(e) => set(r.zoneId, "freeOver", e.target.value)}
                     placeholder={t("neverPlaceholder")}
+                    className="h-9 w-28"
+                    dir="ltr"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    inputMode="decimal"
+                    value={r.expressFee}
+                    onChange={(e) =>
+                      set(r.zoneId, "expressFee", e.target.value)
+                    }
+                    placeholder={t("defaultPlaceholder")}
                     className="h-9 w-28"
                     dir="ltr"
                   />

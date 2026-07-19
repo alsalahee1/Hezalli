@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
 import { previewCoupon } from "@/lib/actions/coupon";
 import type { CartLine } from "@/lib/cart-types";
+import type { ShippingMethod, StoreShipOptions } from "@/lib/shipping";
 import { capRedemption, pointsToUsd } from "@/lib/loyalty-shared";
 import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
@@ -33,7 +34,7 @@ export function CheckoutFlow({
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
-  shippingByAddress: Record<string, Record<string, number>>;
+  shippingByAddress: Record<string, Record<string, StoreShipOptions>>;
   codEnabled?: boolean;
   points?: number;
   walletBalance?: number;
@@ -41,6 +42,10 @@ export function CheckoutFlow({
   const t = useTranslations("Checkout");
   const locale = useLocale();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
+  // Buyer's chosen delivery tier per store; unset stores default to STANDARD.
+  const [methodByStore, setMethodByStore] = useState<
+    Record<string, ShippingMethod>
+  >({});
   const [method, setMethod] = useState<PaymentMethodChoice>(
     codEnabled ? "COD" : "BANK_TRANSFER",
   );
@@ -68,12 +73,26 @@ export function CheckoutFlow({
       g.lines.push(l);
       map.set(l.storeId, g);
     }
-    const fees = shippingByAddress[addressId] ?? {};
+    const opts = shippingByAddress[addressId] ?? {};
     return [...map.values()].map((g) => {
       const itemsTotal = g.lines.reduce((s, l) => s + l.price * l.quantity, 0);
-      return { ...g, itemsTotal, shipping: fees[g.storeId] ?? 0 };
+      const o = opts[g.storeId];
+      const express = o?.express ?? null;
+      const wanted = methodByStore[g.storeId] ?? "STANDARD";
+      const selectedMethod: ShippingMethod =
+        wanted === "EXPRESS" && express ? "EXPRESS" : "STANDARD";
+      const option =
+        selectedMethod === "EXPRESS" && express ? express : o?.standard;
+      return {
+        ...g,
+        itemsTotal,
+        standard: o?.standard ?? null,
+        express,
+        selectedMethod,
+        shipping: option?.fee ?? 0,
+      };
     });
-  }, [lines, shippingByAddress, addressId]);
+  }, [lines, shippingByAddress, addressId, methodByStore]);
 
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
@@ -169,6 +188,9 @@ export function CheckoutFlow({
       paymentMethod: effectiveMethod,
       couponCode: appliedCode || undefined,
       redeemPoints: redeem.pointsUsed || undefined,
+      shippingMethods: Object.fromEntries(
+        groups.map((g) => [g.storeId, g.selectedMethod]),
+      ),
     });
     if (res.error) {
       setError(res.error);
@@ -247,28 +269,117 @@ export function CheckoutFlow({
           <h2 className="mb-3 flex items-center gap-2 font-semibold">
             <Truck className="size-4" /> {t("shippingTitle")}
           </h2>
-          <div className="space-y-3">
-            {groups.map((g, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="flex items-center gap-1.5">
-                  <StoreIcon className="text-muted-foreground size-3.5" />
-                  {g.storeName}
-                </span>
-                <span>
-                  {t("standardShipping")} —{" "}
-                  {g.shipping === 0 ? (
-                    <span className="font-medium text-emerald-600">
-                      {t("free")}
-                    </span>
+          <div className="space-y-4">
+            {groups.map((g, i) => {
+              const feeLabel = (fee: number) =>
+                fee === 0 ? (
+                  <span className="font-medium text-emerald-600">
+                    {t("free")}
+                  </span>
+                ) : (
+                  <span dir="ltr">{formatUsd(fee, locale)}</span>
+                );
+              const eta = (o: { etaMinDays: number; etaMaxDays: number }) =>
+                t("etaDays", { min: o.etaMinDays, max: o.etaMaxDays });
+              return (
+                <div key={i} className="space-y-2">
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <StoreIcon className="text-muted-foreground size-3.5" />
+                    {g.storeName}
+                  </span>
+                  {g.express ? (
+                    <div className="space-y-2">
+                      <label
+                        className={cn(
+                          "flex cursor-pointer items-center justify-between gap-3 rounded-md border p-2.5 text-sm",
+                          g.selectedMethod === "STANDARD"
+                            ? "border-primary bg-primary/5"
+                            : "hover:border-muted-foreground/40",
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name={`ship-${g.storeId}`}
+                            className="size-4"
+                            checked={g.selectedMethod === "STANDARD"}
+                            onChange={() =>
+                              setMethodByStore((m) => ({
+                                ...m,
+                                [g.storeId]: "STANDARD",
+                              }))
+                            }
+                          />
+                          <span>
+                            <span className="font-medium">
+                              {t("standardShipping")}
+                            </span>
+                            {g.standard ? (
+                              <span className="text-muted-foreground">
+                                {" · "}
+                                {eta(g.standard)}
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
+                        {feeLabel(g.standard?.fee ?? 0)}
+                      </label>
+                      <label
+                        className={cn(
+                          "flex cursor-pointer items-center justify-between gap-3 rounded-md border p-2.5 text-sm",
+                          g.selectedMethod === "EXPRESS"
+                            ? "border-primary bg-primary/5"
+                            : "hover:border-muted-foreground/40",
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name={`ship-${g.storeId}`}
+                            className="size-4"
+                            checked={g.selectedMethod === "EXPRESS"}
+                            onChange={() =>
+                              setMethodByStore((m) => ({
+                                ...m,
+                                [g.storeId]: "EXPRESS",
+                              }))
+                            }
+                          />
+                          <span>
+                            <span className="font-medium">
+                              {t("expressShipping")}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {" · "}
+                              {eta(g.express)}
+                            </span>
+                            <span className="ms-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                              {t("expressBadge")}
+                            </span>
+                          </span>
+                        </span>
+                        {feeLabel(g.express.fee)}
+                      </label>
+                    </div>
                   ) : (
-                    <span dir="ltr">{formatUsd(g.shipping, locale)}</span>
+                    <div className="flex items-center justify-between rounded-md border p-2.5 text-sm">
+                      <span>
+                        <span className="font-medium">
+                          {t("standardShipping")}
+                        </span>
+                        {g.standard ? (
+                          <span className="text-muted-foreground">
+                            {" · "}
+                            {eta(g.standard)}
+                          </span>
+                        ) : null}
+                      </span>
+                      {feeLabel(g.shipping)}
+                    </div>
                   )}
-                </span>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </section>
 

@@ -26,11 +26,15 @@ export function ShipOrderForm({
   status,
   carriers,
   shipment,
+  shippingMethod = "STANDARD",
+  preferredCarrierId = null,
 }: {
   subOrderId: string;
   status: string;
   carriers: CarrierOption[];
   shipment: ShipmentInfo;
+  shippingMethod?: "STANDARD" | "EXPRESS";
+  preferredCarrierId?: string | null;
 }) {
   const t = useTranslations("Shipment");
   const router = useRouter();
@@ -38,7 +42,7 @@ export function ShipOrderForm({
   const [err, setErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [carrierId, setCarrierId] = useState(
-    shipment?.carrierId ?? carriers[0]?.id ?? "",
+    shipment?.carrierId ?? preferredCarrierId ?? carriers[0]?.id ?? "",
   );
   const [tracking, setTracking] = useState(shipment?.trackingNumber ?? "");
   const [note, setNote] = useState("");
@@ -80,6 +84,11 @@ export function ShipOrderForm({
         <h3 className="flex items-center gap-2 text-sm font-medium">
           <Truck className="size-4" /> {t("shipTitle")}
         </h3>
+        {shippingMethod === "EXPRESS" ? (
+          <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-500">
+            {t("expressChosen")}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("carrier")}

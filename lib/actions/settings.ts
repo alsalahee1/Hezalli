@@ -24,6 +24,12 @@ export type SettingsInput = {
   wallet_balance_cap_usd: number;
   wallet_cashback_percent: number; // human percent, e.g. 2 = 2%
   wallet_p2p_enabled: boolean;
+  express_enabled: boolean;
+  default_express_fee: number;
+  std_eta_min_days: number;
+  std_eta_max_days: number;
+  express_eta_min_days: number;
+  express_eta_max_days: number;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -63,6 +69,19 @@ export async function savePlatformSettings(
   if (!Number.isFinite(cashPct) || cashPct < 0 || cashPct >= 100)
     return { error: "badCashback" };
 
+  const expressFee = money2(input.default_express_fee);
+  if (!Number.isFinite(expressFee) || expressFee < 0)
+    return { error: "badExpressFee" };
+  const etas = [
+    input.std_eta_min_days,
+    input.std_eta_max_days,
+    input.express_eta_min_days,
+    input.express_eta_max_days,
+  ].map(int);
+  if (etas.some((d) => !Number.isFinite(d) || d < 0 || d > 365))
+    return { error: "badEta" };
+  if (etas[0] > etas[1] || etas[2] > etas[3]) return { error: "badEta" };
+
   const values: PlatformSettings = {
     platform_name: (input.platform_name || "Hezalli").trim().slice(0, 80),
     platform_logo: (input.platform_logo || "").trim().slice(0, 500),
@@ -78,6 +97,12 @@ export async function savePlatformSettings(
     wallet_balance_cap_usd: tCap,
     wallet_cashback_rate: Math.round(cashPct * 100) / 10000,
     wallet_p2p_enabled: Boolean(input.wallet_p2p_enabled),
+    express_enabled: Boolean(input.express_enabled),
+    default_express_fee: expressFee,
+    std_eta_min_days: etas[0],
+    std_eta_max_days: etas[1],
+    express_eta_min_days: etas[2],
+    express_eta_max_days: etas[3],
   };
 
   await prisma.$transaction(

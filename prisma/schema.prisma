@@ -581,6 +581,7 @@ model SubOrder {
   orderId        String
   storeId        String
   status         SubOrderStatus @default(PENDING)
+  shippingMethod ShippingMethod @default(STANDARD)
   itemsTotal     Decimal        @db.Decimal(12, 2)
   shippingTotal  Decimal        @db.Decimal(12, 2)
   discountTotal  Decimal        @default(0) @db.Decimal(12, 2)
@@ -848,6 +849,14 @@ model Carrier {
   shipments       Shipment[]
 }
 
+// Delivery tier a buyer picks per store group at checkout. STANDARD is the
+// zone-based rate; EXPRESS is the faster, premium-priced option (our own
+// Hezalli Express carrier) — see lib/shipping.ts.
+enum ShippingMethod {
+  STANDARD
+  EXPRESS
+}
+
 model ShippingZone {
   id           String         @id @default(cuid())
   name         String
@@ -861,6 +870,9 @@ model ShippingRate {
   zoneId   String
   feeUsd   Decimal      @db.Decimal(12, 2)
   freeOver Decimal?     @db.Decimal(12, 2)
+  // Optional express-tier fee for this zone. Null → the store hasn't set its own
+  // express price and the platform default (default_express_fee) applies.
+  expressFeeUsd Decimal? @db.Decimal(12, 2)
   store    Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
   zone     ShippingZone @relation(fields: [zoneId], references: [id])
 

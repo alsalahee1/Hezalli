@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { resolveCartLines } from "@/lib/cart";
 import { prisma } from "@/lib/prisma";
-import { quoteShippingForStores } from "@/lib/shipping";
+import { quoteShippingForStores, type StoreShipOptions } from "@/lib/shipping";
 import { getSetting } from "@/lib/settings";
 import {
   CheckoutFlow,
@@ -82,7 +82,10 @@ export default async function CheckoutPage({
     storeId,
     subtotal,
   }));
-  const shippingByAddress: Record<string, Record<string, number>> = {};
+  const shippingByAddress: Record<
+    string,
+    Record<string, StoreShipOptions>
+  > = {};
   for (const a of addrRows) {
     const quote = await quoteShippingForStores(a.governorate, shipGroups);
     shippingByAddress[a.id] = Object.fromEntries(quote);
