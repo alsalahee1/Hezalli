@@ -220,6 +220,22 @@ log "  public https://hezalli.com : ${PUB:-no response yet}"
 log "  DB the app uses: $(docker exec hezalli-app printenv DATABASE_URL 2>/dev/null | sed -E 's#(://[^:]+:)[^@]*@#\1***@#' || echo '?')"
 DBCOUNTS="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select '\''User='\''||count(*) from \"User\" union all select '\''Product='\''||count(*) from \"Product\" union all select '\''ActiveProduct='\''||count(*) from \"Product\" where status='\''ACTIVE'\'' union all select '\''Store='\''||count(*) from \"Store\" union all select '\''Category='\''||count(*) from \"Category\""' 2>&1)"
 log "  Row counts: $(echo "$DBCOUNTS" | tr '\n' ' ')"
+
+# 6) One-off: verify server-side PDF generation works (chromium + fonts + auth).
+if [ -f deploy/DEBUG_PDF_ONCE ]; then
+  log "  chromium in app image: $(docker exec hezalli-app sh -lc 'command -v chromium || echo MISSING')"
+  ORDER_ID="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select o.id from \"Order\" o join \"User\" u on u.id=o.\"buyerId\" where u.email='\''buyer1@example.com'\'' limit 1"' 2>/dev/null | tr -d '[:space:]')"
+  BASE="https://www.hezalli.com"; RES="--resolve www.hezalli.com:443:127.0.0.1"
+  CJ="$(mktemp)"
+  CSRF="$(curl -sk $RES -c "$CJ" "$BASE/api/auth/csrf" --max-time 15 | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')"
+  curl -sk $RES -b "$CJ" -c "$CJ" -o /dev/null --max-time 20 \
+    --data-urlencode "csrfToken=$CSRF" --data-urlencode "email=buyer1@example.com" \
+    --data-urlencode "password=hezalli123" --data-urlencode "callbackUrl=$BASE/ar" \
+    "$BASE/api/auth/callback/credentials"
+  PDF=/tmp/hz-test.pdf
+  CODE="$(curl -sk $RES -b "$CJ" -o "$PDF" -w '%{http_code} %{content_type}' --max-time 60 "$BASE/api/pdf?type=invoice&id=${ORDER_ID}&locale=ar")"
+  log "  PDF endpoint (order ${ORDER_ID}): HTTP+type=${CODE}, bytes=$(wc -c < "$PDF" 2>/dev/null), magic=$(head -c 5 "$PDF" 2>/dev/null)"
+fi
 set -e
 
 cat <<'EOF'
