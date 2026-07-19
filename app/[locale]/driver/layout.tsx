@@ -43,7 +43,8 @@ export default async function DriverLayout({
   });
   if (!user || user.deletedAt) redirect({ href: "/login", locale });
   if (user!.isSuspended) return <Forbidden />;
-  if (!user!.roles.includes("COURIER")) redirect({ href: "/", locale });
+  // Not a driver yet → send them to apply rather than bounce to the storefront.
+  if (!user!.roles.includes("COURIER")) redirect({ href: "/drive", locale });
 
   const t = await getTranslations("Driver");
 

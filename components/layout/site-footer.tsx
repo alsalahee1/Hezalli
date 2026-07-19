@@ -15,6 +15,7 @@ export function SiteFooter() {
   const links = [
     { href: "/p/about", key: "about" },
     { href: "/sell", key: "sellOnHezalli" },
+    { href: "/drive", key: "deliverWithHezalli" },
     { href: "/p/terms", key: "terms" },
     { href: "/p/privacy", key: "privacy" },
     { href: "/p/returns", key: "returns" },

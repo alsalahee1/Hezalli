@@ -105,7 +105,26 @@ Ops can always reassign from the dispatch board.
   its SLA state. Overdue parcels sort first; a header summary counts
   overdue / due-soon. Assign or reassign any parcel from here.
 - `/admin/settings`: the toggles in §3.
-- Add a driver: create/grant a user the **Courier** role.
+- `/admin/couriers`: review **"become a driver"** applications and manage the
+  fleet. **Approve** grants the applicant the **Courier** role (they can then
+  sign into `/driver`); **Reject** records an optional note (they may resubmit).
+  Both decisions are audited. The page also lists all active couriers.
+
+### Driver onboarding
+
+Couriers are never self-granted the role — they apply and an admin approves
+(mirroring how large last-mile fleets onboard: apply → review → activate):
+
+1. A signed-in user opens **`/drive`** ("Deliver with Hezalli", linked in the
+   footer) and submits the application (name, phone, governorate/city, vehicle).
+   This creates a **PENDING** `CourierApplication` — no access is granted yet.
+2. An admin reviews it at **`/admin/couriers`** and approves or rejects.
+3. On approval the **Courier** role is added; the driver signs in and lands in
+   `/driver`. (A signed-in non-courier visiting `/driver` is sent to `/drive`.)
+
+For local/test use, the seeded `driver@hezalli.com` (`hezalli123`) already has
+the role, so onboarding can be skipped. An admin can also grant the role
+directly in the DB if needed.
 
 **Courier (driver app — `/driver`, installable to the home screen)**
 - Opt-in **Share location** (enables Nearest dispatch and shows their

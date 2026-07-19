@@ -43,6 +43,15 @@ enum KycStatus {
   REJECTED
 }
 
+// A visitor's request to become a Hezalli Express driver. Approval grants the
+// COURIER role — it is never self-granted, mirroring how real fleets onboard
+// (apply → verify → admin approve → activate). See lib/actions/courier-application.ts.
+enum CourierApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum StoreStatus {
   ACTIVE
   SUSPENDED
@@ -217,6 +226,32 @@ model User {
   wallet         Wallet?
   courierShipments Shipment[] @relation("CourierShipments")
   courierLocation  CourierLocation?
+  courierApplication CourierApplication?
+}
+
+// One "become a driver" application per user. Created PENDING by the applicant;
+// an admin reviews it and, on approval, grants the COURIER role (see
+// reviewCourierApplication). A rejected applicant may resubmit — the row is
+// reused and flipped back to PENDING. Kept separate from SellerProfile because
+// couriers are individuals, not stores.
+model CourierApplication {
+  id           String                   @id @default(cuid())
+  userId       String                   @unique
+  fullName     String
+  phone        String
+  governorate  String
+  city         String
+  vehicleType  String // motorbike | car | bicycle | van | foot
+  notes        String?
+  status       CourierApplicationStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  user         User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }
 
 model LoyaltyTransaction {
