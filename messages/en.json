@@ -895,6 +895,7 @@
     "err_badState": "This action isn't available right now.",
     "trackingTitle": "Tracking",
     "expressBadge": "Express",
+    "estimatedDelivery": "Estimated delivery",
     "carrier": "Carrier",
     "trackingNumber": "Tracking number",
     "trackPackage": "Track package",

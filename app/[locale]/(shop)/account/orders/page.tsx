@@ -43,6 +43,7 @@ export default async function AccountOrdersPage({
       createdAt: true,
       subOrders: {
         select: {
+          shippingMethod: true,
           store: { select: { name: true } },
           items: {
             select: {
@@ -121,6 +122,9 @@ export default async function AccountOrdersPage({
         <div className="space-y-4">
           {filtered.map((o) => {
             const items = o.subOrders.flatMap((s) => s.items);
+            const hasExpress = o.subOrders.some(
+              (s) => s.shippingMethod === "EXPRESS",
+            );
             return (
               <div key={o.id} className="rounded-lg border">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 text-sm">
@@ -132,13 +136,20 @@ export default async function AccountOrdersPage({
                       day: "numeric",
                     })}
                   </span>
-                  <span
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-xs font-medium",
-                      STATUS_BADGE[o.status] ?? "bg-muted",
-                    )}
-                  >
-                    {t(`status_${o.status}`)}
+                  <span className="flex items-center gap-2">
+                    {hasExpress ? (
+                      <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                        {t("expressBadge")}
+                      </span>
+                    ) : null}
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-xs font-medium",
+                        STATUS_BADGE[o.status] ?? "bg-muted",
+                      )}
+                    >
+                      {t(`status_${o.status}`)}
+                    </span>
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-3 p-4">
