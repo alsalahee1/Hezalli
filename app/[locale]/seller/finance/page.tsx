@@ -166,47 +166,49 @@ export default async function SellerFinancePage() {
               })}
             </ul>
             <div className="hidden overflow-x-auto rounded-lg border md:block">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("date")}
-                  </th>
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("type")}
-                  </th>
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("note")}
-                  </th>
-                  <th className="px-3 py-2 text-end font-medium">
-                    {t("amount")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {balance.entries.map((e) => {
-                  const amt = Number(e.amountUsd);
-                  return (
-                    <tr key={e.id} className="border-t">
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {format.dateTime(e.createdAt, { dateStyle: "medium" })}
-                      </td>
-                      <td className="px-3 py-2">{t(`type_${e.type}`)}</td>
-                      <td className="text-muted-foreground px-3 py-2">
-                        {e.note}
-                      </td>
-                      <td
-                        className={`px-3 py-2 text-end font-medium ${amt < 0 ? "text-destructive" : "text-emerald-600"}`}
-                        dir="ltr"
-                      >
-                        {amt >= 0 ? "+" : ""}
-                        {money(amt)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("date")}
+                    </th>
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("type")}
+                    </th>
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("note")}
+                    </th>
+                    <th className="px-3 py-2 text-end font-medium">
+                      {t("amount")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {balance.entries.map((e) => {
+                    const amt = Number(e.amountUsd);
+                    return (
+                      <tr key={e.id} className="border-t">
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {format.dateTime(e.createdAt, {
+                            dateStyle: "medium",
+                          })}
+                        </td>
+                        <td className="px-3 py-2">{t(`type_${e.type}`)}</td>
+                        <td className="text-muted-foreground px-3 py-2">
+                          {e.note}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-end font-medium ${amt < 0 ? "text-destructive" : "text-emerald-600"}`}
+                          dir="ltr"
+                        >
+                          {amt >= 0 ? "+" : ""}
+                          {money(amt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </>
         ) : (

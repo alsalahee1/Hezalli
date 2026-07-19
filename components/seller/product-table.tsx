@@ -237,11 +237,7 @@ function ProductCard({
         <div className="bg-muted size-12 shrink-0 overflow-hidden rounded">
           {row.coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={row.coverUrl}
-              alt=""
-              className="size-full object-cover"
-            />
+            <img src={row.coverUrl} alt="" className="size-full object-cover" />
           ) : null}
         </div>
         <div className="min-w-0 flex-1">
@@ -302,9 +298,7 @@ function ProductCard({
             <dt className="text-muted-foreground text-xs">{t("price")}</dt>
             <dd dir="ltr">
               {money(row.minPrice)}
-              {row.maxPrice !== row.minPrice
-                ? ` – ${money(row.maxPrice)}`
-                : ""}
+              {row.maxPrice !== row.minPrice ? ` – ${money(row.maxPrice)}` : ""}
             </dd>
           </div>
           <div>

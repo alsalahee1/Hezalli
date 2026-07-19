@@ -219,7 +219,9 @@ export function VariantEditor({
                     dir="ltr"
                     value={v.price}
                     aria-invalid={Boolean(err(i, "price"))}
-                    onChange={(e) => patch(i, { price: Number(e.target.value) })}
+                    onChange={(e) =>
+                      patch(i, { price: Number(e.target.value) })
+                    }
                   />
                   {err(i, "price") ? (
                     <span className="text-destructive block">
@@ -228,7 +230,9 @@ export function VariantEditor({
                   ) : null}
                 </label>
                 <label className="space-y-1 text-xs">
-                  <span className="text-muted-foreground">{t("compareAt")}</span>
+                  <span className="text-muted-foreground">
+                    {t("compareAt")}
+                  </span>
                   <Input
                     type="number"
                     min={0}
@@ -257,7 +261,9 @@ export function VariantEditor({
                     dir="ltr"
                     value={v.stock}
                     aria-invalid={Boolean(err(i, "stock"))}
-                    onChange={(e) => patch(i, { stock: Number(e.target.value) })}
+                    onChange={(e) =>
+                      patch(i, { stock: Number(e.target.value) })
+                    }
                   />
                   {err(i, "stock") ? (
                     <span className="text-destructive block">
