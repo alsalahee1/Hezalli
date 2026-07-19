@@ -21,6 +21,7 @@ enum Role {
   BUYER
   SELLER
   ADMIN
+  COURIER // Hezalli Express delivery driver
 }
 
 enum Currency {
@@ -214,6 +215,7 @@ model User {
   referrals      User[]   @relation("Referrals")
   loyaltyTxns    LoyaltyTransaction[]
   wallet         Wallet?
+  courierShipments Shipment[] @relation("CourierShipments")
 }
 
 model LoyaltyTransaction {
@@ -887,13 +889,18 @@ model Shipment {
   trackingNumber  String?
   status          ShipmentStatus  @default(PENDING)
   platformManaged Boolean         @default(false)
+  // Assigned Hezalli Express courier (null = unassigned / third-party carrier).
+  driverId        String?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   subOrder        SubOrder        @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   carrier         Carrier?        @relation(fields: [carrierId], references: [id])
+  driver          User?           @relation("CourierShipments", fields: [driverId], references: [id])
   events          ShipmentEvent[]
+
+  @@index([driverId])
 }
 
 model ShipmentEvent {

@@ -42,3 +42,19 @@ export async function requireSellerStore(): Promise<{
   if (!storeId) return null;
   return { userId: id, storeId };
 }
+
+// Returns the current user's id only if they are an active COURIER (Hezalli
+// Express driver), checked against the DB. Guards driver-only actions/pages.
+export async function requireCourierId(): Promise<string | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: { roles: true, isSuspended: true, deletedAt: true },
+  });
+  if (!u || u.isSuspended || u.deletedAt || !u.roles.includes("COURIER")) {
+    return null;
+  }
+  return id;
+}
