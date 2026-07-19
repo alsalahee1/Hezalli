@@ -27,7 +27,14 @@ export function QamariyaPattern({ className }: { className?: string }) {
             stroke="currentColor"
             strokeWidth="1.5"
           />
-          <circle cx="28" cy="16" r="3" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <circle
+            cx="28"
+            cy="16"
+            r="3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill={`url(#${patternId})`} />

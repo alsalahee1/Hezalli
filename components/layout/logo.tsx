@@ -5,11 +5,7 @@ const BRAND_GOLD = "#E8B13A";
 
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 48 48"
-      className={cn("size-8", className)}
-      aria-hidden
-    >
+    <svg viewBox="0 0 48 48" className={cn("size-8", className)} aria-hidden>
       <rect x="2" y="2" width="44" height="44" rx="14" fill={BRAND_TURQUOISE} />
       <path
         d="M14 26c0-7.5 4.8-12.5 10-12.5s10 5 10 12.5"
