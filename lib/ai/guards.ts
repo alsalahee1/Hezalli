@@ -13,6 +13,7 @@ import {
   DAILY_CAP,
   dayKey,
   estimateCostUsd,
+  estimateTtsUsd,
   monthKey,
   SPEND_CAP_USD,
   type GuardReason,
@@ -38,14 +39,17 @@ export async function checkGlobalCaps(
   return { ok: true };
 }
 
-/** Estimated Gemini spend (USD) so far this calendar month. */
+/** Estimated Gemini spend (USD) so far this calendar month (text + TTS). */
 export async function monthSpendUsd(now: number): Promise<number> {
   const rows = await prisma.botDailyUsage.findMany({
     where: { day: { startsWith: monthKey(now) } },
-    select: { tokensIn: true, tokensOut: true },
+    select: { tokensIn: true, tokensOut: true, ttsTokens: true },
   });
   return rows.reduce(
-    (sum, r) => sum + estimateCostUsd(r.tokensIn, r.tokensOut),
+    (sum, r) =>
+      sum +
+      estimateCostUsd(r.tokensIn, r.tokensOut) +
+      estimateTtsUsd(r.ttsTokens),
     0,
   );
 }
@@ -64,5 +68,19 @@ export async function recordDailyUsage(
       tokensIn: { increment: usage.in },
       tokensOut: { increment: usage.out },
     },
+  });
+}
+
+/** Add TTS (audio) output tokens to today's usage, for the spend estimate/cap. */
+export async function recordTtsUsage(
+  ttsTokens: number,
+  now: number,
+): Promise<void> {
+  if (ttsTokens <= 0) return;
+  const day = dayKey(now);
+  await prisma.botDailyUsage.upsert({
+    where: { day },
+    create: { day, ttsTokens },
+    update: { ttsTokens: { increment: ttsTokens } },
   });
 }

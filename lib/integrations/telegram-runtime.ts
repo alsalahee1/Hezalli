@@ -5,13 +5,30 @@
 import "server-only";
 
 import { formatReplyText, runChannelTurn } from "@/lib/ai/channel";
+import { recordTtsUsage } from "@/lib/ai/guards";
+import { synthesizeVoice } from "@/lib/ai/tts";
 import { routing } from "@/i18n/routing";
 
 import {
   downloadTelegramFile,
   sendTelegramMessage,
   sendTelegramTyping,
+  sendTelegramVoice,
 } from "./telegram";
+
+type ReplyMode = "text" | "voice" | "both" | "match";
+
+function replyMode(): ReplyMode {
+  const m = (process.env.BOT_REPLY_MODE || "text").toLowerCase();
+  return m === "voice" || m === "both" || m === "match" ? m : "text";
+}
+
+function ttsStyle(locale: string): string {
+  if (process.env.BOT_TTS_STYLE) return process.env.BOT_TTS_STYLE;
+  return locale === "ar"
+    ? "قل هذا بأسلوب ودّي وطبيعي كأنك مساعد متجر لطيف:"
+    : "Say this warmly and naturally, like a friendly shop assistant:";
+}
 
 type TelegramFile = { file_id: string; mime_type?: string };
 type TelegramMessage = {
@@ -72,14 +89,44 @@ export async function processTelegramUpdate(
       ? await downloadTelegramFile(voiceFile.file_id, voiceFile.mime_type)
       : null;
 
-    const { reply } = await runChannelTurn({
+    const { reply, capped } = await runChannelTurn({
       platform: "telegram",
       chatId: String(chatId),
       userText: text.slice(0, 2000),
       locale,
       audio: audio ?? undefined,
     });
-    await sendTelegramMessage(chatId, formatReplyText(reply, locale));
+
+    // Decide voice vs text. Never synthesize on a capped turn (that would spend
+    // more against the very cap we just hit). In 'match' mode we mirror the
+    // customer: a voice note gets a voice reply.
+    const mode = replyMode();
+    const wantVoice =
+      !capped &&
+      (mode === "voice" ||
+        mode === "both" ||
+        (mode === "match" && Boolean(voiceFile)));
+
+    let sentVoice = false;
+    if (wantVoice) {
+      const tts = await synthesizeVoice(reply.text, {
+        voice: process.env.BOT_TTS_VOICE,
+        style: ttsStyle(locale),
+      });
+      if (tts) {
+        sentVoice = await sendTelegramVoice(chatId, tts.ogg);
+        if (sentVoice)
+          void recordTtsUsage(tts.tokens, Date.now()).catch(() => {});
+      }
+    }
+
+    // Send text unless this was a pure, successful voice reply with no product
+    // links to surface. Links must always be tappable, so text goes out whenever
+    // there are cards, or when voice didn't send (fallback).
+    const sendText = mode !== "voice" || !sentVoice || reply.cards.length > 0;
+    if (sendText) {
+      await sendTelegramMessage(chatId, formatReplyText(reply, locale));
+    }
   } catch (err) {
     console.error("[telegram] handler failed:", err);
     try {

@@ -1159,6 +1159,8 @@ model BotDailyUsage {
   messages  Int      @default(0)
   tokensIn  Int      @default(0)
   tokensOut Int      @default(0)
+  // Gemini TTS output (audio) tokens, priced separately from text output.
+  ttsTokens Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
