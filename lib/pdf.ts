@@ -19,6 +19,9 @@ export async function renderUrlToPdf(
   const browser = await puppeteer.launch({
     executablePath: CHROMIUM_PATH,
     headless: true,
+    // The runtime user (nextjs) has no writable home, which breaks Chromium's
+    // crashpad handler ("--database is required"). Point HOME at a writable dir.
+    env: { ...process.env, HOME: "/tmp" },
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -27,9 +30,12 @@ export async function renderUrlToPdf(
       "--font-render-hinting=none",
       "--no-first-run",
       "--no-default-browser-check",
-      // The runtime user (nextjs) has no writable home; give Chromium a
-      // writable profile/cache dir or it crashes on launch.
+      // Writable profile + crash dirs, and disable crash reporting entirely so
+      // the crashpad handler never blocks launch in the container.
       "--user-data-dir=/tmp/hz-chromium",
+      "--crash-dumps-dir=/tmp/hz-chromium-crashes",
+      "--disable-crash-reporter",
+      "--disable-breakpad",
     ],
   });
   try {
