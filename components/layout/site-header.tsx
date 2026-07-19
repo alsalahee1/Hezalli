@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
 import { LanguageSwitcher } from "./language-switcher";
+import { Logo } from "./logo";
 import { SearchBar } from "./search-bar";
 
 type HeaderUser = {
@@ -50,8 +51,8 @@ export function SiteHeader({
           {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
 
-        <Link href="/" className="text-xl font-bold tracking-tight">
-          {c("appName")}
+        <Link href="/">
+          <Logo wordmark={c("appName")} markClassName="size-8" />
         </Link>
 
         <SearchBar className="relative hidden flex-1 md:block" />

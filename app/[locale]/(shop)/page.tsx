@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { HeroCarousel, type HeroBanner } from "@/components/home/hero-carousel";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ProductStrip } from "@/components/home/product-strip";
+import { QamariyaPattern } from "@/components/layout/qamariya-pattern";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
 import { FlashSection } from "@/components/promotions/flash-section";
 
@@ -72,11 +73,12 @@ export default async function HomePage({
       {heroBanners.length > 0 ? (
         <HeroCarousel banners={heroBanners} />
       ) : (
-        <section className="from-primary/10 flex flex-col items-center gap-4 rounded-xl bg-gradient-to-br to-transparent py-12 text-center">
-          <h1 className="max-w-2xl px-4 text-3xl font-bold tracking-tight sm:text-4xl">
+        <section className="from-primary/10 relative flex flex-col items-center gap-4 overflow-hidden rounded-xl bg-gradient-to-br to-transparent py-12 text-center">
+          <QamariyaPattern />
+          <h1 className="relative max-w-2xl px-4 text-3xl font-bold tracking-tight sm:text-4xl">
             {t("heroTitle")}
           </h1>
-          <p className="text-muted-foreground max-w-xl px-4">
+          <p className="text-muted-foreground relative max-w-xl px-4">
             {t("heroSubtitle")}
           </p>
         </section>
