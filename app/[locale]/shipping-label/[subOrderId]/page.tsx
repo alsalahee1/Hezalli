@@ -3,7 +3,9 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { SITE_URL } from "@/lib/seo";
 import { Barcode } from "@/components/orders/barcode";
+import { QrCode } from "@/components/orders/qr-code";
 import { DownloadPdfButton } from "@/components/orders/download-pdf-button";
 import { PrintButton } from "@/components/orders/print-button";
 
@@ -50,6 +52,12 @@ export default async function ShippingLabelPage({
   // The barcode encodes the tracking number when present, otherwise the order
   // reference so the parcel always carries a scannable identifier.
   const barcodeValue = (tracking || sub.order.id.slice(-8)).toUpperCase();
+  // A QR pointing at the public tracking page, so anyone can scan the parcel
+  // with a phone camera and see live status. Only meaningful once a tracking
+  // number exists.
+  const trackHref = tracking
+    ? `${SITE_URL}/track/${encodeURIComponent(tracking)}`
+    : null;
   const totalQty = sub.items.reduce((n, it) => n + it.quantity, 0);
 
   return (
@@ -122,11 +130,21 @@ export default async function ShippingLabelPage({
           </p>
         </div>
 
-        <div className="border-t-2 border-black pt-2">
-          <Barcode value={barcodeValue} height={56} />
-          <p className="text-center font-mono text-sm tracking-widest">
-            {barcodeValue}
-          </p>
+        <div className="flex items-center gap-3 border-t-2 border-black pt-2">
+          <div className="min-w-0 flex-1">
+            <Barcode value={barcodeValue} height={56} />
+            <p className="text-center font-mono text-sm tracking-widest">
+              {barcodeValue}
+            </p>
+          </div>
+          {trackHref ? (
+            <div className="flex flex-col items-center">
+              <QrCode value={trackHref} size={72} margin={1} />
+              <p className="mt-0.5 text-[9px] font-medium">
+                {t("scanToTrack")}
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
 

@@ -1721,9 +1721,26 @@
     "date": "Date",
     "items": "Items",
     "tracking": "Tracking",
+    "scanToTrack": "Scan to track",
     "noTracking": "Not shipped yet",
     "print": "Print",
     "footer": "Attach this label to the parcel.",
     "downloadPdf": "Download PDF"
+  },
+  "Tracking": {
+    "title": "Track your shipment",
+    "poweredBy": "Delivered by {carrier}",
+    "notFoundTitle": "Shipment not found",
+    "notFoundBody": "Double-check the tracking number and try again.",
+    "order": "Order",
+    "carrier": "Carrier",
+    "destination": "Destination",
+    "express": "Express",
+    "currentStatus": "Current status",
+    "history": "History",
+    "noEvents": "No tracking updates yet — check back soon.",
+    "estimatedDelivery": "Estimated delivery",
+    "scanHint": "Scan to reopen on your phone",
+    "searchAnother": "Track another shipment"
   }
 }
