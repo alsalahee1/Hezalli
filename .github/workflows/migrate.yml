@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - claude/ecommerce-platform-docs-9t3mfz # default branch
+      - main # default branch
     paths:
       - "prisma/**"
 
