@@ -57,4 +57,8 @@ jobs:
             echo "This server IP:"; curl -s https://api.ipify.org || echo "(couldn't fetch)"; echo
             getent hosts hezalli.com || echo "hezalli.com does not resolve yet"
             getent hosts www.hezalli.com || echo "www.hezalli.com does not resolve yet"
+            echo; echo "===== Which database is the APP actually using? (password redacted) ====="
+            docker exec hezalli-app printenv DATABASE_URL 2>/dev/null | sed -E 's#(://[^:]+:)[^@]*@#\1***@#' || echo "cannot read app DATABASE_URL"
+            echo; echo "===== Row counts in the app's database (read-only) ====="
+            docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select '\''User='\''||count(*) from \"User\" union all select '\''Product='\''||count(*) from \"Product\" union all select '\''ActiveProduct='\''||count(*) from \"Product\" where status='\''ACTIVE'\'' union all select '\''Store='\''||count(*) from \"Store\" union all select '\''Category='\''||count(*) from \"Category\" union all select '\''ProductVariant='\''||count(*) from \"ProductVariant\""' 2>&1 || echo "cannot query hezalli-db"
             echo; echo "===== DONE (nothing was changed) ====="
