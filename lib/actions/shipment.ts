@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
+import { autoAssignShipment } from "@/lib/courier-assign";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
 import { buildTrackingUrl } from "@/lib/tracking";
 
@@ -61,6 +63,7 @@ export async function shipSubOrder(
 
   const trackUrl = buildTrackingUrl(carrier.trackingUrl, trackingNumber);
   const ar = sub.order.buyer.locale === "ar";
+  let shipmentId: string | null = null;
 
   await prisma.$transaction(async (tx) => {
     // A sub-order has at most one shipment (unique). Upsert to be safe.
@@ -83,6 +86,7 @@ export async function shipSubOrder(
       },
       select: { id: true },
     });
+    shipmentId = shipment.id;
     await tx.shipmentEvent.create({
       data: {
         shipmentId: shipment.id,
@@ -133,9 +137,22 @@ export async function shipSubOrder(
     });
   });
 
+  // Hand platform-managed (Hezalli Express) parcels to the least-loaded courier
+  // automatically, when enabled. Best-effort: never blocks the ship action.
+  if (carrier.platformManaged && shipmentId) {
+    if (await getSetting("express_auto_assign")) {
+      try {
+        await autoAssignShipment(shipmentId);
+      } catch {
+        // Auto-assign is a convenience; ops can still assign from dispatch.
+      }
+    }
+  }
+
   revalidatePath(`/${locale}/seller/orders`);
   revalidatePath(`/${locale}/seller/orders/${subOrderId}`);
   revalidatePath(`/${locale}/account/orders`);
+  revalidatePath(`/${locale}/admin/dispatch`);
   return { ok: true };
 }
 

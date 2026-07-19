@@ -1455,7 +1455,13 @@
     "err_badExpressFee": "Enter a valid express fee.",
     "err_badEta": "Delivery-time estimates must be whole days, with min ≤ max.",
     "walletP2p": "Enable wallet transfers (P2P)",
-    "walletP2pHint": "⚠️ Money transmission — licensed only. Keep OFF until authorized."
+    "walletP2pHint": "⚠️ Money transmission — licensed only. Keep OFF until authorized.",
+    "expressAutoAssign": "Auto-assign couriers",
+    "expressAutoAssignHint": "Hand each shipped Express parcel to the least-busy driver automatically.",
+    "assignStrategy": "Courier assignment",
+    "assignStrategyHint": "How auto-assign chooses a driver for a shipped Express parcel.",
+    "strategyBalanced": "Balanced (least busy)",
+    "strategyNearest": "Nearest driver (by governorate)"
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1775,7 +1781,12 @@
     "notYourJobBody": "This tracking number isn't among your assigned deliveries.",
     "scanAgain": "Scan again",
     "overdue": "Overdue",
-    "dueSoon": "Due soon"
+    "dueSoon": "Due soon",
+    "locationOn": "Sharing · {gov}",
+    "locationOff": "Location off",
+    "shareLocation": "Share location",
+    "updateLocation": "Update location",
+    "locationError": "Couldn't get your location — check permissions."
   },
   "Dispatch": {
     "title": "Dispatch",

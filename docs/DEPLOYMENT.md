@@ -115,7 +115,7 @@ All configuration lives in `.env` on the server (created from
 | `POSTGRES_PASSWORD`   | database password — **change this**                 |
 | `POSTGRES_DB`         | database name (default `hezalli`)                   |
 | `DATABASE_URL`        | full connection string used by the app and Prisma   |
-| `NEXT_PUBLIC_APP_URL` | public URL, `https://www.hezalli.com`               |
+| `NEXT_PUBLIC_APP_URL` | public URL, `https://www.hezalli.com` — also the base for tracking QR codes and the driver app, so set it to the real domain (not `localhost`) or scanned parcels won't resolve |
 | `SITE_ADDRESS`        | hostnames Caddy serves + secures                    |
 | `ACME_EMAIL`          | email for Let's Encrypt certificate notices         |
 

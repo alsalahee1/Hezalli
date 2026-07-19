@@ -6,8 +6,36 @@ import { getLocale } from "next-intl/server";
 import { requireAdminId, requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
+import { nearestGovernorate } from "@/lib/yemen-geo";
 
 type Result = { ok?: boolean; error?: string };
+
+// A driver shares their current location (opt-in). We store the raw point plus
+// the nearest governorate, which "nearest" dispatch matches against.
+export async function updateCourierLocation(
+  lat: number,
+  lng: number,
+): Promise<{ ok?: boolean; error?: string; governorate?: string }> {
+  const courierId = await requireCourierId();
+  if (!courierId) return { error: "forbidden" };
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lng) > 180
+  ) {
+    return { error: "badLocation" };
+  }
+  const governorate = nearestGovernorate(lat, lng);
+  await prisma.courierLocation.upsert({
+    where: { userId: courierId },
+    create: { userId: courierId, lat, lng, governorate },
+    update: { lat, lng, governorate },
+  });
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/driver`);
+  return { ok: true, governorate };
+}
 
 // Ops assigns (or reassigns / unassigns) a Hezalli Express shipment to a
 // courier. Pass an empty driverId to unassign.

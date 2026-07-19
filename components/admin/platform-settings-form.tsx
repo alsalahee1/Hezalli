@@ -45,6 +45,8 @@ export function PlatformSettingsForm({
     maintenance_mode: current.maintenance_mode,
     wallet_p2p_enabled: current.wallet_p2p_enabled,
     express_enabled: current.express_enabled,
+    express_auto_assign: current.express_auto_assign,
+    courier_assign_strategy: current.courier_assign_strategy,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -75,6 +77,8 @@ export function PlatformSettingsForm({
         maintenance_mode: f.maintenance_mode,
         wallet_p2p_enabled: f.wallet_p2p_enabled,
         express_enabled: f.express_enabled,
+        express_auto_assign: f.express_auto_assign,
+        courier_assign_strategy: f.courier_assign_strategy,
       });
       if (res.error) setErr(res.error);
       else {
@@ -219,6 +223,16 @@ export function PlatformSettingsForm({
             />
           </div>
         </Field>
+        <Field label={t("assignStrategy")} hint={t("assignStrategyHint")}>
+          <select
+            value={f.courier_assign_strategy}
+            onChange={(e) => set("courier_assign_strategy", e.target.value)}
+            className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+          >
+            <option value="balanced">{t("strategyBalanced")}</option>
+            <option value="nearest">{t("strategyNearest")}</option>
+          </select>
+        </Field>
       </div>
 
       <div className="space-y-2 border-t pt-4">
@@ -241,6 +255,18 @@ export function PlatformSettingsForm({
           {t("expressEnabled")}
           <span className="text-muted-foreground text-xs">
             {t("expressEnabledHint")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.express_auto_assign}
+            onChange={(e) => set("express_auto_assign", e.target.checked)}
+          />
+          {t("expressAutoAssign")}
+          <span className="text-muted-foreground text-xs">
+            {t("expressAutoAssignHint")}
           </span>
         </label>
         <label className="flex items-center gap-2 text-sm">

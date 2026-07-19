@@ -13,6 +13,7 @@ import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { LocationShare } from "@/components/driver/location-share";
 
 export default async function DriverJobsPage() {
   const courierId = await requireCourierId();
@@ -20,7 +21,7 @@ export default async function DriverJobsPage() {
   const tShip = await getTranslations("Orders");
   if (!courierId) return null;
 
-  const [rawJobs, settings] = await Promise.all([
+  const [rawJobs, settings, location] = await Promise.all([
     prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
       select: {
@@ -48,6 +49,10 @@ export default async function DriverJobsPage() {
       },
     }),
     getPlatformSettings(),
+    prisma.courierLocation.findUnique({
+      where: { userId: courierId },
+      select: { governorate: true },
+    }),
   ]);
 
   const now = new Date();
@@ -71,6 +76,7 @@ export default async function DriverJobsPage() {
 
   return (
     <div className="space-y-4">
+      <LocationShare currentGovernorate={location?.governorate ?? null} />
       <div>
         <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
         <p className="text-muted-foreground text-sm">

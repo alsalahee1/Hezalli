@@ -27,3 +27,14 @@ export const GOVERNORATES = [
 ] as const;
 
 export const GOVERNORATE_VALUES = GOVERNORATES.map((g) => g.value);
+
+const GOV_BY_VALUE = new Map<string, (typeof GOVERNORATES)[number]>(
+  GOVERNORATES.map((g) => [g.value, g]),
+);
+
+/** Localized display label for a stored governorate value (falls back to the value). */
+export function localizedGovernorate(value: string, locale: string): string {
+  const g = GOV_BY_VALUE.get(value);
+  if (!g) return value;
+  return locale === "ar" ? g.ar : g.en;
+}
