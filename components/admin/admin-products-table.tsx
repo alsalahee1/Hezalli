@@ -195,50 +195,54 @@ export function AdminProductsTable({ rows }: { rows: AdminProductRow[] }) {
       <AdminProductsCards rows={rows} />
       <div className="hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full min-w-[880px] text-sm">
-        <thead>
-          <tr className="bg-muted/50">
-            <th className="px-3 py-2 text-start font-medium">{t("product")}</th>
-            <th className="px-3 py-2 text-start font-medium">{t("seller")}</th>
-            <th className="px-3 py-2 text-start font-medium">
-              {t("category")}
-            </th>
-            <th className="px-3 py-2 text-start font-medium">{t("price")}</th>
-            <th className="px-3 py-2 text-start font-medium">
-              {t("statusCol")}
-            </th>
-            <th className="px-3 py-2 text-end font-medium">
-              {t("moderation")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-t align-top">
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <ProductCover row={row} />
-                  <span className="font-medium">{row.title}</span>
-                </div>
-              </td>
-              <td className="px-3 py-2">
-                <SellerLink row={row} />
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap">
-                {row.categoryLabel}
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap" dir="ltr">
-                {money(row.price)}
-              </td>
-              <td className="px-3 py-2">
-                <StatusBadge status={row.status} />
-              </td>
-              <td className="px-3 py-2">
-                <ModerationCell row={row} />
-              </td>
+          <thead>
+            <tr className="bg-muted/50">
+              <th className="px-3 py-2 text-start font-medium">
+                {t("product")}
+              </th>
+              <th className="px-3 py-2 text-start font-medium">
+                {t("seller")}
+              </th>
+              <th className="px-3 py-2 text-start font-medium">
+                {t("category")}
+              </th>
+              <th className="px-3 py-2 text-start font-medium">{t("price")}</th>
+              <th className="px-3 py-2 text-start font-medium">
+                {t("statusCol")}
+              </th>
+              <th className="px-3 py-2 text-end font-medium">
+                {t("moderation")}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id} className="border-t align-top">
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-3">
+                    <ProductCover row={row} />
+                    <span className="font-medium">{row.title}</span>
+                  </div>
+                </td>
+                <td className="px-3 py-2">
+                  <SellerLink row={row} />
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  {row.categoryLabel}
+                </td>
+                <td className="px-3 py-2 whitespace-nowrap" dir="ltr">
+                  {money(row.price)}
+                </td>
+                <td className="px-3 py-2">
+                  <StatusBadge status={row.status} />
+                </td>
+                <td className="px-3 py-2">
+                  <ModerationCell row={row} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );
