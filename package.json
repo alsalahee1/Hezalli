@@ -20,6 +20,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:generate": "prisma generate",
+    "telegram:webhook": "tsx scripts/set-telegram-webhook.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

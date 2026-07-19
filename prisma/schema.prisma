@@ -1006,3 +1006,19 @@ model AuditLog {
 
   @@index([actorId])
 }
+
+// Short-lived conversation memory for messaging-channel bots (Telegram, and
+// later WhatsApp). One row per (platform, chatId); `messages` holds the last
+// few turns as a JSON array of { role, text } so follow-up questions keep
+// context. Not tied to a Hezalli account — the chat is anonymous by default.
+model BotConversation {
+  id        String   @id @default(cuid())
+  platform  String
+  chatId    String
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, chatId])
+  @@index([updatedAt])
+}
