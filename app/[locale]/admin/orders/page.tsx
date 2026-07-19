@@ -61,7 +61,49 @@ export default async function AdminOrdersPage({
           {t("empty")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <>
+          <ul className="space-y-3 md:hidden">
+            {filtered.map((o) => (
+              <li key={o.id} className="rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-mono text-sm font-medium">
+                    #{o.id.slice(-8).toUpperCase()}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap",
+                      STATUS_BADGE[o.status] ?? "bg-muted",
+                    )}
+                  >
+                    {t(`status_${o.status}`)}
+                  </span>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("buyer")}
+                    </dt>
+                    <dd>{o.buyer.name}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("method")}
+                    </dt>
+                    <dd>{o.paymentMethod}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3 flex items-center justify-between border-t pt-3">
+                  <span className="text-sm font-medium" dir="ltr">
+                    {money(o.grandTotal)}
+                  </span>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/admin/orders/${o.id}`}>{t("view")}</Link>
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-lg border md:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="bg-muted/50">
@@ -111,7 +153,8 @@ export default async function AdminOrdersPage({
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
