@@ -1,5 +1,11 @@
 # 10 — Phase 10: Shipping, Delivery & "Received" Confirmation
 
+> **Now implemented — see [`EXPRESS-DELIVERY.md`](./EXPRESS-DELIVERY.md)** for the
+> shipped Hezalli Express tier (checkout options, tracking + QR, the courier
+> driver app, dispatch, SLA, and auto-assignment). This phase doc is the
+> original plan.
+
+
 **Goal:** Real shipping fees, tracking numbers, a tracking page, delivery confirmation, and the buyer's **"I received my order"** confirmation that completes the money loop.
 **Prerequisite:** Phase 9 complete.
 
