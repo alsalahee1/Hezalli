@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, LogOut, MapPin, ShoppingBag, User } from "lucide-react";
+import {
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  ShoppingBag,
+  Store,
+  User,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -20,9 +28,28 @@ type MenuUser = {
   image?: string | null;
 };
 
-export function UserMenu({ user }: { user: MenuUser }) {
+export function UserMenu({
+  user,
+  isAdmin = false,
+  isSeller = false,
+}: {
+  user: MenuUser;
+  isAdmin?: boolean;
+  isSeller?: boolean;
+}) {
   const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
+
+  // Links that depend on the signed-in user's role. Admins reach the admin
+  // panel, sellers reach their store dashboard — buyers see neither.
+  const roleLinks = [
+    isAdmin
+      ? { href: "/admin", key: "adminPanel", icon: LayoutDashboard }
+      : null,
+    isSeller ? { href: "/seller", key: "sellerCenter", icon: Store } : null,
+  ].filter((l): l is { href: string; key: string; icon: typeof User } =>
+    Boolean(l),
+  );
 
   const label = user.name || user.email || "";
   const initial = (label || "?").charAt(0).toUpperCase();
@@ -70,6 +97,25 @@ export function UserMenu({ user }: { user: MenuUser }) {
                 </p>
               ) : null}
             </div>
+            {roleLinks.length > 0 ? (
+              <div className="border-b p-1">
+                {roleLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      role="menuitem"
+                      onClick={() => setOpen(false)}
+                      className="hover:bg-muted flex items-center gap-2 rounded-sm px-3 py-2 text-sm font-medium"
+                    >
+                      <Icon className="size-4" />
+                      {t(item.key)}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
             <div className="p-1">
               {MENU_LINKS.map((item) => {
                 const Icon = item.icon;

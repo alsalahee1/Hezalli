@@ -25,10 +25,12 @@ type HeaderUser = {
 export function SiteHeader({
   user,
   isSeller = false,
+  isAdmin = false,
   categories = [],
 }: {
   user?: HeaderUser | null;
   isSeller?: boolean;
+  isAdmin?: boolean;
   categories?: NavCategory[];
 }) {
   const t = useTranslations("Header");
@@ -71,7 +73,7 @@ export function SiteHeader({
             <>
               <ChatIcon variant="buyer" />
               <NotificationBell variant="buyer" />
-              <UserMenu user={user} />
+              <UserMenu user={user} isAdmin={isAdmin} isSeller={isSeller} />
             </>
           ) : (
             <Button variant="ghost" size="sm" asChild>

@@ -80,6 +80,7 @@ export default async function ShopLayout({
               : null
           }
           isSeller={user?.roles.includes("SELLER") ?? false}
+          isAdmin={isAdmin}
           categories={categories}
         />
         <div className="flex-1">{children}</div>

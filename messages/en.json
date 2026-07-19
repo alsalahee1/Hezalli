@@ -19,7 +19,8 @@
     "addresses": "Addresses",
     "wishlist": "Wishlist",
     "becomeSeller": "Sell on Hezalli",
-    "sellerCenter": "Seller Center"
+    "sellerCenter": "Seller Center",
+    "adminPanel": "Admin panel"
   },
   "Sell": {
     "title": "Sell on Hezalli",
