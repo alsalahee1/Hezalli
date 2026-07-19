@@ -25,6 +25,11 @@ export async function renderUrlToPdf(
       "--disable-dev-shm-usage", // small /dev/shm inside containers
       "--disable-gpu",
       "--font-render-hinting=none",
+      "--no-first-run",
+      "--no-default-browser-check",
+      // The runtime user (nextjs) has no writable home; give Chromium a
+      // writable profile/cache dir or it crashes on launch.
+      "--user-data-dir=/tmp/hz-chromium",
     ],
   });
   try {

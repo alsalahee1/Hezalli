@@ -235,6 +235,9 @@ if [ -f deploy/DEBUG_PDF_ONCE ]; then
   PDF=/tmp/hz-test.pdf
   CODE="$(curl -sk $RES -b "$CJ" -o "$PDF" -w '%{http_code} %{content_type}' --max-time 60 "$BASE/api/pdf?type=invoice&id=${ORDER_ID}&locale=ar")"
   log "  PDF endpoint (order ${ORDER_ID}): HTTP+type=${CODE}, bytes=$(wc -c < "$PDF" 2>/dev/null), magic=$(head -c 5 "$PDF" 2>/dev/null)"
+  echo "----- hezalli-app logs (PDF errors) -----"
+  docker logs hezalli-app --tail 40 2>&1 | tail -40
+  echo "----- end app logs -----"
 fi
 set -e
 
