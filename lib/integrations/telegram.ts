@@ -47,6 +47,30 @@ export async function sendTelegramMessage(
   });
 }
 
+/** Send an OGG/Opus voice note (multipart upload). Returns true on success. */
+export async function sendTelegramVoice(
+  chatId: number | string,
+  ogg: Buffer,
+): Promise<boolean> {
+  try {
+    const fd = new FormData();
+    fd.append("chat_id", String(chatId));
+    fd.append(
+      "voice",
+      new Blob([new Uint8Array(ogg)], { type: "audio/ogg" }),
+      "reply.ogg",
+    );
+    const res = await fetch(`${API_BASE}/bot${token()}/sendVoice`, {
+      method: "POST",
+      body: fd,
+    });
+    return res.ok;
+  } catch (e) {
+    console.error("[telegram] sendVoice failed:", e);
+    return false;
+  }
+}
+
 /** Show a "typing…" indicator while the assistant thinks. Best-effort. */
 export async function sendTelegramTyping(
   chatId: number | string,

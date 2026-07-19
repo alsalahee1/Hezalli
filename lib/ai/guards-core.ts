@@ -7,10 +7,12 @@ export const MAX_PER_HOUR = Number(process.env.BOT_MAX_PER_HOUR) || 60;
 export const DAILY_CAP = Number(process.env.BOT_DAILY_CAP) || 3000;
 export const SPEND_CAP_USD = Number(process.env.BOT_SPEND_CAP_USD) || 0; // 0 = off
 
-// Rough gemini-2.5-flash text pricing (USD per 1M tokens). Override via env if
-// you switch models or want the estimate to track real billing.
+// Rough gemini-2.5-flash pricing (USD per 1M tokens). Override via env if you
+// switch models or want the estimate to track real billing. TTS (audio output)
+// is priced separately and much higher than text output.
 const PRICE_IN_PER_M = Number(process.env.GEMINI_PRICE_IN_PER_M) || 0.3;
 const PRICE_OUT_PER_M = Number(process.env.GEMINI_PRICE_OUT_PER_M) || 2.5;
+const PRICE_TTS_PER_M = Number(process.env.GEMINI_PRICE_TTS_PER_M) || 10.0;
 
 export type GuardReason = "rate" | "daily" | "spend";
 export type RateResult = { ok: boolean; hits: number[] };
@@ -20,6 +22,11 @@ export function estimateCostUsd(tokensIn: number, tokensOut: number): number {
     (tokensIn / 1_000_000) * PRICE_IN_PER_M +
     (tokensOut / 1_000_000) * PRICE_OUT_PER_M
   );
+}
+
+/** USD cost of TTS (audio) output tokens. */
+export function estimateTtsUsd(ttsTokens: number): number {
+  return (ttsTokens / 1_000_000) * PRICE_TTS_PER_M;
 }
 
 export function dayKey(now: number): string {
