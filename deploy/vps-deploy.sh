@@ -220,6 +220,17 @@ log "  public https://hezalli.com : ${PUB:-no response yet}"
 log "  DB the app uses: $(docker exec hezalli-app printenv DATABASE_URL 2>/dev/null | sed -E 's#(://[^:]+:)[^@]*@#\1***@#' || echo '?')"
 DBCOUNTS="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select '\''User='\''||count(*) from \"User\" union all select '\''Product='\''||count(*) from \"Product\" union all select '\''ActiveProduct='\''||count(*) from \"Product\" where status='\''ACTIVE'\'' union all select '\''Store='\''||count(*) from \"Store\" union all select '\''Category='\''||count(*) from \"Category\""' 2>&1)"
 log "  Row counts: $(echo "$DBCOUNTS" | tr '\n' ' ')"
+
+# 6) One-off: reproduce a product-detail request and dump the app error log.
+if [ -f deploy/DEBUG_PRODUCT_ONCE ]; then
+  SLUG="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select slug from \"Product\" where status='\''ACTIVE'\'' order by \"createdAt\" limit 1"' 2>/dev/null | tr -d '[:space:]')"
+  log "  Reproducing product page /ar/product/${SLUG} ..."
+  CODE="$(curl -sk -o /dev/null -w '%{http_code}' --resolve "www.hezalli.com:443:127.0.0.1" "https://www.hezalli.com/ar/product/${SLUG}" --max-time 20)"
+  log "  product page HTTP ${CODE}"
+  echo "----- hezalli-app recent logs -----"
+  docker logs hezalli-app --tail 60 2>&1 | tail -60
+  echo "----- end app logs -----"
+fi
 set -e
 
 cat <<'EOF'
