@@ -5,7 +5,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
-import { getWalletId, getWalletView } from "@/lib/wallet";
+import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
 import { getWalletLimits } from "@/lib/wallet-limits";
 import { WalletTopUpForm } from "@/components/wallet/wallet-topup-form";
 import { WalletWithdrawForm } from "@/components/wallet/wallet-withdraw-form";
@@ -58,6 +58,7 @@ export default async function WalletPage() {
     limits,
     minPayout,
     p2pEnabled,
+    stats,
     profile,
     pendingTopUps,
     pendingWithdrawals,
@@ -65,6 +66,7 @@ export default async function WalletPage() {
     getWalletLimits(userId),
     getSetting("min_payout_usd"),
     getSetting("wallet_p2p_enabled"),
+    getWalletStats(userId),
     prisma.sellerProfile.findUnique({
       where: { userId },
       select: {
@@ -105,6 +107,23 @@ export default async function WalletPage() {
           <p className="text-muted-foreground text-xs">{t("subtitle")}</p>
         </div>
       </div>
+
+      {stats.totalIn > 0 || stats.totalOut > 0 ? (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border p-4">
+            <p className="text-muted-foreground text-xs">{t("totalIn")}</p>
+            <p className="text-lg font-semibold text-emerald-600" dir="ltr">
+              {money(stats.totalIn)}
+            </p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-muted-foreground text-xs">{t("totalOut")}</p>
+            <p className="text-lg font-semibold" dir="ltr">
+              {money(stats.totalOut)}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {frozen ? (
         <p className="border-destructive/40 text-destructive bg-destructive/5 rounded-lg border p-3 text-sm">

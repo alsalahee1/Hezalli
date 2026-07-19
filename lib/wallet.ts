@@ -88,3 +88,24 @@ export async function getWalletView(userId: string, take = 50) {
     entries,
   };
 }
+
+/** Lifetime money-in vs money-out totals for the wallet stats tiles. */
+export async function getWalletStats(
+  userId: string,
+): Promise<{ totalIn: number; totalOut: number }> {
+  const walletId = await getWalletId(userId);
+  const [inAgg, outAgg] = await Promise.all([
+    prisma.walletEntry.aggregate({
+      where: { walletId, amountUsd: { gt: 0 } },
+      _sum: { amountUsd: true },
+    }),
+    prisma.walletEntry.aggregate({
+      where: { walletId, amountUsd: { lt: 0 } },
+      _sum: { amountUsd: true },
+    }),
+  ]);
+  return {
+    totalIn: round2(Number(inAgg._sum.amountUsd ?? 0)),
+    totalOut: round2(Math.abs(Number(outAgg._sum.amountUsd ?? 0))),
+  };
+}

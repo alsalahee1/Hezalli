@@ -29,6 +29,9 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
 
   const isUsdt = method === "USDT";
 
+  // Quick-pick amounts within the allowed [min, max] range.
+  const presets = [5, 10, 25, 50, 100, 200].filter((n) => n >= min && n <= max);
+
   const submit = () =>
     start(async () => {
       setErr(null);
@@ -86,6 +89,25 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
           ))}
         </select>
       </div>
+      {presets.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {presets.map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setAmount(String(n))}
+              className={
+                Number(amount) === n
+                  ? "border-primary bg-primary/10 text-primary rounded-full border px-3 py-1 text-sm font-semibold"
+                  : "hover:border-muted-foreground/40 rounded-full border px-3 py-1 text-sm"
+              }
+              dir="ltr"
+            >
+              {formatUsd(n, locale)}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <p className="text-muted-foreground text-xs">
         {t("limits", {
           min: formatUsd(min, locale),

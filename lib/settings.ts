@@ -64,7 +64,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,
-  wallet_cashback_rate: 0,
+  // 1% cashback to the buyer's wallet on completed orders. Admins can change or
+  // disable this in Admin → Settings (set to 0 to turn off).
+  wallet_cashback_rate: 0.01,
   wallet_p2p_enabled: false,
 };
 
