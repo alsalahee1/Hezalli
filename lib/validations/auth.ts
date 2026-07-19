@@ -4,10 +4,20 @@ import { z } from "zod";
 // prose) that the client forms translate through the `Auth` i18n namespace, so
 // validation runs on the server (server actions) while wording stays localized.
 
+// Normalize the email before validating: trim surrounding whitespace (mobile
+// keyboards and copy-paste routinely add a leading/trailing space, which would
+// otherwise fail the email check and block sign-in with the correct address)
+// and lowercase it so it matches the stored, lowercased address.
+const emailField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email("emailInvalid"));
+
 export const registerSchema = z
   .object({
     name: z.string().trim().min(2, "nameShort").max(80, "nameLong"),
-    email: z.email("emailInvalid").transform((v) => v.toLowerCase()),
+    email: emailField,
     password: z.string().min(8, "passwordShort").max(100, "passwordLong"),
     confirmPassword: z.string(),
     acceptTerms: z.literal(true, { error: "termsRequired" }),
@@ -18,7 +28,7 @@ export const registerSchema = z
   });
 
 export const loginSchema = z.object({
-  email: z.email("emailInvalid").transform((v) => v.toLowerCase()),
+  email: emailField,
   password: z.string().min(1, "passwordRequired"),
   remember: z.boolean().optional(),
 });
