@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Link, redirect } from "@/i18n/navigation";
 import { LoginForm } from "@/components/auth/login-form";
+import { DevQuickLogin } from "@/components/auth/dev-quick-login";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Auth");
@@ -49,6 +50,8 @@ export default async function LoginPage({
       </div>
 
       <LoginForm callbackUrl={callbackUrl} />
+
+      <DevQuickLogin />
 
       <p className="text-muted-foreground text-center text-sm">
         {t("noAccount")}{" "}
