@@ -45,6 +45,23 @@ function approxDistanceSq(
   return x * x + y * y;
 }
 
+/** Great-circle distance in kilometers between two coordinates. */
+export function haversineKm(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+): number {
+  const R = 6371; // Earth radius, km
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 /** The governorate whose center is nearest to the given coordinates. */
 export function nearestGovernorate(lat: number, lng: number): string {
   let best = "";

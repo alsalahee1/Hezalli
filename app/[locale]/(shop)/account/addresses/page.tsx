@@ -24,6 +24,8 @@ export default async function AddressesPage() {
     line1: a.line1,
     line2: a.line2,
     notes: a.notes,
+    lat: a.lat,
+    lng: a.lng,
     isDefault: a.isDefault,
   }));
 

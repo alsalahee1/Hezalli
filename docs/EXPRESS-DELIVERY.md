@@ -39,6 +39,7 @@ Public tracking + SLA/at-risk visibility throughout
 | `Role.COURIER` | Delivery driver. |
 | `Shipment.driverId` → `User` | The assigned courier (null = unassigned / third-party). |
 | `CourierLocation` (userId, lat, lng, governorate) | A driver's last shared location, mapped to a governorate, for "nearest" dispatch. |
+| `Address.lat` / `Address.lng` | Optional buyer-pinned destination coordinates, for true distance-based routing. |
 | `ShipmentEvent` | The status timeline shown on tracking and the driver/seller views. |
 
 Fee quoting lives in `lib/shipping.ts` (`quoteShippingForStores` returns a
@@ -75,13 +76,16 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
 
 - **Balanced** — the active courier with the fewest in-flight (`SHIPPED`)
   deliveries; ties broken deterministically.
-- **Nearest** — a courier currently located in the **destination governorate**
-  (from their opt-in shared location, mapped via `lib/yemen-geo.ts`), then
-  least-loaded among them; falls back to Balanced when none are local.
+- **Nearest** — in order of preference:
+  1. **True distance** — when the buyer pinned the address (`Address.lat/lng`)
+     and couriers have shared their location, the closest by great-circle
+     (`haversineKm`) distance, tie-broken by load.
+  2. **Governorate locality** — otherwise a courier in the destination
+     governorate (mapped from their shared GPS via `lib/yemen-geo.ts`), then
+     least-loaded.
+  3. **Balanced** — otherwise global least-loaded.
 
-This is **locality matching, not point-to-point distance** — destinations are
-only governorate-level (see §7). Ops can always reassign from the dispatch
-board.
+Ops can always reassign from the dispatch board.
 
 ## 5. Operating it — by role
 
@@ -121,10 +125,12 @@ get chased before the promise is missed.
 
 ## 7. Limitations & roadmap
 
-- **No point-to-point routing.** Buyers don't drop map pins and Yemeni street
-  addresses can't be reliably geocoded, so "nearest" is governorate-level. True
-  proximity would need address coordinates (a checkout map-picker + schema +
-  backfill) — deliberately out of scope until that data exists.
+- **Coordinates are optional / opt-in.** Buyers pin their address via the
+  browser's geolocation ("Pin my location"); there's no draggable map picker
+  yet, so a buyer setting an address they aren't physically at can't pin it.
+  When coordinates are absent on either side, routing degrades to
+  governorate-locality then load (see §4). A visual map picker (and reverse
+  geocoding) is the next upgrade.
 - **Status transitions are human-driven.** Sellers/couriers tap the buttons;
   there is no external carrier feed or GPS breadcrumb trail.
 - **The public tracking QR** encodes an absolute URL built from
