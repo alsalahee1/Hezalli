@@ -22,7 +22,12 @@ export default async function SellerShippingSettingsPage() {
     }),
     prisma.shippingRate.findMany({
       where: { storeId: gate.storeId },
-      select: { zoneId: true, feeUsd: true, freeOver: true },
+      select: {
+        zoneId: true,
+        feeUsd: true,
+        freeOver: true,
+        expressFeeUsd: true,
+      },
     }),
     prisma.platformSetting.findMany({
       where: { key: { in: ["default_shipping_fee", "free_shipping_over"] } },
@@ -38,6 +43,8 @@ export default async function SellerShippingSettingsPage() {
       zoneName: z.name,
       fee: r ? String(Number(r.feeUsd)) : "",
       freeOver: r?.freeOver != null ? String(Number(r.freeOver)) : "",
+      expressFee:
+        r?.expressFeeUsd != null ? String(Number(r.expressFeeUsd)) : "",
     };
   });
 

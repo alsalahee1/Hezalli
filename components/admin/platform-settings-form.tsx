@@ -36,9 +36,15 @@ export function PlatformSettingsForm({
     wallet_cashback_percent: String(
       Math.round(current.wallet_cashback_rate * 10000) / 100,
     ),
+    default_express_fee: String(current.default_express_fee),
+    std_eta_min_days: String(current.std_eta_min_days),
+    std_eta_max_days: String(current.std_eta_max_days),
+    express_eta_min_days: String(current.express_eta_min_days),
+    express_eta_max_days: String(current.express_eta_max_days),
     cod_enabled: current.cod_enabled,
     maintenance_mode: current.maintenance_mode,
     wallet_p2p_enabled: current.wallet_p2p_enabled,
+    express_enabled: current.express_enabled,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -60,9 +66,15 @@ export function PlatformSettingsForm({
         wallet_topup_max_usd: Number(f.wallet_topup_max_usd),
         wallet_balance_cap_usd: Number(f.wallet_balance_cap_usd),
         wallet_cashback_percent: Number(f.wallet_cashback_percent),
+        default_express_fee: Number(f.default_express_fee),
+        std_eta_min_days: Number(f.std_eta_min_days),
+        std_eta_max_days: Number(f.std_eta_max_days),
+        express_eta_min_days: Number(f.express_eta_min_days),
+        express_eta_max_days: Number(f.express_eta_max_days),
         cod_enabled: f.cod_enabled,
         maintenance_mode: f.maintenance_mode,
         wallet_p2p_enabled: f.wallet_p2p_enabled,
+        express_enabled: f.express_enabled,
       });
       if (res.error) setErr(res.error);
       else {
@@ -165,6 +177,48 @@ export function PlatformSettingsForm({
             dir="ltr"
           />
         </Field>
+        <Field label={t("expressFee")} hint={t("expressFeeHint")}>
+          <Input
+            type="number"
+            value={f.default_express_fee}
+            onChange={(e) => set("default_express_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("stdEta")} hint={t("etaHint")}>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={f.std_eta_min_days}
+              onChange={(e) => set("std_eta_min_days", e.target.value)}
+              dir="ltr"
+            />
+            <span className="text-muted-foreground">–</span>
+            <Input
+              type="number"
+              value={f.std_eta_max_days}
+              onChange={(e) => set("std_eta_max_days", e.target.value)}
+              dir="ltr"
+            />
+          </div>
+        </Field>
+        <Field label={t("expressEta")} hint={t("etaHint")}>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={f.express_eta_min_days}
+              onChange={(e) => set("express_eta_min_days", e.target.value)}
+              dir="ltr"
+            />
+            <span className="text-muted-foreground">–</span>
+            <Input
+              type="number"
+              value={f.express_eta_max_days}
+              onChange={(e) => set("express_eta_max_days", e.target.value)}
+              dir="ltr"
+            />
+          </div>
+        </Field>
       </div>
 
       <div className="space-y-2 border-t pt-4">
@@ -176,6 +230,18 @@ export function PlatformSettingsForm({
             onChange={(e) => set("cod_enabled", e.target.checked)}
           />
           {t("codEnabled")}
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.express_enabled}
+            onChange={(e) => set("express_enabled", e.target.checked)}
+          />
+          {t("expressEnabled")}
+          <span className="text-muted-foreground text-xs">
+            {t("expressEnabledHint")}
+          </span>
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input

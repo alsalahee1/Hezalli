@@ -14,6 +14,16 @@ export type PlatformSettings = {
   min_payout_usd: number;
   cod_enabled: boolean;
   maintenance_mode: boolean;
+  // Express delivery tier (our own Hezalli Express). When off, only standard
+  // shipping is offered at checkout. Fee is the platform-wide express price a
+  // store falls back to when it hasn't set its own per-zone express fee. ETAs
+  // are the delivery-time estimates (in days) shown to buyers at checkout.
+  express_enabled: boolean;
+  default_express_fee: number;
+  std_eta_min_days: number;
+  std_eta_max_days: number;
+  express_eta_min_days: number;
+  express_eta_max_days: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -38,6 +48,12 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   min_payout_usd: 10,
   cod_enabled: true,
   maintenance_mode: false,
+  express_enabled: true,
+  default_express_fee: 10,
+  std_eta_min_days: 3,
+  std_eta_max_days: 7,
+  express_eta_min_days: 1,
+  express_eta_max_days: 2,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

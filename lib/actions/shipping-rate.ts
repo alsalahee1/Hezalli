@@ -13,6 +13,9 @@ export type RateInput = {
   zoneId: string;
   feeUsd: number | null; // null → don't ship here via own rate (platform default)
   freeOver: number | null;
+  // Optional express-tier price for this zone. null → use the platform default
+  // express fee. Only persisted when a standard feeUsd is set for the zone.
+  expressFeeUsd: number | null;
 };
 
 // Reconcile a seller's per-zone shipping rates: upsert those with a fee,
@@ -43,11 +46,23 @@ export async function saveShippingRates(rates: RateInput[]): Promise<Result> {
     const fee = round2(r.feeUsd);
     const freeOver =
       r.freeOver != null && r.freeOver > 0 ? round2(r.freeOver) : null;
+    const expressFeeUsd =
+      r.expressFeeUsd != null &&
+      r.expressFeeUsd >= 0 &&
+      !Number.isNaN(r.expressFeeUsd)
+        ? round2(r.expressFeeUsd)
+        : null;
     ops.push(
       prisma.shippingRate.upsert({
         where: { storeId_zoneId: { storeId, zoneId: r.zoneId } },
-        create: { storeId, zoneId: r.zoneId, feeUsd: fee, freeOver },
-        update: { feeUsd: fee, freeOver },
+        create: {
+          storeId,
+          zoneId: r.zoneId,
+          feeUsd: fee,
+          freeOver,
+          expressFeeUsd,
+        },
+        update: { feeUsd: fee, freeOver, expressFeeUsd },
       }),
     );
   }

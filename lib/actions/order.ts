@@ -11,7 +11,11 @@ import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
-import { quoteShippingForStores } from "@/lib/shipping";
+import {
+  quoteShippingForStores,
+  resolveShippingChoice,
+  type ShippingMethod,
+} from "@/lib/shipping";
 import { validateCoupon } from "@/lib/vouchers";
 import {
   creditWalletTx,
@@ -27,6 +31,10 @@ export type PlaceOrderInput = {
   paymentMethod: PaymentMethodChoice;
   couponCode?: string;
   redeemPoints?: number;
+  // Buyer's chosen delivery tier per store (storeId → method). Absent stores
+  // default to STANDARD. The server re-quotes the fee — the client choice only
+  // selects which option applies.
+  shippingMethods?: Record<string, ShippingMethod>;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
 
@@ -122,15 +130,21 @@ export async function placeOrder(
     lines,
     itemsTotal: lines.reduce((s, l) => s + l.price * l.qty, 0),
   }));
-  // Authoritative shipping: zone-based rate for the destination governorate.
+  // Authoritative shipping: zone-based rate for the destination governorate,
+  // for the buyer's chosen tier (standard/express) per store. The fee is always
+  // re-derived here — the client choice only selects which option applies.
   const shipQuote = await quoteShippingForStores(
     address.governorate,
     rawGroups.map((g) => ({ storeId: g.storeId, subtotal: g.itemsTotal })),
   );
-  const groupsBase = rawGroups.map((g) => ({
-    ...g,
-    shipping: shipQuote.get(g.storeId) ?? 0,
-  }));
+  const wantMethods = input.shippingMethods ?? {};
+  const groupsBase = rawGroups.map((g) => {
+    const choice = resolveShippingChoice(
+      shipQuote.get(g.storeId),
+      wantMethods[g.storeId] === "EXPRESS" ? "EXPRESS" : "STANDARD",
+    );
+    return { ...g, shipping: choice.fee, shippingMethod: choice.method };
+  });
 
   // Optional voucher: validate + compute per-store discount.
   let couponId: string | null = null;
@@ -288,6 +302,7 @@ export async function placeOrder(
             create: groups.map((g) => ({
               store: { connect: { id: g.storeId } },
               status: orderStatus,
+              shippingMethod: g.shippingMethod,
               itemsTotal: g.itemsTotal,
               shippingTotal: g.shipping,
               discountTotal: g.discount,

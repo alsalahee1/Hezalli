@@ -692,6 +692,13 @@ async function main() {
       { key: "base_currency", value: "USD" },
       { key: "commission_rate", value: 0.1 },
       { key: "auto_complete_days", value: 7 },
+      // Express delivery tier (Hezalli Express).
+      { key: "express_enabled", value: true },
+      { key: "default_express_fee", value: 10 },
+      { key: "std_eta_min_days", value: 3 },
+      { key: "std_eta_max_days", value: 7 },
+      { key: "express_eta_min_days", value: 1 },
+      { key: "express_eta_max_days", value: 2 },
     ],
   });
   await prisma.exchangeRate.createMany({
@@ -801,8 +808,18 @@ async function main() {
         status: "ACTIVE",
         shippingRates: {
           create: [
-            { zoneId: zoneCentral.id, feeUsd: 3, freeOver: 50 },
-            { zoneId: zoneSouth.id, feeUsd: 5, freeOver: 75 },
+            {
+              zoneId: zoneCentral.id,
+              feeUsd: 3,
+              freeOver: 50,
+              expressFeeUsd: 8,
+            },
+            {
+              zoneId: zoneSouth.id,
+              feeUsd: 5,
+              freeOver: 75,
+              expressFeeUsd: 12,
+            },
           ],
         },
       },
