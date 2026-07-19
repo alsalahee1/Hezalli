@@ -1721,9 +1721,26 @@
     "date": "التاريخ",
     "items": "القطع",
     "tracking": "التتبّع",
+    "scanToTrack": "امسح للتتبع",
     "noTracking": "لم تُشحن بعد",
     "print": "طباعة",
     "footer": "الصق هذه البطاقة على الطرد.",
     "downloadPdf": "تنزيل PDF"
+  },
+  "Tracking": {
+    "title": "تتبّع شحنتك",
+    "poweredBy": "يوصلها {carrier}",
+    "notFoundTitle": "لم يتم العثور على الشحنة",
+    "notFoundBody": "تحقق من رقم التتبع وحاول مجددًا.",
+    "order": "الطلب",
+    "carrier": "الناقل",
+    "destination": "الوجهة",
+    "express": "سريع",
+    "currentStatus": "الحالة الحالية",
+    "history": "السجل",
+    "noEvents": "لا توجد تحديثات بعد — تحقق لاحقًا.",
+    "estimatedDelivery": "التوصيل المتوقع",
+    "scanHint": "امسح الرمز لإعادة الفتح على هاتفك",
+    "searchAnother": "تتبّع شحنة أخرى"
   }
 }
