@@ -38,7 +38,15 @@ services:
     build:
       context: .
       target: builder
-    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed-if-empty.ts && npx tsx prisma/ensure-categories.ts"
+    # Migrations are a HARD gate — the app must not start against an un-migrated
+    # schema, so `prisma migrate deploy` failing aborts the container (and blocks
+    # `app` via depends_on). Seeding, however, is best-effort: an empty-DB seed or
+    # a category top-up throwing must NOT keep the whole site offline. We isolate
+    # each seed step with `|| ...` so a seed failure is logged but still exits 0.
+    command: >
+      sh -c "npx prisma migrate deploy
+      && { npx tsx prisma/seed-if-empty.ts || echo 'WARN: seed-if-empty failed (non-fatal), continuing'; }
+      && { npx tsx prisma/ensure-categories.ts || echo 'WARN: ensure-categories failed (non-fatal), continuing'; }"
     environment:
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
