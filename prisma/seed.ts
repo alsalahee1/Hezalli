@@ -770,6 +770,21 @@ async function main() {
     },
   });
 
+  // A Hezalli Express courier, so the dispatch board has someone to assign to
+  // and the /driver app can be signed into.
+  await prisma.user.create({
+    data: {
+      name: "Salah the Driver",
+      email: "driver@hezalli.com",
+      emailVerified: new Date(),
+      phone: "+967700000009",
+      phoneVerified: new Date(),
+      passwordHash: PASSWORD,
+      roles: ["COURIER"],
+      locale: "ar",
+    },
+  });
+
   // --- Sellers (+ profile + balance + store + shipping rates) ---
   async function createSeller(opts: {
     name: string;
