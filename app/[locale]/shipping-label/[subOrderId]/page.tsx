@@ -76,7 +76,7 @@ export default async function ShippingLabelPage({
 
         <div className="grid grid-cols-1 gap-3 py-3">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide">
+            <p className="text-[10px] font-semibold tracking-wide uppercase">
               {t("from")}
             </p>
             <p className="font-medium">{sub.store.name}</p>
@@ -86,7 +86,7 @@ export default async function ShippingLabelPage({
           </div>
 
           <div className="border-t border-dashed pt-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide">
+            <p className="text-[10px] font-semibold tracking-wide uppercase">
               {t("to")}
             </p>
             <p className="text-base font-semibold">
