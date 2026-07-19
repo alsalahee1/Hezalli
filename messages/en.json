@@ -894,6 +894,7 @@
     "confirmReceivedConfirm": "Confirm you received this order? This releases payment to the seller.",
     "err_badState": "This action isn't available right now.",
     "trackingTitle": "Tracking",
+    "expressBadge": "Express",
     "carrier": "Carrier",
     "trackingNumber": "Tracking number",
     "trackPackage": "Track package",

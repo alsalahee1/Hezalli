@@ -894,6 +894,7 @@
     "confirmReceivedConfirm": "تأكيد استلامك لهذا الطلب؟ سيؤدي ذلك إلى تحرير الدفعة للبائع.",
     "err_badState": "هذا الإجراء غير متاح حالياً.",
     "trackingTitle": "التتبع",
+    "expressBadge": "سريع",
     "carrier": "شركة الشحن",
     "trackingNumber": "رقم التتبع",
     "trackPackage": "تتبع الشحنة",

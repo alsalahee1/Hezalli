@@ -233,7 +233,14 @@ export default async function OrderDetailPage({
         return (
           <section key={s.id} className="rounded-lg border">
             <div className="flex items-center justify-between gap-2 border-b px-4 py-2 text-sm">
-              <span className="font-medium">{s.store.name}</span>
+              <span className="flex items-center gap-2 font-medium">
+                {s.store.name}
+                {s.shippingMethod === "EXPRESS" ? (
+                  <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                    {t("expressBadge")}
+                  </span>
+                ) : null}
+              </span>
               <span className="flex items-center gap-2">
                 <ChatLauncher
                   storeId={s.storeId}
