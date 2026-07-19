@@ -114,6 +114,47 @@ export async function sendMessage(
     email: false,
   });
 
+  // Chat auto-reply (Step 17.7): on the buyer's first message, if the seller
+  // set a canned reply and hasn't answered yet, send it automatically.
+  if (p.role === "buyer") {
+    const store = await prisma.store.findUnique({
+      where: { id: p.storeId },
+      select: { autoReplyMessage: true },
+    });
+    if (store?.autoReplyMessage) {
+      const [buyerMsgs, sellerMsgs] = await Promise.all([
+        prisma.message.count({
+          where: { conversationId, senderId: p.buyerId },
+        }),
+        prisma.message.count({
+          where: { conversationId, senderId: p.sellerUserId },
+        }),
+      ]);
+      if (buyerMsgs === 1 && sellerMsgs === 0) {
+        await prisma.message.create({
+          data: {
+            conversationId,
+            senderId: p.sellerUserId,
+            body: store.autoReplyMessage,
+          },
+        });
+        await prisma.conversation.update({
+          where: { id: conversationId },
+          data: { updatedAt: new Date() },
+        });
+        await notify({
+          userId: p.buyerId,
+          type: "CHAT",
+          title: "New message",
+          body: store.autoReplyMessage.slice(0, 140),
+          link: "/account/chat",
+          data: { conversationId },
+          email: false,
+        });
+      }
+    }
+  }
+
   return { ok: true };
 }
 

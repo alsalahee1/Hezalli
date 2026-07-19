@@ -166,7 +166,9 @@ export default async function OrderDetailPage({
       order.payment ? (
         <PaymentProofForm
           orderId={order.id}
-          method={order.paymentMethod as "BANK_TRANSFER" | "USDT" | "WALLET"}
+          method={
+            order.paymentMethod as "BANK_TRANSFER" | "USDT" | "LOCAL_WALLET"
+          }
           paymentStatus={order.payment.status}
         />
       ) : null}

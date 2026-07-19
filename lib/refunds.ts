@@ -8,8 +8,14 @@ import {
   round2,
   subEconomics,
 } from "@/lib/finance";
+import { POINTS_PER_USD_REDEEMED } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
+import {
+  creditWalletTx,
+  getWalletId,
+  recomputeWalletBalance,
+} from "@/lib/wallet";
 
 export type ApplyRefundResult = {
   ok?: boolean;
@@ -25,6 +31,9 @@ export async function applyRefund(
     amountUsd?: number;
     actor: string;
     processedBy?: string | null;
+    // Step 19.1: credit the refunded amount to the buyer's HezalliPay wallet
+    // instead of returning the money outside the system.
+    toWallet?: boolean;
   },
 ): Promise<ApplyRefundResult> {
   const sub = await prisma.subOrder.findUnique({
@@ -76,6 +85,12 @@ export async function applyRefund(
     select: { id: true },
   });
   const balanceId = await getBalanceId(sub.store.sellerId);
+  // Wallet-paid orders always refund back to the wallet (that is where the
+  // money came from); other methods do so only when the caller asks. Ensure the
+  // wallet row exists before the transaction so we can write into it atomically.
+  const refundToWallet =
+    opts.toWallet || sub.order.paymentMethod === "HEZALLI_BALANCE";
+  const walletId = refundToWallet ? await getWalletId(sub.order.buyerId) : null;
 
   let refundId = "";
   await prisma.$transaction(async (tx) => {
@@ -91,6 +106,17 @@ export async function applyRefund(
       select: { id: true },
     });
     refundId = refund.id;
+
+    // Step 19.1: credit the buyer's HezalliPay wallet with the refunded amount.
+    if (walletId) {
+      await creditWalletTx(tx, walletId, {
+        type: "REFUND",
+        amountUsd: amount,
+        orderId: sub.orderId,
+        subOrderId,
+        note: `Refund credited to wallet — ${opts.reason}`,
+      });
+    }
 
     if (settled) {
       if (sub.order.paymentMethod === "COD") {
@@ -114,6 +140,31 @@ export async function applyRefund(
             subOrderId,
             note: "Sale reversed (refund)",
           },
+        });
+      }
+    }
+
+    // Restore loyalty points redeemed on this order. A points redemption is a
+    // platform-funded discount with no coupon, so a discount + no coupon means
+    // the buyer paid partly with points — give the proportional share back.
+    if (!sub.order.coupon && Number(sub.discountTotal) > 0) {
+      const restore = Math.round(
+        Number(sub.discountTotal) * ratio * POINTS_PER_USD_REDEEMED,
+      );
+      if (restore > 0) {
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId: sub.order.buyerId,
+            points: restore,
+            type: "REFUND",
+            orderId: sub.orderId,
+            subOrderId,
+            note: "Points restored on refund",
+          },
+        });
+        await tx.user.update({
+          where: { id: sub.order.buyerId },
+          data: { loyaltyPoints: { increment: restore } },
         });
       }
     }
@@ -161,14 +212,19 @@ export async function applyRefund(
         userId: sub.order.buyerId,
         type: "PAYMENT",
         title: bAr ? "تم استرداد مبلغ" : "Refund issued",
-        body: bAr
-          ? `تمت الموافقة على استرداد ${amount.toFixed(2)}$.`
-          : `A refund of $${amount.toFixed(2)} was issued.`,
+        body: walletId
+          ? bAr
+            ? `تمت إضافة ${amount.toFixed(2)}$ إلى محفظتك.`
+            : `$${amount.toFixed(2)} was added to your wallet.`
+          : bAr
+            ? `تمت الموافقة على استرداد ${amount.toFixed(2)}$.`
+            : `A refund of $${amount.toFixed(2)} was issued.`,
         data: { orderId: sub.orderId },
       },
     });
   });
 
   await recomputeBalance(sub.store.sellerId);
+  if (walletId) await recomputeWalletBalance(sub.order.buyerId);
   return { ok: true, refundId, amount };
 }

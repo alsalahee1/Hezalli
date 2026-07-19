@@ -12,10 +12,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RegisterPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ ref?: string }>;
 }) {
   const { locale } = await params;
+  const { ref } = await searchParams;
   setRequestLocale(locale);
 
   const session = await auth();
@@ -32,7 +35,7 @@ export default async function RegisterPage({
         <p className="text-muted-foreground text-sm">{t("registerSubtitle")}</p>
       </div>
 
-      <RegisterForm />
+      <RegisterForm refCode={ref} />
 
       <p className="text-muted-foreground text-center text-sm">
         {t("haveAccount")}{" "}

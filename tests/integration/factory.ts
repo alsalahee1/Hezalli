@@ -11,7 +11,8 @@ const uid = (p: string) => {
   return `${p}-t${Date.now().toString(36)}-${seq}`;
 };
 
-export type PaymentChoice = "COD" | "BANK_TRANSFER" | "USDT" | "WALLET";
+export type PaymentChoice =
+  "COD" | "BANK_TRANSFER" | "USDT" | "LOCAL_WALLET" | "HEZALLI_BALANCE";
 
 export async function makeFixture(
   opts: { stock?: number; price?: number; commissionRate?: number } = {},
@@ -94,10 +95,12 @@ export async function makeFixture(
       paymentMethod: PaymentChoice;
       qty?: number;
       status?: string;
+      discount?: number;
     }) {
       const qty = o.qty ?? 1;
       const itemsTotal = price * qty;
-      const grand = itemsTotal;
+      const discount = o.discount ?? 0;
+      const grand = itemsTotal - discount;
       const prepaid = o.paymentMethod !== "COD";
       const status = o.status ?? "COMPLETED";
       const order = await prisma.order.create({
@@ -108,6 +111,7 @@ export async function makeFixture(
           paymentMethod: o.paymentMethod as never,
           itemsTotal,
           shippingTotal: 0,
+          discountTotal: discount,
           grandTotal: grand,
           displayCurrency: "USD",
           exchangeRate: 1,
@@ -119,6 +123,7 @@ export async function makeFixture(
                 status: status as never,
                 itemsTotal,
                 shippingTotal: 0,
+                discountTotal: discount,
                 commissionRate,
                 commissionAmt: 0,
                 sellerNet: 0,

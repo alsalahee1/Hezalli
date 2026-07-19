@@ -1062,7 +1062,7 @@ async function main() {
     addressId: string;
     storeId: string;
     balanceId: string;
-    paymentMethod: "COD" | "USDT" | "WALLET";
+    paymentMethod: "COD" | "USDT" | "LOCAL_WALLET";
     orderStatus: "COMPLETED" | "PROCESSING" | "SHIPPED";
     subStatus: "COMPLETED" | "PROCESSING" | "SHIPPED";
     shipmentStatus: "DELIVERED" | "PENDING" | "IN_TRANSIT";
@@ -1150,7 +1150,7 @@ async function main() {
                 ? "TSeedUsdtAddr000000000000000000000"
                 : null,
             reference:
-              opts.paymentMethod === "WALLET" ? "JAWALI-REF-88213" : null,
+              opts.paymentMethod === "LOCAL_WALLET" ? "JAWALI-REF-88213" : null,
           },
         },
         history: {
@@ -1257,7 +1257,7 @@ async function main() {
     addressId: buyer3.addresses[0].id,
     storeId: seller1.storeId,
     balanceId: seller1.balanceId,
-    paymentMethod: "WALLET",
+    paymentMethod: "LOCAL_WALLET",
     orderStatus: "SHIPPED",
     subStatus: "SHIPPED",
     shipmentStatus: "IN_TRANSIT",

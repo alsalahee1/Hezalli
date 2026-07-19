@@ -1,0 +1,90 @@
+// HezalliPay wallet core (Step 19.1). The ledger is the source of truth:
+// Wallet.availableUsd is always the sum of that wallet's entries, and entries
+// are immutable — the balance is recomputed, never edited in place. All amounts
+// are USD (USDT treated 1:1), matching the seller ledger in lib/finance.ts.
+// See docs/19-wallet-strategy.md.
+import { round2 } from "@/lib/finance";
+import type { Prisma, WalletEntryType } from "@/lib/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+
+type Tx = Prisma.TransactionClient;
+
+/** Ensure a Wallet row exists for a user, return its id. */
+export async function getWalletId(
+  userId: string,
+  client: Tx | typeof prisma = prisma,
+): Promise<string> {
+  const wallet = await client.wallet.upsert({
+    where: { userId },
+    create: { userId },
+    update: {},
+    select: { id: true },
+  });
+  return wallet.id;
+}
+
+/**
+ * Recompute a wallet's availableUsd (= Σ entries). Call after committing the
+ * transaction that wrote the entries, exactly as recomputeBalance does for
+ * sellers.
+ */
+export async function recomputeWalletBalance(userId: string): Promise<void> {
+  const walletId = await getWalletId(userId);
+  const agg = await prisma.walletEntry.aggregate({
+    where: { walletId },
+    _sum: { amountUsd: true },
+  });
+  await prisma.wallet.update({
+    where: { id: walletId },
+    data: { availableUsd: round2(Number(agg._sum.amountUsd ?? 0)) },
+  });
+}
+
+/**
+ * Write one immutable wallet entry inside an existing transaction. Positive
+ * amounts credit the wallet, negative debit it. The caller is responsible for
+ * calling recomputeWalletBalance(userId) once the transaction commits.
+ */
+export async function creditWalletTx(
+  tx: Tx,
+  walletId: string,
+  input: {
+    type: WalletEntryType;
+    amountUsd: number;
+    orderId?: string | null;
+    subOrderId?: string | null;
+    note?: string | null;
+  },
+): Promise<void> {
+  await tx.walletEntry.create({
+    data: {
+      walletId,
+      type: input.type,
+      amountUsd: round2(input.amountUsd),
+      orderId: input.orderId ?? null,
+      subOrderId: input.subOrderId ?? null,
+      note: input.note ?? null,
+    },
+  });
+}
+
+/** Read a user's current balance + recent entries for the account page. */
+export async function getWalletView(userId: string, take = 50) {
+  const walletId = await getWalletId(userId);
+  const [wallet, entries] = await Promise.all([
+    prisma.wallet.findUniqueOrThrow({
+      where: { id: walletId },
+      select: { availableUsd: true, frozen: true },
+    }),
+    prisma.walletEntry.findMany({
+      where: { walletId },
+      orderBy: { createdAt: "desc" },
+      take,
+    }),
+  ]);
+  return {
+    balance: Number(wallet.availableUsd),
+    frozen: wallet.frozen,
+    entries,
+  };
+}

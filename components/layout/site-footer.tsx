@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { NewsletterSignup } from "@/components/layout/newsletter-signup";
 
 export function SiteFooter() {
   const t = useTranslations("Footer");
@@ -48,6 +49,8 @@ export function SiteFooter() {
               ))}
             </ul>
           </nav>
+
+          <NewsletterSignup />
         </div>
 
         <p className="text-muted-foreground mt-8 border-t pt-6 text-xs">

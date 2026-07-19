@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, MapPin, ShoppingBag, User } from "lucide-react";
+import { Gift, Lock, MapPin, ShoppingBag, User, Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
@@ -11,6 +11,8 @@ const ITEMS = [
   { href: "/account/addresses", key: "addresses", icon: MapPin },
   { href: "/account/security", key: "security", icon: Lock },
   { href: "/account/orders", key: "orders", icon: ShoppingBag },
+  { href: "/account/wallet", key: "wallet", icon: Wallet },
+  { href: "/account/loyalty", key: "loyalty", icon: Gift },
 ] as const;
 
 export function AccountNav() {

@@ -15,6 +15,7 @@ export async function refundSubOrder(
   subOrderId: string,
   reason: string,
   amountUsd?: number,
+  toWallet?: boolean,
 ): Promise<Result> {
   const adminId = await requireAdminId();
   if (!adminId) return { error: "forbidden" };
@@ -25,6 +26,7 @@ export async function refundSubOrder(
     amountUsd,
     actor: "admin",
     processedBy: adminId,
+    toWallet,
   });
   if (res.error) return { error: res.error };
 

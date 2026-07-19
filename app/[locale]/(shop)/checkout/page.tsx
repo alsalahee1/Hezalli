@@ -28,15 +28,24 @@ export default async function CheckoutPage({
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const cart = await prisma.cart.findUnique({
-    where: { userId: session.user.id },
-    select: {
-      items: {
-        where: { savedForLater: false },
-        select: { variantId: true, storeId: true, quantity: true },
+  const [cart, buyer] = await Promise.all([
+    prisma.cart.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        items: {
+          where: { savedForLater: false },
+          select: { variantId: true, storeId: true, quantity: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        loyaltyPoints: true,
+        wallet: { select: { availableUsd: true } },
+      },
+    }),
+  ]);
   let stubs = cart?.items ?? [];
   if (selected.length > 0) {
     stubs = stubs.filter((i) => selected.includes(i.variantId));
@@ -91,6 +100,8 @@ export default async function CheckoutPage({
         addresses={addresses}
         shippingByAddress={shippingByAddress}
         codEnabled={codEnabled}
+        points={buyer?.loyaltyPoints ?? 0}
+        walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
       />
     </main>
   );

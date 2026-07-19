@@ -31,7 +31,11 @@ import {
 
 async function getProduct(slug: string) {
   return prisma.product.findFirst({
-    where: { slug, status: "ACTIVE", store: { status: "ACTIVE" } },
+    where: {
+      slug,
+      status: "ACTIVE",
+      store: { status: "ACTIVE", isOnVacation: false },
+    },
     include: {
       images: { orderBy: { position: "asc" } },
       variants: { where: { isActive: true }, orderBy: { sku: "asc" } },
@@ -82,6 +86,14 @@ export default async function ProductPage({
   const { rsort, rpage } = await searchParams;
   const product = await getProduct(slug);
   if (!product) notFound();
+
+  // Bump the lifetime view counter that powers the seller analytics traffic /
+  // conversion metrics (Step 17.7). Fire-and-forget so analytics never blocks
+  // or breaks the page; a batched/queued counter can replace this at scale
+  // (Step 17.10).
+  void prisma.product
+    .update({ where: { id: product.id }, data: { views: { increment: 1 } } })
+    .catch(() => {});
 
   // Track recently-viewed for signed-in users (guests are tracked client-side).
   const session = await auth();

@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
 import { previewCoupon } from "@/lib/actions/coupon";
 import type { CartLine } from "@/lib/cart-types";
+import { capRedemption, pointsToUsd } from "@/lib/loyalty-shared";
 import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -27,11 +28,15 @@ export function CheckoutFlow({
   addresses,
   shippingByAddress,
   codEnabled = true,
+  points = 0,
+  walletBalance = 0,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
   shippingByAddress: Record<string, Record<string, number>>;
   codEnabled?: boolean;
+  points?: number;
+  walletBalance?: number;
 }) {
   const t = useTranslations("Checkout");
   const locale = useLocale();
@@ -47,19 +52,7 @@ export function CheckoutFlow({
   const [discount, setDiscount] = useState(0);
   const [couponErr, setCouponErr] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
-
-  const METHODS: {
-    key: PaymentMethodChoice;
-    label: string;
-    hint: string;
-  }[] = [
-    ...(codEnabled
-      ? [{ key: "COD" as const, label: t("cod"), hint: t("codHint") }]
-      : []),
-    { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
-    { key: "USDT", label: t("usdt"), hint: t("usdtHint") },
-    { key: "WALLET", label: t("wallet"), hint: t("walletHint") },
-  ];
+  const [usePoints, setUsePoints] = useState(false);
 
   const groups = useMemo(() => {
     const map = new Map<
@@ -84,7 +77,50 @@ export function CheckoutFlow({
 
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
-  const grandTotal = Math.max(0, itemsTotal + shippingTotal - discount);
+  // Points redeem as a discount, mutually exclusive with a coupon.
+  const canRedeem = points > 0 && !appliedCode;
+  const redeem =
+    usePoints && canRedeem
+      ? capRedemption(points, points, itemsTotal)
+      : { pointsUsed: 0, discountUsd: 0 };
+  const grandTotal = Math.max(
+    0,
+    itemsTotal + shippingTotal - discount - redeem.discountUsd,
+  );
+
+  // HezalliPay is offered only when the wallet can cover the whole order; it is
+  // shown disabled (with the balance) otherwise so buyers know it exists.
+  const walletAffordable = walletBalance >= grandTotal && grandTotal > 0;
+  const METHODS: {
+    key: PaymentMethodChoice;
+    label: string;
+    hint: string;
+    disabled?: boolean;
+  }[] = [
+    ...(codEnabled
+      ? [{ key: "COD" as const, label: t("cod"), hint: t("codHint") }]
+      : []),
+    {
+      key: "HEZALLI_BALANCE",
+      label: t("hezalliBalance"),
+      hint: t("hezalliBalanceHint", {
+        balance: formatUsd(walletBalance, locale),
+      }),
+      disabled: !walletAffordable,
+    },
+    { key: "BANK_TRANSFER", label: t("bank"), hint: t("bankHint") },
+    { key: "USDT", label: t("usdt"), hint: t("usdtHint") },
+    { key: "LOCAL_WALLET", label: t("wallet"), hint: t("walletHint") },
+  ];
+
+  // If the selected wallet method became unaffordable (a coupon/points change
+  // raised the total), fall back to the first available method for submission
+  // without discarding the user's explicit choice.
+  const fallbackMethod: PaymentMethodChoice = codEnabled
+    ? "COD"
+    : "BANK_TRANSFER";
+  const effectiveMethod: PaymentMethodChoice =
+    method === "HEZALLI_BALANCE" && !walletAffordable ? fallbackMethod : method;
 
   const applyCoupon = async () => {
     setCouponErr(null);
@@ -130,8 +166,9 @@ export function CheckoutFlow({
         variantId: l.variantId,
         quantity: l.quantity,
       })),
-      paymentMethod: method,
+      paymentMethod: effectiveMethod,
       couponCode: appliedCode || undefined,
+      redeemPoints: redeem.pointsUsed || undefined,
     });
     if (res.error) {
       setError(res.error);
@@ -139,11 +176,13 @@ export function CheckoutFlow({
       return;
     }
     // Full navigation so the cart provider re-reads the now-empty server cart.
-    // Prepaid orders go to the order page to submit payment proof.
-    const dest =
-      method === "COD"
-        ? `/${locale}/checkout/success?order=${res.orderId}`
-        : `/${locale}/account/orders/${res.orderId}`;
+    // Instantly-settled orders (COD, wallet) go to the success page; manual
+    // prepaid orders go to the order page to submit payment proof.
+    const instant =
+      effectiveMethod === "COD" || effectiveMethod === "HEZALLI_BALANCE";
+    const dest = instant
+      ? `/${locale}/checkout/success?order=${res.orderId}`
+      : `/${locale}/account/orders/${res.orderId}`;
     window.location.assign(dest);
   };
 
@@ -241,17 +280,21 @@ export function CheckoutFlow({
               <label
                 key={m.key}
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm",
-                  method === m.key
+                  "flex items-center gap-3 rounded-md border p-3 text-sm",
+                  m.disabled
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer",
+                  effectiveMethod === m.key
                     ? "border-primary bg-primary/5"
-                    : "hover:border-muted-foreground/40",
+                    : !m.disabled && "hover:border-muted-foreground/40",
                 )}
               >
                 <input
                   type="radio"
                   name="method"
                   className="size-4"
-                  checked={method === m.key}
+                  checked={effectiveMethod === m.key}
+                  disabled={m.disabled}
                   onChange={() => setMethod(m.key)}
                 />
                 <span className="font-medium">{m.label}</span>
@@ -259,7 +302,8 @@ export function CheckoutFlow({
               </label>
             ))}
           </div>
-          {method !== "COD" ? (
+          {effectiveMethod !== "COD" &&
+          effectiveMethod !== "HEZALLI_BALANCE" ? (
             <p className="text-muted-foreground mt-2 text-xs">
               {t("prepaidNote")}
             </p>
@@ -301,6 +345,29 @@ export function CheckoutFlow({
                 {t(`coupon_${couponErr}`)}
               </p>
             ) : null}
+
+            {points > 0 ? (
+              <label
+                className={cn(
+                  "mt-3 flex items-start gap-2 text-sm",
+                  !canRedeem && "opacity-50",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4"
+                  checked={usePoints && canRedeem}
+                  disabled={!canRedeem}
+                  onChange={(e) => setUsePoints(e.target.checked)}
+                />
+                <span>
+                  {t("redeemPoints", {
+                    points,
+                    usd: formatUsd(pointsToUsd(points), locale),
+                  })}
+                </span>
+              </label>
+            ) : null}
           </div>
         </section>
       </div>
@@ -334,6 +401,12 @@ export function CheckoutFlow({
             <div className="flex justify-between text-emerald-600">
               <span>{t("discount")}</span>
               <span dir="ltr">−{formatUsd(discount, locale)}</span>
+            </div>
+          ) : null}
+          {redeem.discountUsd > 0 ? (
+            <div className="flex justify-between text-emerald-600">
+              <span>{t("pointsDiscount", { points: redeem.pointsUsed })}</span>
+              <span dir="ltr">−{formatUsd(redeem.discountUsd, locale)}</span>
             </div>
           ) : null}
           <div className="flex justify-between border-t pt-1 text-base font-semibold">

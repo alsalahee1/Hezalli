@@ -9,6 +9,7 @@ import {
   History,
   Images,
   LayoutDashboard,
+  Mail,
   MapPin,
   Menu,
   MessageSquare,
@@ -25,6 +26,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Wrench,
   Zap,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -38,12 +40,14 @@ type NavItem = { href: string; key: string; icon: LucideIcon };
 
 const SELLER_NAV: NavItem[] = [
   { href: "/seller", key: "dashboard", icon: LayoutDashboard },
+  { href: "/seller/analytics", key: "analytics", icon: BarChart3 },
   { href: "/seller/products", key: "products", icon: Package },
   { href: "/seller/orders", key: "orders", icon: ShoppingBag },
   { href: "/seller/finance", key: "finance", icon: Wallet },
   { href: "/seller/returns", key: "returns", icon: ArrowLeftRight },
   { href: "/seller/chat", key: "chat", icon: MessageSquare },
   { href: "/seller/promotions", key: "promotions", icon: Tag },
+  { href: "/seller/tools", key: "tools", icon: Wrench },
   { href: "/seller/settings", key: "settings", icon: Settings },
 ];
 
@@ -64,6 +68,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/brands", key: "brands", icon: Tags },
   { href: "/admin/promotions", key: "promotions", icon: Tag },
   { href: "/admin/flash-sales", key: "flashSales", icon: Zap },
+  { href: "/admin/newsletter", key: "newsletter", icon: Mail },
   { href: "/admin/pages", key: "pages", icon: ScrollText },
   { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/audit", key: "audit", icon: History },
