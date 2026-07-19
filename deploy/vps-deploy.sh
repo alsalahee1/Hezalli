@@ -202,6 +202,11 @@ done
 # 4) Public HTTPS + certificate (only meaningful once DNS points here)
 PUB="$(curl -sI https://hezalli.com --max-time 15 2>&1 | head -1)"
 log "  public https://hezalli.com : ${PUB:-no response yet}"
+
+# 5) What is actually IN the app's database? (read-only row counts)
+log "  DB the app uses: $(docker exec hezalli-app printenv DATABASE_URL 2>/dev/null | sed -E 's#(://[^:]+:)[^@]*@#\1***@#' || echo '?')"
+DBCOUNTS="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select '\''User='\''||count(*) from \"User\" union all select '\''Product='\''||count(*) from \"Product\" union all select '\''ActiveProduct='\''||count(*) from \"Product\" where status='\''ACTIVE'\'' union all select '\''Store='\''||count(*) from \"Store\" union all select '\''Category='\''||count(*) from \"Category\""' 2>&1)"
+log "  Row counts: $(echo "$DBCOUNTS" | tr '\n' ' ')"
 set -e
 
 cat <<'EOF'
