@@ -4,9 +4,9 @@
 // slow LLM turn never triggers a redelivery.
 import "server-only";
 
+import { startLink, unlinkChat } from "@/lib/ai/account-link";
 import { formatReplyText, runChannelTurn } from "@/lib/ai/channel";
-import { recordTtsUsage } from "@/lib/ai/guards";
-import { synthesizeVoice } from "@/lib/ai/tts";
+import { renderVoice, wantsVoice } from "@/lib/ai/voice-reply";
 import { routing } from "@/i18n/routing";
 
 import {
@@ -16,19 +16,7 @@ import {
   sendTelegramVoice,
 } from "./telegram";
 
-type ReplyMode = "text" | "voice" | "both" | "match";
-
-function replyMode(): ReplyMode {
-  const m = (process.env.BOT_REPLY_MODE || "text").toLowerCase();
-  return m === "voice" || m === "both" || m === "match" ? m : "text";
-}
-
-function ttsStyle(locale: string): string {
-  if (process.env.BOT_TTS_STYLE) return process.env.BOT_TTS_STYLE;
-  return locale === "ar"
-    ? "قل هذا بأسلوب ودّي وطبيعي كأنك مساعد متجر لطيف:"
-    : "Say this warmly and naturally, like a friendly shop assistant:";
-}
+const PLATFORM = "telegram";
 
 type TelegramFile = { file_id: string; mime_type?: string };
 type TelegramMessage = {
@@ -63,6 +51,18 @@ function errorText(locale: string): string {
     : "Sorry, something went wrong. Please try again shortly.";
 }
 
+function linkText(locale: string, url: string): string {
+  return locale === "ar"
+    ? `لربط حسابك في هزلي (لأسأل عن طلباتك)، افتح هذا الرابط وأنت مسجّل الدخول:\n${url}\nالرابط صالح لمدة 10 دقائق.`
+    : `To connect your Hezalli account (so I can check your orders), open this link while signed in:\n${url}\nThis link is valid for 10 minutes.`;
+}
+
+function unlinkText(locale: string): string {
+  return locale === "ar"
+    ? "تم إلغاء ربط حسابك. لن أتمكن من رؤية طلباتك بعد الآن."
+    : "Your account has been unlinked. I can no longer see your orders.";
+}
+
 export async function processTelegramUpdate(
   update: TelegramUpdate,
 ): Promise<void> {
@@ -84,46 +84,43 @@ export async function processTelegramUpdate(
       return;
     }
 
+    // Account-linking commands.
+    if (text === "/link") {
+      const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ?? "";
+      const code = await startLink(PLATFORM, String(chatId));
+      const url = `${base}/${locale}/account/link-telegram?code=${code}`;
+      await sendTelegramMessage(chatId, linkText(locale, url));
+      return;
+    }
+    if (text === "/unlink") {
+      await unlinkChat(PLATFORM, String(chatId));
+      await sendTelegramMessage(chatId, unlinkText(locale));
+      return;
+    }
+
     await sendTelegramTyping(chatId);
     const audio = voiceFile
       ? await downloadTelegramFile(voiceFile.file_id, voiceFile.mime_type)
       : null;
 
     const { reply, capped } = await runChannelTurn({
-      platform: "telegram",
+      platform: PLATFORM,
       chatId: String(chatId),
       userText: text.slice(0, 2000),
       locale,
       audio: audio ?? undefined,
     });
 
-    // Decide voice vs text. Never synthesize on a capped turn (that would spend
-    // more against the very cap we just hit). In 'match' mode we mirror the
-    // customer: a voice note gets a voice reply.
-    const mode = replyMode();
-    const wantVoice =
-      !capped &&
-      (mode === "voice" ||
-        mode === "both" ||
-        (mode === "match" && Boolean(voiceFile)));
-
+    // Speak the reply when policy says so; text always carries product links.
     let sentVoice = false;
-    if (wantVoice) {
-      const tts = await synthesizeVoice(reply.text, {
-        voice: process.env.BOT_TTS_VOICE,
-        style: ttsStyle(locale),
-      });
-      if (tts) {
-        sentVoice = await sendTelegramVoice(chatId, tts.ogg);
-        if (sentVoice)
-          void recordTtsUsage(tts.tokens, Date.now()).catch(() => {});
-      }
+    if (
+      wantsVoice({ isVoiceIn: Boolean(voiceFile), capped: Boolean(capped) })
+    ) {
+      const ogg = await renderVoice(reply.text, locale);
+      if (ogg) sentVoice = await sendTelegramVoice(chatId, ogg);
     }
-
-    // Send text unless this was a pure, successful voice reply with no product
-    // links to surface. Links must always be tappable, so text goes out whenever
-    // there are cards, or when voice didn't send (fallback).
-    const sendText = mode !== "voice" || !sentVoice || reply.cards.length > 0;
+    const voiceOnly = process.env.BOT_REPLY_MODE?.toLowerCase() === "voice";
+    const sendText = !voiceOnly || !sentVoice || reply.cards.length > 0;
     if (sendText) {
       await sendTelegramMessage(chatId, formatReplyText(reply, locale));
     }

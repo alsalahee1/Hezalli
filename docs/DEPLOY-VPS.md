@@ -132,8 +132,39 @@ Set `BOT_REPLY_MODE`:
 If ffmpeg is missing or TTS fails, the bot silently falls back to text — it
 never goes silent. Voice replies count toward the monthly spend cap.
 
+## 8. Telegram → account linking
+
+Linked users can ask the bot about their real orders. No extra config:
+
+1. In the bot, the user sends **`/link`**.
+2. The bot replies with a one-time link to `…/account/link-telegram?code=…`.
+3. They open it **while signed in** on the site and confirm. Done.
+
+`/unlink` in the bot (or the "Disconnect" button on **Account → Connections**)
+removes the link. Codes expire after 10 minutes.
+
+## 9. WhatsApp (Meta Cloud API)
+
+The same assistant (text + voice) also runs on WhatsApp.
+
+1. At **developers.facebook.com** create an app → add the **WhatsApp** product.
+2. From the API setup page copy into `.env`:
+   ```bash
+   WHATSAPP_TOKEN=...              # system-user access token (make it permanent)
+   WHATSAPP_PHONE_NUMBER_ID=...    # the sending number's ID
+   WHATSAPP_VERIFY_TOKEN=...       # any string you choose
+   WHATSAPP_APP_SECRET=...         # App settings → Basic (enables signature checks)
+   ```
+3. In the app's **WhatsApp → Configuration → Webhook**, set:
+   - Callback URL: `https://your-domain.com/api/whatsapp/webhook`
+   - Verify token: the same `WHATSAPP_VERIFY_TOKEN`
+   - Subscribe to the **messages** field.
+4. Restart the service. Message your WhatsApp number — text and voice both work
+   (voice uses the same ffmpeg path as Telegram).
+
 ## Notes
 - Redeploys: `git pull && npm ci && npm run build && sudo systemctl restart hezalli`
   (migrations run automatically on start).
-- The on-site widget and Telegram bot share `GEMINI_API_KEY`.
+- The on-site widget, Telegram bot, and WhatsApp bot all share `GEMINI_API_KEY`
+  and the same cost guards / spend cap.
 - Rotate any API keys/tokens that were ever shared in plaintext.

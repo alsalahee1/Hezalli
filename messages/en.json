@@ -336,6 +336,7 @@
     "addresses": "Addresses",
     "security": "Security",
     "orders": "Orders",
+    "connections": "Connections",
     "profileTitle": "Profile",
     "profileDesc": "Update your name and contact details.",
     "name": "Full name",
@@ -1345,6 +1346,21 @@
     "markAllRead": "Mark all read",
     "empty": "You're all caught up.",
     "seeAll": "See all notifications"
+  },
+  "BotLink": {
+    "title": "Connect Telegram",
+    "subtitle": "Link your Telegram chat so the assistant can check your orders for you.",
+    "confirmPrompt": "Link this Telegram chat to your Hezalli account?",
+    "confirmButton": "Link my account",
+    "linked": "Your Telegram is connected.",
+    "linkedHelp": "You can now ask the Telegram bot about your orders. It only shares your info in that chat.",
+    "unlink": "Disconnect",
+    "notLinked": "Your Telegram isn't connected yet.",
+    "step1": "Open the Hezalli bot in Telegram.",
+    "step2": "Send the command /link",
+    "step3": "Tap the link it replies with to finish here.",
+    "error_invalid": "That link code is invalid. Send /link in the bot again.",
+    "error_expired": "That link code expired. Send /link in the bot again."
   },
   "Chat": {
     "title": "Messages",
