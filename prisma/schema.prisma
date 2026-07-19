@@ -1016,9 +1016,28 @@ model BotConversation {
   platform  String
   chatId    String
   messages  Json     @default("[]")
+  // Recent request timestamps (ms) inside the rolling hourly window — the
+  // per-user rate limit. Trimmed on each turn.
+  rateHits  Json     @default("[]")
+  // Lifetime per-chat counters (light analytics).
+  msgCount  Int      @default(0)
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([platform, chatId])
   @@index([updatedAt])
+}
+
+// Daily aggregate of bot LLM usage, used for the global daily message backstop
+// and the monthly spend estimate/cap. One row per calendar day (UTC).
+model BotDailyUsage {
+  id        String   @id @default(cuid())
+  day       String   @unique // YYYY-MM-DD (UTC)
+  messages  Int      @default(0)
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

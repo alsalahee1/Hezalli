@@ -57,3 +57,28 @@ export async function sendTelegramTyping(
     // Non-critical — ignore.
   }
 }
+
+/**
+ * Download an incoming voice note / audio file and return it base64-encoded so
+ * Gemini can transcribe and answer it. Returns null on any failure (the caller
+ * falls back to treating the message as text-only).
+ */
+export async function downloadTelegramFile(
+  fileId: string,
+  fallbackMime = "audio/ogg",
+): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const t = token();
+    const info = (await call("getFile", { file_id: fileId })) as {
+      result?: { file_path?: string };
+    };
+    const path = info.result?.file_path;
+    if (!path) return null;
+    const res = await fetch(`${API_BASE}/file/bot${t}/${path}`);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return { data: buf.toString("base64"), mimeType: fallbackMime };
+  } catch {
+    return null;
+  }
+}

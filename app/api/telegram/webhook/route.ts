@@ -1,44 +1,15 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
-import { formatReplyText, runChannelTurn } from "@/lib/ai/channel";
 import { geminiConfigured } from "@/lib/ai/gemini";
+import { telegramConfigured } from "@/lib/integrations/telegram";
+import { seenTelegramUpdate } from "@/lib/integrations/telegram-dedup";
 import {
-  sendTelegramMessage,
-  sendTelegramTyping,
-  telegramConfigured,
-} from "@/lib/integrations/telegram";
-import { routing } from "@/i18n/routing";
+  processTelegramUpdate,
+  type TelegramUpdate,
+} from "@/lib/integrations/telegram-runtime";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-type TelegramMessage = {
-  chat?: { id?: number };
-  text?: string;
-  from?: { language_code?: string };
-};
-type TelegramUpdate = {
-  message?: TelegramMessage;
-  edited_message?: TelegramMessage;
-};
-
-function resolveLocale(code?: string): "ar" | "en" {
-  if (code?.startsWith("ar")) return "ar";
-  if (code?.startsWith("en")) return "en";
-  return routing.defaultLocale;
-}
-
-function startText(locale: string): string {
-  return locale === "ar"
-    ? "مرحبًا بك في مساعد هزلي! 🛍️\nاكتب ما تبحث عنه وسأساعدك في العثور على المنتجات ومقارنة الأسعار."
-    : "Welcome to the Hezalli assistant! 🛍️\nTell me what you're looking for and I'll help you find products and compare prices.";
-}
-
-function errorText(locale: string): string {
-  return locale === "ar"
-    ? "عذرًا، حدث خطأ ما. حاول مرة أخرى بعد قليل."
-    : "Sorry, something went wrong. Please try again shortly.";
-}
 
 export async function POST(req: NextRequest) {
   // Ack quietly when the bot isn't fully configured so Telegram stops retrying.
@@ -59,37 +30,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const message = update.message ?? update.edited_message;
-  const chatId = message?.chat?.id;
-  const text = (message?.text ?? "").trim();
-  if (!chatId || !text) return NextResponse.json({ ok: true });
-
-  const locale = resolveLocale(message?.from?.language_code);
-
-  try {
-    if (text === "/start") {
-      await sendTelegramMessage(chatId, startText(locale));
-      return NextResponse.json({ ok: true });
-    }
-
-    await sendTelegramTyping(chatId);
-    const reply = await runChannelTurn({
-      platform: "telegram",
-      chatId: String(chatId),
-      userText: text.slice(0, 2000),
-      locale,
-    });
-    await sendTelegramMessage(chatId, formatReplyText(reply, locale));
-  } catch (err) {
-    console.error("[telegram] handler failed:", err);
-    try {
-      await sendTelegramMessage(chatId, errorText(locale));
-    } catch {
-      // Give up silently — we still ack the update below.
-    }
+  // Drop a redelivered update: Telegram resends the same update_id if we ACK
+  // slowly, and reprocessing would run the customer's turn twice.
+  const updateId =
+    typeof update.update_id === "number" ? update.update_id : null;
+  if (updateId !== null && seenTelegramUpdate(updateId)) {
+    return NextResponse.json({ ok: true });
   }
 
-  // Always 200 so Telegram considers the update delivered (we've already
-  // replied or logged the failure).
+  // Run the (slow) LLM turn AFTER responding, so we never exceed Telegram's
+  // delivery timeout. `after` keeps the function alive until it settles.
+  after(() =>
+    processTelegramUpdate(update).catch((err) =>
+      console.error("[telegram webhook] processing failed:", err),
+    ),
+  );
+
   return NextResponse.json({ ok: true });
 }

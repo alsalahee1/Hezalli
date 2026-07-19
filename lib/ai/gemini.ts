@@ -34,7 +34,8 @@ export type FunctionCall = { name: string; args: Record<string, unknown> };
 export type Part =
   | { text: string }
   | { functionCall: FunctionCall }
-  | { functionResponse: { name: string; response: Record<string, unknown> } };
+  | { functionResponse: { name: string; response: Record<string, unknown> } }
+  | { inlineData: { mimeType: string; data: string } };
 
 export type Content = { role: "user" | "model"; parts: Part[] };
 
@@ -49,9 +50,12 @@ export type FunctionDeclaration = {
   };
 };
 
+export type TokenUsage = { in: number; out: number };
+
 type GenerateResult = {
   parts: Part[];
   finishReason: string | null;
+  usage: TokenUsage;
 };
 
 /** Send one `generateContent` request and return the model's parts. */
@@ -102,12 +106,20 @@ export async function generateContent(opts: {
       content?: { parts?: Part[] };
       finishReason?: string;
     }[];
+    usageMetadata?: {
+      promptTokenCount?: number;
+      candidatesTokenCount?: number;
+    };
   };
 
   const candidate = data.candidates?.[0];
   return {
     parts: candidate?.content?.parts ?? [],
     finishReason: candidate?.finishReason ?? null,
+    usage: {
+      in: data.usageMetadata?.promptTokenCount ?? 0,
+      out: data.usageMetadata?.candidatesTokenCount ?? 0,
+    },
   };
 }
 
