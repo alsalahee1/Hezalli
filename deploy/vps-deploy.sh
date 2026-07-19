@@ -25,6 +25,24 @@ log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 err()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; }
 
+# Our compose services use fixed container names (hezalli-db/app/migrate).
+# Docker container names are unique per host, so if a stale container from a
+# *different* compose project still holds one of those names, `compose up`
+# would fail with "name is already in use". Free any such foreign name here.
+# This only removes the CONTAINER, never a named data volume, and it never
+# touches a container that belongs to our own ("deploy") project.
+free_container_names() {
+  for cname in "$@"; do
+    cid="$(docker ps -aq -f "name=^/${cname}$" 2>/dev/null || true)"
+    [ -n "$cid" ] || continue
+    proj="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$cid" 2>/dev/null || true)"
+    if [ "$proj" != "deploy" ]; then
+      warn "Freeing container name '${cname}' held by stale project '${proj:-<none>}' (removing container only, data volumes are kept)"
+      docker rm -f "$cid" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
 # --- 1. Docker --------------------------------------------------------------
 if ! command -v docker >/dev/null 2>&1; then
   log "Installing Docker ..."
@@ -127,6 +145,7 @@ $(cat "$m"/*.y*ml "$m"/*.toml 2>/dev/null)"
   grep -q '^TRAEFIK_ENTRYPOINT='   .env && sed -i "s|^TRAEFIK_ENTRYPOINT=.*|TRAEFIK_ENTRYPOINT=${ENTRYPOINT}|"          .env || echo "TRAEFIK_ENTRYPOINT=${ENTRYPOINT}"          >> .env
   grep -q '^TRAEFIK_CERTRESOLVER=' .env && sed -i "s|^TRAEFIK_CERTRESOLVER=.*|TRAEFIK_CERTRESOLVER=${CERTRESOLVER}|"     .env || echo "TRAEFIK_CERTRESOLVER=${CERTRESOLVER}"     >> .env
 
+  free_container_names hezalli-db hezalli-app hezalli-migrate
   log "Building and starting Hezalli (Traefik mode) ..."
   docker compose -f deploy/docker-compose.traefik.yml --env-file .env up -d --build
   docker compose -f deploy/docker-compose.traefik.yml --env-file .env ps
@@ -136,6 +155,7 @@ elif [ -z "$P80" ] && [ -z "$P443" ]; then
   # Nothing on 80/443 — safe to run the bundled Caddy stack.
   # -------------------------------------------------------------------------
   log "Ports 80/443 are free — deploying with the bundled Caddy (automatic HTTPS)."
+  free_container_names hezalli-db hezalli-app hezalli-migrate hezalli-caddy
   docker compose up -d --build
   docker compose ps
 
