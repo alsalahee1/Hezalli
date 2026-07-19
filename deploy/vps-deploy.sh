@@ -174,6 +174,19 @@ else
   warn "Tell me which proxy it is (nginx/caddy) and I'll generate the exact config."
 fi
 
+# --- One-off DESTRUCTIVE demo seed ------------------------------------------
+# Runs only when deploy/RUN_SEED_ONCE exists in the repo. prisma/seed.ts wipes
+# every table and inserts the full demo dataset (admin, sellers, buyers,
+# products, orders). After it runs once, the flag file is removed in a follow-up
+# commit so a later deploy never wipes live data.
+if [ -f deploy/RUN_SEED_ONCE ]; then
+  warn "RUN_SEED_ONCE present — running the DESTRUCTIVE demo seed (wipes & reseeds all tables)."
+  docker compose -f deploy/docker-compose.traefik.yml --env-file .env run --rm \
+    -e SEED_ALLOWED=true migrate npx tsx prisma/seed.ts \
+    && log "Demo seed completed." \
+    || warn "Demo seed FAILED — see output above."
+fi
+
 # --- Post-deploy verification (server-side; safe, read-only) ----------------
 set +e
 SERVER_IP="$(curl -s --max-time 10 https://api.ipify.org)"
