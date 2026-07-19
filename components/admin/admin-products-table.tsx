@@ -47,7 +47,7 @@ function ModerationCell({ row }: { row: AdminProductRow }) {
   if (row.status === "ACTIVE") {
     return (
       <div className="flex flex-col items-end gap-1">
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-end gap-1">
           <Input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -101,6 +101,89 @@ function ModerationCell({ row }: { row: AdminProductRow }) {
   return <span className="text-muted-foreground text-xs">—</span>;
 }
 
+function StatusBadge({ status }: { status: AdminProductRow["status"] }) {
+  const t = useTranslations("AdminProducts");
+  return (
+    <span
+      className={cn(
+        "rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap",
+        statusBadge[status] ?? "bg-muted",
+      )}
+    >
+      {t(`status_${status}`)}
+    </span>
+  );
+}
+
+function ProductCover({ row }: { row: AdminProductRow }) {
+  return (
+    <div className="bg-muted size-12 shrink-0 overflow-hidden rounded">
+      {row.coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={row.coverUrl} alt="" className="size-full object-cover" />
+      ) : null}
+    </div>
+  );
+}
+
+function SellerLink({ row }: { row: AdminProductRow }) {
+  return (
+    <Link
+      href={`/store/${row.storeSlug}`}
+      className="text-primary inline-flex items-center gap-1 hover:underline"
+    >
+      {row.storeName}
+      <ExternalLink className="size-3" />
+    </Link>
+  );
+}
+
+/** Stacked card list — the native-app-style layout used on small screens. */
+function AdminProductsCards({ rows }: { rows: AdminProductRow[] }) {
+  const t = useTranslations("AdminProducts");
+  const format = useFormatter();
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
+
+  return (
+    <ul className="space-y-3 md:hidden">
+      {rows.map((row) => (
+        <li key={row.id} className="rounded-lg border p-3">
+          <div className="flex items-start gap-3">
+            <ProductCover row={row} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-medium break-words">{row.title}</span>
+                <StatusBadge status={row.status} />
+              </div>
+              <div className="text-muted-foreground mt-1 text-xs">
+                <SellerLink row={row} />
+              </div>
+            </div>
+          </div>
+
+          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <dt className="text-muted-foreground text-xs">{t("category")}</dt>
+              <dd>{row.categoryLabel}</dd>
+            </div>
+            <div className="text-end">
+              <dt className="text-muted-foreground text-xs">{t("price")}</dt>
+              <dd dir="ltr" className="inline-block">
+                {money(row.price)}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-3 border-t pt-3">
+            <ModerationCell row={row} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function AdminProductsTable({ rows }: { rows: AdminProductRow[] }) {
   const t = useTranslations("AdminProducts");
   const format = useFormatter();
@@ -108,8 +191,10 @@ export function AdminProductsTable({ rows }: { rows: AdminProductRow[] }) {
     format.number(n, { style: "currency", currency: "USD" });
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[880px] text-sm">
+    <>
+      <AdminProductsCards rows={rows} />
+      <div className="hidden overflow-x-auto rounded-lg border md:block">
+        <table className="w-full min-w-[880px] text-sm">
         <thead>
           <tr className="bg-muted/50">
             <th className="px-3 py-2 text-start font-medium">{t("product")}</th>
@@ -131,27 +216,12 @@ export function AdminProductsTable({ rows }: { rows: AdminProductRow[] }) {
             <tr key={row.id} className="border-t align-top">
               <td className="px-3 py-2">
                 <div className="flex items-center gap-3">
-                  <div className="bg-muted size-10 shrink-0 overflow-hidden rounded">
-                    {row.coverUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={row.coverUrl}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    ) : null}
-                  </div>
+                  <ProductCover row={row} />
                   <span className="font-medium">{row.title}</span>
                 </div>
               </td>
               <td className="px-3 py-2">
-                <Link
-                  href={`/store/${row.storeSlug}`}
-                  className="text-primary inline-flex items-center gap-1 hover:underline"
-                >
-                  {row.storeName}
-                  <ExternalLink className="size-3" />
-                </Link>
+                <SellerLink row={row} />
               </td>
               <td className="px-3 py-2 whitespace-nowrap">
                 {row.categoryLabel}
@@ -160,14 +230,7 @@ export function AdminProductsTable({ rows }: { rows: AdminProductRow[] }) {
                 {money(row.price)}
               </td>
               <td className="px-3 py-2">
-                <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-xs font-medium",
-                    statusBadge[row.status] ?? "bg-muted",
-                  )}
-                >
-                  {t(`status_${row.status}`)}
-                </span>
+                <StatusBadge status={row.status} />
               </td>
               <td className="px-3 py-2">
                 <ModerationCell row={row} />
@@ -176,6 +239,7 @@ export function AdminProductsTable({ rows }: { rows: AdminProductRow[] }) {
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

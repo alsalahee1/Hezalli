@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "BotDailyUsage" ADD COLUMN "ttsTokens" INTEGER NOT NULL DEFAULT 0;

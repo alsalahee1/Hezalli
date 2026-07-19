@@ -35,7 +35,48 @@ export default async function AdminAuditPage() {
           {t("empty")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <>
+          <ul className="space-y-3 md:hidden">
+            {logs.map((l) => (
+              <li key={l.id} className="rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-mono text-xs font-medium break-all">
+                    {l.action}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+                    {format.dateTime(l.createdAt, {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                </div>
+                <dl className="mt-2 space-y-1 text-sm">
+                  <div className="flex gap-2">
+                    <dt className="text-muted-foreground text-xs">
+                      {t("actor")}:
+                    </dt>
+                    <dd className="text-xs">
+                      {actorById.get(l.actorId) ?? l.actorId}
+                    </dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-muted-foreground text-xs">
+                      {t("entity")}:
+                    </dt>
+                    <dd className="font-mono text-xs">
+                      {l.entity}#{l.entityId.slice(-6)}
+                    </dd>
+                  </div>
+                  {l.meta ? (
+                    <dd className="text-muted-foreground font-mono text-[11px] break-all">
+                      {JSON.stringify(l.meta)}
+                    </dd>
+                  ) : null}
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-lg border md:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="bg-muted/50">
@@ -79,7 +120,8 @@ export default async function AdminAuditPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

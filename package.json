@@ -22,6 +22,7 @@
     "db:seed:if-empty": "tsx prisma/seed-if-empty.ts",
     "db:ensure-categories": "tsx prisma/ensure-categories.ts",
     "db:generate": "prisma generate",
+    "telegram:webhook": "tsx scripts/set-telegram-webhook.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -8,6 +8,7 @@ import {
   textFrom,
   type Content,
   type Part,
+  type TokenUsage,
 } from "./gemini";
 import {
   runTool,
@@ -21,9 +22,13 @@ const MAX_STEPS = 4;
 
 export type ChatMessage = { role: "user" | "assistant"; text: string };
 
+/** An audio clip (e.g. a Telegram voice note) for Gemini to transcribe + answer. */
+export type AudioInput = { data: string; mimeType: string };
+
 export type AssistantReply = {
   text: string;
   cards: ProductCard[];
+  usage: TokenUsage;
 };
 
 function systemPrompt(locale: string): string {
@@ -60,26 +65,45 @@ function toContents(history: ChatMessage[]): Content[] {
 export async function runAssistant(
   history: ChatMessage[],
   ctx: ToolContext,
+  opts: { audio?: AudioInput } = {},
 ): Promise<AssistantReply> {
   const contents = toContents(history);
   const cards: ProductCard[] = [];
   const seen = new Set<string>();
+  const usage: TokenUsage = { in: 0, out: 0 };
+
+  // Attach an incoming voice note to the latest user turn so Gemini transcribes
+  // and answers it in one call (no separate speech-to-text step needed).
+  if (opts.audio) {
+    const last = contents[contents.length - 1];
+    const audioPart: Part = {
+      inlineData: { mimeType: opts.audio.mimeType, data: opts.audio.data },
+    };
+    if (last?.role === "user") last.parts.unshift(audioPart);
+    else contents.push({ role: "user", parts: [audioPart] });
+  }
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    const { parts } = await generateContent({
+    const res = await generateContent({
       system: systemPrompt(ctx.locale),
       contents,
       tools: TOOL_DECLARATIONS,
     });
+    usage.in += res.usage.in;
+    usage.out += res.usage.out;
 
-    const calls = functionCalls(parts);
+    const calls = functionCalls(res.parts);
     if (calls.length === 0) {
-      return { text: textFrom(parts) || fallbackText(ctx.locale), cards };
+      return {
+        text: textFrom(res.parts) || fallbackText(ctx.locale),
+        cards,
+        usage,
+      };
     }
 
     // Record the model's tool-call turn, then execute each call and feed the
     // results back in a single follow-up turn.
-    contents.push({ role: "model", parts });
+    contents.push({ role: "model", parts: res.parts });
     const responseParts: Part[] = [];
     for (const call of calls) {
       const { result, cards: toolCards } = await runTool(call, ctx);
@@ -97,11 +121,17 @@ export async function runAssistant(
   }
 
   // Ran out of tool budget — ask the model for a final answer with no tools.
-  const { parts } = await generateContent({
+  const res = await generateContent({
     system: systemPrompt(ctx.locale),
     contents,
   });
-  return { text: textFrom(parts) || fallbackText(ctx.locale), cards };
+  usage.in += res.usage.in;
+  usage.out += res.usage.out;
+  return {
+    text: textFrom(res.parts) || fallbackText(ctx.locale),
+    cards,
+    usage,
+  };
 }
 
 function fallbackText(locale: string): string {

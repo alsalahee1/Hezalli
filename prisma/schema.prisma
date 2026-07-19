@@ -1164,3 +1164,48 @@ model AuditLog {
 
   @@index([actorId])
 }
+
+// Short-lived conversation memory for messaging-channel bots (Telegram, and
+// later WhatsApp). One row per (platform, chatId); `messages` holds the last
+// few turns as a JSON array of { role, text } so follow-up questions keep
+// context. Not tied to a Hezalli account — the chat is anonymous by default.
+model BotConversation {
+  id        String   @id @default(cuid())
+  platform  String
+  chatId    String
+  messages  Json     @default("[]")
+  // Recent request timestamps (ms) inside the rolling hourly window — the
+  // per-user rate limit. Trimmed on each turn.
+  rateHits  Json     @default("[]")
+  // Linked Hezalli account (via the /link flow) — lets the bot answer order
+  // questions for this chat. Null = anonymous.
+  userId    String?
+  // One-time code + expiry for the account-linking handshake (set by /link,
+  // consumed on the website while signed in).
+  linkCode          String?   @unique
+  linkCodeExpiresAt DateTime?
+  // Lifetime per-chat counters (light analytics).
+  msgCount  Int      @default(0)
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, chatId])
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+// Daily aggregate of bot LLM usage, used for the global daily message backstop
+// and the monthly spend estimate/cap. One row per calendar day (UTC).
+model BotDailyUsage {
+  id        String   @id @default(cuid())
+  day       String   @unique // YYYY-MM-DD (UTC)
+  messages  Int      @default(0)
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  // Gemini TTS output (audio) tokens, priced separately from text output.
+  ttsTokens Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
