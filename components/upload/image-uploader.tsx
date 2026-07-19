@@ -7,6 +7,24 @@ import { useTranslations } from "next-intl";
 import { compressImage } from "@/lib/image";
 import { Button } from "@/components/ui/button";
 
+// Maps an /api/upload error code to a translation key under the `Upload`
+// namespace, so failures read as a specific reason instead of one blanket
+// "upload failed".
+function errorKeyFor(code: string | undefined): string {
+  switch (code) {
+    case "too_large":
+      return "tooLarge";
+    case "unsupported_type":
+      return "unsupportedType";
+    case "unauthorized":
+      return "notSignedIn";
+    case "storage_failed":
+      return "serverError";
+    default:
+      return "failed";
+  }
+}
+
 // Uploads one image to /api/upload and reports the resulting public URL.
 export function ImageUploader({
   folder,
@@ -28,7 +46,16 @@ export function ImageUploader({
     setError(null);
     setBusy(true);
     try {
-      const blob = await compressImage(file);
+      // Decode + re-encode in the browser. A failure here means the image
+      // couldn't be read (unsupported format like HEIC, or a corrupt file).
+      let blob: Blob;
+      try {
+        blob = await compressImage(file);
+      } catch {
+        setError(t("unsupportedType"));
+        return;
+      }
+
       const fd = new FormData();
       fd.append(
         "file",
@@ -36,10 +63,20 @@ export function ImageUploader({
       );
       fd.append("folder", folder);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        // The route returns { error } JSON; some infra (e.g. body-size limits)
+        // may return non-JSON — fall back to the generic message then.
+        const code = await res
+          .json()
+          .then((d) => (d as { error?: string }).error)
+          .catch(() => undefined);
+        setError(t(errorKeyFor(code)));
+        return;
+      }
       const data = (await res.json()) as { url: string };
       onUploaded(data.url);
     } catch {
+      // Network error / fetch rejected.
       setError(t("failed"));
     } finally {
       setBusy(false);

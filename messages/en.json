@@ -293,7 +293,11 @@
   "Upload": {
     "upload": "Upload image",
     "uploading": "Uploading…",
-    "failed": "Upload failed. Please try again."
+    "failed": "Upload failed. Please try again.",
+    "tooLarge": "Image is too large (max 5 MB). Please choose a smaller one.",
+    "unsupportedType": "That image format isn't supported. Please use JPEG, PNG, WebP, or GIF.",
+    "serverError": "Couldn't save the image right now. Please try again.",
+    "notSignedIn": "Please sign in to upload an image."
   },
   "Auth": {
     "loginTitle": "Welcome back",
