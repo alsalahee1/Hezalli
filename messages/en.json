@@ -1773,7 +1773,9 @@
     "open": "Open",
     "notYourJobTitle": "Parcel not found",
     "notYourJobBody": "This tracking number isn't among your assigned deliveries.",
-    "scanAgain": "Scan again"
+    "scanAgain": "Scan again",
+    "overdue": "Overdue",
+    "dueSoon": "Due soon"
   },
   "Dispatch": {
     "title": "Dispatch",
@@ -1784,6 +1786,11 @@
     "assignTo": "Assign to",
     "unassigned": "Unassigned",
     "saving": "Saving…",
-    "assignError": "Couldn't assign"
+    "assignError": "Couldn't assign",
+    "overdue": "Overdue",
+    "dueSoon": "Due soon",
+    "overdueCount": "{count} overdue",
+    "dueSoonCount": "{count} due soon",
+    "dueByLabel": "Due by"
   }
 }

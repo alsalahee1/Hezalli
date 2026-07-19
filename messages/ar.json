@@ -1773,7 +1773,9 @@
     "open": "فتح",
     "notYourJobTitle": "الطرد غير موجود",
     "notYourJobBody": "رقم التتبع هذا ليس ضمن توصيلاتك المسندة.",
-    "scanAgain": "مسح مجددًا"
+    "scanAgain": "مسح مجددًا",
+    "overdue": "متأخّر",
+    "dueSoon": "قريب"
   },
   "Dispatch": {
     "title": "التوزيع",
@@ -1784,6 +1786,11 @@
     "assignTo": "إسناد إلى",
     "unassigned": "غير مسندة",
     "saving": "جارٍ الحفظ…",
-    "assignError": "تعذّر الإسناد"
+    "assignError": "تعذّر الإسناد",
+    "overdue": "متأخّر",
+    "dueSoon": "قريب الاستحقاق",
+    "overdueCount": "{count} متأخّر",
+    "dueSoonCount": "{count} قريب الاستحقاق",
+    "dueByLabel": "الاستحقاق"
   }
 }

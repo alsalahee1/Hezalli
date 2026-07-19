@@ -1,8 +1,16 @@
 import { getTranslations } from "next-intl/server";
-import { ChevronRight, MapPin, PackageCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronRight,
+  Clock,
+  MapPin,
+  PackageCheck,
+} from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { getPlatformSettings } from "@/lib/settings";
+import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
@@ -12,31 +20,54 @@ export default async function DriverJobsPage() {
   const tShip = await getTranslations("Orders");
   if (!courierId) return null;
 
-  const jobs = await prisma.shipment.findMany({
-    where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
-    orderBy: [{ status: "asc" }, { shippedAt: "asc" }],
-    select: {
-      id: true,
-      status: true,
-      subOrder: {
-        select: {
-          store: { select: { name: true } },
-          order: {
-            select: {
-              id: true,
-              address: {
-                select: {
-                  fullName: true,
-                  city: true,
-                  governorate: true,
+  const [rawJobs, settings] = await Promise.all([
+    prisma.shipment.findMany({
+      where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
+      select: {
+        id: true,
+        status: true,
+        shippedAt: true,
+        subOrder: {
+          select: {
+            shippingMethod: true,
+            store: { select: { name: true } },
+            order: {
+              select: {
+                id: true,
+                address: {
+                  select: {
+                    fullName: true,
+                    city: true,
+                    governorate: true,
+                  },
                 },
               },
             },
           },
         },
       },
-    },
-  });
+    }),
+    getPlatformSettings(),
+  ]);
+
+  const now = new Date();
+  const jobs = rawJobs
+    .map((j) => {
+      const etaMax =
+        j.subOrder.shippingMethod === "EXPRESS"
+          ? settings.express_eta_max_days
+          : settings.std_eta_max_days;
+      const sla = j.shippedAt
+        ? slaState(computeDueBy(j.shippedAt, etaMax), now)
+        : "on_track";
+      return { ...j, sla };
+    })
+    // Most urgent (overdue) first, then oldest.
+    .sort(
+      (a, b) =>
+        slaWeight(a.sla) - slaWeight(b.sla) ||
+        (a.shippedAt?.getTime() ?? 0) - (b.shippedAt?.getTime() ?? 0),
+    );
 
   return (
     <div className="space-y-4">
@@ -75,6 +106,15 @@ export default async function DriverJobsPage() {
                     >
                       {tShip(`shipStatus_${j.status}`)}
                     </span>
+                    {j.sla === "overdue" ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-red-600">
+                        <AlertTriangle className="size-3" /> {t("overdue")}
+                      </span>
+                    ) : j.sla === "due_soon" ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600">
+                        <Clock className="size-3" /> {t("dueSoon")}
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-0.5 truncate text-sm font-medium">
                     {j.subOrder.order.address.fullName}
