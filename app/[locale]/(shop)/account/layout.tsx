@@ -21,7 +21,7 @@ export default async function AccountLayout({
         {t("title")}
       </h1>
       <div className="grid gap-8 md:grid-cols-[200px_1fr]">
-        <aside>
+        <aside className="min-w-0">
           <AccountNav />
         </aside>
         <div className="min-w-0">{children}</div>
