@@ -216,6 +216,7 @@ model User {
   loyaltyTxns    LoyaltyTransaction[]
   wallet         Wallet?
   courierShipments Shipment[] @relation("CourierShipments")
+  courierLocation  CourierLocation?
 }
 
 model LoyaltyTransaction {
@@ -849,6 +850,19 @@ model Carrier {
   trackingUrl     String?
   platformManaged Boolean    @default(false)
   shipments       Shipment[]
+}
+
+// A courier's last shared location, mapped to the nearest governorate for
+// locality-based dispatch. One row per driver; refreshed while they share.
+model CourierLocation {
+  userId      String   @id
+  lat         Float
+  lng         Float
+  governorate String
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([governorate])
 }
 
 // Delivery tier a buyer picks per store group at checkout. STANDARD is the

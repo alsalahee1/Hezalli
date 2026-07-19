@@ -26,6 +26,9 @@ export type PlatformSettings = {
   express_eta_max_days: number;
   // Auto-hand a shipped Hezalli Express parcel to the least-loaded courier.
   express_auto_assign: boolean;
+  // How auto-assignment chooses a courier: "balanced" (fewest active jobs) or
+  // "nearest" (a driver in the destination governorate, then fewest jobs).
+  courier_assign_strategy: "balanced" | "nearest";
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -57,6 +60,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   express_eta_min_days: 1,
   express_eta_max_days: 2,
   express_auto_assign: true,
+  courier_assign_strategy: "balanced",
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

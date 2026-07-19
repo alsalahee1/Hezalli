@@ -44,15 +44,20 @@ export default async function DispatchPage() {
     prisma.user.findMany({
       where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        courierLocation: { select: { governorate: true } },
+      },
     }),
     getPlatformSettings(),
   ]);
 
-  const courierOptions = couriers.map((c) => ({
-    id: c.id,
-    name: c.name ?? c.id.slice(-6),
-  }));
+  const courierOptions = couriers.map((c) => {
+    const base = c.name ?? c.id.slice(-6);
+    const gov = c.courierLocation?.governorate;
+    return { id: c.id, name: gov ? `${base} · ${gov}` : base };
+  });
 
   const now = new Date();
   // Attach each parcel's SLA state from its own tier's max ETA.

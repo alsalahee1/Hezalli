@@ -31,6 +31,7 @@ export type SettingsInput = {
   express_eta_min_days: number;
   express_eta_max_days: number;
   express_auto_assign: boolean;
+  courier_assign_strategy: "balanced" | "nearest";
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -105,6 +106,8 @@ export async function savePlatformSettings(
     express_eta_min_days: etas[2],
     express_eta_max_days: etas[3],
     express_auto_assign: Boolean(input.express_auto_assign),
+    courier_assign_strategy:
+      input.courier_assign_strategy === "nearest" ? "nearest" : "balanced",
   };
 
   await prisma.$transaction(

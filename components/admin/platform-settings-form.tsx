@@ -46,6 +46,7 @@ export function PlatformSettingsForm({
     wallet_p2p_enabled: current.wallet_p2p_enabled,
     express_enabled: current.express_enabled,
     express_auto_assign: current.express_auto_assign,
+    courier_assign_strategy: current.courier_assign_strategy,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -77,6 +78,7 @@ export function PlatformSettingsForm({
         wallet_p2p_enabled: f.wallet_p2p_enabled,
         express_enabled: f.express_enabled,
         express_auto_assign: f.express_auto_assign,
+        courier_assign_strategy: f.courier_assign_strategy,
       });
       if (res.error) setErr(res.error);
       else {
@@ -220,6 +222,16 @@ export function PlatformSettingsForm({
               dir="ltr"
             />
           </div>
+        </Field>
+        <Field label={t("assignStrategy")} hint={t("assignStrategyHint")}>
+          <select
+            value={f.courier_assign_strategy}
+            onChange={(e) => set("courier_assign_strategy", e.target.value)}
+            className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+          >
+            <option value="balanced">{t("strategyBalanced")}</option>
+            <option value="nearest">{t("strategyNearest")}</option>
+          </select>
         </Field>
       </div>
 
