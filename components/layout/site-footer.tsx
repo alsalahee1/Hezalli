@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { Logo } from "@/components/layout/logo";
 import { NewsletterSignup } from "@/components/layout/newsletter-signup";
 
 export function SiteFooter() {
@@ -26,7 +27,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="max-w-sm space-y-2">
-            <p className="text-lg font-bold">{c("appName")}</p>
+            <Logo wordmark={c("appName")} />
             <p className="text-muted-foreground text-sm">{c("tagline")}</p>
             <p className="text-muted-foreground flex items-start gap-2 pt-2 text-sm">
               <ShieldCheck className="text-foreground mt-0.5 size-4 shrink-0" />
