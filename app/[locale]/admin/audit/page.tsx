@@ -77,49 +77,49 @@ export default async function AdminAuditPage() {
             ))}
           </ul>
           <div className="hidden overflow-x-auto rounded-lg border md:block">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("when")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("actor")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("action")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("entity")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("details")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((l) => (
-                <tr key={l.id} className="border-t align-top">
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {format.dateTime(l.createdAt, {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
-                  </td>
-                  <td className="px-3 py-2">
-                    {actorById.get(l.actorId) ?? l.actorId}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">{l.action}</td>
-                  <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
-                    {l.entity}#{l.entityId.slice(-6)}
-                  </td>
-                  <td className="text-muted-foreground max-w-xs px-3 py-2 font-mono text-[11px] break-all">
-                    {l.meta ? JSON.stringify(l.meta) : ""}
-                  </td>
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("when")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("actor")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("action")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("entity")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("details")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {logs.map((l) => (
+                  <tr key={l.id} className="border-t align-top">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {format.dateTime(l.createdAt, {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </td>
+                    <td className="px-3 py-2">
+                      {actorById.get(l.actorId) ?? l.actorId}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">{l.action}</td>
+                    <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
+                      {l.entity}#{l.entityId.slice(-6)}
+                    </td>
+                    <td className="text-muted-foreground max-w-xs px-3 py-2 font-mono text-[11px] break-all">
+                      {l.meta ? JSON.stringify(l.meta) : ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}

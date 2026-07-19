@@ -104,55 +104,57 @@ export default async function AdminOrdersPage({
             ))}
           </ul>
           <div className="hidden overflow-x-auto rounded-lg border md:block">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("order")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("buyer")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("method")}
-                </th>
-                <th className="px-3 py-2 text-start font-medium">
-                  {t("statusCol")}
-                </th>
-                <th className="px-3 py-2 text-end font-medium">{t("total")}</th>
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => (
-                <tr key={o.id} className="border-t">
-                  <td className="px-3 py-2 font-mono">
-                    #{o.id.slice(-8).toUpperCase()}
-                  </td>
-                  <td className="px-3 py-2">{o.buyer.name}</td>
-                  <td className="px-3 py-2">{o.paymentMethod}</td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-xs font-medium",
-                        STATUS_BADGE[o.status] ?? "bg-muted",
-                      )}
-                    >
-                      {t(`status_${o.status}`)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-end" dir="ltr">
-                    {money(o.grandTotal)}
-                  </td>
-                  <td className="px-3 py-2 text-end">
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/admin/orders/${o.id}`}>{t("view")}</Link>
-                    </Button>
-                  </td>
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("order")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("buyer")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("method")}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("statusCol")}
+                  </th>
+                  <th className="px-3 py-2 text-end font-medium">
+                    {t("total")}
+                  </th>
+                  <th className="px-3 py-2"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((o) => (
+                  <tr key={o.id} className="border-t">
+                    <td className="px-3 py-2 font-mono">
+                      #{o.id.slice(-8).toUpperCase()}
+                    </td>
+                    <td className="px-3 py-2">{o.buyer.name}</td>
+                    <td className="px-3 py-2">{o.paymentMethod}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-xs font-medium",
+                          STATUS_BADGE[o.status] ?? "bg-muted",
+                        )}
+                      >
+                        {t(`status_${o.status}`)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-end" dir="ltr">
+                      {money(o.grandTotal)}
+                    </td>
+                    <td className="px-3 py-2 text-end">
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/admin/orders/${o.id}`}>{t("view")}</Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}

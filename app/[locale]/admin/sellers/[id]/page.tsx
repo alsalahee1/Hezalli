@@ -197,47 +197,47 @@ export default async function AdminSellerDetailPage({
               ))}
             </ul>
             <div className="hidden overflow-x-auto rounded-lg border md:block">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("date")}
-                  </th>
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("amount")}
-                  </th>
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("method")}
-                  </th>
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("status")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {seller.payouts.map((p) => (
-                  <tr key={p.id} className="border-t">
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {format.dateTime(p.createdAt, { dateStyle: "medium" })}
-                    </td>
-                    <td className="px-3 py-2" dir="ltr">
-                      {money(p.amountUsd)}
-                    </td>
-                    <td className="px-3 py-2">{p.method}</td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-xs font-medium",
-                          payoutBadge[p.status] ?? "bg-muted",
-                        )}
-                      >
-                        {p.status}
-                      </span>
-                    </td>
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("date")}
+                    </th>
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("amount")}
+                    </th>
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("method")}
+                    </th>
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("status")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {seller.payouts.map((p) => (
+                    <tr key={p.id} className="border-t">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {format.dateTime(p.createdAt, { dateStyle: "medium" })}
+                      </td>
+                      <td className="px-3 py-2" dir="ltr">
+                        {money(p.amountUsd)}
+                      </td>
+                      <td className="px-3 py-2">{p.method}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-xs font-medium",
+                            payoutBadge[p.status] ?? "bg-muted",
+                          )}
+                        >
+                          {p.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         )}
