@@ -70,6 +70,47 @@ export async function authenticate(
   return {};
 }
 
+// One-click "fast login" for testing (the /dev-login page). This is NOT an auth
+// bypass: it submits the SAME credentials flow as the login form, pre-filled
+// with a seed account's email and the known seed password — so it only works
+// against seeded/test databases, and only while DEV_LOGIN_ENABLED === "true".
+// Never enable that flag in production.
+const SEED_PASSWORD = "hezalli123";
+
+export async function devSignIn(formData: FormData): Promise<void> {
+  if (process.env.DEV_LOGIN_ENABLED !== "true") return;
+  const email = String(formData.get("email") ?? "").trim();
+  // Restrict to the seed/demo domains as a second guard.
+  if (!/@(hezalli\.com|example\.com)$/i.test(email)) return;
+
+  const locale = await getLocale();
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { roles: true },
+  });
+  const roles = user?.roles ?? [];
+  const dest = roles.includes("ADMIN")
+    ? `/${locale}/admin`
+    : roles.includes("COURIER")
+      ? `/${locale}/driver`
+      : roles.includes("SELLER")
+        ? `/${locale}/seller`
+        : `/${locale}`;
+
+  try {
+    await signIn("credentials", {
+      email,
+      password: SEED_PASSWORD,
+      redirectTo: dest,
+    });
+  } catch (error) {
+    // Success throws a NEXT_REDIRECT that must propagate; only swallow auth
+    // failures (flag off / password changed) so the page simply reloads.
+    if (error instanceof AuthError) return;
+    throw error;
+  }
+}
+
 export async function registerUser(
   _prev: AuthFormState | undefined,
   formData: FormData,
