@@ -100,7 +100,7 @@ export function NotificationBell({
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="bg-background absolute end-0 z-50 mt-1 w-80 overflow-hidden rounded-lg border shadow-lg">
+          <div className="bg-background fixed inset-x-2 top-16 z-50 overflow-hidden rounded-lg border shadow-lg sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-1 sm:w-80">
             <div className="flex items-center justify-between border-b px-3 py-2">
               <span className="text-sm font-semibold">{t("title")}</span>
               {unread > 0 ? (
