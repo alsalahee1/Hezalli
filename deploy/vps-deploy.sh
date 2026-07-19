@@ -220,28 +220,6 @@ log "  public https://hezalli.com : ${PUB:-no response yet}"
 log "  DB the app uses: $(docker exec hezalli-app printenv DATABASE_URL 2>/dev/null | sed -E 's#(://[^:]+:)[^@]*@#\1***@#' || echo '?')"
 DBCOUNTS="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select '\''User='\''||count(*) from \"User\" union all select '\''Product='\''||count(*) from \"Product\" union all select '\''ActiveProduct='\''||count(*) from \"Product\" where status='\''ACTIVE'\'' union all select '\''Store='\''||count(*) from \"Store\" union all select '\''Category='\''||count(*) from \"Category\""' 2>&1)"
 log "  Row counts: $(echo "$DBCOUNTS" | tr '\n' ' ')"
-
-# 6) One-off: reproduce a product-detail request (anon + logged-in) & dump logs.
-if [ -f deploy/DEBUG_PRODUCT_ONCE ]; then
-  BASE="https://www.hezalli.com"; RES="--resolve www.hezalli.com:443:127.0.0.1"
-  SLUG="$(docker exec hezalli-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select slug from \"Product\" where status='\''ACTIVE'\'' order by \"createdAt\" limit 1"' 2>/dev/null | tr -d '[:space:]')"
-  log "  [anon] /ar/product/${SLUG}: HTTP $(curl -sk $RES -o /dev/null -w '%{http_code}' "$BASE/ar/product/${SLUG}" --max-time 20)"
-  # Log in as a seeded buyer, then request the same page (runs the auth path).
-  CJ="$(mktemp)"
-  CSRF="$(curl -sk $RES -c "$CJ" "$BASE/api/auth/csrf" --max-time 15 | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')"
-  curl -sk $RES -b "$CJ" -c "$CJ" -o /dev/null --max-time 20 \
-    --data-urlencode "csrfToken=$CSRF" \
-    --data-urlencode "email=buyer1@example.com" \
-    --data-urlencode "password=hezalli123" \
-    --data-urlencode "callbackUrl=$BASE/ar" \
-    "$BASE/api/auth/callback/credentials"
-  HAVE_SESSION="$(curl -sk $RES -b "$CJ" "$BASE/api/auth/session" --max-time 15 | head -c 200)"
-  log "  [auth] session cookie set? -> ${HAVE_SESSION}"
-  log "  [auth] /ar/product/${SLUG}: HTTP $(curl -sk $RES -b "$CJ" -o /dev/null -w '%{http_code}' "$BASE/ar/product/${SLUG}" --max-time 20)"
-  echo "----- hezalli-app recent logs -----"
-  docker logs hezalli-app --tail 80 2>&1 | tail -80
-  echo "----- end app logs -----"
-fi
 set -e
 
 cat <<'EOF'

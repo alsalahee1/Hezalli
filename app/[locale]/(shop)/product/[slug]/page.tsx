@@ -97,7 +97,20 @@ export default async function ProductPage({
 
   // Track recently-viewed for signed-in users (guests are tracked client-side).
   const session = await auth();
-  const userId = session?.user?.id;
+  const sessionUserId = session?.user?.id;
+  // A signed JWT can outlive the user it names — e.g. the account was deleted
+  // or the database was reseeded while the browser kept its login cookie.
+  // Confirm the user still exists before running any personalized query;
+  // otherwise the RecentlyViewed insert below references a missing userId and
+  // hits a foreign-key violation that 500s the whole page.
+  const userId = sessionUserId
+    ? (
+        await prisma.user.findUnique({
+          where: { id: sessionUserId },
+          select: { id: true },
+        })
+      )?.id
+    : undefined;
   let inWishlist = false;
   let canReview = false;
   let reviewSubOrderId: string | undefined;
