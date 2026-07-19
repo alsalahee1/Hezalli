@@ -66,8 +66,8 @@ function emptyReply(text: string): AssistantReply {
  * Run one assistant turn for a chat identified by (platform, chatId): enforce
  * cost/abuse guards, load and persist recent history, transcribe an optional
  * voice note, and self-heal a poisoned history by retrying once from scratch.
- * The conversation is anonymous (no Hezalli account), so order lookups aren't
- * available on these channels.
+ * If the chat has been linked to a Hezalli account (via /link), order lookups
+ * work; otherwise the chat is anonymous.
  */
 export async function runChannelTurn(opts: {
   platform: string;
@@ -83,7 +83,7 @@ export async function runChannelTurn(opts: {
 
   const existing = await prisma.botConversation.findUnique({
     where,
-    select: { messages: true, rateHits: true },
+    select: { messages: true, rateHits: true, userId: true },
   });
 
   // ── Guard 1: per-user hourly rate limit ──
@@ -121,7 +121,11 @@ export async function runChannelTurn(opts: {
       { role: "user", text: displayText },
     ];
     try {
-      reply = await runAssistant(history, { locale, userId: null }, { audio });
+      reply = await runAssistant(
+        history,
+        { locale, userId: existing?.userId ?? null },
+        { audio },
+      );
       break;
     } catch (err) {
       console.error(`[channel] attempt ${pass} failed:`, err);

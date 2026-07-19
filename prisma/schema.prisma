@@ -1140,6 +1140,13 @@ model BotConversation {
   // Recent request timestamps (ms) inside the rolling hourly window — the
   // per-user rate limit. Trimmed on each turn.
   rateHits  Json     @default("[]")
+  // Linked Hezalli account (via the /link flow) — lets the bot answer order
+  // questions for this chat. Null = anonymous.
+  userId    String?
+  // One-time code + expiry for the account-linking handshake (set by /link,
+  // consumed on the website while signed in).
+  linkCode          String?   @unique
+  linkCodeExpiresAt DateTime?
   // Lifetime per-chat counters (light analytics).
   msgCount  Int      @default(0)
   tokensIn  Int      @default(0)
@@ -1148,6 +1155,7 @@ model BotConversation {
   updatedAt DateTime @updatedAt
 
   @@unique([platform, chatId])
+  @@index([userId])
   @@index([updatedAt])
 }
 
