@@ -1,20 +1,31 @@
 // Auto-assignment for Hezalli Express. When a platform-managed parcel is
 // shipped it can be handed to a courier automatically:
 //   - "balanced": the least-loaded active courier (fewest in-flight jobs)
-//   - "nearest":  a courier currently in the destination governorate (from
-//                 their shared location), then least-loaded among those
-// No point-to-point distance is used — destinations are only governorate-level,
-// so this is locality matching. Ops can always reassign from the dispatch board.
+//   - "nearest":  when the parcel's address has pinned coordinates and couriers
+//                 have shared theirs, the closest by true (haversine) distance,
+//                 tie-broken by load; otherwise a courier in the destination
+//                 governorate (locality), then least-loaded among those; else
+//                 global least-loaded. Ops can always reassign from dispatch.
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
+import { haversineKm } from "@/lib/yemen-geo";
 
 export type AssignStrategy = "balanced" | "nearest";
-type CourierLoad = { id: string; load: number; governorate: string | null };
+type CourierLoad = {
+  id: string;
+  load: number;
+  governorate: string | null;
+  lat: number | null;
+  lng: number | null;
+};
 
 async function activeCouriersWithLoad(): Promise<CourierLoad[]> {
   const couriers = await prisma.user.findMany({
     where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
-    select: { id: true, courierLocation: { select: { governorate: true } } },
+    select: {
+      id: true,
+      courierLocation: { select: { governorate: true, lat: true, lng: true } },
+    },
   });
   if (couriers.length === 0) return [];
 
@@ -29,6 +40,8 @@ async function activeCouriersWithLoad(): Promise<CourierLoad[]> {
     id: c.id,
     load: loadBy.get(c.id) ?? 0,
     governorate: c.courierLocation?.governorate ?? null,
+    lat: c.courierLocation?.lat ?? null,
+    lng: c.courierLocation?.lng ?? null,
   }));
 }
 
@@ -46,19 +59,40 @@ export async function pickLeastLoadedCourierId(): Promise<string | null> {
 }
 
 /**
- * Choose a courier for a parcel. With "nearest", prefer a driver already in the
- * destination governorate (then least-loaded); falls back to global
- * least-loaded when none are local or the strategy is "balanced".
+ * Choose a courier for a parcel. With "nearest": rank by true distance when the
+ * destination has pinned coordinates and couriers have shared theirs; else by
+ * destination-governorate locality; else global least-loaded. "balanced" always
+ * uses global least-loaded.
  */
 export async function pickCourierForShipment(
   destGovernorate: string | null,
   strategy: AssignStrategy,
+  destCoords?: { lat: number | null; lng: number | null } | null,
 ): Promise<string | null> {
   const all = await activeCouriersWithLoad();
   if (all.length === 0) return null;
-  if (strategy === "nearest" && destGovernorate) {
-    const local = all.filter((c) => c.governorate === destGovernorate);
-    if (local.length > 0) return leastLoaded(local);
+
+  if (strategy === "nearest") {
+    // 1. True point-to-point distance, when both sides have coordinates.
+    if (destCoords?.lat != null && destCoords.lng != null) {
+      const withCoords = all.filter((c) => c.lat != null && c.lng != null);
+      if (withCoords.length > 0) {
+        const dLat = destCoords.lat;
+        const dLng = destCoords.lng;
+        return [...withCoords].sort(
+          (a, b) =>
+            haversineKm(dLat, dLng, a.lat!, a.lng!) -
+              haversineKm(dLat, dLng, b.lat!, b.lng!) ||
+            a.load - b.load ||
+            a.id.localeCompare(b.id),
+        )[0].id;
+      }
+    }
+    // 2. Governorate locality.
+    if (destGovernorate) {
+      const local = all.filter((c) => c.governorate === destGovernorate);
+      if (local.length > 0) return leastLoaded(local);
+    }
   }
   return leastLoaded(all);
 }
@@ -77,7 +111,13 @@ export async function autoAssignShipment(
       driverId: true,
       subOrder: {
         select: {
-          order: { select: { address: { select: { governorate: true } } } },
+          order: {
+            select: {
+              address: {
+                select: { governorate: true, lat: true, lng: true },
+              },
+            },
+          },
         },
       },
     },
@@ -85,10 +125,11 @@ export async function autoAssignShipment(
   if (!shipment || shipment.driverId) return null;
 
   const strategy = await getSetting("courier_assign_strategy");
-  const destGov = shipment.subOrder?.order.address.governorate ?? null;
+  const addr = shipment.subOrder?.order.address;
   const driverId = await pickCourierForShipment(
-    destGov,
+    addr?.governorate ?? null,
     strategy === "nearest" ? "nearest" : "balanced",
+    addr ? { lat: addr.lat, lng: addr.lng } : null,
   );
   if (!driverId) return null;
 

@@ -29,8 +29,12 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
+    // Geolocation is allowed for our own origin (couriers share location; buyers
+    // pin their delivery address); camera stays enabled for the driver QR
+    // scanner via the same self allowance.
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+    value:
+      "camera=(self), microphone=(), geolocation=(self), browsing-topics=()",
   },
 ];
 

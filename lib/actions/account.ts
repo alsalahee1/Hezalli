@@ -164,12 +164,25 @@ export async function saveAddress(
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   const { isDefault, line2, notes, ...rest } = parsed.data;
+  // Optional pinned coordinates (buyer "pin my location"). Parsed outside the
+  // schema; both must be valid or neither is stored.
+  const latRaw = String(formData.get("lat") ?? "").trim();
+  const lngRaw = String(formData.get("lng") ?? "").trim();
+  const lat = latRaw ? Number(latRaw) : NaN;
+  const lng = lngRaw ? Number(lngRaw) : NaN;
+  const hasCoords =
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180;
   // Empty optional fields must become null so edits can clear them (Prisma
   // treats `undefined` as "leave unchanged").
   const fields = {
     ...rest,
     line2: line2?.trim() ? line2.trim() : null,
     notes: notes?.trim() ? notes.trim() : null,
+    lat: hasCoords ? lat : null,
+    lng: hasCoords ? lng : null,
   };
 
   if (id) {

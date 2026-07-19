@@ -400,7 +400,14 @@
     "notSignedIn": "Please sign in and try again",
     "addressNotFound": "Address not found",
     "loyalty": "Rewards",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "locationHint": "Pin your exact location for faster express delivery (optional).",
+    "locationPinned": "Location pinned · near {gov}",
+    "pinLocation": "Pin my location",
+    "repin": "Update pin",
+    "locating": "Locating…",
+    "clearLocation": "Clear",
+    "locationError": "Couldn't get your location — check permissions."
   },
   "Categories": {
     "all": "All categories",

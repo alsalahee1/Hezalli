@@ -295,6 +295,10 @@ model Address {
   line1       String
   line2       String?
   notes       String?
+  // Optional pinned coordinates (buyer "pin my location"), for proximity-based
+  // Hezalli Express courier routing. Null → fall back to governorate locality.
+  lat         Float?
+  lng         Float?
   isDefault   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

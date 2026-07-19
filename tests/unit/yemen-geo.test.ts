@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { GOVERNORATE_CENTROIDS, nearestGovernorate } from "@/lib/yemen-geo";
+import {
+  GOVERNORATE_CENTROIDS,
+  haversineKm,
+  nearestGovernorate,
+} from "@/lib/yemen-geo";
 import { GOVERNORATE_VALUES } from "@/lib/yemen";
 
 describe("nearestGovernorate", () => {
@@ -21,5 +25,23 @@ describe("nearestGovernorate", () => {
     for (const v of GOVERNORATE_VALUES) {
       expect(GOVERNORATE_CENTROIDS[v]).toBeDefined();
     }
+  });
+});
+
+describe("haversineKm", () => {
+  it("is zero for identical points", () => {
+    expect(haversineKm(15, 44, 15, 44)).toBe(0);
+  });
+
+  it("approximates a known distance (Sana'a → Aden ≈ 300 km)", () => {
+    const d = haversineKm(15.35, 44.21, 12.79, 45.03);
+    expect(d).toBeGreaterThan(270);
+    expect(d).toBeLessThan(330);
+  });
+
+  it("orders closer points before farther ones", () => {
+    const near = haversineKm(15.0, 44.0, 15.1, 44.1);
+    const far = haversineKm(15.0, 44.0, 16.0, 45.0);
+    expect(near).toBeLessThan(far);
   });
 });

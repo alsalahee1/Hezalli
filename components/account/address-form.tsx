@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, type ReactNode } from "react";
+import { useActionState, useEffect, useState, type ReactNode } from "react";
+import { LocateFixed, MapPin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { saveAddress, type FormState } from "@/lib/actions/account";
-import { GOVERNORATES } from "@/lib/yemen";
+import { GOVERNORATES, localizedGovernorate } from "@/lib/yemen";
+import { nearestGovernorate } from "@/lib/yemen-geo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -19,6 +21,8 @@ export type AddressData = {
   line1: string;
   line2: string | null;
   notes: string | null;
+  lat: number | null;
+  lng: number | null;
   isDefault: boolean;
 };
 
@@ -56,6 +60,34 @@ export function AddressForm({
     {},
   );
   const err = (k?: string) => (k ? t(k) : undefined);
+
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    address?.lat != null && address?.lng != null
+      ? { lat: address.lat, lng: address.lng }
+      : null,
+  );
+  const [geoErr, setGeoErr] = useState(false);
+  const [locating, setLocating] = useState(false);
+
+  const pin = () => {
+    setGeoErr(false);
+    if (!navigator.geolocation) {
+      setGeoErr(true);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setGeoErr(true);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  };
 
   useEffect(() => {
     if (state.ok) onDone();
@@ -113,6 +145,53 @@ export function AddressForm({
       <Field label={t("notes")}>
         <Textarea name="notes" defaultValue={address?.notes ?? ""} rows={2} />
       </Field>
+
+      {/* Optional precise location for faster Hezalli Express routing. */}
+      <input type="hidden" name="lat" value={coords?.lat ?? ""} />
+      <input type="hidden" name="lng" value={coords?.lng ?? ""} />
+      <div className="rounded-md border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-sm">
+            <MapPin className="text-muted-foreground size-4" />
+            {coords
+              ? t("locationPinned", {
+                  gov: localizedGovernorate(
+                    nearestGovernorate(coords.lat, coords.lng),
+                    locale,
+                  ),
+                })
+              : t("locationHint")}
+          </span>
+          <div className="flex items-center gap-2">
+            {coords ? (
+              <button
+                type="button"
+                onClick={() => setCoords(null)}
+                className="text-muted-foreground hover:text-foreground text-xs"
+              >
+                {t("clearLocation")}
+              </button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={pin}
+              disabled={locating}
+            >
+              <LocateFixed className="size-4" />
+              {locating
+                ? t("locating")
+                : coords
+                  ? t("repin")
+                  : t("pinLocation")}
+            </Button>
+          </div>
+        </div>
+        {geoErr ? (
+          <p className="text-destructive mt-2 text-xs">{t("locationError")}</p>
+        ) : null}
+      </div>
 
       <label className="flex items-center gap-2 text-sm">
         <input

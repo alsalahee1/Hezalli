@@ -400,7 +400,14 @@
     "notSignedIn": "من فضلك سجّل الدخول وحاول مرة أخرى",
     "addressNotFound": "العنوان غير موجود",
     "loyalty": "المكافآت",
-    "wallet": "المحفظة"
+    "wallet": "المحفظة",
+    "locationHint": "حدّد موقعك الدقيق لتوصيل سريع أسرع (اختياري).",
+    "locationPinned": "تم تحديد الموقع · قرب {gov}",
+    "pinLocation": "حدّد موقعي",
+    "repin": "تحديث التحديد",
+    "locating": "جارٍ التحديد…",
+    "clearLocation": "مسح",
+    "locationError": "تعذّر تحديد موقعك — تحقق من الأذونات."
   },
   "Categories": {
     "all": "كل الفئات",
