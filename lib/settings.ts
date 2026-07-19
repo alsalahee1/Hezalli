@@ -24,6 +24,8 @@ export type PlatformSettings = {
   std_eta_max_days: number;
   express_eta_min_days: number;
   express_eta_max_days: number;
+  // Auto-hand a shipped Hezalli Express parcel to the least-loaded courier.
+  express_auto_assign: boolean;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -54,6 +56,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   std_eta_max_days: 7,
   express_eta_min_days: 1,
   express_eta_max_days: 2,
+  express_auto_assign: true,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

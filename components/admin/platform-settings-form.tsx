@@ -45,6 +45,7 @@ export function PlatformSettingsForm({
     maintenance_mode: current.maintenance_mode,
     wallet_p2p_enabled: current.wallet_p2p_enabled,
     express_enabled: current.express_enabled,
+    express_auto_assign: current.express_auto_assign,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -75,6 +76,7 @@ export function PlatformSettingsForm({
         maintenance_mode: f.maintenance_mode,
         wallet_p2p_enabled: f.wallet_p2p_enabled,
         express_enabled: f.express_enabled,
+        express_auto_assign: f.express_auto_assign,
       });
       if (res.error) setErr(res.error);
       else {
@@ -241,6 +243,18 @@ export function PlatformSettingsForm({
           {t("expressEnabled")}
           <span className="text-muted-foreground text-xs">
             {t("expressEnabledHint")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.express_auto_assign}
+            onChange={(e) => set("express_auto_assign", e.target.checked)}
+          />
+          {t("expressAutoAssign")}
+          <span className="text-muted-foreground text-xs">
+            {t("expressAutoAssignHint")}
           </span>
         </label>
         <label className="flex items-center gap-2 text-sm">

@@ -1455,7 +1455,9 @@
     "err_badExpressFee": "Enter a valid express fee.",
     "err_badEta": "Delivery-time estimates must be whole days, with min ≤ max.",
     "walletP2p": "Enable wallet transfers (P2P)",
-    "walletP2pHint": "⚠️ Money transmission — licensed only. Keep OFF until authorized."
+    "walletP2pHint": "⚠️ Money transmission — licensed only. Keep OFF until authorized.",
+    "expressAutoAssign": "Auto-assign couriers",
+    "expressAutoAssignHint": "Hand each shipped Express parcel to the least-busy driver automatically."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",

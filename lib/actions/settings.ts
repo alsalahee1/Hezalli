@@ -30,6 +30,7 @@ export type SettingsInput = {
   std_eta_max_days: number;
   express_eta_min_days: number;
   express_eta_max_days: number;
+  express_auto_assign: boolean;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -103,6 +104,7 @@ export async function savePlatformSettings(
     std_eta_max_days: etas[1],
     express_eta_min_days: etas[2],
     express_eta_max_days: etas[3],
+    express_auto_assign: Boolean(input.express_auto_assign),
   };
 
   await prisma.$transaction(

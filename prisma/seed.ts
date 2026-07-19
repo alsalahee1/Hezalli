@@ -699,6 +699,7 @@ async function main() {
       { key: "std_eta_max_days", value: 7 },
       { key: "express_eta_min_days", value: 1 },
       { key: "express_eta_max_days", value: 2 },
+      { key: "express_auto_assign", value: true },
     ],
   });
   await prisma.exchangeRate.createMany({
