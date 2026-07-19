@@ -962,7 +962,8 @@
     "status_CANCELLED": "Cancelled",
     "status_RETURNED": "Returned",
     "status_REFUNDED": "Refunded",
-    "daysWaiting": "{count, plural, one {# day waiting} other {# days waiting}}"
+    "daysWaiting": "{count, plural, one {# day waiting} other {# days waiting}}",
+    "shippingLabel": "Shipping label"
   },
   "PackingSlip": {
     "packingSlip": "Packing slip",
@@ -1691,5 +1692,17 @@
     "err_recipientNotFound": "No user found with that email or phone.",
     "err_cannotSendSelf": "You can’t send funds to yourself.",
     "err_recipientUnavailable": "That recipient can’t receive funds right now."
+  },
+  "ShippingLabel": {
+    "title": "Shipping label",
+    "from": "From",
+    "to": "Ship to",
+    "carrier": "Carrier",
+    "date": "Date",
+    "items": "Items",
+    "tracking": "Tracking",
+    "noTracking": "Not shipped yet",
+    "print": "Print",
+    "footer": "Attach this label to the parcel."
   }
 }

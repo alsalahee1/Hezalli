@@ -101,6 +101,11 @@ export default async function SellerOrderDetailPage({
             <Printer className="size-4" /> {t("packingSlip")}
           </a>
         </Button>
+        <Button asChild size="sm" variant="ghost">
+          <a href={`/${locale}/shipping-label/${sub.id}`} target="_blank">
+            <Printer className="size-4" /> {t("shippingLabel")}
+          </a>
+        </Button>
       </div>
 
       {/* Shipping / tracking */}

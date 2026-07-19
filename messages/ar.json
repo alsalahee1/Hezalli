@@ -962,7 +962,8 @@
     "status_CANCELLED": "ملغى",
     "status_RETURNED": "مُرتجع",
     "status_REFUNDED": "مُسترد",
-    "daysWaiting": "{count, plural, zero {بانتظار الشحن} one {بانتظار يوم} two {بانتظار يومين} few {بانتظار # أيام} many {بانتظار # يوماً} other {بانتظار # يوم}}"
+    "daysWaiting": "{count, plural, zero {بانتظار الشحن} one {بانتظار يوم} two {بانتظار يومين} few {بانتظار # أيام} many {بانتظار # يوماً} other {بانتظار # يوم}}",
+    "shippingLabel": "بطاقة الشحن"
   },
   "PackingSlip": {
     "packingSlip": "قائمة التغليف",
@@ -1691,5 +1692,17 @@
     "err_recipientNotFound": "لا يوجد مستخدم بهذا البريد أو الهاتف.",
     "err_cannotSendSelf": "لا يمكنك إرسال أموال إلى نفسك.",
     "err_recipientUnavailable": "لا يمكن لهذا المستلم استلام الأموال حالياً."
+  },
+  "ShippingLabel": {
+    "title": "بطاقة الشحن",
+    "from": "من",
+    "to": "إلى",
+    "carrier": "الناقل",
+    "date": "التاريخ",
+    "items": "القطع",
+    "tracking": "التتبّع",
+    "noTracking": "لم تُشحن بعد",
+    "print": "طباعة",
+    "footer": "الصق هذه البطاقة على الطرد."
   }
 }
