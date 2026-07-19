@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { DownloadPdfButton } from "@/components/orders/download-pdf-button";
 import { PrintButton } from "@/components/orders/print-button";
 
 export default async function PackingSlipPage({
@@ -33,6 +34,7 @@ export default async function PackingSlipPage({
 
   const t = await getTranslations("PackingSlip");
   const format = await getFormatter();
+  const locale = await getLocale();
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10 text-sm">
@@ -41,7 +43,15 @@ export default async function PackingSlipPage({
           <h1 className="text-xl font-bold tracking-tight">{sub.store.name}</h1>
           <p className="text-muted-foreground">{t("packingSlip")}</p>
         </div>
-        <PrintButton label={t("print")} />
+        <div className="flex gap-2 print:hidden">
+          <DownloadPdfButton
+            type="packing-slip"
+            id={sub.id}
+            locale={locale}
+            label={t("downloadPdf")}
+          />
+          <PrintButton label={t("print")} />
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-4">

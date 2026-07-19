@@ -3,6 +3,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { DownloadPdfButton } from "@/components/orders/download-pdf-button";
 import { PrintButton } from "@/components/orders/print-button";
 
 export default async function InvoicePage({
@@ -40,7 +41,15 @@ export default async function InvoicePage({
           <h1 className="text-2xl font-bold tracking-tight">Hezalli</h1>
           <p className="text-muted-foreground">{t("invoice")}</p>
         </div>
-        <PrintButton label={t("print")} />
+        <div className="flex gap-2 print:hidden">
+          <DownloadPdfButton
+            type="invoice"
+            id={order.id}
+            locale={locale}
+            label={t("downloadPdf")}
+          />
+          <PrintButton label={t("print")} />
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-4">

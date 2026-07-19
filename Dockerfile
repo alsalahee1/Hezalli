@@ -49,7 +49,18 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+# Chromium powers server-side PDF generation (invoices, packing slips, shipping
+# labels). Install it plus Latin + Arabic fonts so PDFs render correctly in both
+# languages. puppeteer-core drives it via CHROMIUM_PATH.
+ENV CHROMIUM_PATH=/usr/bin/chromium
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openssl \
+      chromium \
+      fonts-liberation \
+      fonts-dejavu-core \
+      fonts-hosny-amiri \
+      fonts-kacst \
+      fontconfig \
     && rm -rf /var/lib/apt/lists/* \
     && addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs

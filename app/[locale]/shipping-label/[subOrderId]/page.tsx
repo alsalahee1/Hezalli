@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { Barcode } from "@/components/orders/barcode";
+import { DownloadPdfButton } from "@/components/orders/download-pdf-button";
 import { PrintButton } from "@/components/orders/print-button";
 
 export default async function ShippingLabelPage({
@@ -42,6 +43,7 @@ export default async function ShippingLabelPage({
 
   const t = await getTranslations("ShippingLabel");
   const format = await getFormatter();
+  const locale = await getLocale();
 
   const orderRef = `#${sub.order.id.slice(-8).toUpperCase()}`;
   const tracking = sub.shipment?.trackingNumber?.trim() || "";
@@ -54,7 +56,15 @@ export default async function ShippingLabelPage({
     <main className="mx-auto max-w-md px-6 py-8 text-sm">
       <div className="mb-4 flex items-start justify-between print:hidden">
         <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
-        <PrintButton label={t("print")} />
+        <div className="flex gap-2 print:hidden">
+          <DownloadPdfButton
+            type="shipping-label"
+            id={sub.id}
+            locale={locale}
+            label={t("downloadPdf")}
+          />
+          <PrintButton label={t("print")} />
+        </div>
       </div>
 
       {/* The label itself — a bordered card sized for a standard shipping label. */}

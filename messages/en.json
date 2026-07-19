@@ -922,7 +922,8 @@
     "shipping": "Shipping",
     "discount": "Discount",
     "total": "Total",
-    "footer": "Thank you for shopping on Hezalli."
+    "footer": "Thank you for shopping on Hezalli.",
+    "downloadPdf": "Download PDF"
   },
   "SellerOrders": {
     "title": "Orders",
@@ -974,7 +975,8 @@
     "item": "Item",
     "sku": "SKU",
     "qty": "Qty",
-    "footer": "Please include this slip in the package."
+    "footer": "Please include this slip in the package.",
+    "downloadPdf": "Download PDF"
   },
   "Payment": {
     "payTitle": "Complete your payment",
@@ -1703,6 +1705,7 @@
     "tracking": "Tracking",
     "noTracking": "Not shipped yet",
     "print": "Print",
-    "footer": "Attach this label to the parcel."
+    "footer": "Attach this label to the parcel.",
+    "downloadPdf": "Download PDF"
   }
 }
