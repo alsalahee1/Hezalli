@@ -31,7 +31,13 @@ export default async function ShopLayout({
     session?.user?.id
       ? prisma.user.findUnique({
           where: { id: session.user.id },
-          select: { name: true, email: true, image: true, roles: true },
+          select: {
+            name: true,
+            email: true,
+            image: true,
+            roles: true,
+            wallet: { select: { availableUsd: true } },
+          },
         })
       : Promise.resolve(null),
     prisma.category.findMany({
@@ -81,6 +87,7 @@ export default async function ShopLayout({
           }
           isSeller={user?.roles.includes("SELLER") ?? false}
           isAdmin={isAdmin}
+          walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
           categories={categories}
         />
         <div className="flex-1">{children}</div>

@@ -9,10 +9,12 @@ import {
   ShoppingBag,
   Store,
   User,
+  Wallet,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { formatUsd } from "@/lib/products";
 import { signOutAction } from "@/lib/actions/auth";
 
 const MENU_LINKS = [
@@ -32,12 +34,15 @@ export function UserMenu({
   user,
   isAdmin = false,
   isSeller = false,
+  walletBalance = 0,
 }: {
   user: MenuUser;
   isAdmin?: boolean;
   isSeller?: boolean;
+  walletBalance?: number;
 }) {
   const t = useTranslations("Header");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
 
   // Links that depend on the signed-in user's role. Admins reach the admin
@@ -97,6 +102,20 @@ export function UserMenu({
                 </p>
               ) : null}
             </div>
+            <Link
+              href="/account/wallet"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="hover:bg-primary/10 flex items-center justify-between gap-2 border-b px-3 py-2.5"
+            >
+              <span className="text-primary flex items-center gap-2 text-sm font-medium">
+                <Wallet className="size-4" />
+                {t("wallet")}
+              </span>
+              <span className="text-primary text-sm font-semibold" dir="ltr">
+                {formatUsd(walletBalance, locale)}
+              </span>
+            </Link>
             {roleLinks.length > 0 ? (
               <div className="border-b p-1">
                 {roleLinks.map((item) => {
