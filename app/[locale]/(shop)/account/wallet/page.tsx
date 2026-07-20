@@ -92,8 +92,9 @@ export default async function WalletPage() {
   const verified = profile?.kycStatus === "VERIFIED";
   const canWithdraw =
     !frozen && verified && !!payoutMethod && balance >= minPayout;
-  // P2P send: only when licensed feature is on, sender is verified, funds exist.
-  const canSend = !frozen && p2pEnabled && verified && balance > 0;
+  // P2P send: available to any signed-in user with funds once an admin has
+  // enabled the (regulated) transfer feature. See docs/19-wallet-strategy.md §4.
+  const canSend = !frozen && p2pEnabled && balance > 0;
 
   return (
     <div className="space-y-6">

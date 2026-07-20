@@ -329,13 +329,14 @@ Lowest value-per-risk. Ship this first.
 > refactoring either. The seller then has one balance to spend, top up, or cash
 > out.
 >
-> **P2P transfer (built, LICENSED ONLY):** a VERIFIED user can send wallet funds
-> to another user by email/phone (`sendWalletFunds`, `lib/actions/wallet-p2p.ts`)
-> — sender debited atomically, recipient credited, a `WalletTransfer` row for
-> audit. It is **money transmission**, so it ships **off** behind the
-> `wallet_p2p_enabled` admin setting (default false, flagged in the settings UI)
-> and must not be enabled without the appropriate money-transmitter / e-money
-> licence.
+> **P2P transfer (built, LICENSED ONLY):** any signed-in user can send wallet
+> funds to another user by email/phone (`sendWalletFunds`,
+> `lib/actions/wallet-p2p.ts`) — sender debited atomically, recipient credited, a
+> `WalletTransfer` row for audit. It is **money transmission**, so it ships
+> **off** behind the `wallet_p2p_enabled` admin setting (default false, flagged
+> in the settings UI); the admin toggle is the single gate, and it must not be
+> enabled without the appropriate money-transmitter / e-money licence. (Cash-out
+> stays VERIFIED-KYC gated — see Step 19.4 — since it moves money off-platform.)
 
 ---
 

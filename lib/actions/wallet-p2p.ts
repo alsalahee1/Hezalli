@@ -31,15 +31,10 @@ export async function sendWalletFunds(input: {
   if (!session?.user?.id) return { error: "unauthorized" };
   const userId = session.user.id;
 
-  // Regulatory gate: feature must be explicitly enabled by an admin.
+  // Regulatory gate: feature must be explicitly enabled by an admin. Once on,
+  // any signed-in user with a balance may send (the recipient must have an
+  // account). See docs/19-wallet-strategy.md §4.
   if (!(await getSetting("wallet_p2p_enabled"))) return { error: "disabled" };
-
-  // Sender must be VERIFIED (same KYC gate as cash-out).
-  const senderProfile = await prisma.sellerProfile.findUnique({
-    where: { userId },
-    select: { kycStatus: true },
-  });
-  if (senderProfile?.kycStatus !== "VERIFIED") return { error: "notVerified" };
 
   const amount = round2(Number(input.amountUsd));
   if (!Number.isFinite(amount) || amount <= 0) return { error: "badAmount" };
