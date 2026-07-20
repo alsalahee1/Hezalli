@@ -5,6 +5,11 @@
 import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import {
+  assertOutflowWithinLimitTx,
+  outflowCaps,
+  VelocityError,
+} from "@/lib/wallet-velocity";
+import {
   creditWalletTx,
   getWalletId,
   recomputeWalletBalance,
@@ -55,8 +60,14 @@ export async function transferFunds(
     return { error: "insufficient" };
 
   const cleanNote = note?.trim() || null;
+  // Compute the sender's velocity caps up front (reads settings/KYC), then enforce
+  // them authoritatively inside the transaction under a wallet row lock so parallel
+  // sends can't collectively slip past the AML cap.
+  const caps = await outflowCaps(fromUserId);
   try {
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Wallet" WHERE "id" = ${fromWalletId} FOR UPDATE`;
+      await assertOutflowWithinLimitTx(tx, fromWalletId, caps, amount);
       const upd = await tx.wallet.updateMany({
         where: {
           id: fromWalletId,
@@ -87,6 +98,7 @@ export async function transferFunds(
       });
     });
   } catch (e) {
+    if (e instanceof VelocityError) return { error: e.reason };
     if (e instanceof TransferError) return { error: "insufficient" };
     throw e;
   }

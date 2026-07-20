@@ -9,7 +9,7 @@
 import { prisma } from "@/lib/prisma";
 import { round2 } from "@/lib/finance";
 import { getPlatformSettings } from "@/lib/settings";
-import type { WalletEntryType } from "@/lib/generated/prisma/client";
+import type { Prisma, WalletEntryType } from "@/lib/generated/prisma/client";
 
 // VERIFIED users get a higher ceiling, mirroring the top-up cap tiering.
 const VERIFIED_MULTIPLIER = 5;
@@ -76,4 +76,71 @@ export async function checkOutflowLimit(
     if (used + amount > monthlyCap) return { error: "monthlyLimit" };
   }
   return { ok: true };
+}
+
+// Thrown by the in-transaction guard; the reason maps to the same i18n keys as
+// the pre-flight check above.
+export class VelocityError extends Error {
+  constructor(public reason: "dailyLimit" | "monthlyLimit") {
+    super(reason);
+  }
+}
+
+/** The daily/monthly outflow caps for a user (0 = no limit), honoring KYC tier. */
+export async function outflowCaps(
+  userId: string,
+): Promise<{ daily: number; monthly: number }> {
+  const [settings, profile] = await Promise.all([
+    getPlatformSettings(),
+    prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { kycStatus: true },
+    }),
+  ]);
+  const mult = profile?.kycStatus === "VERIFIED" ? VERIFIED_MULTIPLIER : 1;
+  return {
+    daily: settings.wallet_daily_outflow_usd * mult,
+    monthly: settings.wallet_monthly_outflow_usd * mult,
+  };
+}
+
+/**
+ * Authoritative velocity guard, run INSIDE the outflow transaction. The caller
+ * must already hold a row lock on the wallet (`SELECT … FOR UPDATE`) so that
+ * concurrent outflows serialize and this reads their committed debits. Throws a
+ * VelocityError on breach — unlike the pre-flight `checkOutflowLimit`, this
+ * cannot be raced past. Call it BEFORE writing this outflow's own debit entry.
+ */
+export async function assertOutflowWithinLimitTx(
+  tx: Prisma.TransactionClient,
+  walletId: string,
+  caps: { daily: number; monthly: number },
+  amountUsd: number,
+): Promise<void> {
+  const amount = round2(Number(amountUsd));
+  if (!Number.isFinite(amount) || amount <= 0) return;
+  const now = Date.now();
+  const sumSince = async (since: Date) => {
+    const agg = await tx.walletEntry.aggregate({
+      where: {
+        walletId,
+        type: { in: OUTFLOW_TYPES },
+        createdAt: { gte: since },
+      },
+      _sum: { amountUsd: true },
+    });
+    return Math.abs(round2(Number(agg._sum.amountUsd ?? 0)));
+  };
+  if (
+    caps.daily > 0 &&
+    (await sumSince(new Date(now - DAY_MS))) + amount > caps.daily
+  ) {
+    throw new VelocityError("dailyLimit");
+  }
+  if (
+    caps.monthly > 0 &&
+    (await sumSince(new Date(now - MONTH_MS))) + amount > caps.monthly
+  ) {
+    throw new VelocityError("monthlyLimit");
+  }
 }

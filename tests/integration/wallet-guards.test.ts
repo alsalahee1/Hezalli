@@ -31,7 +31,13 @@ import {
 } from "@/lib/actions/wallet-withdrawal";
 import { prisma } from "@/lib/prisma";
 import { applyRefund } from "@/lib/refunds";
-import { creditWalletTx, getWalletId, getWalletView } from "@/lib/wallet";
+import { transferFunds } from "@/lib/wallet-transfers";
+import {
+  creditWalletTx,
+  getWalletId,
+  getWalletView,
+  recomputeWalletBalance,
+} from "@/lib/wallet";
 import { makeFixture } from "./factory";
 
 const as = (id: string | null) =>
@@ -591,6 +597,76 @@ describe("buyer cancelOrder — restores redeemed points and frees the coupon", 
         .catch(() => {});
       await fx.cleanup();
       await prisma.coupon.delete({ where: { id: coupon.id } }).catch(() => {});
+    }
+  });
+});
+
+describe("P2P velocity — concurrent sends can't slip past the daily cap", () => {
+  it("two simultaneous sends that together exceed the cap: one is blocked", async () => {
+    const uniq = Date.now().toString(36);
+    const sender = await prisma.user.create({
+      data: { email: `vg-s-${uniq}@t.local`, roles: ["BUYER"], locale: "en" },
+    });
+    const recipient = await prisma.user.create({
+      data: { email: `vg-r-${uniq}@t.local`, roles: ["BUYER"], locale: "en" },
+    });
+    // Daily cap 100; monthly effectively unlimited for the test.
+    for (const [key, value] of [
+      ["wallet_daily_outflow_usd", 100],
+      ["wallet_monthly_outflow_usd", 100000],
+    ] as const) {
+      await prisma.platformSetting.upsert({
+        where: { key },
+        create: { key, value },
+        update: { value },
+      });
+    }
+    try {
+      const senderWallet = await getWalletId(sender.id);
+      await getWalletId(recipient.id);
+      await prisma.$transaction(async (tx) => {
+        await creditWalletTx(tx, senderWallet, {
+          type: "TOP_UP",
+          amountUsd: 1000,
+        });
+      });
+      await recomputeWalletBalance(sender.id);
+
+      // Two $60 sends; the cap is $100, so only one can succeed.
+      const results = await Promise.all([
+        transferFunds(sender.id, recipient.id, 60),
+        transferFunds(sender.id, recipient.id, 60),
+      ]);
+      expect(results.filter((r) => r.ok)).toHaveLength(1);
+      expect(results.filter((r) => r.error === "dailyLimit")).toHaveLength(1);
+
+      const outflows = await prisma.walletEntry.findMany({
+        where: { walletId: senderWallet, type: "TRANSFER_OUT" },
+      });
+      expect(outflows).toHaveLength(1);
+    } finally {
+      await prisma.walletEntry
+        .deleteMany({
+          where: { wallet: { userId: { in: [sender.id, recipient.id] } } },
+        })
+        .catch(() => {});
+      await prisma.notification
+        .deleteMany({ where: { userId: { in: [sender.id, recipient.id] } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: { in: [sender.id, recipient.id] } } })
+        .catch(() => {});
+      await prisma.user
+        .deleteMany({ where: { id: { in: [sender.id, recipient.id] } } })
+        .catch(() => {});
+      for (const key of [
+        "wallet_daily_outflow_usd",
+        "wallet_monthly_outflow_usd",
+      ]) {
+        await prisma.platformSetting
+          .deleteMany({ where: { key } })
+          .catch(() => {});
+      }
     }
   });
 });

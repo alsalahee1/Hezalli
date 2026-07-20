@@ -128,7 +128,9 @@ export async function placeOrder(
   const rawGroups = [...byStore.entries()].map(([storeId, lines]) => ({
     storeId,
     lines,
-    itemsTotal: lines.reduce((s, l) => s + l.price * l.qty, 0),
+    // Round each line before summing so the store total always equals the sum of
+    // the stored per-line totals (no sub-cent drift into commission/refund math).
+    itemsTotal: round2(lines.reduce((s, l) => s + round2(l.price * l.qty), 0)),
   }));
   // Authoritative shipping: zone-based rate for the destination governorate,
   // for the buyer's chosen tier (standard/express) per store. The fee is always
@@ -316,7 +318,7 @@ export async function placeOrder(
                   skuSnapshot: l.sku,
                   unitPrice: l.price,
                   quantity: l.qty,
-                  lineTotal: Number((l.price * l.qty).toFixed(2)),
+                  lineTotal: round2(l.price * l.qty),
                 })),
               },
             })),
