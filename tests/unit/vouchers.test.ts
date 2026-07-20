@@ -16,6 +16,7 @@ const coupon = (over: Partial<CouponInfo>): CouponInfo => ({
   maxDiscountUsd: null,
   minSpendUsd: null,
   maxUses: null,
+  perUserLimit: null,
   ...over,
 });
 

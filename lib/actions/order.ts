@@ -9,6 +9,7 @@ import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
+import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -151,6 +152,7 @@ export async function placeOrder(
   // Optional voucher: validate + compute per-store discount.
   let couponId: string | null = null;
   let couponMaxUses: number | null = null;
+  let couponPerUserLimit: number | null = null;
   const discountByStore = new Map<string, number>();
   const code = input.couponCode?.trim();
   if (code) {
@@ -166,6 +168,7 @@ export async function placeOrder(
     if (!res.ok) return { error: `coupon_${res.error}` };
     couponId = res.coupon.id;
     couponMaxUses = res.coupon.maxUses;
+    couponPerUserLimit = res.coupon.perUserLimit;
     for (const [sid, d] of Object.entries(res.discount.perStore)) {
       discountByStore.set(sid, d);
     }
@@ -362,7 +365,11 @@ export async function placeOrder(
         });
       }
 
-      // Redeem the voucher atomically (guards the total-usage limit).
+      // Redeem the voucher atomically. The conditional increment guards the
+      // global usage limit AND takes an exclusive lock on the coupon row, so any
+      // concurrent checkout using the same coupon serializes behind it — which is
+      // what lets the per-user-limit count below be trusted (a parallel checkout's
+      // redemption is already committed by the time we read it).
       if (couponId) {
         const guard =
           couponMaxUses != null ? { usedCount: { lt: couponMaxUses } } : {};
@@ -371,6 +378,12 @@ export async function placeOrder(
           data: { usedCount: { increment: 1 } },
         });
         if (upd.count !== 1) throw new CouponError();
+        if (couponPerUserLimit != null) {
+          const usedByUser = await tx.couponRedemption.count({
+            where: { couponId, userId },
+          });
+          if (usedByUser >= couponPerUserLimit) throw new CouponError();
+        }
         await tx.couponRedemption.create({
           data: { couponId, userId, orderId: order.id },
         });
@@ -483,21 +496,8 @@ export async function placeOrder(
   }
 }
 
-// Statuses at or past which a buyer can no longer cancel.
-const UNCANCELLABLE = new Set([
-  "SHIPPED",
-  "DELIVERED",
-  "COMPLETED",
-  "CANCELLED",
-  "REFUNDED",
-]);
-
-// Order statuses from which a whole-order cancel is allowed (the complement of
-// UNCANCELLABLE). Used as the conditional guard on the flip so concurrent cancels
-// can't both fire.
-const CANCELLABLE_ORDER = ["PENDING", "CONFIRMED", "PROCESSING"] as const;
-// Sub-order statuses whose stock should be restored and which should flip to
-// CANCELLED — never one already cancelled/refunded/shipped.
+// Sub-order statuses a buyer can still cancel: stock is restored and they flip to
+// CANCELLED — never one already shipped/delivered, refunded, or cancelled.
 const CANCELLABLE_SUB = ["PENDING", "CONFIRMED", "PROCESSING"] as const;
 
 export async function cancelOrder(
@@ -514,13 +514,15 @@ export async function cancelOrder(
       status: true,
       buyerId: true,
       paymentMethod: true,
-      grandTotal: true,
       couponId: true,
       payment: { select: { id: true, status: true } },
       subOrders: {
         select: {
           id: true,
           status: true,
+          itemsTotal: true,
+          shippingTotal: true,
+          discountTotal: true,
           store: {
             select: {
               seller: {
@@ -537,7 +539,24 @@ export async function cancelOrder(
     },
   });
   if (!order) return { error: "notFound" };
-  if (UNCANCELLABLE.has(order.status)) return { error: "tooLate" };
+
+  // Only the still-cancellable sub-orders can be cancelled — never one already
+  // shipped/delivered (in transit to the buyer), refunded, or cancelled. A whole
+  // order with nothing cancellable is too late.
+  const cancellable = order.subOrders.filter((s) =>
+    (CANCELLABLE_SUB as readonly string[]).includes(s.status),
+  );
+  if (cancellable.length === 0) return { error: "tooLate" };
+  // A "full" cancel (every sub-order was still active) is what restores the
+  // order-level coupon usage and redeemed points; a partial cancel leaves those
+  // for the sub-orders that still stand.
+  const wasFullyActive = order.subOrders.every((s) =>
+    (CANCELLABLE_SUB as readonly string[]).includes(s.status),
+  );
+  const paidAmountOf = (s: (typeof cancellable)[number]) =>
+    round2(
+      Number(s.itemsTotal) + Number(s.shippingTotal) - Number(s.discountTotal),
+    );
 
   // A wallet-paid order is CONFIRMED (and thus cancellable) with the money
   // already taken in-system — cancelling must return it to the wallet.
@@ -545,26 +564,21 @@ export async function cancelOrder(
     order.paymentMethod === "HEZALLI_BALANCE" &&
     order.payment?.status === "CONFIRMED";
   const walletId = refundWallet ? await getWalletId(order.buyerId) : null;
-  // Only restore stock / flip sub-orders that are actually still cancellable —
-  // never a sub-order the seller already cancelled (whose stock was restored) or
-  // one already refunded.
-  const activeSubs = order.subOrders.filter((s) =>
-    (CANCELLABLE_SUB as readonly string[]).includes(s.status),
-  );
 
-  let cancelled = false;
+  const cancelledSubIds: string[] = [];
+  let refundAmount = 0;
   await prisma.$transaction(async (tx) => {
-    // Flip the order → CANCELLED only if it is still in a cancellable state.
-    // Two concurrent cancels would otherwise both refund the wallet and both
-    // restore stock; this conditional guard lets exactly one win.
-    const ord = await tx.order.updateMany({
-      where: { id: order.id, status: { in: [...CANCELLABLE_ORDER] } },
-      data: { status: "CANCELLED" },
-    });
-    if (ord.count !== 1) return; // cancelled/advanced concurrently
-
-    // Restore stock for every still-active line.
-    for (const sub of activeSubs) {
+    // Cancel each still-cancellable sub-order under its own conditional guard, so
+    // concurrent cancels can't flip (or refund) the same sub-order twice and the
+    // refund only ever covers what THIS call actually cancelled.
+    for (const sub of cancellable) {
+      const upd = await tx.subOrder.updateMany({
+        where: { id: sub.id, status: { in: [...CANCELLABLE_SUB] } },
+        data: { status: "CANCELLED" },
+      });
+      if (upd.count !== 1) continue; // cancelled/advanced concurrently
+      cancelledSubIds.push(sub.id);
+      refundAmount = round2(refundAmount + paidAmountOf(sub));
       for (const it of sub.items) {
         await tx.productVariant.updateMany({
           where: { id: it.variantId },
@@ -572,28 +586,48 @@ export async function cancelOrder(
         });
       }
     }
-    await tx.subOrder.updateMany({
-      where: { orderId: order.id, status: { in: [...CANCELLABLE_SUB] } },
-      data: { status: "CANCELLED" },
+    if (cancelledSubIds.length === 0) return; // lost every sub to a race
+
+    // Recompute the order status from all sub-orders — a partial cancel leaves
+    // the order at the aggregate of the sub-orders that still stand rather than
+    // forcing the whole order to CANCELLED.
+    const remaining = await tx.subOrder.findMany({
+      where: { orderId: order.id },
+      select: { status: true },
     });
-    cancelled = true;
-    // Return wallet-paid funds and mark the payment refunded.
-    if (walletId && order.payment) {
+    const allTerminal = remaining.every(
+      (s) => s.status === "CANCELLED" || s.status === "REFUNDED",
+    );
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: allTerminal
+          ? "CANCELLED"
+          : (aggregateOrderStatus(remaining.map((s) => s.status)) as never),
+      },
+    });
+
+    // Return the wallet-paid funds for exactly the cancelled portion.
+    if (walletId && refundAmount > 0) {
       await creditWalletTx(tx, walletId, {
         type: "REFUND",
-        amountUsd: Number(order.grandTotal),
+        amountUsd: refundAmount,
         orderId: order.id,
         note: "Order cancelled — refunded to wallet",
       });
-      await tx.payment.update({
-        where: { id: order.payment.id },
-        data: { status: "REFUNDED" },
-      });
+      // Only mark the payment REFUNDED once the whole order is terminal.
+      if (allTerminal && order.payment) {
+        await tx.payment.update({
+          where: { id: order.payment.id },
+          data: { status: "REFUNDED" },
+        });
+      }
     }
 
-    // Reverse a redeemed coupon: free a usage slot and drop the redemption row
-    // so the buyer isn't charged a use for an order that never happened.
-    if (order.couponId) {
+    // Coupon + redeemed points are order-level, so they are reversed only on a
+    // full cancel (every sub-order cancelled).
+    const fullCancel = wasFullyActive && allTerminal;
+    if (fullCancel && order.couponId) {
       await tx.coupon.updateMany({
         where: { id: order.couponId, usedCount: { gt: 0 } },
         data: { usedCount: { decrement: 1 } },
@@ -602,29 +636,27 @@ export async function cancelOrder(
         where: { couponId: order.couponId, orderId: order.id },
       });
     }
-
-    // Restore loyalty points redeemed at checkout (platform-funded, independent
-    // of how the cash portion was paid) so a cancel doesn't burn the buyer's
-    // points. The conditional order-flip guard above ensures this runs once.
-    const redeem = await tx.loyaltyTransaction.findFirst({
-      where: { orderId: order.id, type: "REDEEM" },
-      select: { points: true },
-    });
-    if (redeem && redeem.points < 0) {
-      const restore = -redeem.points;
-      await tx.loyaltyTransaction.create({
-        data: {
-          userId: order.buyerId,
-          points: restore,
-          type: "REFUND",
-          orderId: order.id,
-          note: "Points restored on cancel",
-        },
+    if (fullCancel) {
+      const redeem = await tx.loyaltyTransaction.findFirst({
+        where: { orderId: order.id, type: "REDEEM" },
+        select: { points: true },
       });
-      await tx.user.update({
-        where: { id: order.buyerId },
-        data: { loyaltyPoints: { increment: restore } },
-      });
+      if (redeem && redeem.points < 0) {
+        const restore = -redeem.points;
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId: order.buyerId,
+            points: restore,
+            type: "REFUND",
+            orderId: order.id,
+            note: "Points restored on cancel",
+          },
+        });
+        await tx.user.update({
+          where: { id: order.buyerId },
+          data: { loyaltyPoints: { increment: restore } },
+        });
+      }
     }
 
     await tx.orderStatusHistory.create({
@@ -637,8 +669,13 @@ export async function cancelOrder(
           : "Cancelled by buyer",
       },
     });
-    for (const sub of order.subOrders) {
+    // Notify only the sellers whose sub-orders were actually cancelled.
+    const notified = new Set<string>();
+    for (const sub of cancellable) {
+      if (!cancelledSubIds.includes(sub.id)) continue;
       const seller = sub.store.seller.user;
+      if (notified.has(seller.id)) continue;
+      notified.add(seller.id);
       const ar = seller.locale === "ar";
       await tx.notification.create({
         data: {
@@ -655,14 +692,18 @@ export async function cancelOrder(
   });
 
   // Lost the race to a concurrent cancel / status advance — nothing was written.
-  if (!cancelled) return { error: "tooLate" };
+  if (cancelledSubIds.length === 0) return { error: "tooLate" };
 
   // Wallet refund settled instantly: recompute the buyer's balance and drop the
-  // now-cancelled sub-orders from each seller's escrow.
-  if (walletId) {
+  // now-cancelled sub-orders from each affected seller's escrow.
+  if (walletId && refundAmount > 0) {
     await recomputeWalletBalance(order.buyerId);
     const sellerProfileIds = [
-      ...new Set(order.subOrders.map((s) => s.store.seller.id)),
+      ...new Set(
+        cancellable
+          .filter((s) => cancelledSubIds.includes(s.id))
+          .map((s) => s.store.seller.id),
+      ),
     ];
     for (const pid of sellerProfileIds) await recomputeBalance(pid);
     await prisma.notification.create({
@@ -673,8 +714,8 @@ export async function cancelOrder(
           locale === "ar" ? "تم رد المبلغ إلى محفظتك" : "Refunded to wallet",
         body:
           locale === "ar"
-            ? `تمت إعادة ${Number(order.grandTotal).toFixed(2)}$ إلى محفظتك.`
-            : `$${Number(order.grandTotal).toFixed(2)} was returned to your wallet.`,
+            ? `تمت إعادة ${refundAmount.toFixed(2)}$ إلى محفظتك.`
+            : `$${refundAmount.toFixed(2)} was returned to your wallet.`,
         data: { orderId: order.id, link: `/account/orders/${order.id}` },
       },
     });

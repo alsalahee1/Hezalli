@@ -27,6 +27,7 @@ export type CouponInfo = {
   maxDiscountUsd: number | null;
   minSpendUsd: number | null;
   maxUses: number | null;
+  perUserLimit: number | null;
 };
 
 // Which groups a coupon applies to (all, or the one matching a store coupon).
@@ -118,6 +119,7 @@ export async function validateCoupon(
       row.maxDiscountUsd == null ? null : Number(row.maxDiscountUsd),
     minSpendUsd: row.minSpendUsd == null ? null : Number(row.minSpendUsd),
     maxUses: row.maxUses,
+    perUserLimit: row.perUserLimit,
   };
 
   const applicable = applicableGroups(coupon, groups);
