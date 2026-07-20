@@ -3,6 +3,7 @@
 // are immutable — the balance is recomputed, never edited in place. All amounts
 // are USD (USDT treated 1:1), matching the seller ledger in lib/finance.ts.
 // See docs/19-wallet-strategy.md.
+import { isUniqueViolation } from "@/lib/db-errors";
 import { round2 } from "@/lib/finance";
 import type { Prisma, WalletEntryType } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -14,13 +15,27 @@ export async function getWalletId(
   userId: string,
   client: Tx | typeof prisma = prisma,
 ): Promise<string> {
-  const wallet = await client.wallet.upsert({
-    where: { userId },
-    create: { userId },
-    update: {},
-    select: { id: true },
-  });
-  return wallet.id;
+  try {
+    const wallet = await client.wallet.upsert({
+      where: { userId },
+      create: { userId },
+      update: {},
+      select: { id: true },
+    });
+    return wallet.id;
+  } catch (e) {
+    // Two operations first-touching the same wallet can race the upsert's
+    // find-or-create and collide on the unique userId — the loser just re-reads
+    // the row the winner created.
+    if (isUniqueViolation(e)) {
+      const wallet = await client.wallet.findUniqueOrThrow({
+        where: { userId },
+        select: { id: true },
+      });
+      return wallet.id;
+    }
+    throw e;
+  }
 }
 
 /**

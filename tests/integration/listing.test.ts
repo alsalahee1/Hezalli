@@ -99,3 +99,46 @@ describe("getListing sort + pagination", () => {
     expect(ids(r)).toEqual([C, B, A]);
   });
 });
+
+describe("getListing full-text search (title + brand)", () => {
+  it("matches by a distinctive title token and by brand name", async () => {
+    const uniq = Date.now().toString(36);
+    const token = `zqxwidget${uniq}`;
+    const brandName = `BrandZQX${uniq}`;
+    const brand = await prisma.brand.create({
+      data: { name: brandName, slug: `bz-${uniq}` },
+    });
+    const product = await prisma.product.create({
+      data: {
+        storeId,
+        categoryId,
+        brandId: brand.id,
+        title: { en: `A ${token} thing`, ar: "شيء" },
+        slug: `fp-${uniq}`,
+        basePrice: 15,
+        status: "ACTIVE",
+        variants: {
+          create: { sku: `fs-${uniq}`, name: "Default", price: 15, stock: 3 },
+        },
+      },
+    });
+    try {
+      // Found by a token in the title.
+      const byTitle = await getListing({ q: token }, "en");
+      expect(byTitle.items.map((i) => i.id)).toContain(product.id);
+
+      // Found by the brand name (unioned in via the brand-name match).
+      const byBrand = await getListing({ q: brandName }, "en");
+      expect(byBrand.items.map((i) => i.id)).toContain(product.id);
+
+      // A token that matches nothing returns an empty result.
+      const none = await getListing({ q: `nomatch${uniq}` }, "en");
+      expect(none.total).toBe(0);
+    } finally {
+      await prisma.product
+        .delete({ where: { id: product.id } })
+        .catch(() => {});
+      await prisma.brand.delete({ where: { id: brand.id } }).catch(() => {});
+    }
+  });
+});

@@ -16,21 +16,39 @@ import {
 import { prisma } from "@/lib/prisma";
 import { toCardItem, type ProductCardItem } from "@/lib/products";
 
-const FTS_EXPR = `to_tsvector('simple',
+// Product-only text expression. MUST stay byte-identical to the expression in the
+// GIN index (migration 20260720130000) so the planner uses the index instead of
+// recomputing a tsvector for every ACTIVE product per query.
+const PROD_FTS_EXPR = `to_tsvector('simple',
   coalesce(p.title->>'en','') || ' ' || coalesce(p.title->>'ar','') || ' ' ||
-  coalesce(p.description->>'en','') || ' ' || coalesce(p.description->>'ar','') || ' ' ||
-  coalesce(b.name,''))`;
+  coalesce(p.description->>'en','') || ' ' || coalesce(p.description->>'ar',''))`;
 
-/** Full-text match → map of productId → relevance rank. */
+/**
+ * Full-text match → map of productId → relevance rank. Product title/description
+ * matches use the GIN index above; brand-name matches (a small table) are unioned
+ * in with a low constant rank so they sort below direct text hits.
+ */
 async function ftsRanks(q: string): Promise<Map<string, number>> {
   const rows = await prisma.$queryRawUnsafe<{ id: string; rank: number }[]>(
-    `SELECT p.id, ts_rank(${FTS_EXPR}, plainto_tsquery('simple', $1))::float AS rank
-     FROM "Product" p
-     LEFT JOIN "Brand" b ON b.id = p."brandId"
-     WHERE p.status = 'ACTIVE' AND ${FTS_EXPR} @@ plainto_tsquery('simple', $1)`,
+    `SELECT p.id, ts_rank(${PROD_FTS_EXPR}, plainto_tsquery('simple', $1))::float AS rank
+       FROM "Product" p
+      WHERE p.status = 'ACTIVE'
+        AND ${PROD_FTS_EXPR} @@ plainto_tsquery('simple', $1)
+     UNION
+     SELECT p.id, 0.01::float AS rank
+       FROM "Product" p
+       JOIN "Brand" b ON b.id = p."brandId"
+      WHERE p.status = 'ACTIVE'
+        AND to_tsvector('simple', coalesce(b.name, '')) @@ plainto_tsquery('simple', $1)`,
     q,
   );
-  return new Map(rows.map((r) => [r.id, Number(r.rank)]));
+  // A product can match on both text and brand — keep the higher rank.
+  const ranks = new Map<string, number>();
+  for (const r of rows) {
+    const rank = Number(r.rank);
+    ranks.set(r.id, Math.max(ranks.get(r.id) ?? 0, rank));
+  }
+  return ranks;
 }
 
 /** Build the Prisma filter, optionally ignoring one dimension (for facets). */
