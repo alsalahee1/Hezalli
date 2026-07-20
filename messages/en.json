@@ -451,7 +451,10 @@
     "repin": "Update pin",
     "locating": "Locating…",
     "clearLocation": "Clear",
-    "locationError": "Couldn't get your location — check permissions."
+    "locationError": "Couldn't get your location — check permissions.",
+    "showMap": "Show map",
+    "hideMap": "Hide map",
+    "mapHint": "Drag the pin or tap the map to set your exact delivery spot."
   },
   "Categories": {
     "all": "All categories",
@@ -1932,7 +1935,9 @@
     "noEvents": "No tracking updates yet — check back soon.",
     "estimatedDelivery": "Estimated delivery",
     "scanHint": "Scan to reopen on your phone",
-    "searchAnother": "Track another shipment"
+    "searchAnother": "Track another shipment",
+    "liveTitle": "Live location",
+    "liveUpdated": "updating live"
   },
   "Driver": {
     "appName": "Hezalli Driver",
