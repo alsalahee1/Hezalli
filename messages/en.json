@@ -6,7 +6,8 @@
     "comingSoon": "Coming soon",
     "comingSoonDesc": "This section is being built. Check back soon.",
     "menu": "Menu",
-    "close": "Close"
+    "close": "Close",
+    "language": "Language"
   },
   "Header": {
     "cart": "Cart",
