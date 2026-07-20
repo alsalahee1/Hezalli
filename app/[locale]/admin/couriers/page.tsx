@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import { Link } from "@/i18n/navigation";
 import { CourierApplicationActions } from "@/components/admin/courier-application-actions";
 
 // Admin review queue for "become a driver" applications. Pending requests are
@@ -12,7 +13,7 @@ export default async function AdminCouriersPage() {
   const t = await getTranslations("AdminCouriers");
   const format = await getFormatter();
 
-  const [applications, couriers] = await Promise.all([
+  const [applications, couriers, ledger] = await Promise.all([
     prisma.courierApplication.findMany({
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       include: {
@@ -24,7 +25,20 @@ export default async function AdminCouriersPage() {
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true, email: true, isSuspended: true },
     }),
+    // Cash-on-hand per courier = sum of every ledger entry except EARNING
+    // (COD_COLLECTED + REMITTANCE + ADJUSTMENT), in one pass.
+    prisma.courierLedgerEntry.groupBy({
+      by: ["courierId"],
+      where: { type: { not: "EARNING" } },
+      _sum: { amountUsd: true },
+    }),
   ]);
+
+  const cashByCourier = new Map(
+    ledger.map((g) => [g.courierId, Number(g._sum.amountUsd ?? 0)]),
+  );
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
 
   const pending = applications.filter((a) => a.status === "PENDING");
   const decided = applications.filter((a) => a.status !== "PENDING");
@@ -98,24 +112,40 @@ export default async function AdminCouriersPage() {
           <p className="text-muted-foreground text-sm">{t("noCouriers")}</p>
         ) : (
           <ul className="divide-y rounded-lg border">
-            {couriers.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-              >
-                <span className="min-w-0">
-                  <span className="font-medium">{c.name ?? "—"}</span>{" "}
-                  <span className="text-muted-foreground text-xs">
-                    {c.email}
-                  </span>
-                </span>
-                {c.isSuspended ? (
-                  <span className="bg-destructive/10 text-destructive rounded px-1.5 py-0.5 text-xs font-medium">
-                    {t("suspended")}
-                  </span>
-                ) : null}
-              </li>
-            ))}
+            {couriers.map((c) => {
+              const cash = cashByCourier.get(c.id) ?? 0;
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/admin/couriers/${c.id}`}
+                    className="hover:bg-muted/50 flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors"
+                  >
+                    <span className="min-w-0">
+                      <span className="font-medium">{c.name ?? "—"}</span>{" "}
+                      <span className="text-muted-foreground text-xs">
+                        {c.email}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      {c.isSuspended ? (
+                        <span className="bg-destructive/10 text-destructive rounded px-1.5 py-0.5 text-xs font-medium">
+                          {t("suspended")}
+                        </span>
+                      ) : null}
+                      {cash > 0 ? (
+                        <span
+                          className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600"
+                          dir="ltr"
+                          title={t("cashOnHand")}
+                        >
+                          {money(cash)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

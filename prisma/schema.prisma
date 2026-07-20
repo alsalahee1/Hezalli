@@ -132,6 +132,14 @@ enum DeliveryOutcome {
   FAILED
 }
 
+// Entries in a courier's cash + earnings ledger (see CourierLedgerEntry).
+enum CourierLedgerType {
+  COD_COLLECTED // + COD cash the driver took from the buyer on delivery
+  REMITTANCE // − cash the driver handed in to the office
+  EARNING // + the driver's delivery fee (owed by Hezalli to the driver)
+  ADJUSTMENT // ± manual correction by an admin
+}
+
 enum ReturnStatus {
   REQUESTED
   APPROVED
@@ -236,6 +244,27 @@ model User {
   courierShipments Shipment[] @relation("CourierShipments")
   courierLocation  CourierLocation?
   courierApplication CourierApplication?
+  courierLedger    CourierLedgerEntry[] @relation("CourierLedger")
+}
+
+// A courier's cash-and-earnings ledger. COD_COLLECTED (+) is buyer cash the
+// driver is holding; REMITTANCE (−) is cash handed to the office; the running
+// sum of those two is the driver's CASH ON HAND. EARNING (+) is the delivery
+// fee Hezalli owes the driver. Amounts are signed so a plain SUM reconciles.
+model CourierLedgerEntry {
+  id          String            @id @default(cuid())
+  courierId   String
+  type        CourierLedgerType
+  amountUsd   Decimal           @db.Decimal(12, 2) // signed
+  subOrderId  String?
+  shipmentId  String?
+  note        String?
+  createdById String? // admin who recorded a remittance / adjustment
+  createdAt   DateTime          @default(now())
+  courier     User              @relation("CourierLedger", fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId])
+  @@index([subOrderId])
 }
 
 // One "become a driver" application per user. Created PENDING by the applicant;

@@ -1,0 +1,153 @@
+import { notFound } from "next/navigation";
+import { getFormatter, getTranslations } from "next-intl/server";
+import { ArrowLeft } from "lucide-react";
+
+import { courierCashSummary } from "@/lib/courier-ledger";
+import { prisma } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
+import { Link } from "@/i18n/navigation";
+import { CourierRemittanceForm } from "@/components/admin/courier-remittance-form";
+
+// Per-courier COD reconciliation: headline cash-on-hand + earnings, a record-a-
+// remittance form, and the raw ledger. Cash-on-hand is what the driver still
+// owes the office; earnings are what Hezalli owes the driver.
+export default async function AdminCourierDetailPage({
+  params,
+}: {
+  params: Promise<{ courierId: string }>;
+}) {
+  const { courierId } = await params;
+  const t = await getTranslations("AdminCouriers");
+  const format = await getFormatter();
+
+  const courier = await prisma.user.findFirst({
+    where: { id: courierId, roles: { has: "COURIER" } },
+    select: { id: true, name: true, email: true },
+  });
+  if (!courier) notFound();
+
+  const [summary, entries] = await Promise.all([
+    courierCashSummary(courierId),
+    prisma.courierLedgerEntry.findMany({
+      where: { courierId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        type: true,
+        amountUsd: true,
+        note: true,
+        subOrderId: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
+
+  const stats: { key: string; value: number; accent?: boolean }[] = [
+    { key: "cashOnHand", value: summary.cashOnHand, accent: true },
+    { key: "earnings", value: summary.earnings },
+    { key: "totalCollected", value: summary.totalCollected },
+    { key: "totalRemitted", value: summary.totalRemitted },
+  ];
+
+  const typeLabel: Record<string, string> = {
+    COD_COLLECTED: t("type_COD_COLLECTED"),
+    REMITTANCE: t("type_REMITTANCE"),
+    EARNING: t("type_EARNING"),
+    ADJUSTMENT: t("type_ADJUSTMENT"),
+  };
+
+  return (
+    <div className="space-y-6">
+      <Link
+        href="/admin/couriers"
+        className="text-muted-foreground inline-flex items-center gap-1 text-sm hover:underline"
+      >
+        <ArrowLeft className="size-4 rtl:rotate-180" /> {t("backToCouriers")}
+      </Link>
+
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {courier.name ?? courier.email ?? t("driver")}
+        </h1>
+        <p className="text-muted-foreground text-sm">{courier.email}</p>
+      </div>
+
+      {/* Headline figures */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div
+            key={s.key}
+            className={cn(
+              "rounded-xl border p-4",
+              s.accent && s.value > 0 && "border-amber-500/40 bg-amber-500/5",
+            )}
+          >
+            <p className="text-muted-foreground text-xs">{t(s.key)}</p>
+            <p className="mt-1 text-xl font-semibold" dir="ltr">
+              {money(s.value)}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Record a hand-in */}
+      <section className="rounded-xl border p-4">
+        <h2 className="mb-3 text-sm font-semibold">{t("recordTitle")}</h2>
+        <CourierRemittanceForm courierId={courier.id} />
+      </section>
+
+      {/* Ledger */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">{t("ledgerTitle")}</h2>
+        {entries.length === 0 ? (
+          <p className="text-muted-foreground text-sm">{t("ledgerEmpty")}</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b text-xs">
+                  <th className="p-2 text-start font-medium">{t("colDate")}</th>
+                  <th className="p-2 text-start font-medium">{t("colType")}</th>
+                  <th className="p-2 text-end font-medium">{t("colAmount")}</th>
+                  <th className="p-2 text-start font-medium">{t("colNote")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => {
+                  const amt = Number(e.amountUsd);
+                  return (
+                    <tr key={e.id} className="border-b last:border-0">
+                      <td className="text-muted-foreground p-2 whitespace-nowrap">
+                        {format.dateTime(e.createdAt, { dateStyle: "short" })}
+                      </td>
+                      <td className="p-2">{typeLabel[e.type] ?? e.type}</td>
+                      <td
+                        className={cn(
+                          "p-2 text-end font-medium whitespace-nowrap",
+                          amt < 0 ? "text-emerald-600" : "",
+                        )}
+                        dir="ltr"
+                      >
+                        {money(amt)}
+                      </td>
+                      <td className="text-muted-foreground p-2">
+                        {e.note ??
+                          (e.subOrderId
+                            ? `#${e.subOrderId.slice(-8).toUpperCase()}`
+                            : "—")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
