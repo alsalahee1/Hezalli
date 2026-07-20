@@ -105,7 +105,6 @@ export function WalletSendForm({
             error={err}
             submitLabel={t("sendSubmit")}
             onAuthorize={run}
-            onCancel={() => setOpen(false)}
           />
         </div>
       </Modal>

@@ -165,14 +165,9 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
             <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
           ) : null}
 
-          <div className="flex gap-2">
-            <Button disabled={pending || !amount} onClick={submit}>
-              {pending ? t("submitting") : t("topUpSubmit")}
-            </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              {t("cancel")}
-            </Button>
-          </div>
+          <Button disabled={pending || !amount} onClick={submit}>
+            {pending ? t("submitting") : t("topUpSubmit")}
+          </Button>
         </div>
       </Modal>
     </>
