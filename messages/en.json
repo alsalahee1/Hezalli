@@ -20,7 +20,8 @@
     "wishlist": "Wishlist",
     "becomeSeller": "Sell on Hezalli",
     "sellerCenter": "Seller Center",
-    "adminPanel": "Admin panel"
+    "adminPanel": "Admin panel",
+    "wallet": "Wallet"
   },
   "Sell": {
     "title": "Sell on Hezalli",
@@ -1747,7 +1748,10 @@
     "err_recipientRequired": "Enter a recipient.",
     "err_recipientNotFound": "No user found with that email or phone.",
     "err_cannotSendSelf": "You can’t send funds to yourself.",
-    "err_recipientUnavailable": "That recipient can’t receive funds right now."
+    "err_recipientUnavailable": "That recipient can’t receive funds right now.",
+    "openWallet": "Open wallet",
+    "totalIn": "Total added",
+    "totalOut": "Total spent"
   },
   "ShippingLabel": {
     "title": "Shipping label",

@@ -20,7 +20,8 @@
     "wishlist": "المفضلة",
     "becomeSeller": "بِع على هزلي",
     "sellerCenter": "مركز البائع",
-    "adminPanel": "لوحة الإدارة"
+    "adminPanel": "لوحة الإدارة",
+    "wallet": "المحفظة"
   },
   "Sell": {
     "title": "بِع على هزلي",
@@ -1747,7 +1748,10 @@
     "err_recipientRequired": "أدخل المستلم.",
     "err_recipientNotFound": "لا يوجد مستخدم بهذا البريد أو الهاتف.",
     "err_cannotSendSelf": "لا يمكنك إرسال أموال إلى نفسك.",
-    "err_recipientUnavailable": "لا يمكن لهذا المستلم استلام الأموال حالياً."
+    "err_recipientUnavailable": "لا يمكن لهذا المستلم استلام الأموال حالياً.",
+    "openWallet": "فتح المحفظة",
+    "totalIn": "إجمالي المُضاف",
+    "totalOut": "إجمالي المصروف"
   },
   "ShippingLabel": {
     "title": "بطاقة الشحن",

@@ -1,7 +1,13 @@
 import { Suspense } from "react";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ArrowRight, Wallet } from "lucide-react";
+import {
+  getFormatter,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getWalletView } from "@/lib/wallet";
 import { localizedName } from "@/lib/categories";
 import { getFlashSales } from "@/lib/flash";
 import { prisma } from "@/lib/prisma";
@@ -84,6 +90,10 @@ export default async function HomePage({
         </section>
       )}
 
+      <Suspense fallback={null}>
+        <WalletHomeCard />
+      </Suspense>
+
       {/* Category tiles */}
       <section className="py-6">
         <h2 className="mb-3 text-xl font-semibold tracking-tight">
@@ -133,6 +143,36 @@ export default async function HomePage({
         <CategoryStrips locale={locale} />
       </Suspense>
     </main>
+  );
+}
+
+// Signed-in shoppers see their HezalliPay balance right on the home page.
+async function WalletHomeCard() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const t = await getTranslations("Wallet");
+  const format = await getFormatter();
+  const { balance } = await getWalletView(session.user.id, 0);
+
+  return (
+    <Link
+      href="/account/wallet"
+      className="from-primary/10 hover:border-primary/40 mt-4 flex items-center gap-4 rounded-xl border bg-gradient-to-br to-transparent p-4 transition-colors"
+    >
+      <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+        <Wallet className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-muted-foreground text-xs">{t("balance")}</p>
+        <p className="text-xl font-bold" dir="ltr">
+          {format.number(balance, { style: "currency", currency: "USD" })}
+        </p>
+      </div>
+      <span className="text-primary flex items-center gap-1 text-sm font-semibold">
+        {t("openWallet")}
+        <ArrowRight className="size-4 rtl:rotate-180" />
+      </span>
+    </Link>
   );
 }
 
