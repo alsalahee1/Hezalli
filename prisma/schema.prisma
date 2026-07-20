@@ -224,6 +224,8 @@ model User {
   referrals      User[]   @relation("Referrals")
   loyaltyTxns    LoyaltyTransaction[]
   wallet         Wallet?
+  walletCredentials WalletCredential[]
+  walletWebauthnChallenge WalletWebauthnChallenge?
   courierShipments Shipment[] @relation("CourierShipments")
   courierLocation  CourierLocation?
   courierApplication CourierApplication?
@@ -944,6 +946,36 @@ model WalletEntry {
   wallet     Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([walletId])
+}
+
+// Biometric step-up via WebAuthn / passkeys (Step 21). A registered platform
+// authenticator (Face ID / Touch ID / fingerprint / Windows Hello) that can
+// authorize wallet outflows instead of typing the PIN. Only the PUBLIC key is
+// stored — the biometric never leaves the device. The PIN remains as a fallback.
+model WalletCredential {
+  id           String    @id @default(cuid())
+  userId       String
+  credentialId String    @unique // base64url of the authenticator credential ID
+  publicKey    String // base64url of the COSE public key
+  counter      Int       @default(0) // signature counter (clone-detection)
+  transports   String[] // e.g. ["internal", "hybrid"]
+  label        String? // friendly device label
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Short-lived server-issued WebAuthn challenge (one in-flight per user). Consumed
+// on the matching register/authenticate response; expired ones are ignored.
+model WalletWebauthnChallenge {
+  userId    String   @id
+  challenge String
+  purpose   String // "register" | "auth"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ExchangeRate {

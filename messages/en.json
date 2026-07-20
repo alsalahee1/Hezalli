@@ -1883,7 +1883,22 @@
     "err_locked": "Too many wrong PINs. Try again later.",
     "err_wrongPin": "Incorrect PIN.",
     "err_dailyLimit": "You've reached today's transfer limit. Try again tomorrow.",
-    "err_monthlyLimit": "You've reached this month's transfer limit."
+    "err_monthlyLimit": "You've reached this month's transfer limit.",
+    "authRequiredNotice": "Set a PIN or enable biometrics below to authorize payments.",
+    "confirmBiometric": "Confirm with biometrics",
+    "usePinInstead": "Use PIN instead",
+    "useBiometricInstead": "Use biometrics",
+    "biometricOn": "Biometrics enabled",
+    "biometricOff": "Biometrics off",
+    "biometricAdd": "Enable biometrics",
+    "biometricUnsupported": "Not supported on this device",
+    "biometricDevice": "Passkey",
+    "biometricRemove": "Remove",
+    "err_biometricFailed": "Couldn’t verify with biometrics. Try again or use your PIN.",
+    "err_noChallenge": "That request expired. Please try again.",
+    "err_badPasskey": "Couldn’t verify the passkey.",
+    "err_failed": "Couldn’t complete that. Please try again.",
+    "err_noPasskey": "No passkey is registered."
   },
   "ShippingLabel": {
     "title": "Shipping label",

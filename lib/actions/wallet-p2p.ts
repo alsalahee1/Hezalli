@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { transferFunds } from "@/lib/wallet-transfers";
-import { verifyWalletPin } from "@/lib/wallet-pin";
+import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 
 type Result = { ok?: boolean; error?: string };
@@ -19,7 +19,8 @@ export async function sendWalletFunds(input: {
   recipient: string; // email or phone
   amountUsd: number;
   note?: string;
-  pin: string;
+  pin?: string;
+  passkey?: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
@@ -27,8 +28,8 @@ export async function sendWalletFunds(input: {
 
   if (!(await getSetting("wallet_p2p_enabled"))) return { error: "disabled" };
 
-  const pinCheck = await verifyWalletPin(session.user.id, input.pin);
-  if (!pinCheck.ok) return { error: pinCheck.error };
+  const authCheck = await verifyWalletAuth(session.user.id, input);
+  if (!authCheck.ok) return { error: authCheck.error };
 
   const velocity = await checkOutflowLimit(session.user.id, input.amountUsd);
   if (!velocity.ok) return { error: velocity.error };
@@ -57,7 +58,8 @@ export async function payUser(input: {
   recipientId: string;
   amountUsd: number;
   note?: string;
-  pin: string;
+  pin?: string;
+  passkey?: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
@@ -65,8 +67,8 @@ export async function payUser(input: {
 
   if (!(await getSetting("wallet_p2p_enabled"))) return { error: "disabled" };
 
-  const pinCheck = await verifyWalletPin(session.user.id, input.pin);
-  if (!pinCheck.ok) return { error: pinCheck.error };
+  const authCheck = await verifyWalletAuth(session.user.id, input);
+  if (!authCheck.ok) return { error: authCheck.error };
 
   const velocity = await checkOutflowLimit(session.user.id, input.amountUsd);
   if (!velocity.ok) return { error: velocity.error };

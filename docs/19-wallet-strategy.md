@@ -545,6 +545,36 @@ biller/telco aggregator is a drop-in, not a rewrite.
 
 ---
 
+## Step 21 — Biometric step-up (WebAuthn / passkeys) ✅
+
+Face ID / Touch ID / fingerprint / Windows Hello to authorize wallet outflows,
+with the PIN kept as a fallback (device without biometric, new device, failed
+scan). The biometric never leaves the device — only public keys are stored.
+
+- **Schema:** `WalletCredential` (public key + counter per registered passkey)
+  and `WalletWebauthnChallenge` (one short-lived, server-issued challenge).
+- **`lib/webauthn.ts`** (plain, authenticated-id only): rpID/origin config,
+  challenge store, `walletHasPasskey`, and `verifyWalletPasskey` (UV required,
+  counter-checked). **`lib/actions/wallet-passkey.ts`** issues/verifies the
+  registration + authentication ceremonies and lists/removes passkeys.
+- **`lib/wallet-step-auth.ts`** — one `verifyWalletAuth(userId, { pin?, passkey? })`
+  that every outflow now calls: a passkey assertion when supplied, otherwise the
+  PIN. `sendWalletFunds`, `payUser`, `payPaymentRequest`, `payBill`,
+  `requestWithdrawal` all route through it.
+- **UI:** `WalletAuthField` — the single control in every outflow form; offers
+  biometric as the fast default with a "use PIN instead" fallback (and vice
+  versa). `PasskeyManager` in the wallet Security panel enrols/removes devices.
+- Works in mobile browsers today (rpID/origin from `NEXT_PUBLIC_APP_URL`); a
+  future native app reuses the same server-challenge model.
+
+✅ **Acceptance criteria**
+- [x] An enrolled device authorizes payments by biometric; the PIN still works
+- [x] The biometric never reaches the server (only public keys are stored)
+- [x] A failed/absent passkey falls back to the PIN — no one is locked out
+- [x] User verification is required and the signature counter is checked
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |

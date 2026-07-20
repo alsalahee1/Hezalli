@@ -1883,7 +1883,22 @@
     "err_locked": "محاولات خاطئة كثيرة. حاول لاحقاً.",
     "err_wrongPin": "رمز غير صحيح.",
     "err_dailyLimit": "لقد بلغت حد التحويل اليومي. حاول غداً.",
-    "err_monthlyLimit": "لقد بلغت حد التحويل الشهري."
+    "err_monthlyLimit": "لقد بلغت حد التحويل الشهري.",
+    "authRequiredNotice": "عيّن رمزاً أو فعّل البصمة أدناه لتأكيد المدفوعات.",
+    "confirmBiometric": "التأكيد بالبصمة",
+    "usePinInstead": "استخدم الرمز بدلاً من ذلك",
+    "useBiometricInstead": "استخدم البصمة",
+    "biometricOn": "البصمة مُفعّلة",
+    "biometricOff": "البصمة غير مُفعّلة",
+    "biometricAdd": "تفعيل البصمة",
+    "biometricUnsupported": "غير مدعوم على هذا الجهاز",
+    "biometricDevice": "مفتاح مرور",
+    "biometricRemove": "إزالة",
+    "err_biometricFailed": "تعذّر التحقق بالبصمة. حاول مجدداً أو استخدم الرمز.",
+    "err_noChallenge": "انتهت صلاحية الطلب. حاول مجدداً.",
+    "err_badPasskey": "تعذّر التحقق من البصمة.",
+    "err_failed": "تعذّر الإكمال. حاول مجدداً.",
+    "err_noPasskey": "لا توجد بصمة مُسجّلة."
   },
   "ShippingLabel": {
     "title": "بطاقة الشحن",
