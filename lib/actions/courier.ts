@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireAdminId, requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
 import { nearestGovernorate } from "@/lib/yemen-geo";
 
@@ -83,6 +84,13 @@ export async function assignCourier(
         body: "A Hezalli Express delivery was assigned to you.",
         data: { link: "/driver" },
       },
+    });
+    // Ping the driver's phone (no-op unless push is configured).
+    await sendPushToUser(id, {
+      title: "New delivery assigned",
+      body: "A Hezalli Express delivery was assigned to you.",
+      url: "/driver",
+      tag: "assignment",
     });
   }
 
