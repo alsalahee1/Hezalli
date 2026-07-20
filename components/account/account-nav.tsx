@@ -29,7 +29,7 @@ export function AccountNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+    <nav className="flex flex-col gap-1">
       {ITEMS.map((item) => {
         const Icon = item.icon;
         const active =
