@@ -22,6 +22,7 @@ import { settleSubOrder } from "@/lib/finance";
 import { confirmTopUp } from "@/lib/actions/wallet-topup";
 import { markPayoutPaid } from "@/lib/actions/payout";
 import { confirmPayment } from "@/lib/actions/payment";
+import { cancelSubOrder } from "@/lib/actions/seller-order";
 import { transferEarningsToWallet } from "@/lib/actions/wallet-transfer";
 import {
   markWithdrawalPaid,
@@ -389,6 +390,84 @@ describe("confirmPayment — cannot confirm a cancelled order", () => {
       expect(after?.status).toBe("CANCELLED");
       expect(after?.payment?.status).not.toBe("CONFIRMED");
     } finally {
+      await fx.cleanup();
+    }
+  });
+});
+
+describe("seller cancelSubOrder — a paid buyer is refunded, not left short", () => {
+  it("wallet-paid: refunds to the wallet, marks REFUNDED, restores stock", async () => {
+    const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
+    try {
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "HEZALLI_BALANCE",
+        status: "CONFIRMED",
+      });
+      const before = await prisma.productVariant.findUnique({
+        where: { id: fx.variantId },
+        select: { stock: true },
+      });
+
+      as(fx.sellerUserId);
+      const res = await cancelSubOrder(subOrderId, "out of stock");
+      expect(res.ok).toBe(true);
+
+      // Buyer made whole in their wallet.
+      const { balance } = await getWalletView(fx.buyerId);
+      expect(balance).toBe(100);
+
+      // Sub-order is refunded and its stock is returned.
+      const sub = await prisma.subOrder.findUnique({
+        where: { id: subOrderId },
+        select: { status: true },
+      });
+      expect(sub?.status).toBe("REFUNDED");
+      const after = await prisma.productVariant.findUnique({
+        where: { id: fx.variantId },
+        select: { stock: true },
+      });
+      expect(after!.stock).toBe(before!.stock + 1);
+    } finally {
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await prisma.loyaltyTransaction
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await fx.cleanup();
+    }
+  });
+
+  it("COD: plain cancel with no wallet movement", async () => {
+    const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
+    try {
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "COD",
+        status: "CONFIRMED",
+      });
+
+      as(fx.sellerUserId);
+      const res = await cancelSubOrder(subOrderId, "out of stock");
+      expect(res.ok).toBe(true);
+
+      const sub = await prisma.subOrder.findUnique({
+        where: { id: subOrderId },
+        select: { status: true },
+      });
+      expect(sub?.status).toBe("CANCELLED");
+
+      // No refund/wallet entry was created for a COD order.
+      const entries = await prisma.walletEntry.findMany({
+        where: { wallet: { userId: fx.buyerId } },
+      });
+      expect(entries).toHaveLength(0);
+    } finally {
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
       await fx.cleanup();
     }
   });

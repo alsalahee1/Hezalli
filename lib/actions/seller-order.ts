@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { requireSellerStore } from "@/lib/authz";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
+import { applyRefund } from "@/lib/refunds";
 
 type Result = { ok?: boolean; error?: string };
 type SubTarget = "PROCESSING" | "SHIPPED" | "CANCELLED";
@@ -114,8 +115,70 @@ export async function cancelSubOrder(
 ): Promise<Result> {
   const r = (reason ?? "").trim();
   if (r.length < 3) return { error: "reasonRequired" };
-  return transition(subOrderId, ["CONFIRMED", "PROCESSING"], "CANCELLED", {
-    restoreStock: true,
-    reason: r,
+
+  const gate = await requireSellerStore();
+  if (!gate) return { error: "forbidden" };
+  const locale = await getLocale();
+
+  const sub = await prisma.subOrder.findFirst({
+    where: { id: subOrderId, storeId: gate.storeId },
+    select: {
+      id: true,
+      status: true,
+      items: { select: { variantId: true, quantity: true } },
+      order: {
+        select: {
+          paymentMethod: true,
+          payment: { select: { status: true } },
+        },
+      },
+    },
   });
+  if (!sub) return { error: "notFound" };
+  if (sub.status !== "CONFIRMED" && sub.status !== "PROCESSING") {
+    return { error: "badState" };
+  }
+
+  // Has the buyer's money been taken in-system? Prepaid orders whose payment is
+  // CONFIRMED (wallet at placement, bank/USDT after admin confirmation) MUST be
+  // refunded when the seller cancels — otherwise the buyer silently loses the
+  // money and the amount is stranded off the ledger. COD and not-yet-paid orders
+  // have nothing to return, so a plain cancel is correct.
+  const paid =
+    sub.order.paymentMethod !== "COD" &&
+    sub.order.payment?.status === "CONFIRMED";
+
+  if (!paid) {
+    return transition(subOrderId, ["CONFIRMED", "PROCESSING"], "CANCELLED", {
+      restoreStock: true,
+      reason: r,
+    });
+  }
+
+  // Refund the buyer to their HezalliPay wallet and mark the sub-order REFUNDED.
+  // applyRefund records the Refund, reverses any seller ledger credit (a no-op
+  // here — a CONFIRMED/PROCESSING sub-order is not yet settled), updates the order
+  // status, restores redeemed loyalty points, and notifies the buyer. Money moves
+  // first so a failure can never leave the buyer un-refunded; stock is restored
+  // afterwards.
+  const res = await applyRefund(subOrderId, {
+    reason: `Seller cancelled: ${r}`,
+    actor: "seller",
+    toWallet: true,
+  });
+  if (!res.ok) return { error: res.error ?? "refundFailed" };
+
+  await prisma.$transaction(async (tx) => {
+    for (const it of sub.items) {
+      await tx.productVariant.updateMany({
+        where: { id: it.variantId },
+        data: { stock: { increment: it.quantity } },
+      });
+    }
+  });
+
+  revalidatePath(`/${locale}/seller/orders`);
+  revalidatePath(`/${locale}/seller/orders/${subOrderId}`);
+  revalidatePath(`/${locale}/account/orders`);
+  return { ok: true };
 }
