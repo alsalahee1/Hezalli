@@ -7,9 +7,13 @@ import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
 import { getWalletLimits } from "@/lib/wallet-limits";
+import { abs } from "@/lib/seo";
 import { WalletTopUpForm } from "@/components/wallet/wallet-topup-form";
 import { WalletWithdrawForm } from "@/components/wallet/wallet-withdraw-form";
 import { WalletSendForm } from "@/components/wallet/wallet-send-form";
+import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
+import { ReferralLink } from "@/components/account/referral-link";
+import { QrCode } from "@/components/orders/qr-code";
 
 export const dynamic = "force-dynamic";
 
@@ -144,8 +148,32 @@ export default async function WalletPage() {
             />
           ) : null}
           {canSend ? <WalletSendForm balance={balance} /> : null}
+          {p2pEnabled ? <WalletRequestForm /> : null}
         </div>
       )}
+
+      {p2pEnabled && !frozen ? (
+        <details className="rounded-lg border p-4">
+          <summary className="cursor-pointer font-medium">
+            {t("receiveTitle")}
+          </summary>
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <div className="rounded-lg border bg-white p-3">
+              <QrCode value={abs(locale, `/pay/u/${userId}`)} size={200} />
+            </div>
+            <p className="text-muted-foreground max-w-xs text-center text-sm">
+              {t("receiveHint")}
+            </p>
+            <div className="w-full">
+              <ReferralLink
+                url={abs(locale, `/pay/u/${userId}`)}
+                copyLabel={t("copyLink")}
+                copiedLabel={t("copied")}
+              />
+            </div>
+          </div>
+        </details>
+      ) : null}
 
       {pendingTopUps.length > 0 ? (
         <section className="space-y-2">
