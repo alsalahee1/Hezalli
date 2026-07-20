@@ -128,16 +128,16 @@ New platform settings (`lib/settings.ts` defaults):
 - [x] Driver page: "My collection QR" card; job page shows pickup point; delivered dialog gets optional delivery-code field
 - [x] Seller ship dialog: optional point selector (active points, platform carrier only)
 - [x] Buyer order page: delivery QR + code while out for delivery; reschedule form after a failed attempt
-- [ ] Public tracking timeline: labels for the two new statuses
+- [x] Public tracking timeline: labels for the two new statuses
 
 ### Phase 6 — Admin
 - [x] `/admin/points`: list points (status toggle), review applications, ledger with payout/adjustment recording
 - [x] Settings page: the three new keys editable
 
 ### Phase 7 — i18n, tests, docs
-- [ ] `messages/en.json` + `messages/ar.json`: `Point`, `AdminPoints` namespaces + Driver/Orders/SellerOrders additions
-- [ ] Integration tests: application approval, receive→handover→deliver (fee ledger), fail→return→reschedule→re-handover, RTS after max attempts, authz guards
-- [ ] `docs/EXPRESS-DELIVERY.md` cross-link + this file kept current
+- [x] `messages/en.json` + `messages/ar.json`: `Point`, `AdminPoints` namespaces + Driver/Orders/SellerOrders additions
+- [x] Integration tests: application approval, receive→handover→deliver (fee ledger), fail→return→reschedule→re-handover, RTS after max attempts, authz guards
+- [x] `docs/EXPRESS-DELIVERY.md` cross-link + this file kept current
 
 ## 6. Out of scope (v1)
 

@@ -37,7 +37,9 @@ async function findParcel(pointId: string, tracking: string) {
           store: {
             select: {
               name: true,
-              seller: { select: { userId: true, user: { select: { locale: true } } } },
+              seller: {
+                select: { userId: true, user: { select: { locale: true } } },
+              },
             },
           },
           order: {
@@ -98,7 +100,10 @@ export async function receiveParcelAtPoint(
     prisma.notification.create({
       data: buyerNotice(
         parcel,
-        { en: "Your parcel reached the delivery point", ar: "وصل طردك إلى نقطة التوصيل" },
+        {
+          en: "Your parcel reached the delivery point",
+          ar: "وصل طردك إلى نقطة التوصيل",
+        },
         {
           en: `Your order from ${parcel.subOrder.store.name} arrived at ${pointName} and will be handed to a courier soon.`,
           ar: `وصل طلبك من ${parcel.subOrder.store.name} إلى ${pointName} وسيُسلَّم للمندوب قريبًا.`,
@@ -232,7 +237,10 @@ export async function receiveReturnAtPoint(
     prisma.notification.create({
       data: buyerNotice(
         parcel,
-        { en: "Your parcel is back at the delivery point", ar: "عاد طردك إلى نقطة التوصيل" },
+        {
+          en: "Your parcel is back at the delivery point",
+          ar: "عاد طردك إلى نقطة التوصيل",
+        },
         {
           en: `We couldn't deliver your order from ${parcel.subOrder.store.name}. It's held at ${pointName} — open the order to pick a new delivery day.`,
           ar: `تعذّر توصيل طلبك من ${parcel.subOrder.store.name} وهو الآن في ${pointName} — افتح الطلب لاختيار يوم توصيل جديد.`,

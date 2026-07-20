@@ -38,7 +38,9 @@ export default async function PointDashboardPage() {
             order: {
               select: {
                 id: true,
-                address: { select: { fullName: true, city: true, governorate: true } },
+                address: {
+                  select: { fullName: true, city: true, governorate: true },
+                },
               },
             },
           },

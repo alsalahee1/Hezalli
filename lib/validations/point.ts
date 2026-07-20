@@ -9,7 +9,11 @@ const phone = z
   .regex(/^\+?[\d\s-]{7,20}$/, "phoneInvalid");
 
 export const applyPointSchema = z.object({
-  pointName: z.string().trim().min(2, "pointNameShort").max(80, "pointNameLong"),
+  pointName: z
+    .string()
+    .trim()
+    .min(2, "pointNameShort")
+    .max(80, "pointNameLong"),
   fullName: z.string().trim().min(2, "fullNameShort").max(80, "fullNameLong"),
   phone,
   governorate: z.string().trim().min(2, "governorateRequired").max(60),

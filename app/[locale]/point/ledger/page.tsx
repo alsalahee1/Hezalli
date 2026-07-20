@@ -74,9 +74,7 @@ export default async function PointLedgerPage() {
           {entries.map((e) => (
             <li key={e.id} className="flex items-center gap-3 px-3 py-2.5">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">
-                  {t(`ledger_${e.type}`)}
-                </p>
+                <p className="text-sm font-medium">{t(`ledger_${e.type}`)}</p>
                 <p className="text-muted-foreground truncate text-xs">
                   {format.dateTime(e.createdAt, { dateStyle: "medium" })}
                   {e.note ? ` — ${e.note}` : null}

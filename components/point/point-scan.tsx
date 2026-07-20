@@ -277,7 +277,11 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
             dir="ltr"
             className="h-11"
           />
-          <Button type="submit" className="h-11" disabled={!manual.trim() || busy}>
+          <Button
+            type="submit"
+            className="h-11"
+            disabled={!manual.trim() || busy}
+          >
             {busy ? t("saving") : t("submitScan")}
           </Button>
         </div>
