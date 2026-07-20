@@ -340,6 +340,61 @@ Lowest value-per-risk. Ship this first.
 
 ---
 
+## Step 19.6 — Pay by QR + request money ✅ (LICENSED ONLY — P2P-gated)
+
+Turns the wallet into a peer payment surface, reusing the P2P transfer core.
+
+- **Shared transfer core** `lib/wallet-transfers.ts` — `transferFunds(from, to,
+  amount, note)`: a plain server module (not a `"use server"` action), so it can
+  only be called with the authenticated sender's id. Atomic debit with a
+  double-spend guard, `WalletTransfer` audit row, `TRANSFER_OUT`/`TRANSFER_IN`
+  entries, recipient notification. Used by direct send, pay-by-QR, and request
+  payment alike.
+- **Pay by QR** — each user has a receive QR on the wallet page encoding
+  `/pay/u/[userId]` (server-rendered via the existing `<QrCode>`; scanned by any
+  phone camera). Opening it renders `PayUserForm` → `payUser`.
+- **Request money** — `WalletPaymentRequest` (PENDING/PAID/CANCELLED).
+  `createPaymentRequest` returns a shareable `/pay/r/[requestId]` link/QR; the
+  payer's `payPaymentRequest` runs `transferFunds` then marks it PAID
+  (race-guarded via a conditional `updateMany`).
+- Same single gate as direct transfers: `wallet_p2p_enabled` (default false).
+
+✅ **Acceptance criteria**
+- [x] Scanning a user's QR pays them from wallet balance
+- [x] A money request is payable once, marks PAID, and can't be self-paid
+- [x] Everything stays off unless `wallet_p2p_enabled` is set
+
+---
+
+## Step 19.7 — Bill payments + airtime top-up ✅ (provider-ready framework)
+
+A digital-wallet staple: pay utility bills and buy mobile credit straight from
+the HezalliPay balance. Shipped as a **framework** — the money movement and
+admin fulfilment are real; a biller/telco aggregator API is the only remaining
+integration.
+
+- **Catalog** `lib/wallet-billers.ts` — a static, bilingual list of billers
+  (electricity, water, YemenNet, landline/ADSL) and airtime operators (Yemen
+  Mobile, Sabafon, YOU, MTN Yemen). This is the seam a provider catalog replaces.
+- **`WalletBillPayment`** (`BILL` | `AIRTIME`; `PENDING`/`COMPLETED`/`FAILED`).
+- **`payBill`** (`lib/actions/wallet-bills.ts`) — validates the biller/kind and
+  account, debits the wallet atomically (double-spend guard) with a
+  `BILL_PAYMENT`/`AIRTIME_TOPUP` entry, and files the purchase `PENDING`.
+- **Admin fulfilment** — `completeBillPayment` records the provider reference;
+  `failBillPayment` returns the funds via a `BILL_REFUND` entry. (Wire a real
+  API by auto-transitioning `PENDING` here.)
+- Gated by `wallet_bills_enabled` (default false); the buyer button and admin
+  queue only appear when it's on. No new external-money risk — funds stay inside
+  HezalliPay until a licensed provider is connected.
+
+✅ **Acceptance criteria**
+- [x] A purchase debits the wallet and files a PENDING record
+- [x] Admin "fail" refunds the wallet; "complete" keeps it debited
+- [x] A biller/kind mismatch or over-balance amount is rejected
+- [x] Everything stays off unless `wallet_bills_enabled` is set
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -351,8 +406,10 @@ Lowest value-per-risk. Ship this first.
 | 19.5 Cashback | Growth loop | Low (off by default) | ✅ shipped |
 | 19.5+ Seller-wallet unify | One balance for sellers | Low | ✅ shipped |
 | 19.5+ P2P transfer | Growth loop | **Licensed only** | ✅ built, ⚠️ off by default |
+| 19.6 Pay by QR + request money | Peer payments | **Licensed only** | ✅ built, ⚠️ off by default |
+| 19.7 Bills + airtime | Digital-wallet staple | Low (funds stay in-platform) | ✅ built, framework — off by default |
 
-**Bottom line:** 19.1–19.5 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.7 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on

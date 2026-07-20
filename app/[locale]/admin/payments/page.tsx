@@ -6,14 +6,18 @@ import {
   type PaymentRow,
 } from "@/components/admin/payment-queue";
 import { TopUpQueue, type TopUpRow } from "@/components/admin/topup-queue";
+import { BillQueue, type BillRow } from "@/components/admin/bill-queue";
+import { billerName } from "@/lib/wallet-billers";
+import { getLocale } from "next-intl/server";
 
 export default async function AdminPaymentsPage() {
   const t = await getTranslations("AdminPayments");
   const format = await getFormatter();
+  const locale = await getLocale();
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [payments, topUps] = await Promise.all([
+  const [payments, topUps, bills] = await Promise.all([
     prisma.payment.findMany({
       where: { status: "AWAITING_CONFIRMATION" },
       orderBy: { updatedAt: "asc" },
@@ -42,6 +46,18 @@ export default async function AdminPaymentsPage() {
         wallet: { select: { user: { select: { name: true } } } },
       },
     }),
+    prisma.walletBillPayment.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        kind: true,
+        biller: true,
+        account: true,
+        amountUsd: true,
+        wallet: { select: { user: { select: { name: true } } } },
+      },
+    }),
   ]);
 
   const rows: PaymentRow[] = payments.map((p) => ({
@@ -61,6 +77,15 @@ export default async function AdminPaymentsPage() {
     amountLabel: money(Number(p.amountUsd)),
     reference: p.reference,
     usdt: p.usdtTxHash ? `${p.usdtNetwork ?? ""} ${p.usdtTxHash}`.trim() : null,
+  }));
+
+  const billRows: BillRow[] = bills.map((b) => ({
+    id: b.id,
+    buyerName: b.wallet.user.name ?? "—",
+    kind: b.kind,
+    billerName: billerName(b.biller, locale),
+    account: b.account,
+    amountLabel: money(Number(b.amountUsd)),
   }));
 
   return (
@@ -83,6 +108,16 @@ export default async function AdminPaymentsPage() {
           <p className="text-muted-foreground text-sm">{t("topUpsDesc")}</p>
         </div>
         <TopUpQueue rows={topUpRows} />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t("billsTitle")}
+          </h2>
+          <p className="text-muted-foreground text-sm">{t("billsDesc")}</p>
+        </div>
+        <BillQueue rows={billRows} />
       </div>
     </div>
   );

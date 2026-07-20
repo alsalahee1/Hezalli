@@ -41,6 +41,10 @@ export type PlatformSettings = {
   // Peer-to-peer wallet transfers (Step 19.5+). LICENSED ONLY — money
   // transmission is regulated; keep false until authorized. Default off.
   wallet_p2p_enabled: boolean;
+  // Bill payment & airtime top-up (Step 19.7). A provider-ready framework;
+  // purchases are fulfilled manually by an admin until a biller/telco API is
+  // wired. Off by default — admins enable it in Admin → Settings.
+  wallet_bills_enabled: boolean;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -68,6 +72,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   // items total. Off by default (0); admins turn it on in Admin → Settings.
   wallet_cashback_rate: 0,
   wallet_p2p_enabled: false,
+  wallet_bills_enabled: false,
 };
 
 export const SETTING_KEYS = Object.keys(

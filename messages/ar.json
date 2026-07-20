@@ -1068,7 +1068,17 @@
     "method_HEZALLI_BALANCE": "محفظة HezalliPay",
     "topUpsTitle": "عمليات شحن المحفظة",
     "topUpsDesc": "أكّد عمليات إيداع المشترين في محافظ HezalliPay.",
-    "topUpsEmpty": "لا توجد عمليات شحن بانتظار التأكيد."
+    "topUpsEmpty": "لا توجد عمليات شحن بانتظار التأكيد.",
+    "billsTitle": "مشتريات الفواتير والرصيد",
+    "billsDesc": "أكمل مدفوعات الفواتير وشحن الرصيد. الفشل يعيد المبلغ إلى محفظة المشتري.",
+    "billsEmpty": "لا توجد عمليات قيد المعالجة.",
+    "billsKindBill": "فاتورة",
+    "billsKindAirtime": "رصيد",
+    "billsComplete": "تم التنفيذ",
+    "billsFail": "فشل",
+    "billsConfirmFail": "تأكيد الفشل",
+    "billsReference": "مرجع المزوّد",
+    "billsFailReason": "السبب"
   },
   "SellerFinance": {
     "title": "المالية",
@@ -1525,7 +1535,9 @@
     "assignStrategy": "إسناد السائقين",
     "assignStrategyHint": "كيف يختار الإسناد التلقائي سائقًا للطرد السريع المشحون.",
     "strategyBalanced": "متوازن (الأقل انشغالًا)",
-    "strategyNearest": "الأقرب (حسب المحافظة)"
+    "strategyNearest": "الأقرب (حسب المحافظة)",
+    "walletBills": "تفعيل دفع الفواتير وشحن الرصيد",
+    "walletBillsHint": "يدفع المستخدمون الفواتير ويشحنون الرصيد من محافظهم؛ ويقوم المشرف بتنفيذ كل عملية يدوياً حتى ربط واجهة مزوّد الخدمة."
   },
   "Vouchers": {
     "platformTitle": "قسائم المنصة",
@@ -1814,7 +1826,21 @@
     "err_notFound": "غير موجود.",
     "err_alreadyHandled": "تمت معالجة هذا الطلب بالفعل.",
     "err_cannotPayOwn": "لا يمكنك دفع طلبك الخاص.",
-    "err_forbidden": "غير مسموح."
+    "err_forbidden": "غير مسموح.",
+    "billsCta": "دفع الفواتير والرصيد",
+    "billsTitle": "ادفع الفواتير واشحن الرصيد",
+    "billsDesc": "ادفع فاتورة خدمات أو اشترِ رصيداً للجوال مباشرةً من رصيد محفظتك.",
+    "billsKindBill": "دفع فاتورة",
+    "billsKindAirtime": "شحن رصيد",
+    "billsAccount": "رقم الحساب / المشترك",
+    "billsPhone": "رقم الهاتف",
+    "billsSubmit": "ادفع الآن",
+    "pendingBillsTitle": "عمليات قيد المعالجة",
+    "billPaymentEntry": "دفع فاتورة",
+    "airtimeEntry": "شحن رصيد",
+    "billRefundEntry": "استرداد عملية",
+    "err_badBiller": "اختر جهة أو مشغّلاً صحيحاً.",
+    "err_accountRequired": "أدخل رقم الحساب أو الهاتف."
   },
   "ShippingLabel": {
     "title": "بطاقة الشحن",

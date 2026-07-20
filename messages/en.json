@@ -1068,7 +1068,17 @@
     "method_HEZALLI_BALANCE": "HezalliPay wallet",
     "topUpsTitle": "Wallet top-ups",
     "topUpsDesc": "Confirm buyer cash-ins to their HezalliPay wallet.",
-    "topUpsEmpty": "No top-ups awaiting confirmation."
+    "topUpsEmpty": "No top-ups awaiting confirmation.",
+    "billsTitle": "Bill & airtime purchases",
+    "billsDesc": "Fulfill wallet bill payments and airtime top-ups. Failing one refunds the buyer's wallet.",
+    "billsEmpty": "No pending purchases.",
+    "billsKindBill": "Bill",
+    "billsKindAirtime": "Airtime",
+    "billsComplete": "Mark done",
+    "billsFail": "Fail",
+    "billsConfirmFail": "Confirm fail",
+    "billsReference": "Provider ref",
+    "billsFailReason": "Reason"
   },
   "SellerFinance": {
     "title": "Finance",
@@ -1525,7 +1535,9 @@
     "assignStrategy": "Courier assignment",
     "assignStrategyHint": "How auto-assign chooses a driver for a shipped Express parcel.",
     "strategyBalanced": "Balanced (least busy)",
-    "strategyNearest": "Nearest driver (by governorate)"
+    "strategyNearest": "Nearest driver (by governorate)",
+    "walletBills": "Enable bill payments & airtime",
+    "walletBillsHint": "Buyers pay bills / top up airtime from their wallet; admins fulfill each purchase manually until a provider API is wired."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1814,7 +1826,21 @@
     "err_notFound": "Not found.",
     "err_alreadyHandled": "This request was already handled.",
     "err_cannotPayOwn": "You can’t pay your own request.",
-    "err_forbidden": "Not allowed."
+    "err_forbidden": "Not allowed.",
+    "billsCta": "Pay bills & airtime",
+    "billsTitle": "Pay bills & top up airtime",
+    "billsDesc": "Pay a utility bill or buy mobile credit straight from your wallet balance.",
+    "billsKindBill": "Pay a bill",
+    "billsKindAirtime": "Mobile top-up",
+    "billsAccount": "Account / subscriber number",
+    "billsPhone": "Phone number",
+    "billsSubmit": "Pay now",
+    "pendingBillsTitle": "Pending payments",
+    "billPaymentEntry": "Bill payment",
+    "airtimeEntry": "Airtime top-up",
+    "billRefundEntry": "Purchase refund",
+    "err_badBiller": "Choose a valid biller or operator.",
+    "err_accountRequired": "Enter the account or phone number."
   },
   "ShippingLabel": {
     "title": "Shipping label",
