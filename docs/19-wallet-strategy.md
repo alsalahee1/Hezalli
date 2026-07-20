@@ -475,6 +475,27 @@ anti-fraud / AML control that bounds the loss from a compromised account.
 
 ---
 
+## Step 19.11 — Liability & ledger-integrity reconciliation ✅
+
+The admin-side proof that the e-money book balances — two things a Central Bank
+review (or a nervous founder) will ask for.
+
+- **`lib/wallet-reconcile.ts`**: `getWalletLiability()` returns total outstanding
+  liability (Σ every wallet's balance), the ledger total (Σ every entry — should
+  match), and the wallet count; `findDriftedWallets()` lists any wallet whose
+  stored balance ≠ Σ its entries (should always be empty).
+- **Admin → Wallet audit** (`/admin/wallet-audit`, in the sidebar): liability
+  tiles, a green "all reconcile" banner, or the list of drifted wallets each with
+  a one-click **Reconcile** (recompute from the ledger, audited via
+  `reconcileWalletBalance`).
+
+✅ **Acceptance criteria**
+- [x] Total liability + ledger total are shown and match when consistent
+- [x] A tampered balance surfaces as drift; reconcile repairs it (audited)
+- [x] Reconcile is admin-only
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -491,8 +512,9 @@ anti-fraud / AML control that bounds the loss from a compromised account.
 | 19.8 Detail + receipts | Proof of payment | Low | ✅ shipped |
 | 19.9 Wallet PIN | Step-up security | Low | ✅ shipped |
 | 19.10 Velocity limits | Anti-fraud / AML | Low | ✅ shipped |
+| 19.11 Reconciliation | Book integrity | Low | ✅ shipped |
 
-**Bottom line:** 19.1–19.10 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.11 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on

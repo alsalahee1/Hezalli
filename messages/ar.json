@@ -571,7 +571,8 @@
     "newsletter": "النشرة البريدية",
     "reports": "التقارير",
     "audit": "سجل التدقيق",
-    "couriers": "السائقون"
+    "couriers": "السائقون",
+    "walletAudit": "تدقيق المحافظ"
   },
   "Newsletter": {
     "title": "النشرة البريدية",
@@ -2031,5 +2032,18 @@
     "status_PENDING": "معلّق",
     "status_APPROVED": "مقبول",
     "status_REJECTED": "مرفوض"
+  },
+  "AdminWalletAudit": {
+    "title": "تدقيق ومطابقة المحافظ",
+    "desc": "إجمالي التزامات المحافظ المستحقة وفحص سلامة السجل عبر كل المحافظ.",
+    "totalLiability": "إجمالي الالتزامات",
+    "ledgerTotal": "إجمالي السجل",
+    "walletCount": "المحافظ",
+    "consistent": "كل المحافظ متطابقة — كل رصيد يساوي مجموع قيود سجله.",
+    "driftFound": "{count} محفظة انحرفت عن السجل وتحتاج إلى مطابقة.",
+    "stored": "المخزَّن",
+    "computed": "السجل",
+    "reconcile": "مطابقة",
+    "reconciling": "جارٍ المطابقة…"
   }
 }
