@@ -518,6 +518,33 @@ hold, and correct a balance through the ledger (never by editing it directly).
 
 ---
 
+## Step 19.13 — Bill/airtime fulfilment providers (swappable adapter) ✅
+
+Turns §7's "swappable adapters" idea into a real seam so wiring a live
+biller/telco aggregator is a drop-in, not a rewrite.
+
+- **`lib/providers/bill-provider.ts`** — a `BillProvider` interface
+  (`fulfill()` → `COMPLETED` | `FAILED` | `PENDING`) + a registry. Built-in
+  `manual` provider always returns `PENDING` (identical to the pre-provider
+  behaviour, so it's the safe default).
+- **`lib/wallet-bills-core.ts`** — `completeBill` / `failBill` extracted as a
+  plain module shared by the admin actions and automatic fulfilment (funds are
+  already debited at `payBill`; failing refunds via `BILL_REFUND`).
+- **`payBill`** now, right after the atomic debit, asks the active provider
+  (`wallet_bills_provider` setting, default `"manual"`) to resolve the purchase.
+  A real adapter auto-completes/auto-fails inline; any provider error safely
+  leaves it `PENDING` for an admin — money is never lost.
+- To go live: implement `BillProvider`, `registerBillProvider(...)`, set
+  `wallet_bills_provider` to its id. No change to the money path.
+
+✅ **Acceptance criteria**
+- [x] A provider that confirms auto-completes the purchase (funds stay debited)
+- [x] A provider that declines auto-fails and refunds the wallet
+- [x] The default `manual` provider leaves purchases PENDING (unchanged behaviour)
+- [x] A provider error never loses the purchase (stays PENDING)
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -536,8 +563,9 @@ hold, and correct a balance through the ledger (never by editing it directly).
 | 19.10 Velocity limits | Anti-fraud / AML | Low | ✅ shipped |
 | 19.11 Reconciliation | Book integrity | Low | ✅ shipped |
 | 19.12 Freeze + adjustments | Back-office control | Low | ✅ shipped |
+| 19.13 Bill provider adapter | Provider-ready seam | Low | ✅ shipped |
 
-**Bottom line:** 19.1–19.12 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.13 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on

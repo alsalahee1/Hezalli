@@ -9,6 +9,8 @@ import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { getBiller } from "@/lib/wallet-billers";
+import { completeBill, failBill } from "@/lib/wallet-bills-core";
+import { getBillProvider } from "@/lib/providers/bill-provider";
 import { verifyWalletPin } from "@/lib/wallet-pin";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 import {
@@ -23,8 +25,10 @@ class BillError extends Error {}
 
 // Pay a utility bill or buy mobile airtime from the buyer's wallet. The wallet
 // is debited immediately (reserved) with a double-spend guard and the purchase
-// goes PENDING for admin fulfillment. Gated by wallet_bills_enabled. When a real
-// biller/telco API is wired, fulfill inline and mark COMPLETED/FAILED here.
+// is filed PENDING. The active fulfilment provider (wallet_bills_provider, default
+// "manual") is then asked to resolve it: "manual" leaves it for an admin; a real
+// biller/telco adapter can auto-complete or auto-fail (refund) inline. Gated by
+// wallet_bills_enabled. See lib/providers/bill-provider.ts.
 export async function payBill(input: {
   kind: "BILL" | "AIRTIME";
   biller: string;
@@ -104,13 +108,34 @@ export async function payBill(input: {
 
   await recomputeWalletBalance(userId);
 
+  // Hand off to the active provider. The wallet is already debited, so any
+  // provider error leaves the purchase PENDING (admin resolves) — never lost.
+  const providerId = await getSetting("wallet_bills_provider");
+  const provider = getBillProvider(providerId);
+  try {
+    const outcome = await provider.fulfill({
+      purchaseId: billId,
+      kind: input.kind,
+      biller: biller.slug,
+      account,
+      amountUsd: amount,
+    });
+    if (outcome.status === "COMPLETED") {
+      await completeBill(billId, { reference: outcome.reference });
+    } else if (outcome.status === "FAILED") {
+      await failBill(billId, { reason: outcome.reason });
+    }
+  } catch {
+    // Leave PENDING for admin / retry.
+  }
+
   revalidatePath(`/${locale}/account/wallet`);
   revalidatePath(`/${locale}/admin/payments`);
   return { ok: true, id: billId };
 }
 
-// Admin marks a pending purchase fulfilled. Funds were already debited, so this
-// only records the confirmation + optional provider reference and notifies.
+// Admin marks a pending purchase fulfilled (manual provider). Delegates to the
+// shared core, then handles the request-context concerns (auth + revalidate).
 export async function completeBillPayment(
   billId: string,
   reference?: string,
@@ -119,56 +144,18 @@ export async function completeBillPayment(
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
-  const bill = await prisma.walletBillPayment.findUnique({
-    where: { id: billId },
-    select: {
-      id: true,
-      status: true,
-      kind: true,
-      amountUsd: true,
-      wallet: { select: { userId: true, user: { select: { locale: true } } } },
-    },
+  const res = await completeBill(billId, {
+    reference: reference ?? null,
+    reviewedBy: adminId,
   });
-  if (!bill) return { error: "notFound" };
-  if (bill.status !== "PENDING") return { error: "badState" };
-
-  await prisma.walletBillPayment.update({
-    where: { id: bill.id },
-    data: {
-      status: "COMPLETED",
-      reviewedBy: adminId,
-      reference: reference?.trim() || null,
-      completedAt: new Date(),
-    },
-  });
-
-  const amount = Number(bill.amountUsd);
-  const ar = bill.wallet.user.locale === "ar";
-  const isAirtime = bill.kind === "AIRTIME";
-  await prisma.notification.create({
-    data: {
-      userId: bill.wallet.userId,
-      type: "PAYMENT",
-      title: ar
-        ? isAirtime
-          ? "تم شحن الرصيد"
-          : "تم دفع الفاتورة"
-        : isAirtime
-          ? "Airtime delivered"
-          : "Bill paid",
-      body: ar
-        ? `تمت معالجة عملية بقيمة ${amount.toFixed(2)}$ بنجاح.`
-        : `Your $${amount.toFixed(2)} payment was completed.`,
-      data: { link: `/account/wallet` },
-    },
-  });
+  if (!res.ok) return res;
 
   revalidatePath(`/${locale}/admin/payments`);
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };
 }
 
-// Admin fails a pending purchase → refund the wallet with a BILL_REFUND entry.
+// Admin fails a pending purchase → refund the wallet (via the shared core).
 export async function failBillPayment(
   billId: string,
   reason: string,
@@ -177,52 +164,8 @@ export async function failBillPayment(
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
-  const bill = await prisma.walletBillPayment.findUnique({
-    where: { id: billId },
-    select: {
-      id: true,
-      status: true,
-      amountUsd: true,
-      walletId: true,
-      wallet: { select: { userId: true, user: { select: { locale: true } } } },
-    },
-  });
-  if (!bill) return { error: "notFound" };
-  if (bill.status !== "PENDING") return { error: "badState" };
-
-  const amount = Number(bill.amountUsd);
-  await prisma.$transaction(async (tx) => {
-    await tx.walletBillPayment.update({
-      where: { id: bill.id },
-      data: {
-        status: "FAILED",
-        reviewedBy: adminId,
-        reviewNote: reason?.trim() || null,
-      },
-    });
-    await creditWalletTx(tx, bill.walletId, {
-      type: "BILL_REFUND",
-      amountUsd: amount,
-      note: `Refund for failed purchase (${bill.id})`,
-      refType: "bill",
-      refId: bill.id,
-    });
-  });
-
-  await recomputeWalletBalance(bill.wallet.userId);
-
-  const ar = bill.wallet.user.locale === "ar";
-  await prisma.notification.create({
-    data: {
-      userId: bill.wallet.userId,
-      type: "PAYMENT",
-      title: ar ? "تعذّرت العملية" : "Purchase failed",
-      body: ar
-        ? `تعذّر إتمام العملية وتمت إعادة ${amount.toFixed(2)}$ إلى محفظتك.`
-        : `We couldn't complete it — $${amount.toFixed(2)} was returned to your wallet.`,
-      data: { link: `/account/wallet` },
-    },
-  });
+  const res = await failBill(billId, { reason, reviewedBy: adminId });
+  if (!res.ok) return res;
 
   revalidatePath(`/${locale}/admin/payments`);
   revalidatePath(`/${locale}/account/wallet`);
