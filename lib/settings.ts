@@ -29,6 +29,9 @@ export type PlatformSettings = {
   // How auto-assignment chooses a courier: "balanced" (fewest active jobs) or
   // "nearest" (a driver in the destination governorate, then fewest jobs).
   courier_assign_strategy: "balanced" | "nearest";
+  // Flat fee (USD) Hezalli pays a courier for each completed Hezalli Express
+  // delivery — accrued to the driver's earnings ledger on delivery.
+  courier_delivery_fee: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -74,6 +77,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   express_eta_max_days: 2,
   express_auto_assign: true,
   courier_assign_strategy: "balanced",
+  courier_delivery_fee: 1.5,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

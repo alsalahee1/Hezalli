@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { recordDeliveryLedger } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -18,6 +19,16 @@ export async function autoCompleteDays(): Promise<number> {
   });
   const n = Number(row?.value);
   return Number.isFinite(n) && n >= 0 ? n : 7;
+}
+
+// The flat delivery fee a courier earns per completed drop (Admin → Settings).
+async function courierDeliveryFee(): Promise<number> {
+  const row = await prisma.platformSetting.findUnique({
+    where: { key: "courier_delivery_fee" },
+    select: { value: true },
+  });
+  const n = Number(row?.value);
+  return Number.isFinite(n) && n >= 0 ? n : 1.5;
 }
 
 // Proof captured by a courier at the doorstep (optional; the seller path has
@@ -43,6 +54,9 @@ export async function markSubOrderDelivered(
       id: true,
       orderId: true,
       status: true,
+      itemsTotal: true,
+      shippingTotal: true,
+      discountTotal: true,
       store: { select: { name: true } },
       shipment: { select: { id: true } },
       order: {
@@ -63,6 +77,15 @@ export async function markSubOrderDelivered(
   const autoCompleteAt = new Date(Date.now() + days * 86_400_000);
   const ar = sub.order.buyer.locale === "ar";
   const isCod = sub.order.paymentMethod === "COD";
+
+  // A Hezalli courier completing the drop accrues a delivery fee (earning) and,
+  // for COD, becomes accountable for the cash they collected.
+  const fee = proof?.courierId ? await courierDeliveryFee() : 0;
+  const codAmount = isCod
+    ? Number(sub.itemsTotal) +
+      Number(sub.shippingTotal) -
+      Number(sub.discountTotal)
+    : 0;
 
   await prisma.$transaction(async (tx) => {
     if (sub.shipment) {
@@ -93,6 +116,17 @@ export async function markSubOrderDelivered(
           note: proof?.note?.trim() || null,
         },
       });
+
+      // Courier cash + earnings ledger (COD held by the driver + delivery fee).
+      if (proof?.courierId) {
+        await recordDeliveryLedger(tx, {
+          courierId: proof.courierId,
+          subOrderId,
+          shipmentId: sub.shipment.id,
+          codAmount,
+          fee,
+        });
+      }
     }
 
     await tx.subOrder.update({
