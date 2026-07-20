@@ -32,6 +32,14 @@
     "wishlist": "Wishlist",
     "account": "Account"
   },
+  "WalletNav": {
+    "label": "Wallet",
+    "overview": "Overview",
+    "topUp": "Top up",
+    "send": "Send",
+    "history": "History",
+    "exit": "Store"
+  },
   "Sell": {
     "title": "Sell on Hezalli",
     "subtitle": "Open your store in minutes and reach buyers across Yemen. No approval wait — start listing right away.",

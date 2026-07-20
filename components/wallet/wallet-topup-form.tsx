@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { requestTopUp } from "@/lib/actions/wallet-topup";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
+import { WALLET_OPEN_TOPUP } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -26,6 +27,23 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
   const [network, setNetwork] = useState<"TRC20" | "ERC20">("TRC20");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // The wallet bottom bar opens this form by firing a window event.
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(WALLET_OPEN_TOPUP, onOpen);
+    return () => window.removeEventListener(WALLET_OPEN_TOPUP, onOpen);
+  }, []);
+
+  // Bring the form into view once it opens (e.g. tapped from the bottom bar).
+  useEffect(() => {
+    if (open)
+      sectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+  }, [open]);
 
   const isUsdt = method === "USDT";
 
@@ -61,7 +79,7 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
   }
 
   return (
-    <section className="space-y-3 rounded-lg border p-4">
+    <section ref={sectionRef} className="space-y-3 rounded-lg border p-4">
       <div>
         <h3 className="font-medium">{t("topUpTitle")}</h3>
         <p className="text-muted-foreground text-sm">{t("topUpDesc")}</p>

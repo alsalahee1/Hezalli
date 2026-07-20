@@ -12,6 +12,7 @@ import { WalletTopUpForm } from "@/components/wallet/wallet-topup-form";
 import { WalletWithdrawForm } from "@/components/wallet/wallet-withdraw-form";
 import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
+import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
 
@@ -225,7 +226,7 @@ export default async function WalletPage() {
         </section>
       ) : null}
 
-      <section className="space-y-3">
+      <section id="wallet-history" className="scroll-mt-20 space-y-3">
         <h2 className="font-medium">{t("history")}</h2>
         {entries.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("empty")}</p>
@@ -263,6 +264,11 @@ export default async function WalletPage() {
           </ul>
         )}
       </section>
+
+      {/* Wallet-focused bottom bar for phones — replaces the storefront's
+          default tab bar while on this screen. Top up / Send tabs mirror the
+          same capability gating as the action buttons above. */}
+      <WalletTabBar canTopUp={!frozen} canSend={canSend} />
     </div>
   );
 }
