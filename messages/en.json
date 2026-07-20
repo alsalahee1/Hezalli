@@ -571,7 +571,8 @@
     "newsletter": "Newsletter",
     "reports": "Reports",
     "audit": "Audit log",
-    "couriers": "Couriers"
+    "couriers": "Couriers",
+    "walletAudit": "Wallet audit"
   },
   "Newsletter": {
     "title": "Newsletter",
@@ -2031,5 +2032,18 @@
     "status_PENDING": "Pending",
     "status_APPROVED": "Approved",
     "status_REJECTED": "Rejected"
+  },
+  "AdminWalletAudit": {
+    "title": "Wallet audit & reconciliation",
+    "desc": "Total outstanding wallet liability and a ledger-integrity check across all wallets.",
+    "totalLiability": "Total liability",
+    "ledgerTotal": "Ledger total",
+    "walletCount": "Wallets",
+    "consistent": "All wallets reconcile — every balance equals the sum of its ledger entries.",
+    "driftFound": "{count} wallet(s) drifted from the ledger and need reconciling.",
+    "stored": "Stored",
+    "computed": "Ledger",
+    "reconcile": "Reconcile",
+    "reconciling": "Reconciling…"
   }
 }
