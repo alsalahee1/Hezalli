@@ -9,6 +9,7 @@ import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WalletPinField } from "@/components/wallet/wallet-pin-field";
 
 type Kind = "BILL" | "AIRTIME";
 export type BillerOption = { slug: string; kind: Kind; name: string };
@@ -16,9 +17,11 @@ export type BillerOption = { slug: string; kind: Kind; name: string };
 export function BillPayForm({
   billers,
   balance,
+  hasPin,
 }: {
   billers: BillerOption[];
   balance: number;
+  hasPin: boolean;
 }) {
   const t = useTranslations("Wallet");
   const locale = useLocale();
@@ -28,6 +31,7 @@ export function BillPayForm({
   const [biller, setBiller] = useState("");
   const [account, setAccount] = useState("");
   const [amount, setAmount] = useState("");
+  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -51,6 +55,7 @@ export function BillPayForm({
         biller: biller || options[0]?.slug || "",
         account,
         amountUsd: Number(amount),
+        pin,
       });
       if (res.error) setErr(res.error);
       else {
@@ -58,6 +63,7 @@ export function BillPayForm({
         setAccount("");
         setAmount("");
         setBiller("");
+        setPin("");
         router.refresh();
       }
     });
@@ -142,12 +148,17 @@ export function BillPayForm({
         </div>
       ) : null}
 
+      <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
+
       {err ? (
         <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
       ) : null}
 
       <div className="flex gap-2">
-        <Button disabled={pending || !account || !amount} onClick={submit}>
+        <Button
+          disabled={pending || !account || !amount || !hasPin || pin.length < 4}
+          onClick={submit}
+        >
           {pending ? t("submitting") : t("billsSubmit")}
         </Button>
         <Button variant="ghost" onClick={() => setOpen(false)}>

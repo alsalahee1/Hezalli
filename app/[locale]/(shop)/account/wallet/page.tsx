@@ -15,9 +15,11 @@ import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
 import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 import { BillPayForm } from "@/components/wallet/bill-pay-form";
+import { WalletPinForm } from "@/components/wallet/wallet-pin-form";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
 import { BILLERS, billerName } from "@/lib/wallet-billers";
+import { walletHasPin } from "@/lib/wallet-pin";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +73,7 @@ export default async function WalletPage() {
     p2pEnabled,
     billsEnabled,
     stats,
+    hasPin,
     profile,
     pendingTopUps,
     pendingWithdrawals,
@@ -81,6 +84,7 @@ export default async function WalletPage() {
     getSetting("wallet_p2p_enabled"),
     getSetting("wallet_bills_enabled"),
     getWalletStats(userId),
+    walletHasPin(userId),
     prisma.sellerProfile.findUnique({
       where: { userId },
       select: {
@@ -181,15 +185,28 @@ export default async function WalletPage() {
                 payoutMethod.kind,
                 payoutMethod.details,
               )}
+              hasPin={hasPin}
             />
           ) : null}
-          {canSend ? <WalletSendForm balance={balance} /> : null}
+          {canSend ? (
+            <WalletSendForm balance={balance} hasPin={hasPin} />
+          ) : null}
           {p2pEnabled ? <WalletRequestForm /> : null}
           {canPayBills ? (
-            <BillPayForm billers={billerOptions} balance={balance} />
+            <BillPayForm
+              billers={billerOptions}
+              balance={balance}
+              hasPin={hasPin}
+            />
           ) : null}
         </div>
       )}
+
+      {!frozen ? (
+        <section className="rounded-lg border p-4">
+          <WalletPinForm hasPin={hasPin} />
+        </section>
+      ) : null}
 
       {/* Desktop only: on phones the bottom bar's Scan button already shows the
           user's receive QR (its "My code" tab), so this is redundant there.
