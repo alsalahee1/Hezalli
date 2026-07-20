@@ -125,6 +125,13 @@ enum ShipmentStatus {
   RETURNED
 }
 
+// Outcome of a single doorstep delivery attempt by a courier. A parcel can have
+// several FAILED attempts before a DELIVERED one — see DeliveryAttempt.
+enum DeliveryOutcome {
+  DELIVERED
+  FAILED
+}
+
 enum ReturnStatus {
   REQUESTED
   APPROVED
@@ -1059,14 +1066,36 @@ model Shipment {
   driverId        String?
   shippedAt       DateTime?
   deliveredAt     DateTime?
+  // How many doorstep attempts the courier has made (failed + the final one).
+  attemptCount    Int             @default(0)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   subOrder        SubOrder        @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   carrier         Carrier?        @relation(fields: [carrierId], references: [id])
   driver          User?           @relation("CourierShipments", fields: [driverId], references: [id])
   events          ShipmentEvent[]
+  attempts        DeliveryAttempt[]
 
   @@index([driverId])
+}
+
+// One doorstep delivery attempt. FAILED records why (unreachable, refused,
+// wrong address, rescheduled, …); DELIVERED records proof (who received it and
+// an optional photo). Gives the parcel a real attempt history instead of a
+// single terminal flag, and powers retry + COD dispute evidence.
+model DeliveryAttempt {
+  id            String          @id @default(cuid())
+  shipmentId    String
+  courierId     String? // the driver at the time (plain id; no FK churn on User)
+  outcome       DeliveryOutcome
+  reason        String? // FAILED: unreachable | refused | wrong_address | rescheduled | other
+  recipientName String? // DELIVERED: who took the parcel
+  proofPhotoKey String? // DELIVERED: storage key of a doorstep photo
+  note          String?
+  createdAt     DateTime        @default(now())
+  shipment      Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
 }
 
 model ShipmentEvent {

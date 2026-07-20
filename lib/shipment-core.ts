@@ -20,12 +20,22 @@ export async function autoCompleteDays(): Promise<number> {
   return Number.isFinite(n) && n >= 0 ? n : 7;
 }
 
+// Proof captured by a courier at the doorstep (optional; the seller path has
+// none). Recorded as a DELIVERED DeliveryAttempt for tracking + COD evidence.
+export type DeliveryProof = {
+  courierId?: string;
+  recipientName?: string;
+  photoKey?: string;
+  note?: string;
+};
+
 // Transition a SHIPPED sub-order to DELIVERED. `actor` is recorded in the order
 // history ("seller" | "courier"). Idempotent guard: only acts while SHIPPED.
 export async function markSubOrderDelivered(
   subOrderId: string,
   actor: string,
   locale: string,
+  proof?: DeliveryProof,
 ): Promise<Result> {
   const sub = await prisma.subOrder.findUnique({
     where: { id: subOrderId },
@@ -56,12 +66,32 @@ export async function markSubOrderDelivered(
 
   await prisma.$transaction(async (tx) => {
     if (sub.shipment) {
+      const recipientName = proof?.recipientName?.trim() || null;
       await tx.shipment.update({
         where: { id: sub.shipment.id },
-        data: { status: "DELIVERED", deliveredAt: new Date() },
+        data: {
+          status: "DELIVERED",
+          deliveredAt: new Date(),
+          attemptCount: { increment: 1 },
+        },
       });
       await tx.shipmentEvent.create({
-        data: { shipmentId: sub.shipment.id, status: "DELIVERED" },
+        data: {
+          shipmentId: sub.shipment.id,
+          status: "DELIVERED",
+          note: recipientName ? `Received by ${recipientName}` : undefined,
+        },
+      });
+      // Record the successful attempt (proof of delivery).
+      await tx.deliveryAttempt.create({
+        data: {
+          shipmentId: sub.shipment.id,
+          courierId: proof?.courierId ?? null,
+          outcome: "DELIVERED",
+          recipientName,
+          proofPhotoKey: proof?.photoKey || null,
+          note: proof?.note?.trim() || null,
+        },
       });
     }
 

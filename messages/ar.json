@@ -1968,7 +1968,29 @@
     "locationOff": "الموقع متوقف",
     "shareLocation": "شارك موقعك",
     "updateLocation": "حدّث الموقع",
-    "locationError": "تعذّر تحديد موقعك — تحقق من الأذونات."
+    "locationError": "تعذّر تحديد موقعك — تحقق من الأذونات.",
+    "couldntDeliver": "تعذّر التوصيل",
+    "retryDelivery": "إعادة محاولة التوصيل",
+    "deliverTitle": "تأكيد التسليم",
+    "recipientName": "استلمها (اختياري)",
+    "recipientHint": "اسم من استلم الطرد",
+    "addPhoto": "إضافة صورة عند الباب",
+    "photoAdded": "تمت إضافة الصورة ✓",
+    "uploading": "جارٍ الرفع…",
+    "confirmDeliverBtn": "تأكيد التسليم",
+    "cancel": "إلغاء",
+    "failTitle": "لماذا تعذّر التوصيل؟",
+    "failReason_unreachable": "تعذّر الوصول إلى العميل",
+    "failReason_refused": "رفض العميل استلام الطرد",
+    "failReason_wrong_address": "عنوان خاطئ أو غير مكتمل",
+    "failReason_rescheduled": "طلب العميل تحديد موعد آخر",
+    "failReason_other": "سبب آخر",
+    "failNote": "أضف ملاحظة (اختياري)",
+    "submitFail": "تسجيل محاولة فاشلة",
+    "err_badReason": "يرجى اختيار سبب",
+    "err_uploadFailed": "تعذّر رفع الصورة. حاول مرة أخرى.",
+    "proofRecipient": "استلمها",
+    "proofPhotoAlt": "صورة التسليم عند الباب"
   },
   "Dispatch": {
     "title": "التوزيع",
@@ -1984,7 +2006,8 @@
     "dueSoon": "قريب الاستحقاق",
     "overdueCount": "{count} متأخّر",
     "dueSoonCount": "{count} قريب الاستحقاق",
-    "dueByLabel": "الاستحقاق"
+    "dueByLabel": "الاستحقاق",
+    "attempts": "{count, plural, zero {# محاولات} one {محاولة واحدة} two {محاولتان} few {# محاولات} many {# محاولة} other {# محاولة}}"
   },
   "Drive": {
     "title": "وصّل مع هزلي",
