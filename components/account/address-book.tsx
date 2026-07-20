@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { deleteAddress, setDefaultAddress } from "@/lib/actions/account";
 import { GOVERNORATES } from "@/lib/yemen";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 import { AddressForm, type AddressData } from "./address-form";
 
@@ -15,6 +16,10 @@ export function AddressBook({ addresses }: { addresses: AddressData[] }) {
   const locale = useLocale();
   // null = list view, "new" = adding, or an address id being edited.
   const [editing, setEditing] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  // Set right before a re-submit that follows a confirmed dialog, so the
+  // handler lets that one submission through instead of intercepting it again.
+  const confirmedRef = useRef(false);
 
   const govLabel = (value: string) => {
     const g = GOVERNORATES.find((x) => x.value === value);
@@ -23,6 +28,7 @@ export function AddressBook({ addresses }: { addresses: AddressData[] }) {
 
   return (
     <div className="space-y-4">
+      {dialog}
       {editing === "new" ? (
         <AddressForm onDone={() => setEditing(null)} />
       ) : (
@@ -85,8 +91,19 @@ export function AddressBook({ addresses }: { addresses: AddressData[] }) {
                   <form
                     action={deleteAddress}
                     onSubmit={(e) => {
-                      if (!window.confirm(t("confirmDeleteAddress")))
-                        e.preventDefault();
+                      if (confirmedRef.current) {
+                        confirmedRef.current = false;
+                        return;
+                      }
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      void confirm(t("confirmDeleteAddress"), {
+                        destructive: true,
+                      }).then((ok) => {
+                        if (!ok) return;
+                        confirmedRef.current = true;
+                        form.requestSubmit();
+                      });
                     }}
                   >
                     <input type="hidden" name="id" value={a.id} />

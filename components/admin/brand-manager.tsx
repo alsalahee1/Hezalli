@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -8,6 +8,7 @@ import { deleteBrand, saveBrand, type FormState } from "@/lib/actions/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type AdminBrand = {
   id: string;
@@ -106,9 +107,12 @@ function BrandForm({
 export function BrandManager({ brands }: { brands: AdminBrand[] }) {
   const t = useTranslations("AdminBrands");
   const [mode, setMode] = useState<"new" | string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  const confirmedRef = useRef(false);
 
   return (
     <div className="space-y-4">
+      {dialog}
       {mode === "new" ? (
         <BrandForm onDone={() => setMode(null)} />
       ) : (
@@ -152,8 +156,19 @@ export function BrandManager({ brands }: { brands: AdminBrand[] }) {
                   <form
                     action={deleteBrand}
                     onSubmit={(e) => {
-                      if (!window.confirm(t("confirmDelete")))
-                        e.preventDefault();
+                      if (confirmedRef.current) {
+                        confirmedRef.current = false;
+                        return;
+                      }
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      void confirm(t("confirmDelete"), {
+                        destructive: true,
+                      }).then((ok) => {
+                        if (!ok) return;
+                        confirmedRef.current = true;
+                        form.requestSubmit();
+                      });
                     }}
                   >
                     <input type="hidden" name="id" value={b.id} />

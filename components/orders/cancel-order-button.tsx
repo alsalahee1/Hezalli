@@ -6,15 +6,17 @@ import { useTranslations } from "next-intl";
 import { cancelOrder } from "@/lib/actions/order";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export function CancelOrderButton({ orderId }: { orderId: string }) {
   const t = useTranslations("Orders");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
-  const onClick = () => {
-    if (!confirm(t("cancelConfirm"))) return;
+  const onClick = async () => {
+    if (!(await confirm(t("cancelConfirm"), { destructive: true }))) return;
     start(async () => {
       setErr(null);
       const res = await cancelOrder(orderId);
@@ -25,6 +27,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
 
   return (
     <div className="flex flex-col items-start gap-1">
+      {dialog}
       <Button
         variant="outline"
         size="sm"

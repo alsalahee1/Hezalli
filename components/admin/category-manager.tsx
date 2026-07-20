@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions/category";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 import { CategoryForm, type CategoryFormData } from "./category-form";
 
@@ -26,6 +27,8 @@ export function CategoryManager({
 }) {
   const t = useTranslations("AdminCategories");
   const [mode, setMode] = useState<"new" | string | null>(null);
+  const { confirm, dialog } = useConfirm();
+  const confirmedRef = useRef(false);
 
   const childrenOf = useMemo(() => {
     const map = new Map<string | null, AdminCategory[]>();
@@ -108,7 +111,19 @@ export function CategoryManager({
               <form
                 action={deleteCategory}
                 onSubmit={(e) => {
-                  if (!window.confirm(t("confirmDelete"))) e.preventDefault();
+                  if (confirmedRef.current) {
+                    confirmedRef.current = false;
+                    return;
+                  }
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  void confirm(t("confirmDelete"), {
+                    destructive: true,
+                  }).then((ok) => {
+                    if (!ok) return;
+                    confirmedRef.current = true;
+                    form.requestSubmit();
+                  });
                 }}
               >
                 <input type="hidden" name="id" value={cat.id} />
@@ -143,6 +158,7 @@ export function CategoryManager({
 
   return (
     <div className="space-y-4">
+      {dialog}
       {mode === "new" ? (
         <CategoryForm
           action={createCategory}

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { ImageUploader } from "@/components/upload/image-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type BannerRow = {
   id: string;
@@ -48,6 +49,7 @@ export function BannerManager({ banners }: { banners: BannerRow[] }) {
   const [editing, setEditing] = useState<BannerRow | null>(null);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const run = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
@@ -62,6 +64,7 @@ export function BannerManager({ banners }: { banners: BannerRow[] }) {
 
   return (
     <div className="space-y-6">
+      {dialog}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -169,8 +172,10 @@ export function BannerManager({ banners }: { banners: BannerRow[] }) {
                   variant="ghost"
                   className="text-destructive"
                   disabled={pending}
-                  onClick={() => {
-                    if (confirm(t("confirmDelete")))
+                  onClick={async () => {
+                    if (
+                      await confirm(t("confirmDelete"), { destructive: true })
+                    )
                       run(() => deleteBanner(b.id));
                   }}
                 >
