@@ -114,6 +114,7 @@ function PageEditor({
   onDone: () => void;
 }) {
   const t = useTranslations("AdminPages");
+  const tc = useTranslations("Common");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -133,7 +134,14 @@ function PageEditor({
       }
     });
   const remove = async () => {
-    if (!(await confirm(t("deleteConfirm"), { destructive: true }))) return;
+    if (
+      !(await confirm(tc("cannotUndo"), {
+        title: t("deleteConfirm"),
+        confirmLabel: t("delete"),
+        destructive: true,
+      }))
+    )
+      return;
     start(async () => {
       await deleteCmsPage(f.slug);
       router.refresh();

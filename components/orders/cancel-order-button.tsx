@@ -16,7 +16,14 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
   const { confirm, dialog } = useConfirm();
 
   const onClick = async () => {
-    if (!(await confirm(t("cancelConfirm"), { destructive: true }))) return;
+    if (
+      !(await confirm(t("cancelConfirm"), {
+        title: t("cancelConfirmTitle"),
+        confirmLabel: t("cancelOrder"),
+        destructive: true,
+      }))
+    )
+      return;
     start(async () => {
       setErr(null);
       const res = await cancelOrder(orderId);

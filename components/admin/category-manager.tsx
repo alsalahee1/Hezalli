@@ -26,6 +26,7 @@ export function CategoryManager({
   categories: AdminCategory[];
 }) {
   const t = useTranslations("AdminCategories");
+  const tc = useTranslations("Common");
   const [mode, setMode] = useState<"new" | string | null>(null);
   const { confirm, dialog } = useConfirm();
   const confirmedRef = useRef(false);
@@ -117,7 +118,9 @@ export function CategoryManager({
                   }
                   e.preventDefault();
                   const form = e.currentTarget;
-                  void confirm(t("confirmDelete"), {
+                  void confirm(tc("cannotUndo"), {
+                    title: t("confirmDelete"),
+                    confirmLabel: t("delete"),
                     destructive: true,
                   }).then((ok) => {
                     if (!ok) return;

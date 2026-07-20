@@ -26,7 +26,8 @@
     "language": "اللغة",
     "more": "المزيد",
     "cancel": "إلغاء",
-    "confirm": "موافق"
+    "confirm": "موافق",
+    "cannotUndo": "لا يمكن التراجع عن هذا الإجراء."
   },
   "Header": {
     "cart": "السلة",
@@ -216,7 +217,8 @@
     "bulkArchive": "أرشفة",
     "duplicate": "نسخ",
     "archive": "أرشفة",
-    "confirmArchive": "أرشفة المنتجات المحددة؟ يمكنك استعادتها لاحقاً.",
+    "confirmArchiveTitle": "أرشفة المنتجات المحددة؟",
+    "confirmArchive": "يمكنك استعادتها لاحقاً.",
     "pageOf": "صفحة {page} من {totalPages}",
     "prev": "السابق",
     "next": "التالي",
@@ -818,6 +820,7 @@
     "save": "حفظ",
     "cancel": "إلغاء",
     "empty": "لا توجد لافتات بعد. أضف واحدة لعرضها في الصفحة الرئيسية.",
+    "delete": "حذف",
     "confirmDelete": "حذف هذه اللافتة؟",
     "untitled": "لافتة بدون عنوان",
     "imageRequired": "يرجى رفع صورة.",
@@ -995,11 +998,13 @@
     "shippingTotal": "الشحن",
     "discount": "الخصم",
     "cancelOrder": "إلغاء الطلب",
-    "cancelConfirm": "إلغاء هذا الطلب؟ ستتم إعادة الكمية إلى البائعين.",
+    "cancelConfirmTitle": "إلغاء هذا الطلب؟",
+    "cancelConfirm": "ستتم إعادة الكمية إلى البائعين.",
     "err_tooLate": "لا يمكن إلغاء هذا الطلب بعد الآن.",
     "err_notFound": "الطلب غير موجود.",
     "err_unauthorized": "يرجى تسجيل الدخول.",
-    "confirmReceivedConfirm": "تأكيد استلامك لهذا الطلب؟ سيؤدي ذلك إلى تحرير الدفعة للبائع.",
+    "confirmReceivedTitle": "تأكيد استلامك لهذا الطلب؟",
+    "confirmReceivedConfirm": "سيؤدي ذلك إلى تحرير الدفعة للبائع.",
     "err_badState": "هذا الإجراء غير متاح حالياً.",
     "trackingTitle": "التتبع",
     "expressBadge": "سريع",
@@ -1808,7 +1813,8 @@
     "roles": "الأدوار",
     "delete": "حذف",
     "save": "حفظ",
-    "deleteConfirm": "حذف هذا الحساب؟ لن يتمكن من تسجيل الدخول."
+    "deleteConfirmTitle": "حذف هذا الحساب؟",
+    "deleteConfirm": "لن يتمكن من تسجيل الدخول."
   },
   "AdminAudit": {
     "title": "سجل التدقيق",

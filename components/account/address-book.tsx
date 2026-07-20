@@ -13,6 +13,7 @@ import { AddressForm, type AddressData } from "./address-form";
 
 export function AddressBook({ addresses }: { addresses: AddressData[] }) {
   const t = useTranslations("Account");
+  const tc = useTranslations("Common");
   const locale = useLocale();
   // null = list view, "new" = adding, or an address id being edited.
   const [editing, setEditing] = useState<string | null>(null);
@@ -97,7 +98,9 @@ export function AddressBook({ addresses }: { addresses: AddressData[] }) {
                       }
                       e.preventDefault();
                       const form = e.currentTarget;
-                      void confirm(t("confirmDeleteAddress"), {
+                      void confirm(tc("cannotUndo"), {
+                        title: t("confirmDeleteAddress"),
+                        confirmLabel: t("delete"),
                         destructive: true,
                       }).then((ok) => {
                         if (!ok) return;

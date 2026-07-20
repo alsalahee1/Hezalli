@@ -45,6 +45,7 @@ const EMPTY: BannerRow = {
 
 export function BannerManager({ banners }: { banners: BannerRow[] }) {
   const t = useTranslations("AdminBanners");
+  const tc = useTranslations("Common");
   const router = useRouter();
   const [editing, setEditing] = useState<BannerRow | null>(null);
   const [pending, start] = useTransition();
@@ -174,7 +175,11 @@ export function BannerManager({ banners }: { banners: BannerRow[] }) {
                   disabled={pending}
                   onClick={async () => {
                     if (
-                      await confirm(t("confirmDelete"), { destructive: true })
+                      await confirm(tc("cannotUndo"), {
+                        title: t("confirmDelete"),
+                        confirmLabel: t("delete"),
+                        destructive: true,
+                      })
                     )
                       run(() => deleteBanner(b.id));
                   }}

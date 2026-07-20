@@ -360,7 +360,11 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
     const ids = [...selected];
     if (
       status === "REMOVED" &&
-      !(await confirm(t("confirmArchive"), { destructive: true }))
+      !(await confirm(t("confirmArchive"), {
+        title: t("confirmArchiveTitle"),
+        confirmLabel: t("archive"),
+        destructive: true,
+      }))
     )
       return;
     start(async () => {
@@ -377,7 +381,14 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
     });
 
   const runArchive = async (id: string) => {
-    if (!(await confirm(t("confirmArchive"), { destructive: true }))) return;
+    if (
+      !(await confirm(t("confirmArchive"), {
+        title: t("confirmArchiveTitle"),
+        confirmLabel: t("archive"),
+        destructive: true,
+      }))
+    )
+      return;
     start(async () => {
       await bulkSetStatus([id], "REMOVED");
       router.refresh();

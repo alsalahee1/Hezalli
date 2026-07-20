@@ -77,7 +77,13 @@ export function UserActions({
           className="text-destructive"
           disabled={pending}
           onClick={async () => {
-            if (await confirm(t("deleteConfirm"), { destructive: true }))
+            if (
+              await confirm(t("deleteConfirm"), {
+                title: t("deleteConfirmTitle"),
+                confirmLabel: t("delete"),
+                destructive: true,
+              })
+            )
               run(() => softDeleteUser(userId));
           }}
         >

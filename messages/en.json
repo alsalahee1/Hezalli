@@ -26,7 +26,8 @@
     "language": "Language",
     "more": "More",
     "cancel": "Cancel",
-    "confirm": "OK"
+    "confirm": "OK",
+    "cannotUndo": "This can't be undone."
   },
   "Header": {
     "cart": "Cart",
@@ -216,7 +217,8 @@
     "bulkArchive": "Archive",
     "duplicate": "Duplicate",
     "archive": "Archive",
-    "confirmArchive": "Archive the selected product(s)? You can restore them later.",
+    "confirmArchiveTitle": "Archive the selected product(s)?",
+    "confirmArchive": "You can restore them later.",
     "pageOf": "Page {page} of {totalPages}",
     "prev": "Previous",
     "next": "Next",
@@ -818,6 +820,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "empty": "No banners yet. Add one to feature it on the home page.",
+    "delete": "Delete",
     "confirmDelete": "Delete this banner?",
     "untitled": "Untitled banner",
     "imageRequired": "Please upload an image.",
@@ -995,11 +998,13 @@
     "shippingTotal": "Shipping",
     "discount": "Discount",
     "cancelOrder": "Cancel order",
-    "cancelConfirm": "Cancel this order? Stock will be restored to the sellers.",
+    "cancelConfirmTitle": "Cancel this order?",
+    "cancelConfirm": "Stock will be restored to the sellers.",
     "err_tooLate": "This order can no longer be cancelled.",
     "err_notFound": "Order not found.",
     "err_unauthorized": "Please sign in.",
-    "confirmReceivedConfirm": "Confirm you received this order? This releases payment to the seller.",
+    "confirmReceivedTitle": "Confirm you received this order?",
+    "confirmReceivedConfirm": "This releases payment to the seller.",
     "err_badState": "This action isn't available right now.",
     "trackingTitle": "Tracking",
     "expressBadge": "Express",
@@ -1808,7 +1813,8 @@
     "roles": "Roles",
     "delete": "Delete",
     "save": "Save",
-    "deleteConfirm": "Soft-delete this account? They won't be able to sign in."
+    "deleteConfirmTitle": "Delete this account?",
+    "deleteConfirm": "They won't be able to sign in."
   },
   "AdminAudit": {
     "title": "Audit log",
