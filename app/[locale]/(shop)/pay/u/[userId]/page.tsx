@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getWalletView } from "@/lib/wallet";
 import { walletHasPin } from "@/lib/wallet-pin";
+import { walletHasPasskey } from "@/lib/webauthn";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,10 @@ export default async function PayUserPage({
 
   const name = recipient.name || recipient.email || "—";
   const { balance } = await getWalletView(session.user.id, 0);
-  const hasPin = await walletHasPin(session.user.id);
+  const [hasPin, hasPasskey] = await Promise.all([
+    walletHasPin(session.user.id),
+    walletHasPasskey(session.user.id),
+  ]);
 
   return shell(
     <div className="space-y-4">
@@ -86,6 +90,7 @@ export default async function PayUserPage({
         recipientName={name}
         balance={balance}
         hasPin={hasPin}
+        hasPasskey={hasPasskey}
       />
     </div>,
   );

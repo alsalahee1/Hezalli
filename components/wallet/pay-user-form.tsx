@@ -7,39 +7,40 @@ import { useLocale, useTranslations } from "next-intl";
 import { payUser } from "@/lib/actions/wallet-p2p";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { WalletPinField } from "@/components/wallet/wallet-pin-field";
+import { WalletAuthField } from "@/components/wallet/wallet-auth-field";
+import type { WalletAuth } from "@/lib/wallet-step-auth";
 
 export function PayUserForm({
   recipientId,
   recipientName,
   balance,
   hasPin,
+  hasPasskey,
 }: {
   recipientId: string;
   recipientName: string;
   balance: number;
   hasPin: boolean;
+  hasPasskey: boolean;
 }) {
   const t = useTranslations("Wallet");
   const locale = useLocale();
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const submit = () =>
+  const run = (auth: WalletAuth) =>
     start(async () => {
       setErr(null);
       const res = await payUser({
         recipientId,
         amountUsd: Number(amount),
         note: note || undefined,
-        pin,
+        ...auth,
       });
       if (res.error) setErr(res.error);
       else {
@@ -74,17 +75,16 @@ export function PayUserForm({
         onChange={(e) => setNote(e.target.value)}
         placeholder={t("sendNote")}
       />
-      <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
-      {err ? (
-        <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
-      ) : null}
-      <Button
-        className="w-full"
-        disabled={pending || !amount || !hasPin || pin.length < 4}
-        onClick={submit}
-      >
-        {pending ? t("submitting") : t("payNow", { name: recipientName })}
-      </Button>
+      <WalletAuthField
+        hasPin={hasPin}
+        hasPasskey={hasPasskey}
+        disabled={!amount}
+        pending={pending}
+        error={err}
+        submitLabel={t("payNow", { name: recipientName })}
+        onAuthorize={run}
+        fullWidth
+      />
     </div>
   );
 }
