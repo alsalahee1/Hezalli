@@ -45,6 +45,10 @@ export default async function PayRequestPage({
 
   const shell = (children: React.ReactNode) => (
     <main className="mx-auto max-w-md px-4 py-10">
+      {/* Native-app wallet treatment on phones: hides the storefront chrome
+          (announcement, header, footer) so the pay flow reads like a
+          standalone wallet screen. Desktop is unaffected. */}
+      <div data-native-wallet hidden />
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
         <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
           <HandCoins className="size-6" />
