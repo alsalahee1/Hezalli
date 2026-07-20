@@ -131,7 +131,7 @@ New platform settings (`lib/settings.ts` defaults):
 - [ ] Public tracking timeline: labels for the two new statuses
 
 ### Phase 6 — Admin
-- [ ] `/admin/points`: list points (status toggle), review applications, ledger with payout/adjustment recording
+- [x] `/admin/points`: list points (status toggle), review applications, ledger with payout/adjustment recording
 - [x] Settings page: the three new keys editable
 
 ### Phase 7 — i18n, tests, docs
