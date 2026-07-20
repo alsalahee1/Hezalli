@@ -3,6 +3,7 @@
 // referring a new buyer earns a bonus once the referee's first order settles.
 import { randomBytes } from "node:crypto";
 
+import { isUniqueViolation } from "@/lib/db-errors";
 import {
   POINTS_PER_USD_EARNED,
   REFERRAL_BONUS_POINTS,
@@ -42,20 +43,32 @@ export async function awardPurchasePoints(
   });
 
   if (points > 0) {
-    await prisma.loyaltyTransaction.create({
-      data: {
-        userId: buyerId,
-        points,
-        type: "EARN",
-        orderId,
-        subOrderId,
-        note: "Purchase reward",
-      },
-    });
-    await prisma.user.update({
-      where: { id: buyerId },
-      data: { loyaltyPoints: { increment: points } },
-    });
+    try {
+      // The partial unique index on LoyaltyTransaction (one EARN per sub-order)
+      // makes this race-proof: a concurrent award trips the constraint and this
+      // transaction rolls back, so the buyer is never credited twice.
+      await prisma.$transaction(async (tx) => {
+        await tx.loyaltyTransaction.create({
+          data: {
+            userId: buyerId,
+            points,
+            type: "EARN",
+            orderId,
+            subOrderId,
+            note: "Purchase reward",
+          },
+        });
+        await tx.user.update({
+          where: { id: buyerId },
+          data: { loyaltyPoints: { increment: points } },
+        });
+      });
+    } catch (e) {
+      // A concurrent award already granted this sub-order's points — stop here
+      // so the referral bonus below isn't paid twice either.
+      if (isUniqueViolation(e)) return;
+      throw e;
+    }
   }
 
   if (priorEarns === 0) {

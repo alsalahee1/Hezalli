@@ -490,6 +490,14 @@ const UNCANCELLABLE = new Set([
   "REFUNDED",
 ]);
 
+// Order statuses from which a whole-order cancel is allowed (the complement of
+// UNCANCELLABLE). Used as the conditional guard on the flip so concurrent cancels
+// can't both fire.
+const CANCELLABLE_ORDER = ["PENDING", "CONFIRMED", "PROCESSING"] as const;
+// Sub-order statuses whose stock should be restored and which should flip to
+// CANCELLED — never one already cancelled/refunded/shipped.
+const CANCELLABLE_SUB = ["PENDING", "CONFIRMED", "PROCESSING"] as const;
+
 export async function cancelOrder(
   orderId: string,
 ): Promise<{ ok?: boolean; error?: string }> {
@@ -509,6 +517,7 @@ export async function cancelOrder(
       subOrders: {
         select: {
           id: true,
+          status: true,
           store: {
             select: {
               seller: {
@@ -533,10 +542,26 @@ export async function cancelOrder(
     order.paymentMethod === "HEZALLI_BALANCE" &&
     order.payment?.status === "CONFIRMED";
   const walletId = refundWallet ? await getWalletId(order.buyerId) : null;
+  // Only restore stock / flip sub-orders that are actually still cancellable —
+  // never a sub-order the seller already cancelled (whose stock was restored) or
+  // one already refunded.
+  const activeSubs = order.subOrders.filter((s) =>
+    (CANCELLABLE_SUB as readonly string[]).includes(s.status),
+  );
 
+  let cancelled = false;
   await prisma.$transaction(async (tx) => {
-    // Restore stock for every line.
-    for (const sub of order.subOrders) {
+    // Flip the order → CANCELLED only if it is still in a cancellable state.
+    // Two concurrent cancels would otherwise both refund the wallet and both
+    // restore stock; this conditional guard lets exactly one win.
+    const ord = await tx.order.updateMany({
+      where: { id: order.id, status: { in: [...CANCELLABLE_ORDER] } },
+      data: { status: "CANCELLED" },
+    });
+    if (ord.count !== 1) return; // cancelled/advanced concurrently
+
+    // Restore stock for every still-active line.
+    for (const sub of activeSubs) {
       for (const it of sub.items) {
         await tx.productVariant.updateMany({
           where: { id: it.variantId },
@@ -544,14 +569,11 @@ export async function cancelOrder(
         });
       }
     }
-    await tx.order.update({
-      where: { id: order.id },
-      data: { status: "CANCELLED" },
-    });
     await tx.subOrder.updateMany({
-      where: { orderId: order.id },
+      where: { orderId: order.id, status: { in: [...CANCELLABLE_SUB] } },
       data: { status: "CANCELLED" },
     });
+    cancelled = true;
     // Return wallet-paid funds and mark the payment refunded.
     if (walletId && order.payment) {
       await creditWalletTx(tx, walletId, {
@@ -591,6 +613,9 @@ export async function cancelOrder(
       });
     }
   });
+
+  // Lost the race to a concurrent cancel / status advance — nothing was written.
+  if (!cancelled) return { error: "tooLate" };
 
   // Wallet refund settled instantly: recompute the buyer's balance and drop the
   // now-cancelled sub-orders from each seller's escrow.

@@ -128,21 +128,28 @@ export async function markWithdrawalPaid(
     },
   });
   if (!w) return { error: "notFound" };
-  if (w.status === "PAID") return { error: "badState" };
+  // Only an outstanding (REQUESTED/APPROVED) withdrawal can be paid — never one
+  // already PAID (double-pay) or REJECTED (whose reserved funds were already
+  // returned to the wallet). The conditional flip below is the authoritative guard.
+  if (w.status !== "REQUESTED" && w.status !== "APPROVED") {
+    return { error: "badState" };
+  }
 
   const ar = w.wallet.user.locale === "ar";
   const amt = Number(w.amountUsd).toFixed(2);
-  await prisma.$transaction([
-    prisma.walletWithdrawal.update({
-      where: { id: w.id },
+  let paid = false;
+  await prisma.$transaction(async (tx) => {
+    const upd = await tx.walletWithdrawal.updateMany({
+      where: { id: w.id, status: { in: ["REQUESTED", "APPROVED"] } },
       data: {
         status: "PAID",
         reviewedBy: adminId,
         reviewNote: reference?.trim() || null,
         processedAt: new Date(),
       },
-    }),
-    prisma.notification.create({
+    });
+    if (upd.count !== 1) return; // paid/rejected concurrently
+    await tx.notification.create({
       data: {
         userId: w.wallet.userId,
         type: "PAYMENT",
@@ -150,9 +157,11 @@ export async function markWithdrawalPaid(
         body: ar ? `تم تحويل ${amt}$ إليك.` : `$${amt} has been sent to you.`,
         data: { link: `/account/wallet` },
       },
-    }),
-  ]);
+    });
+    paid = true;
+  });
 
+  if (!paid) return { error: "badState" };
   revalidatePath(`/${locale}/admin/payouts`);
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };
@@ -178,14 +187,17 @@ export async function rejectWithdrawal(
     },
   });
   if (!w) return { error: "notFound" };
-  if (w.status === "PAID" || w.status === "REJECTED") {
+  if (w.status !== "REQUESTED" && w.status !== "APPROVED") {
     return { error: "badState" };
   }
 
   const ar = w.wallet.user.locale === "ar";
+  // Flip → REJECTED conditionally so a double-reject can't return the reserved
+  // funds twice, and a reject racing a payout can't both fire.
+  let rejected = false;
   await prisma.$transaction(async (tx) => {
-    await tx.walletWithdrawal.update({
-      where: { id: w.id },
+    const upd = await tx.walletWithdrawal.updateMany({
+      where: { id: w.id, status: { in: ["REQUESTED", "APPROVED"] } },
       data: {
         status: "REJECTED",
         reviewedBy: adminId,
@@ -193,6 +205,7 @@ export async function rejectWithdrawal(
         processedAt: new Date(),
       },
     });
+    if (upd.count !== 1) return; // rejected/paid concurrently
     // Return the reserved funds.
     await creditWalletTx(tx, w.walletId, {
       type: "ADJUSTMENT",
@@ -201,6 +214,7 @@ export async function rejectWithdrawal(
       refType: "withdrawal",
       refId: w.id,
     });
+    rejected = true;
     await tx.notification.create({
       data: {
         userId: w.wallet.userId,
@@ -214,6 +228,7 @@ export async function rejectWithdrawal(
     });
   });
 
+  if (!rejected) return { error: "badState" };
   await recomputeWalletBalance(w.wallet.userId);
   revalidatePath(`/${locale}/admin/payouts`);
   revalidatePath(`/${locale}/account/wallet`);

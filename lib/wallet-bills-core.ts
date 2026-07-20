@@ -27,8 +27,11 @@ export async function completeBill(
   if (!bill) return { error: "notFound" };
   if (bill.status !== "PENDING") return { error: "badState" };
 
-  await prisma.walletBillPayment.update({
-    where: { id: bill.id },
+  // Conditional PENDING → COMPLETED flip: a purchase that a concurrent call
+  // already completed or failed (e.g. provider auto-complete racing an admin
+  // "fail") must not be flipped a second time.
+  const upd = await prisma.walletBillPayment.updateMany({
+    where: { id: bill.id, status: "PENDING" },
     data: {
       status: "COMPLETED",
       reviewedBy: opts.reviewedBy ?? null,
@@ -36,6 +39,7 @@ export async function completeBill(
       completedAt: new Date(),
     },
   });
+  if (upd.count !== 1) return { error: "badState" };
 
   const amount = Number(bill.amountUsd);
   const ar = bill.wallet.user.locale === "ar";
@@ -80,15 +84,19 @@ export async function failBill(
   if (bill.status !== "PENDING") return { error: "badState" };
 
   const amount = Number(bill.amountUsd);
+  // Conditional PENDING → FAILED flip guards against refunding a purchase twice
+  // (double-fail) or refunding one a provider already completed.
+  let refunded = false;
   await prisma.$transaction(async (tx) => {
-    await tx.walletBillPayment.update({
-      where: { id: bill.id },
+    const upd = await tx.walletBillPayment.updateMany({
+      where: { id: bill.id, status: "PENDING" },
       data: {
         status: "FAILED",
         reviewedBy: opts.reviewedBy ?? null,
         reviewNote: opts.reason?.trim() || null,
       },
     });
+    if (upd.count !== 1) return; // completed/failed concurrently
     await creditWalletTx(tx, bill.walletId, {
       type: "BILL_REFUND",
       amountUsd: amount,
@@ -96,8 +104,10 @@ export async function failBill(
       refType: "bill",
       refId: bill.id,
     });
+    refunded = true;
   });
 
+  if (!refunded) return { error: "badState" };
   await recomputeWalletBalance(bill.wallet.userId);
 
   const ar = bill.wallet.user.locale === "ar";

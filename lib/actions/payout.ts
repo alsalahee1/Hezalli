@@ -78,6 +78,10 @@ export async function savePayoutMethod(
 
 type Result = { ok?: boolean; error?: string };
 
+// Carries an i18n error code out of a transaction so the reservation can be
+// aborted (rolled back) and mapped to a typed result.
+class ReserveError extends Error {}
+
 async function minPayout(): Promise<number> {
   const row = await prisma.platformSetting.findUnique({
     where: { key: "min_payout_usd" },
@@ -104,33 +108,49 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
   if (!method) return { error: "noMethod" };
 
   await recomputeBalance(profile.id);
-  const balance = await prisma.sellerBalance.findUnique({
-    where: { sellerId: profile.id },
-    select: { availableUsd: true },
-  });
-  const available = Number(balance?.availableUsd ?? 0);
-
-  // Reserve against any outstanding requests.
-  const outstanding = await prisma.payout.aggregate({
-    where: { sellerId: profile.id, status: { in: ["REQUESTED", "APPROVED"] } },
-    _sum: { amountUsd: true },
-  });
-  const free = round2(available - Number(outstanding._sum.amountUsd ?? 0));
-
+  const balanceId = await getBalanceId(profile.id);
   const min = await minPayout();
-  const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(free);
-  if (amount < min) return { error: "belowMin" };
-  if (amount > free) return { error: "insufficient" };
 
-  await prisma.payout.create({
-    data: {
-      sellerId: profile.id,
-      amountUsd: amount,
-      method: method.kind,
-      destination: method.details ?? {},
-      status: "REQUESTED",
-    },
-  });
+  // Compute the free balance and create the request under a row lock on the
+  // seller's balance, so two concurrent requests (or a request racing a
+  // wallet-earnings transfer) can't each pass the check and together exceed it.
+  let created = false;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "SellerBalance" WHERE "id" = ${balanceId} FOR UPDATE`;
+      const availAgg = await tx.ledgerEntry.aggregate({
+        where: { balanceId },
+        _sum: { amountUsd: true },
+      });
+      const available = round2(Number(availAgg._sum.amountUsd ?? 0));
+      const outstanding = await tx.payout.aggregate({
+        where: {
+          sellerId: profile.id,
+          status: { in: ["REQUESTED", "APPROVED"] },
+        },
+        _sum: { amountUsd: true },
+      });
+      const free = round2(available - Number(outstanding._sum.amountUsd ?? 0));
+      const amount =
+        amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(free);
+      if (amount < min) throw new ReserveError("belowMin");
+      if (amount > free) throw new ReserveError("insufficient");
+      await tx.payout.create({
+        data: {
+          sellerId: profile.id,
+          amountUsd: amount,
+          method: method.kind,
+          destination: method.details ?? {},
+          status: "REQUESTED",
+        },
+      });
+      created = true;
+    });
+  } catch (e) {
+    if (e instanceof ReserveError) return { error: e.message };
+    throw e;
+  }
+  if (!created) return { error: "insufficient" };
 
   revalidatePath(`/${locale}/seller/finance`);
   revalidatePath(`/${locale}/admin/payouts`);
@@ -157,15 +177,21 @@ export async function markPayoutPaid(
     },
   });
   if (!payout) return { error: "notFound" };
-  if (payout.status === "PAID") return { error: "badState" };
+  // Only an outstanding request can be paid — never one already PAID (double-pay)
+  // or REJECTED. The conditional flip inside the transaction is the real guard.
+  if (payout.status !== "REQUESTED" && payout.status !== "APPROVED") {
+    return { error: "badState" };
+  }
 
   const balanceId = await getBalanceId(payout.sellerId);
-  await prisma.$transaction([
-    prisma.payout.update({
-      where: { id: payout.id },
+  let paid = false;
+  await prisma.$transaction(async (tx) => {
+    const upd = await tx.payout.updateMany({
+      where: { id: payout.id, status: { in: ["REQUESTED", "APPROVED"] } },
       data: { status: "PAID", processedBy: adminId, processedAt: new Date() },
-    }),
-    prisma.ledgerEntry.create({
+    });
+    if (upd.count !== 1) return; // paid/rejected concurrently
+    await tx.ledgerEntry.create({
       data: {
         balanceId,
         type: "PAYOUT",
@@ -173,8 +199,8 @@ export async function markPayoutPaid(
         payoutId: payout.id,
         note: reference ? `Payout paid — ${reference}` : "Payout paid",
       },
-    }),
-    prisma.notification.create({
+    });
+    await tx.notification.create({
       data: {
         userId: payout.seller.user.id,
         type: "PAYMENT",
@@ -186,8 +212,11 @@ export async function markPayoutPaid(
             : `$${Number(payout.amountUsd).toFixed(2)} has been sent to you.`,
         data: { payoutId: payout.id },
       },
-    }),
-  ]);
+    });
+    paid = true;
+  });
+
+  if (!paid) return { error: "badState" };
   await recomputeBalance(payout.sellerId);
 
   revalidatePath(`/${locale}/admin/payouts`);
@@ -211,18 +240,22 @@ export async function rejectPayout(
     },
   });
   if (!payout) return { error: "notFound" };
-  if (payout.status === "PAID") return { error: "badState" };
+  if (payout.status !== "REQUESTED" && payout.status !== "APPROVED") {
+    return { error: "badState" };
+  }
 
-  await prisma.$transaction([
-    prisma.payout.update({
-      where: { id: payoutId },
+  let rejected = false;
+  await prisma.$transaction(async (tx) => {
+    const upd = await tx.payout.updateMany({
+      where: { id: payoutId, status: { in: ["REQUESTED", "APPROVED"] } },
       data: {
         status: "REJECTED",
         processedBy: adminId,
         processedAt: new Date(),
       },
-    }),
-    prisma.notification.create({
+    });
+    if (upd.count !== 1) return; // paid/rejected concurrently
+    await tx.notification.create({
       data: {
         userId: payout.seller.user.id,
         type: "PAYMENT",
@@ -233,9 +266,11 @@ export async function rejectPayout(
         body: reason || "Your payout request was rejected.",
         data: {},
       },
-    }),
-  ]);
+    });
+    rejected = true;
+  });
 
+  if (!rejected) return { error: "badState" };
   revalidatePath(`/${locale}/admin/payouts`);
   revalidatePath(`/${locale}/seller/finance`);
   return { ok: true };

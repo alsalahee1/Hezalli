@@ -30,14 +30,16 @@ export async function getWalletId(
  */
 export async function recomputeWalletBalance(userId: string): Promise<void> {
   const walletId = await getWalletId(userId);
-  const agg = await prisma.walletEntry.aggregate({
-    where: { walletId },
-    _sum: { amountUsd: true },
-  });
-  await prisma.wallet.update({
-    where: { id: walletId },
-    data: { availableUsd: round2(Number(agg._sum.amountUsd ?? 0)) },
-  });
+  // availableUsd = Σ entries, set in a single statement so a concurrent debit
+  // can never be lost to a read-then-write window that would resurrect spent
+  // funds (entry amounts are stored at 2 decimal places, so SUM is exact).
+  await prisma.$executeRaw`
+    UPDATE "Wallet"
+    SET "availableUsd" = COALESCE(
+      (SELECT SUM("amountUsd") FROM "WalletEntry" WHERE "walletId" = ${walletId}),
+      0
+    )
+    WHERE "id" = ${walletId}`;
 }
 
 /**

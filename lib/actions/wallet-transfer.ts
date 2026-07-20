@@ -14,6 +14,10 @@ import {
 
 type Result = { ok?: boolean; error?: string };
 
+// Carries an i18n error code out of the reservation transaction so it can be
+// rolled back and mapped to a typed result.
+class ReserveError extends Error {}
+
 // Seller sweeps (part of) their available earnings into their HezalliPay wallet,
 // giving them one balance across buying and selling. Bridges the two ledgers: a
 // WALLET_TRANSFER debit on the seller balance + a SELLER_EARNINGS credit on the
@@ -33,43 +37,57 @@ export async function transferEarningsToWallet(
   if (!profile) return { error: "notSeller" };
 
   await recomputeBalance(profile.id);
-  const balance = await prisma.sellerBalance.findUnique({
-    where: { sellerId: profile.id },
-    select: { availableUsd: true },
-  });
-  const available = Number(balance?.availableUsd ?? 0);
-
-  // Reserve against outstanding payout requests (same rule as requestPayout).
-  const outstanding = await prisma.payout.aggregate({
-    where: { sellerId: profile.id, status: { in: ["REQUESTED", "APPROVED"] } },
-    _sum: { amountUsd: true },
-  });
-  const free = round2(available - Number(outstanding._sum.amountUsd ?? 0));
-  if (free <= 0) return { error: "nothingToMove" };
-
-  const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
-  if (amount > free) return { error: "insufficient" };
-
   const balanceId = await getBalanceId(profile.id);
   const walletId = await getWalletId(userId);
 
-  await prisma.$transaction(async (tx) => {
-    // Debit the seller ledger.
-    await tx.ledgerEntry.create({
-      data: {
-        balanceId,
-        type: "WALLET_TRANSFER",
-        amountUsd: -amount,
-        note: "Moved to HezalliPay wallet",
-      },
+  // Compute the free balance and move it under a row lock on the seller's
+  // balance, so two concurrent "move all" submissions (or a transfer racing a
+  // payout request) can't each pass the check and together over-draw — which
+  // would drive the seller ledger negative while crediting the wallet twice.
+  let moved = 0;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "SellerBalance" WHERE "id" = ${balanceId} FOR UPDATE`;
+      const availAgg = await tx.ledgerEntry.aggregate({
+        where: { balanceId },
+        _sum: { amountUsd: true },
+      });
+      const available = round2(Number(availAgg._sum.amountUsd ?? 0));
+      // Reserve against outstanding payout requests (same rule as requestPayout).
+      const outstanding = await tx.payout.aggregate({
+        where: {
+          sellerId: profile.id,
+          status: { in: ["REQUESTED", "APPROVED"] },
+        },
+        _sum: { amountUsd: true },
+      });
+      const free = round2(available - Number(outstanding._sum.amountUsd ?? 0));
+      if (free <= 0) throw new ReserveError("nothingToMove");
+      const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
+      if (amount > free) throw new ReserveError("insufficient");
+
+      // Debit the seller ledger.
+      await tx.ledgerEntry.create({
+        data: {
+          balanceId,
+          type: "WALLET_TRANSFER",
+          amountUsd: -amount,
+          note: "Moved to HezalliPay wallet",
+        },
+      });
+      // Credit the wallet.
+      await creditWalletTx(tx, walletId, {
+        type: "SELLER_EARNINGS",
+        amountUsd: amount,
+        note: "Moved from seller earnings",
+      });
+      moved = amount;
     });
-    // Credit the wallet.
-    await creditWalletTx(tx, walletId, {
-      type: "SELLER_EARNINGS",
-      amountUsd: amount,
-      note: "Moved from seller earnings",
-    });
-  });
+  } catch (e) {
+    if (e instanceof ReserveError) return { error: e.message };
+    throw e;
+  }
+  if (moved <= 0) return { error: "nothingToMove" };
 
   await recomputeBalance(profile.id);
   await recomputeWalletBalance(userId);

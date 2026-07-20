@@ -10,6 +10,10 @@ import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
 
+// Thrown to roll back a confirmation whose order is no longer in a confirmable
+// state (mapped to a typed "badState" result by the caller).
+class AbortConfirm extends Error {}
+
 const UNPAID_TTL_MS = 24 * 60 * 60 * 1000;
 
 // Buyer submits payment proof for a prepaid order → awaiting admin confirmation.
@@ -105,32 +109,46 @@ export async function confirmPayment(paymentId: string): Promise<Result> {
   if (!payment) return { error: "notFound" };
   if (payment.status === "CONFIRMED") return { error: "badState" };
 
-  await prisma.$transaction([
-    prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: "CONFIRMED",
-        confirmedBy: adminId,
-        confirmedAt: new Date(),
-      },
-    }),
-    prisma.order.update({
-      where: { id: payment.order.id },
-      data: { status: "CONFIRMED" },
-    }),
-    prisma.subOrder.updateMany({
-      where: { orderId: payment.order.id, status: "PENDING" },
-      data: { status: "CONFIRMED" },
-    }),
-    prisma.orderStatusHistory.create({
-      data: {
-        orderId: payment.order.id,
-        status: "CONFIRMED",
-        actor: "admin",
-        note: "Payment confirmed",
-      },
-    }),
-  ]);
+  // Confirm only a still-payable payment whose order is still PENDING. If the
+  // order was auto-cancelled (expired) or confirmed concurrently, abort the whole
+  // transaction rather than resurrecting a cancelled order to CONFIRMED with its
+  // stock already restored/resold.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const payUpd = await tx.payment.updateMany({
+        where: {
+          id: payment.id,
+          status: { in: ["PENDING", "AWAITING_CONFIRMATION"] },
+        },
+        data: {
+          status: "CONFIRMED",
+          confirmedBy: adminId,
+          confirmedAt: new Date(),
+        },
+      });
+      if (payUpd.count !== 1) throw new AbortConfirm();
+      const ordUpd = await tx.order.updateMany({
+        where: { id: payment.order.id, status: "PENDING" },
+        data: { status: "CONFIRMED" },
+      });
+      if (ordUpd.count !== 1) throw new AbortConfirm();
+      await tx.subOrder.updateMany({
+        where: { orderId: payment.order.id, status: "PENDING" },
+        data: { status: "CONFIRMED" },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: payment.order.id,
+          status: "CONFIRMED",
+          actor: "admin",
+          note: "Payment confirmed",
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof AbortConfirm) return { error: "badState" };
+    throw e;
+  }
 
   // Escrow now applies — recompute each seller's balance + notify.
   const sellerIds = [
@@ -198,11 +216,18 @@ export async function rejectPayment(
   if (!payment) return { error: "notFound" };
   if (payment.status === "CONFIRMED") return { error: "badState" };
 
+  // Conditional flip guards a reject racing a confirm: only a still-payable
+  // payment can be failed, never one confirmed a moment earlier.
+  const upd = await prisma.payment.updateMany({
+    where: {
+      id: payment.id,
+      status: { in: ["PENDING", "AWAITING_CONFIRMATION"] },
+    },
+    data: { status: "FAILED" },
+  });
+  if (upd.count !== 1) return { error: "badState" };
+
   await prisma.$transaction([
-    prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: "FAILED" },
-    }),
     prisma.orderStatusHistory.create({
       data: {
         orderId: payment.order.id,
@@ -241,6 +266,10 @@ export async function expireStaleOrders(): Promise<number> {
       status: "PENDING",
       paymentMethod: { not: "COD" },
       createdAt: { lt: cutoff },
+      // Do NOT expire an order whose payment proof is sitting in the admin review
+      // queue — the buyer has (claimed to have) paid; expiring it would cancel a
+      // paid order and restore/resell its stock while admin review is pending.
+      payment: { is: { status: { not: "AWAITING_CONFIRMATION" } } },
     },
     select: {
       id: true,
@@ -250,8 +279,16 @@ export async function expireStaleOrders(): Promise<number> {
       },
     },
   });
+  let cancelled = 0;
   for (const order of stale) {
-    await prisma.$transaction(async (tx) => {
+    const didCancel = await prisma.$transaction(async (tx) => {
+      // Cancel only if the order is still PENDING — guards a race with a
+      // concurrent confirmPayment / proof submission.
+      const ord = await tx.order.updateMany({
+        where: { id: order.id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+      if (ord.count !== 1) return false;
       for (const sub of order.subOrders) {
         for (const it of sub.items) {
           await tx.productVariant.updateMany({
@@ -260,16 +297,12 @@ export async function expireStaleOrders(): Promise<number> {
           });
         }
       }
-      await tx.order.update({
-        where: { id: order.id },
-        data: { status: "CANCELLED" },
-      });
       await tx.subOrder.updateMany({
-        where: { orderId: order.id },
+        where: { orderId: order.id, status: "PENDING" },
         data: { status: "CANCELLED" },
       });
       await tx.payment.updateMany({
-        where: { orderId: order.id },
+        where: { orderId: order.id, status: { not: "CONFIRMED" } },
         data: { status: "FAILED" },
       });
       await tx.orderStatusHistory.create({
@@ -289,7 +322,9 @@ export async function expireStaleOrders(): Promise<number> {
           data: { orderId: order.id },
         },
       });
+      return true;
     });
+    if (didCancel) cancelled += 1;
   }
-  return stale.length;
+  return cancelled;
 }
