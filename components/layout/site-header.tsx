@@ -115,6 +115,17 @@ export function SiteHeader({
         <SearchBar className="relative" />
       </div>
 
+      {/* Mobile menu: language switcher lives here (hidden from the header row
+          on mobile), so mobile users can still switch language. */}
+      {menuOpen ? (
+        <div className="flex items-center justify-between border-t px-4 py-3 md:hidden">
+          <span className="text-muted-foreground text-sm font-medium">
+            {c("language")}
+          </span>
+          <LanguageSwitcher />
+        </div>
+      ) : null}
+
       <CategoryNav
         categories={categories}
         mobileOpen={menuOpen}
