@@ -266,9 +266,15 @@ export default async function WalletPage() {
       </section>
 
       {/* Wallet-focused bottom bar for phones — replaces the storefront's
-          default tab bar while on this screen. Top up / Send tabs mirror the
-          same capability gating as the action buttons above. */}
-      <WalletTabBar canTopUp={!frozen} canSend={canSend} />
+          default tab bar while on this screen. The center Scan button (P2P only)
+          pays a scanned code or shows the user's own code to get paid. */}
+      <WalletTabBar
+        canTopUp={!frozen}
+        canSend={canSend}
+        canScan={p2pEnabled && !frozen}
+        myPayUrl={abs(locale, `/pay/u/${userId}`)}
+        myQr={<QrCode value={abs(locale, `/pay/u/${userId}`)} size={220} />}
+      />
     </div>
   );
 }
