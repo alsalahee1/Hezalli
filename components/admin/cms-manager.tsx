@@ -7,6 +7,7 @@ import { deleteCmsPage, saveCmsPage } from "@/lib/actions/cms";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type CmsPageRow = {
   slug: string;
@@ -117,6 +118,7 @@ function PageEditor({
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [f, setF] = useState<CmsPageRow>(initial);
+  const { confirm, dialog } = useConfirm();
   const set = (k: keyof CmsPageRow, v: string | boolean) =>
     setF((s) => ({ ...s, [k]: v }));
 
@@ -130,16 +132,18 @@ function PageEditor({
         onDone();
       }
     });
-  const remove = () =>
+  const remove = async () => {
+    if (!(await confirm(t("deleteConfirm"), { destructive: true }))) return;
     start(async () => {
-      if (!confirm(t("deleteConfirm"))) return;
       await deleteCmsPage(f.slug);
       router.refresh();
       onDone();
     });
+  };
 
   return (
     <div className="space-y-3">
+      {dialog}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1.5">
           <span className="text-sm font-medium">{t("slug")}</span>

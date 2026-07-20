@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions/admin-oversight";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const ALL_ROLES = ["BUYER", "SELLER", "ADMIN"];
 
@@ -29,6 +30,7 @@ export function UserActions({
   const [pending, start] = useTransition();
   const [editRoles, setEditRoles] = useState(false);
   const [sel, setSel] = useState<string[]>(roles);
+  const { confirm, dialog } = useConfirm();
 
   const run = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
@@ -44,6 +46,7 @@ export function UserActions({
 
   return (
     <div className="flex flex-col items-end gap-1.5">
+      {dialog}
       <div className="flex flex-wrap justify-end gap-1.5">
         <Button
           size="sm"
@@ -67,8 +70,9 @@ export function UserActions({
           variant="outline"
           className="text-destructive"
           disabled={pending}
-          onClick={() => {
-            if (confirm(t("deleteConfirm"))) run(() => softDeleteUser(userId));
+          onClick={async () => {
+            if (await confirm(t("deleteConfirm"), { destructive: true }))
+              run(() => softDeleteUser(userId));
           }}
         >
           {t("delete")}

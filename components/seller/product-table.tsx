@@ -13,6 +13,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type ProductRow = {
   id: string;
@@ -337,6 +338,7 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, start] = useTransition();
+  const { confirm, dialog } = useConfirm();
 
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
@@ -354,9 +356,13 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
       return next;
     });
 
-  const runBulk = (status: "ACTIVE" | "HIDDEN" | "REMOVED") => {
+  const runBulk = async (status: "ACTIVE" | "HIDDEN" | "REMOVED") => {
     const ids = [...selected];
-    if (status === "REMOVED" && !window.confirm(t("confirmArchive"))) return;
+    if (
+      status === "REMOVED" &&
+      !(await confirm(t("confirmArchive"), { destructive: true }))
+    )
+      return;
     start(async () => {
       await bulkSetStatus(ids, status);
       setSelected(new Set());
@@ -370,8 +376,8 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
       router.refresh();
     });
 
-  const runArchive = (id: string) => {
-    if (!window.confirm(t("confirmArchive"))) return;
+  const runArchive = async (id: string) => {
+    if (!(await confirm(t("confirmArchive"), { destructive: true }))) return;
     start(async () => {
       await bulkSetStatus([id], "REMOVED");
       router.refresh();
@@ -380,6 +386,7 @@ export function ProductTable({ rows }: { rows: ProductRow[] }) {
 
   return (
     <div className="space-y-3">
+      {dialog}
       {selected.size > 0 ? (
         <div className="bg-muted/60 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
           <span className="font-medium">

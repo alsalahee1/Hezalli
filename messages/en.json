@@ -8,7 +8,9 @@
     "menu": "Menu",
     "close": "Close",
     "language": "Language",
-    "more": "More"
+    "more": "More",
+    "cancel": "Cancel",
+    "confirm": "OK"
   },
   "Header": {
     "cart": "Cart",
