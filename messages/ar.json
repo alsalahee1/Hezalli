@@ -1,4 +1,12 @@
 {
+  "Errors": {
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundBody": "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها.",
+    "backHome": "العودة إلى الرئيسية",
+    "errorTitle": "حدث خطأ ما",
+    "errorBody": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "retry": "حاول مرة أخرى"
+  },
   "Common": {
     "appName": "هزلي",
     "tagline": "سوق اليمن متعدد البائعين",
@@ -894,7 +902,9 @@
     "err_pointsAndCoupon": "لا يمكنك استخدام النقاط وقسيمة في الطلب نفسه.",
     "hezalliBalance": "رصيد HezalliPay",
     "hezalliBalanceHint": "دفع فوري · الرصيد: {balance}",
-    "err_insufficientBalance": "رصيد محفظتك لا يغطي هذا الطلب."
+    "err_insufficientBalance": "رصيد محفظتك لا يغطي هذا الطلب.",
+    "err_serverError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "coupon_serverError": "تعذّر التحقق من الكوبون. يرجى المحاولة مرة أخرى."
   },
   "Orders": {
     "title": "طلباتي",

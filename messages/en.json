@@ -1,4 +1,12 @@
 {
+  "Errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you're looking for doesn't exist or may have moved.",
+    "backHome": "Back to home",
+    "errorTitle": "Something went wrong",
+    "errorBody": "An unexpected error occurred. Please try again.",
+    "retry": "Try again"
+  },
   "Common": {
     "appName": "Hezalli",
     "tagline": "Yemen's multi-vendor marketplace",
@@ -894,7 +902,9 @@
     "err_pointsAndCoupon": "You can’t use points and a coupon on the same order.",
     "hezalliBalance": "HezalliPay balance",
     "hezalliBalanceHint": "Pay instantly · Balance: {balance}",
-    "err_insufficientBalance": "Your wallet balance doesn’t cover this order."
+    "err_insufficientBalance": "Your wallet balance doesn’t cover this order.",
+    "err_serverError": "Something went wrong. Please try again.",
+    "coupon_serverError": "Couldn’t check that coupon. Please try again."
   },
   "Orders": {
     "title": "My orders",

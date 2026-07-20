@@ -146,22 +146,29 @@ export function CheckoutFlow({
     const code = couponInput.trim();
     if (!code) return;
     setApplying(true);
-    const res = await previewCoupon(
-      code,
-      groups.map((g) => ({
-        storeId: g.storeId,
-        itemsTotal: g.itemsTotal,
-        shipping: g.shipping,
-      })),
-    );
-    setApplying(false);
-    if (res.ok && res.discount) {
-      setDiscount(res.discount);
-      setAppliedCode(code);
-    } else {
-      setDiscount(0);
-      setAppliedCode("");
-      setCouponErr(res.error ?? "notFound");
+    try {
+      const res = await previewCoupon(
+        code,
+        groups.map((g) => ({
+          storeId: g.storeId,
+          itemsTotal: g.itemsTotal,
+          shipping: g.shipping,
+        })),
+      );
+      if (res.ok && res.discount) {
+        setDiscount(res.discount);
+        setAppliedCode(code);
+      } else {
+        setDiscount(0);
+        setAppliedCode("");
+        setCouponErr(res.error ?? "notFound");
+      }
+    } catch {
+      // Network / server failure — surface a retryable message instead of
+      // leaving the button stuck in its pending state.
+      setCouponErr("serverError");
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -179,33 +186,40 @@ export function CheckoutFlow({
       return;
     }
     setPlacing(true);
-    const res = await placeOrder({
-      addressId,
-      items: lines.map((l) => ({
-        variantId: l.variantId,
-        quantity: l.quantity,
-      })),
-      paymentMethod: effectiveMethod,
-      couponCode: appliedCode || undefined,
-      redeemPoints: redeem.pointsUsed || undefined,
-      shippingMethods: Object.fromEntries(
-        groups.map((g) => [g.storeId, g.selectedMethod]),
-      ),
-    });
-    if (res.error) {
-      setError(res.error);
+    try {
+      const res = await placeOrder({
+        addressId,
+        items: lines.map((l) => ({
+          variantId: l.variantId,
+          quantity: l.quantity,
+        })),
+        paymentMethod: effectiveMethod,
+        couponCode: appliedCode || undefined,
+        redeemPoints: redeem.pointsUsed || undefined,
+        shippingMethods: Object.fromEntries(
+          groups.map((g) => [g.storeId, g.selectedMethod]),
+        ),
+      });
+      if (res.error) {
+        setError(res.error);
+        setPlacing(false);
+        return;
+      }
+      // Full navigation so the cart provider re-reads the now-empty server cart.
+      // Instantly-settled orders (COD, wallet) go to the success page; manual
+      // prepaid orders go to the order page to submit payment proof. Leave the
+      // button disabled while the page navigates away.
+      const instant =
+        effectiveMethod === "COD" || effectiveMethod === "HEZALLI_BALANCE";
+      const dest = instant
+        ? `/${locale}/checkout/success?order=${res.orderId}`
+        : `/${locale}/account/orders/${res.orderId}`;
+      window.location.assign(dest);
+    } catch {
+      // A flaky connection must not brick the Place Order button permanently.
+      setError("serverError");
       setPlacing(false);
-      return;
     }
-    // Full navigation so the cart provider re-reads the now-empty server cart.
-    // Instantly-settled orders (COD, wallet) go to the success page; manual
-    // prepaid orders go to the order page to submit payment proof.
-    const instant =
-      effectiveMethod === "COD" || effectiveMethod === "HEZALLI_BALANCE";
-    const dest = instant
-      ? `/${locale}/checkout/success?order=${res.orderId}`
-      : `/${locale}/account/orders/${res.orderId}`;
-    window.location.assign(dest);
   };
 
   return (

@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 // Lightweight modal dialog: a backdrop + centered card (bottom sheet on phones)
 // rendered through a portal on <body>. Closes on Escape, backdrop click, or the
@@ -24,11 +27,48 @@ export function Modal({
   children: React.ReactNode;
 }) {
   const { mounted, shown } = useMountTransition(open);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!mounted) return;
+    // Remember what had focus so it can be restored when the dialog closes, then
+    // move focus into the panel (screen-reader / keyboard users start inside it,
+    // not stranded on the now-inert page behind an aria-modal dialog).
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const focusFirst = () => {
+      const target =
+        panel?.querySelector<HTMLElement>(FOCUSABLE) ?? panel ?? null;
+      target?.focus();
+    };
+    focusFirst();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      // Trap Tab within the panel.
+      if (e.key === "Tab" && panel) {
+        const items = Array.from(
+          panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+        ).filter((el) => el.offsetParent !== null);
+        if (items.length === 0) {
+          e.preventDefault();
+          panel.focus();
+          return;
+        }
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || active === panel)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -36,6 +76,8 @@ export function Modal({
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      // Restore focus to the trigger so keyboard users don't lose their place.
+      previouslyFocused?.focus?.();
     };
   }, [mounted, onClose]);
 
@@ -59,8 +101,10 @@ export function Modal({
         aria-hidden
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         className={cn(
-          "bg-background relative z-10 max-h-[90vh] w-full transform-gpu overflow-y-auto rounded-t-2xl border p-5 shadow-xl transition duration-300 will-change-transform motion-reduce:transition-none sm:max-w-md sm:rounded-2xl",
+          "bg-background relative z-10 max-h-[90vh] w-full transform-gpu overflow-y-auto rounded-t-2xl border p-5 shadow-xl transition duration-300 will-change-transform outline-none motion-reduce:transition-none sm:max-w-md sm:rounded-2xl",
           ease,
           shown
             ? "translate-y-0 scale-100 opacity-100"
