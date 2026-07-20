@@ -24,12 +24,19 @@ export default async function AccountLayout({
       >
         {t("title")}
       </h1>
-      <div className="grid gap-8 md:grid-cols-[200px_1fr]">
-        <aside data-account-nav className="min-w-0">
+      <div className="md:grid md:grid-cols-[200px_1fr] md:gap-8">
+        <aside data-account-nav className="hidden min-w-0 md:block">
           <AccountNav />
         </aside>
         <div className="min-w-0">{children}</div>
       </div>
+      {/* Reserve room so the fixed bottom tab bar never covers content on
+          phones; collapses at `md` where the bar hides. */}
+      <div
+        className="h-16 md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-hidden
+      />
       <AccountTabBar />
     </div>
   );
