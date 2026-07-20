@@ -2045,5 +2045,20 @@
     "computed": "Ledger",
     "reconcile": "Reconcile",
     "reconciling": "Reconciling…"
+  },
+  "AdminWallet": {
+    "frozen": "On hold",
+    "freeze": "Freeze",
+    "unfreeze": "Unfreeze",
+    "confirmFreeze": "Confirm freeze",
+    "confirmUnfreeze": "Confirm unfreeze",
+    "adjust": "Adjust",
+    "reason": "Reason (required)",
+    "amountHint": "± USD",
+    "apply": "Apply",
+    "err_forbidden": "Admins only.",
+    "err_badAmount": "Enter a non-zero amount.",
+    "err_reasonRequired": "A reason is required.",
+    "err_wouldGoNegative": "That would make the balance negative."
   }
 }

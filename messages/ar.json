@@ -2045,5 +2045,20 @@
     "computed": "السجل",
     "reconcile": "مطابقة",
     "reconciling": "جارٍ المطابقة…"
+  },
+  "AdminWallet": {
+    "frozen": "معلّقة",
+    "freeze": "تعليق",
+    "unfreeze": "رفع التعليق",
+    "confirmFreeze": "تأكيد التعليق",
+    "confirmUnfreeze": "تأكيد رفع التعليق",
+    "adjust": "تعديل",
+    "reason": "السبب (مطلوب)",
+    "amountHint": "± دولار",
+    "apply": "تطبيق",
+    "err_forbidden": "للمشرفين فقط.",
+    "err_badAmount": "أدخل مبلغاً غير صفري.",
+    "err_reasonRequired": "السبب مطلوب.",
+    "err_wouldGoNegative": "سيجعل ذلك الرصيد سالباً."
   }
 }

@@ -496,6 +496,28 @@ review (or a nervous founder) will ask for.
 
 ---
 
+## Step 19.12 — Admin freeze + audited balance adjustments ✅
+
+Gives an operator the two levers every wallet back-office needs: put a wallet on
+hold, and correct a balance through the ledger (never by editing it directly).
+
+- **Freeze / unfreeze** (`setWalletFrozen`): flips `Wallet.frozen` (a frozen
+  wallet already rejects every outflow), audited, user notified.
+- **Adjust** (`adjustWalletBalance`): writes an audited `ADJUSTMENT` ledger entry
+  (+ credit / − debit), recomputes, and notifies. A reason is required and the
+  balance can never go negative — so the `availableUsd = Σ entries` invariant
+  holds and Step 19.11's reconciliation stays green.
+- Both surfaced per user on **Admin → Users** via `WalletAdminControls` (balance,
+  frozen badge, freeze/adjust). Admin-only.
+
+✅ **Acceptance criteria**
+- [x] Freeze/unfreeze toggles the hold and writes an audit log
+- [x] An adjustment moves the balance via a ledger entry (never a direct edit)
+- [x] Adjustments require a reason and can't push the balance negative
+- [x] All controls are admin-only
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -513,8 +535,9 @@ review (or a nervous founder) will ask for.
 | 19.9 Wallet PIN | Step-up security | Low | ✅ shipped |
 | 19.10 Velocity limits | Anti-fraud / AML | Low | ✅ shipped |
 | 19.11 Reconciliation | Book integrity | Low | ✅ shipped |
+| 19.12 Freeze + adjustments | Back-office control | Low | ✅ shipped |
 
-**Bottom line:** 19.1–19.11 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.12 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on
