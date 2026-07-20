@@ -5,6 +5,7 @@ import { Receipt } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { payBill } from "@/lib/actions/wallet-bills";
+import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -92,11 +93,12 @@ export function BillPayForm({
                 key={k}
                 type="button"
                 onClick={() => pickKind(k)}
-                className={
+                className={cn(
+                  "flex-1 rounded px-3 py-1.5 text-sm transition-all duration-150 motion-reduce:transition-none",
                   kind === k
-                    ? "bg-background flex-1 rounded px-3 py-1.5 text-sm font-medium shadow-sm"
-                    : "text-muted-foreground flex-1 rounded px-3 py-1.5 text-sm"
-                }
+                    ? "bg-background font-medium shadow-sm"
+                    : "text-muted-foreground",
+                )}
               >
                 {t(k === "BILL" ? "billsKindBill" : "billsKindAirtime")}
               </button>
