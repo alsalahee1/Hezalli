@@ -27,18 +27,18 @@ export function SiteFooter() {
     <footer className="bg-muted/30 mt-16 border-t">
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-sm space-y-2">
+          <div className="space-y-2 md:max-w-sm">
             <Logo wordmark={c("appName")} />
             <p className="text-muted-foreground text-sm">{c("tagline")}</p>
             <p className="text-muted-foreground flex items-start gap-2 pt-2 text-sm">
               <ShieldCheck className="text-foreground mt-0.5 size-4 shrink-0" />
-              {t("protection")}
+              <span>{t("protection")}</span>
             </p>
           </div>
 
           <nav>
             <p className="mb-3 text-sm font-semibold">{t("company")}</p>
-            <ul className="text-muted-foreground space-y-2 text-sm">
+            <ul className="text-muted-foreground grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-3">
               {links.map((l) => (
                 <li key={l.href}>
                   <Link
