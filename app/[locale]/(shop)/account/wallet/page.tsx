@@ -159,8 +159,11 @@ export default async function WalletPage() {
         </div>
       )}
 
+      {/* Desktop only: on phones the bottom bar's Scan button already shows the
+          user's receive QR (its "My code" tab), so this is redundant there.
+          Desktop has no bottom bar, so keep it. */}
       {p2pEnabled && !frozen ? (
-        <details className="rounded-lg border p-4">
+        <details className="hidden rounded-lg border p-4 md:block">
           <summary className="cursor-pointer font-medium">
             {t("receiveTitle")}
           </summary>
