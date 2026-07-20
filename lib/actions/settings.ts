@@ -92,7 +92,9 @@ export async function savePlatformSettings(
     return { error: "badEta" };
   if (etas[0] > etas[1] || etas[2] > etas[3]) return { error: "badEta" };
 
-  const values: PlatformSettings = {
+  // wallet_bills_provider is an ops/advanced setting, not part of this form —
+  // it is left untouched here (set via seed / DB / a future dedicated control).
+  const values: Omit<PlatformSettings, "wallet_bills_provider"> = {
     platform_name: (input.platform_name || "Hezalli").trim().slice(0, 80),
     platform_logo: (input.platform_logo || "").trim().slice(0, 500),
     commission_rate: Math.round(pct * 100) / 10000,
@@ -122,7 +124,7 @@ export async function savePlatformSettings(
   };
 
   await prisma.$transaction(
-    (Object.keys(values) as (keyof PlatformSettings)[]).map((key) =>
+    (Object.keys(values) as (keyof typeof values)[]).map((key) =>
       prisma.platformSetting.upsert({
         where: { key },
         create: { key, value: values[key] as never },

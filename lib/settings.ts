@@ -45,6 +45,10 @@ export type PlatformSettings = {
   // purchases are fulfilled manually by an admin until a biller/telco API is
   // wired. Off by default — admins enable it in Admin → Settings.
   wallet_bills_enabled: boolean;
+  // Active bill/airtime fulfilment provider id (Step 19.13). "manual" = admin
+  // fulfils each purchase; a registered adapter id auto-resolves it. See
+  // lib/providers/bill-provider.ts.
+  wallet_bills_provider: string;
   // Outflow velocity caps (Step 19.10). Ceilings on how much can LEAVE a wallet
   // (send + cash-out + bill/airtime) over rolling 24h / 30d windows, before the
   // VERIFIED multiplier. 0 = no limit. See lib/wallet-velocity.ts.
@@ -78,6 +82,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   wallet_cashback_rate: 0,
   wallet_p2p_enabled: false,
   wallet_bills_enabled: false,
+  wallet_bills_provider: "manual",
   wallet_daily_outflow_usd: 1000,
   wallet_monthly_outflow_usd: 5000,
 };
