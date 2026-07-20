@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Fingerprint } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -60,8 +59,11 @@ export function WalletAuthField({
       const passkey = await getPasskeyAssertion();
       onAuthorize({ passkey });
     } catch {
-      setLocalErr("biometricFailed");
+      // Biometric failed or was dismissed — fall back to PIN entry silently so
+      // the user can just type their PIN instead. Only surface an error when
+      // there's no PIN to fall back to.
       if (hasPin) setMode("pin");
+      else setLocalErr("biometricFailed");
     } finally {
       setBusy(false);
     }
@@ -100,13 +102,15 @@ export function WalletAuthField({
 
       <div className="flex gap-2">
         {mode === "biometric" ? (
+          // A plain action button (Send / Confirm). Tapping it opens the
+          // biometric prompt; if that's dismissed or fails, the PIN field
+          // appears so the user can authorize by PIN instead.
           <Button
             className={btnClass}
             disabled={disabled || pending || busy}
             onClick={runBiometric}
           >
-            <Fingerprint className="size-4" />
-            {pending || busy ? t("submitting") : t("confirmBiometric")}
+            {pending || busy ? t("submitting") : submitLabel}
           </Button>
         ) : (
           <Button
@@ -123,32 +127,6 @@ export function WalletAuthField({
           </Button>
         ) : null}
       </div>
-
-      {/* Switch methods. */}
-      {mode === "biometric" && hasPin ? (
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-foreground text-xs underline"
-          onClick={() => {
-            setLocalErr(null);
-            setMode("pin");
-          }}
-        >
-          {t("usePinInstead")}
-        </button>
-      ) : null}
-      {mode === "pin" && canBiometric ? (
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-foreground text-xs underline"
-          onClick={() => {
-            setLocalErr(null);
-            setMode("biometric");
-          }}
-        >
-          {t("useBiometricInstead")}
-        </button>
-      ) : null}
     </div>
   );
 }
