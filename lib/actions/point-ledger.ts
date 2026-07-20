@@ -16,7 +16,8 @@ export async function recordPointPayout(formData: FormData): Promise<Result> {
   if (!adminId) return { error: "forbidden" };
 
   const pointId = String(formData.get("pointId") ?? "");
-  const kind = String(formData.get("kind") ?? "payout"); // payout | adjustment
+  // payout (earnings side) | remittance (cash side) | adjustment (±)
+  const kind = String(formData.get("kind") ?? "payout");
   const raw = Number(formData.get("amount"));
   const note = String(formData.get("note") ?? "").trim();
   if (!pointId) return { error: "badInput" };
@@ -27,13 +28,18 @@ export async function recordPointPayout(formData: FormData): Promise<Result> {
   });
   if (!point) return { error: "notPoint" };
 
-  let type: "PAYOUT" | "ADJUSTMENT";
+  let type: "PAYOUT" | "ADJUSTMENT" | "COD_REMITTANCE";
   let amountUsd: number;
   if (kind === "adjustment") {
     // A signed correction (may be + or −). Reject zero.
     if (!Number.isFinite(raw) || raw === 0) return { error: "badInput" };
     type = "ADJUSTMENT";
     amountUsd = round2(raw);
+  } else if (kind === "remittance") {
+    // Counter COD cash handed in to Hezalli, stored negative on the cash side.
+    if (!Number.isFinite(raw) || raw <= 0) return { error: "badInput" };
+    type = "COD_REMITTANCE";
+    amountUsd = -round2(raw);
   } else {
     // A payout is a positive amount paid to the operator, stored negative.
     if (!Number.isFinite(raw) || raw <= 0) return { error: "badInput" };
@@ -54,7 +60,12 @@ export async function recordPointPayout(formData: FormData): Promise<Result> {
     prisma.auditLog.create({
       data: {
         actorId: adminId,
-        action: type === "PAYOUT" ? "point.payout" : "point.adjustment",
+        action:
+          type === "PAYOUT"
+            ? "point.payout"
+            : type === "COD_REMITTANCE"
+              ? "point.remittance"
+              : "point.adjustment",
         entity: "DeliveryPoint",
         entityId: pointId,
         meta: { amountUsd, note: note || undefined },

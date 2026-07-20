@@ -93,6 +93,18 @@ export default async function CheckoutPage({
 
   const codEnabled = await getSetting("cod_enabled");
 
+  // Active Hezalli Points for the collect-from-point option (sorted by
+  // governorate so the buyer's local points cluster together).
+  const pointRows = await prisma.deliveryPoint.findMany({
+    where: { status: "ACTIVE" },
+    orderBy: [{ governorate: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, governorate: true, city: true },
+  });
+  const pickupPoints = pointRows.map((p) => ({
+    id: p.id,
+    label: `${p.name} — ${p.city}, ${p.governorate}`,
+  }));
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="mb-5 text-2xl font-semibold tracking-tight">
@@ -105,6 +117,7 @@ export default async function CheckoutPage({
         codEnabled={codEnabled}
         points={buyer?.loyaltyPoints ?? 0}
         walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
+        pickupPoints={pickupPoints}
       />
     </main>
   );

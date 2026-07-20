@@ -60,6 +60,13 @@ export default async function SellerOrderDetailPage({
         select: { id: true, name: true, governorate: true, city: true },
       })
     : [];
+  // PICKUP orders: the buyer already chose the destination point.
+  const pickupPoint = sub.pickupPointId
+    ? await prisma.deliveryPoint.findUnique({
+        where: { id: sub.pickupPointId },
+        select: { name: true, city: true, governorate: true },
+      })
+    : null;
   const shipmentInfo = sub.shipment
     ? {
         carrierId: sub.shipment.carrierId,
@@ -148,6 +155,11 @@ export default async function SellerOrderDetailPage({
             id: p.id,
             label: `${p.name} — ${p.city}, ${p.governorate}`,
           }))}
+          pickupPointLabel={
+            pickupPoint
+              ? `${pickupPoint.name} — ${pickupPoint.city}, ${pickupPoint.governorate}`
+              : null
+          }
         />
       ) : null}
 

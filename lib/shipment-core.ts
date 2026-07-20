@@ -8,7 +8,10 @@ import { revalidatePath } from "next/cache";
 
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { recordDeliveryLedger } from "@/lib/courier-ledger";
-import { recordPointHandlingFee } from "@/lib/point-ledger";
+import {
+  recordPointCounterCod,
+  recordPointHandlingFee,
+} from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 
@@ -43,6 +46,9 @@ export type DeliveryProof = {
   // The buyer's delivery code / QR was checked at the doorstep (optional,
   // strongest proof — see docs/DELIVERY-POINTS.md §3).
   codeVerified?: boolean;
+  // Counter pickup: the point that handed the parcel to the buyer. For COD,
+  // the cash lands on this point's cash ledger instead of a courier's.
+  pickupPointId?: string;
 };
 
 // Transition a SHIPPED sub-order to DELIVERED. `actor` is recorded in the order
@@ -146,6 +152,16 @@ export async function markSubOrderDelivered(
           subOrderId,
           shipmentId: sub.shipment.id,
           fee: pointFee,
+        });
+      }
+
+      // Counter pickup: the point collected the buyer's COD cash.
+      if (proof?.pickupPointId && codAmount > 0) {
+        await recordPointCounterCod(tx, {
+          pointId: proof.pickupPointId,
+          subOrderId,
+          shipmentId: sub.shipment.id,
+          amount: codAmount,
         });
       }
     }

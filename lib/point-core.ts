@@ -9,6 +9,7 @@ import { autoAssignShipment } from "@/lib/courier-assign";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { getSetting } from "@/lib/settings";
+import { markSubOrderDelivered } from "@/lib/shipment-core";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -34,6 +35,7 @@ async function findParcel(pointId: string, tracking: string) {
           id: true,
           status: true,
           orderId: true,
+          shippingMethod: true,
           store: {
             select: {
               name: true,
@@ -88,32 +90,50 @@ export async function receiveParcelAtPoint(
   if (claimed.count !== 1) return { error: "badState" };
 
   const pointName = parcel.deliveryPoint?.name ?? "Hezalli Point";
+  // A PICKUP parcel's journey ends here: the buyer collects it from the
+  // counter with their delivery code — no courier is ever assigned.
+  const isPickup = parcel.subOrder.shippingMethod === "PICKUP";
   await prisma.$transaction([
     prisma.shipmentEvent.create({
       data: {
         shipmentId: parcel.id,
         status: "AT_POINT",
         location: pointName,
-        note: `Received at ${pointName}`,
+        note: isPickup
+          ? `Ready for pickup at ${pointName}`
+          : `Received at ${pointName}`,
       },
     }),
     prisma.notification.create({
-      data: buyerNotice(
-        parcel,
-        {
-          en: "Your parcel reached the delivery point",
-          ar: "وصل طردك إلى نقطة التوصيل",
-        },
-        {
-          en: `Your order from ${parcel.subOrder.store.name} arrived at ${pointName} and will be handed to a courier soon.`,
-          ar: `وصل طلبك من ${parcel.subOrder.store.name} إلى ${pointName} وسيُسلَّم للمندوب قريبًا.`,
-        },
-      ),
+      data: isPickup
+        ? buyerNotice(
+            parcel,
+            {
+              en: "Your order is ready for pickup",
+              ar: "طلبك جاهز للاستلام",
+            },
+            {
+              en: `Your order from ${parcel.subOrder.store.name} is waiting at ${pointName}. Bring your delivery code (in the order page) to collect it.`,
+              ar: `طلبك من ${parcel.subOrder.store.name} بانتظارك في ${pointName}. أحضر رمز الاستلام (في صفحة الطلب) لاستلامه.`,
+            },
+          )
+        : buyerNotice(
+            parcel,
+            {
+              en: "Your parcel reached the delivery point",
+              ar: "وصل طردك إلى نقطة التوصيل",
+            },
+            {
+              en: `Your order from ${parcel.subOrder.store.name} arrived at ${pointName} and will be handed to a courier soon.`,
+              ar: `وصل طلبك من ${parcel.subOrder.store.name} إلى ${pointName} وسيُسلَّم للمندوب قريبًا.`,
+            },
+          ),
     }),
   ]);
 
-  // Hand it to a courier now, when auto-assign is on. Best-effort.
-  if (await getSetting("express_auto_assign")) {
+  // Hand it to a courier now, when auto-assign is on. Best-effort. Never for
+  // pickup parcels — the buyer is the last mile.
+  if (!isPickup && (await getSetting("express_auto_assign"))) {
     try {
       await autoAssignShipment(parcel.id);
     } catch {
@@ -137,6 +157,10 @@ export async function handoverParcelToDriver(
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
   if (parcel.status !== "AT_POINT" && parcel.status !== "RETURNED_TO_POINT") {
     return { error: "badState" };
+  }
+  // A PICKUP parcel is collected by the buyer at the counter — never a driver.
+  if (parcel.subOrder.shippingMethod === "PICKUP") {
+    return { error: "pickupOnly" };
   }
 
   let assignee = parcel.driverId;
@@ -261,10 +285,16 @@ export async function returnParcelToSeller(
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
-  if (parcel.status !== "RETURNED_TO_POINT") return { error: "badState" };
+  // Failed-delivery parcels RTS from RETURNED_TO_POINT; an uncollected PICKUP
+  // parcel can be sent back straight from AT_POINT (operator judgment).
+  const rtsFrom =
+    parcel.subOrder.shippingMethod === "PICKUP"
+      ? ["RETURNED_TO_POINT", "AT_POINT"]
+      : ["RETURNED_TO_POINT"];
+  if (!rtsFrom.includes(parcel.status)) return { error: "badState" };
 
   const claimed = await prisma.shipment.updateMany({
-    where: { id: parcel.id, status: "RETURNED_TO_POINT" },
+    where: { id: parcel.id, status: { in: rtsFrom as never } },
     data: { status: "RETURNED" },
   });
   if (claimed.count !== 1) return { error: "badState" };
@@ -305,4 +335,59 @@ export async function returnParcelToSeller(
 // How many failed attempts before the point should RTS (Admin → Settings).
 export async function maxDeliveryAttempts(): Promise<number> {
   return getSetting("max_delivery_attempts");
+}
+
+// The buyer collects a parcel at the counter. Keyed by the buyer's delivery
+// CODE (their QR), not the tracking number — presenting it is the proof of
+// handover. Works for any parcel the point holds: PICKUP orders waiting for
+// the buyer, or a failed-delivery parcel the buyer prefers to come fetch.
+// COD cash goes onto the point's cash ledger (docs/DELIVERY-POINTS.md §6).
+export async function buyerPickupAtPoint(
+  pointId: string,
+  code: string,
+  locale: string,
+): Promise<{ ok?: boolean; error?: string; codDue?: number }> {
+  const c = code.trim().toUpperCase();
+  if (!c) return { error: "notFound" };
+
+  const shipment = await prisma.shipment.findFirst({
+    where: {
+      deliveryCode: c,
+      deliveryPointId: pointId,
+      platformManaged: true,
+      status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
+      subOrder: { status: "SHIPPED" },
+    },
+    select: {
+      id: true,
+      subOrder: {
+        select: {
+          id: true,
+          itemsTotal: true,
+          shippingTotal: true,
+          discountTotal: true,
+          order: { select: { paymentMethod: true } },
+        },
+      },
+    },
+  });
+  if (!shipment?.subOrder) return { error: "notFound" };
+
+  const sub = shipment.subOrder;
+  const codDue =
+    sub.order.paymentMethod === "COD"
+      ? Math.round(
+          (Number(sub.itemsTotal) +
+            Number(sub.shippingTotal) -
+            Number(sub.discountTotal)) *
+            100,
+        ) / 100
+      : 0;
+
+  const res = await markSubOrderDelivered(sub.id, "point", locale, {
+    codeVerified: true,
+    pickupPointId: pointId,
+  });
+  if (res.error) return res;
+  return { ok: true, codDue };
 }

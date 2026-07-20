@@ -5,6 +5,7 @@ import { Camera, CheckCircle2, Keyboard, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
+  pointBuyerPickup,
   pointHandoverParcel,
   pointReceiveParcel,
   pointReceiveReturn,
@@ -37,7 +38,7 @@ function extractTracking(raw: string): string {
 // app's My-QR card).
 const DRIVER_QR = /^hezalli:driver:([\w-]+)$/i;
 
-export type ScanMode = "receive" | "handover" | "return";
+export type ScanMode = "receive" | "handover" | "return" | "pickup";
 type Driver = { id: string; name: string };
 type Feedback = {
   ok: boolean;
@@ -97,6 +98,23 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
     setBusy(true);
     try {
       const m = modeRef.current;
+      // Pickup scans the BUYER's delivery QR/code, not the parcel label.
+      if (m === "pickup") {
+        const res = await pointBuyerPickup(code);
+        if (res.ok) {
+          push(
+            true,
+            res.codDue && res.codDue > 0
+              ? t("pickupOkCod", { amount: `$${res.codDue.toFixed(2)}` })
+              : t("pickupOk"),
+            code,
+          );
+          router.refresh();
+        } else {
+          push(false, t(`err_${res.error ?? "notFound"}`), code);
+        }
+        return;
+      }
       const res =
         m === "receive"
           ? await pointReceiveParcel(code)
@@ -191,12 +209,13 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
     { key: "receive", label: t("modeReceive") },
     { key: "handover", label: t("modeHandover") },
     { key: "return", label: t("modeReturn") },
+    { key: "pickup", label: t("modePickup") },
   ];
 
   return (
     <div className="space-y-4">
       {/* What does the next scan mean? */}
-      <div className="grid grid-cols-3 gap-1 rounded-lg border p-1">
+      <div className="grid grid-cols-4 gap-1 rounded-lg border p-1">
         {modes.map((m) => (
           <button
             key={m.key}
@@ -213,6 +232,12 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
           </button>
         ))}
       </div>
+
+      {mode === "pickup" ? (
+        <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-2 text-xs">
+          {t("pickupHint")}
+        </p>
+      ) : null}
 
       {mode === "handover" ? (
         <div className="space-y-1">

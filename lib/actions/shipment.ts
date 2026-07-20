@@ -49,6 +49,8 @@ export async function shipSubOrder(
         id: true,
         orderId: true,
         status: true,
+        shippingMethod: true,
+        pickupPointId: true,
         store: { select: { name: true } },
         order: {
           select: { buyerId: true, buyer: { select: { locale: true } } },
@@ -71,15 +73,30 @@ export async function shipSubOrder(
 
   // Optional routing via a Hezalli Point (platform carrier only): the parcel
   // starts LABEL_CREATED (awaiting drop-off) instead of IN_TRANSIT, and
-  // courier auto-assignment waits until the point receives it.
+  // courier auto-assignment waits until the point receives it. For a PICKUP
+  // sub-order the destination is FORCED to the buyer's chosen point — the
+  // seller can't reroute it, and only the platform carrier can serve it.
   let pointId: string | null = null;
   let pointName: string | null = null;
-  if (input.deliveryPointId?.trim()) {
+  const wantedPointId =
+    sub.shippingMethod === "PICKUP"
+      ? sub.pickupPointId
+      : input.deliveryPointId?.trim() || null;
+  if (sub.shippingMethod === "PICKUP" && !carrier.platformManaged) {
+    return { error: "pointNotAllowed" };
+  }
+  if (wantedPointId) {
     if (!carrier.platformManaged) return { error: "pointNotAllowed" };
-    if (!(await getSetting("points_enabled")))
+    // A buyer-chosen pickup point stays routable even if points were later
+    // switched off platform-wide — the buyer already paid for that option.
+    if (
+      sub.shippingMethod !== "PICKUP" &&
+      !(await getSetting("points_enabled"))
+    ) {
       return { error: "pointNotAllowed" };
+    }
     const point = await prisma.deliveryPoint.findFirst({
-      where: { id: input.deliveryPointId.trim(), status: "ACTIVE" },
+      where: { id: wantedPointId, status: "ACTIVE" },
       select: { id: true, name: true },
     });
     if (!point) return { error: "invalidPoint" };

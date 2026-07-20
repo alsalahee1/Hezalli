@@ -8,6 +8,7 @@ import { resolveShippingChoice, type StoreShipOptions } from "@/lib/shipping";
 const opts: StoreShipOptions = {
   standard: { method: "STANDARD", fee: 5, etaMinDays: 3, etaMaxDays: 7 },
   express: { method: "EXPRESS", fee: 12, etaMinDays: 1, etaMaxDays: 2 },
+  pickup: { method: "PICKUP", fee: 0, etaMinDays: 3, etaMaxDays: 7 },
 };
 
 describe("resolveShippingChoice", () => {
@@ -23,8 +24,22 @@ describe("resolveShippingChoice", () => {
     const noExpress: StoreShipOptions = {
       standard: opts.standard,
       express: null,
+      pickup: null,
     };
     expect(resolveShippingChoice(noExpress, "EXPRESS")).toEqual(opts.standard);
+  });
+
+  it("returns the pickup option when pickup is chosen and available", () => {
+    expect(resolveShippingChoice(opts, "PICKUP")).toEqual(opts.pickup);
+  });
+
+  it("falls back to standard when pickup is chosen but not offered", () => {
+    const noPickup: StoreShipOptions = {
+      standard: opts.standard,
+      express: opts.express,
+      pickup: null,
+    };
+    expect(resolveShippingChoice(noPickup, "PICKUP")).toEqual(opts.standard);
   });
 
   it("returns a safe zero-fee standard default when options are missing", () => {

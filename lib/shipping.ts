@@ -21,7 +21,7 @@ export const DEFAULT_STD_ETA: [number, number] = [3, 7];
 export const DEFAULT_EXPRESS_ETA: [number, number] = [1, 2];
 
 export type ShipGroup = { storeId: string; subtotal: number };
-export type ShippingMethod = "STANDARD" | "EXPRESS";
+export type ShippingMethod = "STANDARD" | "EXPRESS" | "PICKUP";
 
 export type ShipOption = {
   method: ShippingMethod;
@@ -33,6 +33,12 @@ export type StoreShipOptions = {
   standard: ShipOption;
   /** Null when the platform has express delivery switched off. */
   express: ShipOption | null;
+  /**
+   * Collect-from-a-Hezalli-Point option (docs/DELIVERY-POINTS.md §6). Null
+   * when points are off or no ACTIVE point exists. ETA is the standard range
+   * (time for the parcel to reach the point).
+   */
+  pickup: ShipOption | null;
 };
 
 type ShippingConfig = {
@@ -40,6 +46,8 @@ type ShippingConfig = {
   freeOver: number;
   expressEnabled: boolean;
   expressFee: number;
+  pointsEnabled: boolean;
+  pickupFee: number;
   stdEta: [number, number];
   expressEta: [number, number];
 };
@@ -64,6 +72,8 @@ async function shippingConfig(): Promise<ShippingConfig> {
           "std_eta_max_days",
           "express_eta_min_days",
           "express_eta_max_days",
+          "points_enabled",
+          "pickup_fee",
         ],
       },
     },
@@ -90,6 +100,11 @@ async function shippingConfig(): Promise<ShippingConfig> {
       ? m.get("express_enabled") === true || m.get("express_enabled") === "true"
       : true,
     expressFee: num(m.get("default_express_fee"), DEFAULT_EXPRESS_FEE, true),
+    // Default on, like express: pickup is offered unless explicitly disabled.
+    pointsEnabled: m.has("points_enabled")
+      ? m.get("points_enabled") === true || m.get("points_enabled") === "true"
+      : true,
+    pickupFee: num(m.get("pickup_fee"), 0),
     stdEta: [Math.min(stdMin, stdMax), Math.max(stdMin, stdMax)],
     expressEta: [Math.min(expMin, expMax), Math.max(expMin, expMax)],
   };
@@ -124,6 +139,10 @@ export async function quoteShippingForStores(
     resolveZoneId(governorate),
     shippingConfig(),
   ]);
+  // Pickup is offered only when at least one point can actually receive it.
+  const hasActivePoint = cfg.pointsEnabled
+    ? (await prisma.deliveryPoint.count({ where: { status: "ACTIVE" } })) > 0
+    : false;
   const rates = zoneId
     ? await prisma.shippingRate.findMany({
         where: { storeId: { in: groups.map((g) => g.storeId) }, zoneId },
@@ -165,7 +184,16 @@ export async function quoteShippingForStores(
       };
     }
 
-    out.set(g.storeId, { standard, express });
+    const pickup: ShipOption | null = hasActivePoint
+      ? {
+          method: "PICKUP",
+          fee: round2(cfg.pickupFee),
+          etaMinDays: cfg.stdEta[0],
+          etaMaxDays: cfg.stdEta[1],
+        }
+      : null;
+
+    out.set(g.storeId, { standard, express, pickup });
   }
   return out;
 }
@@ -188,5 +216,6 @@ export function resolveShippingChoice(
     };
   }
   if (method === "EXPRESS" && opts.express) return opts.express;
+  if (method === "PICKUP" && opts.pickup) return opts.pickup;
   return opts.standard;
 }

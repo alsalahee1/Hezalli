@@ -28,13 +28,43 @@ export async function recordPointHandlingFee(
   });
 }
 
+// Counter-pickup COD: buyer cash the point took on Hezalli's behalf, inside
+// the caller's transaction (the shared delivery money-path).
+export async function recordPointCounterCod(
+  tx: Prisma.TransactionClient,
+  input: {
+    pointId: string;
+    subOrderId: string;
+    shipmentId?: string | null;
+    amount: number;
+  },
+): Promise<void> {
+  if (input.amount <= 0) return;
+  await tx.deliveryPointLedgerEntry.create({
+    data: {
+      pointId: input.pointId,
+      type: "COD_COLLECTED",
+      amountUsd: input.amount,
+      subOrderId: input.subOrderId,
+      shipmentId: input.shipmentId ?? null,
+    },
+  });
+}
+
 export type PointLedgerSummary = {
-  balance: number; // fees − payouts (± adjustments): what Hezalli owes the point
+  // EARNINGS side: what Hezalli owes the point.
+  balance: number; // fees − payouts (± adjustments)
   totalFees: number;
   totalPaidOut: number;
+  // CASH side: buyer COD the point holds on Hezalli's behalf.
+  cashOnHand: number; // collected − remitted
+  totalCodCollected: number;
+  totalCodRemitted: number;
 };
 
-// Reconcile one point's ledger into the headline figures.
+// Reconcile one point's ledger into the headline figures. Earnings and cash
+// are independent sides — they are never netted against each other here;
+// settlement is an explicit admin action.
 export async function pointLedgerSummary(
   pointId: string,
 ): Promise<PointLedgerSummary> {
@@ -49,10 +79,15 @@ export async function pointLedgerSummary(
   const fees = sum("HANDLING_FEE");
   const payouts = sum("PAYOUT"); // stored negative
   const adjustment = sum("ADJUSTMENT");
+  const collected = sum("COD_COLLECTED");
+  const remitted = sum("COD_REMITTANCE"); // stored negative
   return {
     balance: round2(fees + payouts + adjustment),
     totalFees: round2(fees),
     totalPaidOut: round2(-payouts),
+    cashOnHand: round2(collected + remitted),
+    totalCodCollected: round2(collected),
+    totalCodRemitted: round2(-remitted),
   };
 }
 

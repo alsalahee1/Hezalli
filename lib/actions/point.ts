@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireDeliveryPoint } from "@/lib/authz";
 import {
+  buyerPickupAtPoint,
   handoverParcelToDriver,
   receiveParcelAtPoint,
   receiveReturnAtPoint,
@@ -50,6 +51,19 @@ export async function pointReceiveReturn(
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
   const res = await receiveReturnAtPoint(gate.pointId, tracking, note);
+  if (res.ok) await revalidatePoint();
+  return res;
+}
+
+// Counter pickup: the buyer shows their delivery QR/code and takes the
+// parcel. Returns the COD amount the counter must collect (0 for prepaid).
+export async function pointBuyerPickup(
+  code: string,
+): Promise<{ ok?: boolean; error?: string; codDue?: number }> {
+  const gate = await requireDeliveryPoint();
+  if (!gate) return { error: "forbidden" };
+  const locale = await getLocale();
+  const res = await buyerPickupAtPoint(gate.pointId, code, locale);
   if (res.ok) await revalidatePoint();
   return res;
 }

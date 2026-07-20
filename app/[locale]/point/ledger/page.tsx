@@ -65,6 +65,36 @@ export default async function PointLedgerPage() {
         </div>
       </div>
 
+      {/* Counter COD cash the point holds for Hezalli (pickup orders). */}
+      {summary.cashOnHand > 0 || summary.totalCodCollected > 0 ? (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-500">
+              {t("cashToRemit")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(summary.cashOnHand)}
+            </p>
+          </div>
+          <div className="rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("totalCodCollected")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(summary.totalCodCollected)}
+            </p>
+          </div>
+          <div className="rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("totalCodRemitted")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(summary.totalCodRemitted)}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {entries.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-12 text-center text-sm">
           {t("noEntries")}

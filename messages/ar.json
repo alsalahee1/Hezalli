@@ -902,7 +902,13 @@
     "err_pointsAndCoupon": "لا يمكنك استخدام النقاط وقسيمة في الطلب نفسه.",
     "hezalliBalance": "رصيد HezalliPay",
     "hezalliBalanceHint": "دفع فوري · الرصيد: {balance}",
-    "err_insufficientBalance": "رصيد محفظتك لا يغطي هذا الطلب."
+    "err_insufficientBalance": "رصيد محفظتك لا يغطي هذا الطلب.",
+    "pickupShipping": "الاستلام من نقطة هزلي",
+    "pickupBadge": "استلام ذاتي",
+    "pickupPointLabel": "من أين ستستلم طلبك؟",
+    "pickupPointPlaceholder": "اختر نقطة هزلي…",
+    "pickupPointHint": "سنخبرك عندما يصبح جاهزًا. أحضر رمز الاستلام (في صفحة الطلب) وادفع هناك إذا اخترت الدفع نقدًا.",
+    "err_pickupPointRequired": "اختر نقطة هزلي التي ستستلم منها."
   },
   "Orders": {
     "title": "طلباتي",
@@ -983,7 +989,10 @@
     "redeliveryErr_forbidden": "الرجاء تسجيل الدخول مجددًا.",
     "redeliveryErr_badDate": "اختر يومًا صالحًا خلال 14 يومًا القادمة.",
     "redeliveryErr_notFound": "الطلب غير موجود.",
-    "redeliveryErr_badState": "لا يمكن إعادة جدولة هذا الطلب الآن."
+    "redeliveryErr_badState": "لا يمكن إعادة جدولة هذا الطلب الآن.",
+    "pickupReadyTitle": "جاهز للاستلام!",
+    "pickupPendingTitle": "ستستلم هذا الطلب من:",
+    "pickupBringCode": "أحضر رمز الاستلام أدناه — يمسحه الموظف لتسليمك الطرد (ويستلم الدفع إذا اخترت النقد)."
   },
   "Invoice": {
     "invoice": "فاتورة",
@@ -1268,7 +1277,8 @@
     "directToCourier": "مباشرة — المندوب يستلم منك",
     "dropOffHint": "سلّم الطرد في النقطة المختارة؛ يمسحه الموظف ويستلمه المندوب من هناك.",
     "err_pointNotAllowed": "التسليم عبر النقاط متاح فقط مع هزلي إكسبرس.",
-    "err_invalidPoint": "نقطة التوصيل هذه غير متاحة."
+    "err_invalidPoint": "نقطة التوصيل هذه غير متاحة.",
+    "pickupChosen": "سيستلم المشتري هذا الطلب من {point} — أرسله إلى هناك عبر هزلي إكسبرس."
   },
   "Reviews": {
     "title": "التقييمات والمراجعات",
@@ -1576,7 +1586,9 @@
     "pointsEnabled": "تفعيل نقاط هزلي",
     "pointsEnabledHint": "السماح للبائعين بتسليم طرود هزلي إكسبرس في النقاط الشريكة.",
     "err_badPointFee": "تحقق من رسم مناولة النقطة.",
-    "err_badMaxAttempts": "يجب أن يكون الحد بين 1 و10."
+    "err_badMaxAttempts": "يجب أن يكون الحد بين 1 و10.",
+    "pickupFee": "رسم الاستلام الذاتي (دولار)",
+    "pickupFeeHint": "ما يدفعه المشتري للاستلام من نقطة هزلي بنفسه. 0 = مجاني."
   },
   "Vouchers": {
     "platformTitle": "قسائم المنصة",
@@ -2228,7 +2240,18 @@
     "noEntries": "لا توجد حركات بعد.",
     "ledger_HANDLING_FEE": "رسم مناولة",
     "ledger_PAYOUT": "دفعة",
-    "ledger_ADJUSTMENT": "تسوية"
+    "ledger_ADJUSTMENT": "تسوية",
+    "modePickup": "استلام",
+    "pickupHint": "امسح رمز QR الخاص بالمشتري (أو اكتب رمزه). هذا يسلّم الطرد ويعرض المبلغ النقدي إن وُجد.",
+    "pickupOk": "سُلِّم للمشتري — تم التوصيل.",
+    "pickupOkCod": "سُلِّم للمشتري — حصّل {amount} نقدًا.",
+    "pickupBadge": "استلام ذاتي",
+    "err_pickupOnly": "هذا طرد استلام ذاتي — يستلمه المشتري برمزه (وضع الاستلام).",
+    "cashToRemit": "نقد لتسليمه",
+    "totalCodCollected": "المحصَّل نقدًا",
+    "totalCodRemitted": "النقد المسلَّم",
+    "ledger_COD_COLLECTED": "تحصيل نقدي عند الاستلام",
+    "ledger_COD_REMITTANCE": "نقد مسلَّم"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
@@ -2310,6 +2333,13 @@
     "record": "تسجيل",
     "err_forbidden": "غير مسموح.",
     "err_badInput": "تحقق من المبلغ.",
-    "err_notPoint": "نقطة التوصيل غير موجودة."
+    "err_notPoint": "نقطة التوصيل غير موجودة.",
+    "cashOnHand": "النقد لدى النقطة",
+    "totalCodCollected": "المحصَّل نقدًا",
+    "totalCodRemitted": "النقد المسلَّم",
+    "kind_remittance": "تسليم نقدي",
+    "remitAmount": "النقد المسلَّم",
+    "type_COD_COLLECTED": "تحصيل نقدي عند الاستلام",
+    "type_COD_REMITTANCE": "تسليم نقدي"
   }
 }

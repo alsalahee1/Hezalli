@@ -31,9 +31,10 @@ export default async function AdminPointsPage() {
         owner: { select: { name: true, email: true } },
       },
     }),
-    // Balance owed per point = plain SUM of the signed ledger.
+    // Signed sums per point per type: earnings side (fees/payouts/adjustments)
+    // and cash side (counter COD collected/remitted) are kept apart.
     prisma.deliveryPointLedgerEntry.groupBy({
-      by: ["pointId"],
+      by: ["pointId", "type"],
       _sum: { amountUsd: true },
     }),
     // Parcels currently in the point's custody.
@@ -48,9 +49,16 @@ export default async function AdminPointsPage() {
     }),
   ]);
 
-  const balanceBy = new Map(
-    balances.map((g) => [g.pointId, Number(g._sum.amountUsd ?? 0)]),
-  );
+  const EARNING_TYPES = new Set(["HANDLING_FEE", "PAYOUT", "ADJUSTMENT"]);
+  const balanceBy = new Map<string, number>();
+  const cashBy = new Map<string, number>();
+  for (const g of balances) {
+    const target = EARNING_TYPES.has(g.type) ? balanceBy : cashBy;
+    target.set(
+      g.pointId,
+      (target.get(g.pointId) ?? 0) + Number(g._sum.amountUsd ?? 0),
+    );
+  }
   const heldBy = new Map(held.map((g) => [g.deliveryPointId, g._count._all]));
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
@@ -126,6 +134,7 @@ export default async function AdminPointsPage() {
           <ul className="divide-y rounded-lg border">
             {points.map((p) => {
               const balance = balanceBy.get(p.id) ?? 0;
+              const cash = cashBy.get(p.id) ?? 0;
               const holding = heldBy.get(p.id) ?? 0;
               return (
                 <li
@@ -157,6 +166,15 @@ export default async function AdminPointsPage() {
                         title={t("balanceOwed")}
                       >
                         {money(balance)}
+                      </span>
+                    ) : null}
+                    {cash > 0 ? (
+                      <span
+                        className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600"
+                        dir="ltr"
+                        title={t("cashOnHand")}
+                      >
+                        {money(cash)}
                       </span>
                     ) : null}
                     {p.status === "SUSPENDED" ? (

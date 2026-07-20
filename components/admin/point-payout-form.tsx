@@ -16,7 +16,9 @@ export function PointPayoutForm({ pointId }: { pointId: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [kind, setKind] = useState<"payout" | "adjustment">("payout");
+  const [kind, setKind] = useState<"payout" | "remittance" | "adjustment">(
+    "payout",
+  );
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,7 +39,7 @@ export function PointPayoutForm({ pointId }: { pointId: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="flex gap-2">
-        {(["payout", "adjustment"] as const).map((k) => (
+        {(["payout", "remittance", "adjustment"] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -57,7 +59,11 @@ export function PointPayoutForm({ pointId }: { pointId: string }) {
       <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
         <div className="space-y-1.5">
           <Label htmlFor="amount">
-            {kind === "payout" ? t("payoutAmount") : t("adjustAmount")}
+            {kind === "payout"
+              ? t("payoutAmount")
+              : kind === "remittance"
+                ? t("remitAmount")
+                : t("adjustAmount")}
           </Label>
           <Input
             id="amount"

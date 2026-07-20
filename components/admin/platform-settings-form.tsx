@@ -53,6 +53,7 @@ export function PlatformSettingsForm({
     points_enabled: current.points_enabled,
     point_handling_fee: String(current.point_handling_fee),
     max_delivery_attempts: String(current.max_delivery_attempts),
+    pickup_fee: String(current.pickup_fee),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -91,6 +92,7 @@ export function PlatformSettingsForm({
         points_enabled: f.points_enabled,
         point_handling_fee: Number(f.point_handling_fee),
         max_delivery_attempts: Number(f.max_delivery_attempts),
+        pickup_fee: Number(f.pickup_fee),
       });
       if (res.error) setErr(res.error);
       else {
@@ -256,6 +258,14 @@ export function PlatformSettingsForm({
             type="number"
             value={f.point_handling_fee}
             onChange={(e) => set("point_handling_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("pickupFee")} hint={t("pickupFeeHint")}>
+          <Input
+            type="number"
+            value={f.pickup_fee}
+            onChange={(e) => set("pickup_fee", e.target.value)}
             dir="ltr"
           />
         </Field>

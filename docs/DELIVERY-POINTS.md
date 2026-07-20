@@ -170,27 +170,27 @@ the pickup scan requires the buyer's code — it is the proof of handover.
 ### Build checklist (v1.1)
 
 #### Phase A — Schema, settings & quotes
-- [ ] `ShippingMethod.PICKUP`, `SubOrder.pickupPointId`, `PointLedgerType.COD_COLLECTED` / `COD_REMITTANCE` + migration
-- [ ] Settings: `pickup_fee` (USD, default 0) editable in Admin → Settings
-- [ ] `lib/shipping.ts`: `pickup` option (when points enabled + an active point exists) + `resolveShippingChoice` support
+- [x] `ShippingMethod.PICKUP`, `SubOrder.pickupPointId`, `PointLedgerType.COD_COLLECTED` / `COD_REMITTANCE` + migration
+- [x] Settings: `pickup_fee` (USD, default 0) editable in Admin → Settings
+- [x] `lib/shipping.ts`: `pickup` option (when points enabled + an active point exists) + `resolveShippingChoice` support
 
 #### Phase B — Order & custody flow
-- [ ] `placeOrder`: accepts `PICKUP` per store + one `pickupPointId` per order (validated ACTIVE)
-- [ ] `shipSubOrder`: PICKUP sub-orders route to the buyer's point automatically (platform carrier required)
-- [ ] `point-core`: receive → "ready for pickup" notice, no courier auto-assign; handover/RTS scans reject PICKUP parcels
-- [ ] `pointBuyerPickup(code)`: resolve by delivery code, deliver with `codeVerified` proof, COD cash → `COD_COLLECTED`
-- [ ] `point-ledger`: summary split (earnings vs cash-on-hand); admin `remittance` kind on the payout action
+- [x] `placeOrder`: accepts `PICKUP` per store + one `pickupPointId` per order (validated ACTIVE)
+- [x] `shipSubOrder`: PICKUP sub-orders route to the buyer's point automatically (platform carrier required)
+- [x] `point-core`: receive → "ready for pickup" notice, no courier auto-assign; handover/RTS scans reject PICKUP parcels
+- [x] `pointBuyerPickup(code)`: resolve by delivery code, deliver with `codeVerified` proof, COD cash → `COD_COLLECTED`
+- [x] `point-ledger`: summary split (earnings vs cash-on-hand); admin `remittance` kind on the payout action
 
 #### Phase C — UI
-- [ ] Checkout: PICKUP option per store group + one point picker for the order
-- [ ] Point app: "Pickup" scan mode (buyer QR/code) showing the COD amount to collect; dashboard pickup badge; ledger page cash tiles
-- [ ] Admin points: cash-on-hand column + remittance recording; settings field for `pickup_fee`
-- [ ] Buyer order page: "collect from {point}" card with address + code; seller ship form shows the forced destination
+- [x] Checkout: PICKUP option per store group + one point picker for the order
+- [x] Point app: "Pickup" scan mode (buyer QR/code) showing the COD amount to collect; dashboard pickup badge; ledger page cash tiles
+- [x] Admin points: cash-on-hand column + remittance recording; settings field for `pickup_fee`
+- [x] Buyer order page: "collect from {point}" card with address + code; seller ship form shows the forced destination
 
 #### Phase D — i18n, tests, docs
-- [ ] en + ar keys for all of the above
-- [ ] Integration tests: pickup quote/choice, forced routing, ready-notify without auto-assign, code-gated pickup + COD cash + fee ledgers, handover/fail blocked
-- [ ] This file kept current
+- [x] en + ar keys for all of the above
+- [x] Integration tests: pickup quote/choice, forced routing, ready-notify without auto-assign, code-gated pickup + COD cash + fee ledgers, handover/fail blocked
+- [x] This file kept current
 
 ## 7. Out of scope
 
