@@ -28,6 +28,13 @@ export default async function WalletTxPage({
 
   return (
     <div className="mx-auto max-w-md space-y-5">
+      {/* Native-app wallet treatment on phones: this marker drives the CSS in
+          globals.css that hides the storefront chrome (announcement, header,
+          footer, account heading + nav) on mobile so the transaction receipt
+          reads like a standalone wallet screen — matching /account/wallet.
+          Desktop is unaffected. */}
+      <div data-native-wallet hidden />
+
       <Link
         href="/account/wallet"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
