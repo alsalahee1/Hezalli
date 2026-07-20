@@ -37,8 +37,24 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ChatIcon } from "@/components/chat/chat-icon";
+import { CenterTabBar } from "@/components/layout/center-tab-bar";
 
 type NavItem = { href: string; key: string; icon: LucideIcon };
+
+// The four destinations that get their own tab on the phone bottom bar; the
+// rest of the sidebar stays reachable through the bar's "More" sheet.
+const SELLER_PRIMARY = [
+  "/seller",
+  "/seller/products",
+  "/seller/orders",
+  "/seller/finance",
+];
+const ADMIN_PRIMARY = [
+  "/admin",
+  "/admin/orders",
+  "/admin/users",
+  "/admin/payments",
+];
 
 const SELLER_NAV: NavItem[] = [
   { href: "/seller", key: "dashboard", icon: LayoutDashboard },
@@ -90,8 +106,24 @@ export function DashboardShell({
   const ns = variant === "seller" ? "Seller" : "Admin";
   const titleKey = variant === "seller" ? "center" : "panel";
   const t = useTranslations(ns);
+  const c = useTranslations("Common");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Build the phone bottom bar from the same nav list: four primary tabs plus
+  // everything (in sidebar order) behind "More".
+  const primaryHrefs = variant === "seller" ? SELLER_PRIMARY : ADMIN_PRIMARY;
+  const toTab = (item: NavItem) => ({
+    href: item.href,
+    label: t(item.key),
+    icon: item.icon,
+    exact: item.href === `/${variant}`,
+  });
+  const primaryTabs = primaryHrefs
+    .map((href) => nav.find((n) => n.href === href))
+    .filter((n): n is NavItem => Boolean(n))
+    .map(toTab);
+  const moreTabs = nav.map(toTab);
 
   const isActive = (href: string) =>
     href === `/${variant}` ? pathname === href : pathname.startsWith(href);
@@ -170,7 +202,20 @@ export function DashboardShell({
           </div>
         </div>
         <main className="flex-1 p-6">{children}</main>
+        {/* Clear the fixed bottom bar on phones; collapses at md. */}
+        <div
+          className="h-16 md:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          aria-hidden
+        />
       </div>
+
+      <CenterTabBar
+        primary={primaryTabs}
+        moreItems={moreTabs}
+        moreLabel={c("more")}
+        ariaLabel={t(titleKey)}
+      />
     </div>
   );
 }

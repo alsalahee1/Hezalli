@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { redirect } from "@/i18n/navigation";
 import { AccountNav } from "@/components/account/account-nav";
+import { AccountTabBar } from "@/components/account/account-tab-bar";
 
 export default async function AccountLayout({
   children,
@@ -26,6 +27,7 @@ export default async function AccountLayout({
         </aside>
         <div className="min-w-0">{children}</div>
       </div>
+      <AccountTabBar />
     </div>
   );
 }
