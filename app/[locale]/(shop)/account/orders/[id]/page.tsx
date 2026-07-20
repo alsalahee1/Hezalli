@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { ConfirmReceivedButton } from "@/components/orders/confirm-received-button";
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
+import { QrCode } from "@/components/orders/qr-code";
+import { RedeliveryForm } from "@/components/orders/redelivery-form";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
 import {
   ReturnBlock,
@@ -358,6 +360,42 @@ export default async function OrderDetailPage({
                     </p>
                   ) : null}
                 </div>
+                {/* Delivery QR: the courier can scan (or type) this code at the
+                    doorstep as verified proof of delivery. Optional — delivery
+                    also works without it. */}
+                {s.shipment.deliveryCode && s.status === "SHIPPED" ? (
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <QrCode
+                      value={s.shipment.deliveryCode}
+                      size={84}
+                      className="shrink-0"
+                    />
+                    <div className="min-w-0 text-sm">
+                      <p className="font-medium">{t("deliveryQrTitle")}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {t("deliveryQrHint")}
+                      </p>
+                      <p className="mt-1 font-mono text-base tracking-widest" dir="ltr">
+                        {s.shipment.deliveryCode}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Failed attempt → let the buyer pick a new delivery day. */}
+                {s.status === "SHIPPED" &&
+                (s.shipment.status === "FAILED" ||
+                  s.shipment.status === "RETURNED_TO_POINT") ? (
+                  <RedeliveryForm
+                    subOrderId={s.id}
+                    currentDate={
+                      s.shipment.redeliverAt
+                        ? s.shipment.redeliverAt.toISOString().slice(0, 10)
+                        : null
+                    }
+                  />
+                ) : null}
+
                 {s.shipment.events.length > 0 ? (
                   <ol className="space-y-2 border-t pt-3">
                     {s.shipment.events.map((ev) => (

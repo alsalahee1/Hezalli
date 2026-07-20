@@ -43,6 +43,37 @@ export async function requireSellerStore(): Promise<{
   return { userId: id, storeId };
 }
 
+// Returns the current user's id + their delivery point id, only if they are an
+// active DELIVERY_POINT operator owning an ACTIVE point (checked against the
+// DB). Guards point-operator actions/pages.
+export async function requireDeliveryPoint(): Promise<{
+  userId: string;
+  pointId: string;
+} | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      roles: true,
+      isSuspended: true,
+      deletedAt: true,
+      deliveryPoint: { select: { id: true, status: true } },
+    },
+  });
+  if (
+    !u ||
+    u.isSuspended ||
+    u.deletedAt ||
+    !u.roles.includes("DELIVERY_POINT") ||
+    u.deliveryPoint?.status !== "ACTIVE"
+  ) {
+    return null;
+  }
+  return { userId: id, pointId: u.deliveryPoint.id };
+}
+
 // Returns the current user's id only if they are an active COURIER (Hezalli
 // Express driver), checked against the DB. Guards driver-only actions/pages.
 export async function requireCourierId(): Promise<string | null> {

@@ -106,6 +106,9 @@ export type DeliveryProofInput = {
   recipientName?: string;
   photoKey?: string;
   note?: string;
+  // The buyer's delivery code (typed or scanned from their QR). When present
+  // it must match the shipment's code; a match is recorded as verified proof.
+  deliveryCode?: string;
 };
 
 // Reasons a doorstep delivery can fail. Kept in sync with the driver reason
@@ -133,6 +136,9 @@ export async function courierAdvance(
     where: { id: shipmentId, driverId: courierId },
     select: {
       id: true,
+      status: true,
+      deliveryPointId: true,
+      deliveryCode: true,
       subOrder: {
         select: {
           id: true,
@@ -150,13 +156,28 @@ export async function courierAdvance(
   const sub = shipment.subOrder;
   // Only an in-flight (SHIPPED) sub-order can be advanced by a driver.
   if (sub.status !== "SHIPPED") return { error: "badState" };
+  // A point-routed parcel the point still holds moves ONLY via point scans
+  // (docs/DELIVERY-POINTS.md) — the driver can't advance it from their phone.
+  if (
+    shipment.deliveryPointId &&
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+  ) {
+    return { error: "badState" };
+  }
 
   if (action === "DELIVERED") {
+    // Optional strongest proof: the buyer's delivery code (typed or scanned
+    // from their QR). Wrong code = hard error; empty = ordinary proof.
+    const typed = proof?.deliveryCode?.trim().toUpperCase();
+    if (typed && typed !== shipment.deliveryCode?.toUpperCase()) {
+      return { error: "badCode" };
+    }
     const res = await markSubOrderDelivered(sub.id, "courier", locale, {
       courierId,
       recipientName: proof?.recipientName,
       photoKey: proof?.photoKey,
       note: proof?.note,
+      codeVerified: Boolean(typed),
     });
     revalidatePath(`/${locale}/driver`);
     revalidatePath(`/${locale}/driver/job/${shipmentId}`);
@@ -211,6 +232,8 @@ export async function courierFailDelivery(
     where: { id: shipmentId, driverId: courierId },
     select: {
       id: true,
+      status: true,
+      deliveryPointId: true,
       subOrder: {
         select: {
           status: true,
@@ -226,6 +249,14 @@ export async function courierFailDelivery(
   if (!shipment || !shipment.subOrder) return { error: "notFound" };
   const sub = shipment.subOrder;
   if (sub.status !== "SHIPPED") return { error: "badState" };
+  // A parcel the point still holds can't fail a doorstep attempt — it hasn't
+  // left the hub. (Same guard as courierAdvance.)
+  if (
+    shipment.deliveryPointId &&
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+  ) {
+    return { error: "badState" };
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.shipment.update({

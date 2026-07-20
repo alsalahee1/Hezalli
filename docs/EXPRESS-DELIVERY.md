@@ -8,6 +8,11 @@ how to operate it.
 
 ---
 
+> **Related:** parcels can optionally route through a partner-operated hub
+> ("Hezalli Point") between the seller and the courier — see
+> [DELIVERY-POINTS.md](./DELIVERY-POINTS.md) for that flow, its statuses
+> (`AT_POINT`, `RETURNED_TO_POINT`), and the point operator's fee ledger.
+
 ## 1. What it is
 
 A buyer choosing **Express** for a seller's items at checkout pays a separate

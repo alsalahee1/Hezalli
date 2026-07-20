@@ -8,7 +8,9 @@ import { revalidatePath } from "next/cache";
 
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { recordDeliveryLedger } from "@/lib/courier-ledger";
+import { recordPointHandlingFee } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -38,6 +40,9 @@ export type DeliveryProof = {
   recipientName?: string;
   photoKey?: string;
   note?: string;
+  // The buyer's delivery code / QR was checked at the doorstep (optional,
+  // strongest proof — see docs/DELIVERY-POINTS.md §3).
+  codeVerified?: boolean;
 };
 
 // Transition a SHIPPED sub-order to DELIVERED. `actor` is recorded in the order
@@ -58,7 +63,7 @@ export async function markSubOrderDelivered(
       shippingTotal: true,
       discountTotal: true,
       store: { select: { name: true } },
-      shipment: { select: { id: true } },
+      shipment: { select: { id: true, deliveryPointId: true } },
       order: {
         select: {
           id: true,
@@ -81,6 +86,11 @@ export async function markSubOrderDelivered(
   // A Hezalli courier completing the drop accrues a delivery fee (earning) and,
   // for COD, becomes accountable for the cash they collected.
   const fee = proof?.courierId ? await courierDeliveryFee() : 0;
+  // A parcel routed through a Hezalli Point earns the point its handling fee
+  // once it is actually delivered (docs/DELIVERY-POINTS.md §4).
+  const pointFee = sub.shipment?.deliveryPointId
+    ? await getSetting("point_handling_fee")
+    : 0;
   const codAmount = isCod
     ? Number(sub.itemsTotal) +
       Number(sub.shippingTotal) -
@@ -114,6 +124,7 @@ export async function markSubOrderDelivered(
           recipientName,
           proofPhotoKey: proof?.photoKey || null,
           note: proof?.note?.trim() || null,
+          codeVerified: proof?.codeVerified === true,
         },
       });
 
@@ -125,6 +136,16 @@ export async function markSubOrderDelivered(
           shipmentId: sub.shipment.id,
           codAmount,
           fee,
+        });
+      }
+
+      // The routing point's handling fee, earned on delivery.
+      if (sub.shipment.deliveryPointId) {
+        await recordPointHandlingFee(tx, {
+          pointId: sub.shipment.deliveryPointId,
+          subOrderId,
+          shipmentId: sub.shipment.id,
+          fee: pointFee,
         });
       }
     }

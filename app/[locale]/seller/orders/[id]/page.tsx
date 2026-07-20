@@ -5,6 +5,7 @@ import { ArrowLeft, Printer } from "lucide-react";
 import { requireSellerStore } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE } from "@/lib/order-status";
+import { getSetting } from "@/lib/settings";
 import { buildTrackingUrl } from "@/lib/tracking";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,15 @@ export default async function SellerOrderDetailPage({
   const preferredCarrierId = isExpress
     ? (carriers.find((c) => c.platformManaged)?.id ?? null)
     : null;
+  // Hezalli Points the seller can drop the parcel at (platform carrier only).
+  const pointsEnabled = await getSetting("points_enabled");
+  const points = pointsEnabled
+    ? await prisma.deliveryPoint.findMany({
+        where: { status: "ACTIVE" },
+        orderBy: [{ governorate: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, governorate: true, city: true },
+      })
+    : [];
   const shipmentInfo = sub.shipment
     ? {
         carrierId: sub.shipment.carrierId,
@@ -126,10 +136,18 @@ export default async function SellerOrderDetailPage({
         <ShipOrderForm
           subOrderId={sub.id}
           status={sub.status}
-          carriers={carriers.map((c) => ({ id: c.id, name: c.name }))}
+          carriers={carriers.map((c) => ({
+            id: c.id,
+            name: c.name,
+            platformManaged: c.platformManaged,
+          }))}
           shipment={shipmentInfo}
           shippingMethod={sub.shippingMethod}
           preferredCarrierId={preferredCarrierId}
+          points={points.map((p) => ({
+            id: p.id,
+            label: `${p.name} — ${p.city}, ${p.governorate}`,
+          }))}
         />
       ) : null}
 
