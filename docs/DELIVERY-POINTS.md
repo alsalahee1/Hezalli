@@ -119,10 +119,10 @@ New platform settings (`lib/settings.ts` defaults):
 - [x] Driver: delivery-code verification wired into `courierAdvance` DELIVERED proof
 
 ### Phase 4 — Point operator app (`/point`)
-- [ ] Layout + tab bar (Parcels · Scan · Ledger), role-guarded like `/driver`
-- [ ] Dashboard: parcels grouped by state (awaiting drop-off, at point, out with drivers, returned) + redelivery dates
-- [ ] Scan page: camera QR scanner with mode picker (Receive / Handover / Return) + manual tracking entry; handover mode accepts a driver-QR scan to filter the manifest
-- [ ] Ledger page: balance + entries
+- [x] Layout + tab bar (Parcels · Scan · Ledger), role-guarded like `/driver`
+- [x] Dashboard: parcels grouped by state (awaiting drop-off, at point, out with drivers, returned) + redelivery dates
+- [x] Scan page: camera QR scanner with mode picker (Receive / Handover / Return) + manual tracking entry; handover mode accepts a driver-QR scan to filter the manifest
+- [x] Ledger page: balance + entries
 
 ### Phase 5 — Driver / seller / buyer touchpoints
 - [ ] Driver page: "My collection QR" card; job page shows pickup point; delivered dialog gets optional delivery-code field
