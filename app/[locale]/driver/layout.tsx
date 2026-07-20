@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { ClipboardList, QrCode as QrIcon, Truck } from "lucide-react";
+import { QrCode as QrIcon, Truck } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, Link } from "@/i18n/navigation";
 import { Forbidden } from "@/components/auth/forbidden";
+import { DriverTabBar } from "@/components/driver/driver-tab-bar";
 
 // Scope the installable-app metadata to the driver section only, so the driver
 // app can be added to a phone's home screen and run standalone (native feel)
@@ -62,22 +63,9 @@ export default async function DriverLayout({
         </Link>
       </header>
 
-      <main className="flex-1 px-4 py-4">{children}</main>
+      <main className="flex-1 px-4 py-4 pb-20">{children}</main>
 
-      <nav className="bg-background sticky bottom-0 grid grid-cols-2 border-t text-sm">
-        <Link
-          href="/driver"
-          className="flex items-center justify-center gap-1.5 py-3 font-medium"
-        >
-          <ClipboardList className="size-4" /> {t("jobs")}
-        </Link>
-        <Link
-          href="/driver/scan"
-          className="flex items-center justify-center gap-1.5 py-3 font-medium"
-        >
-          <QrIcon className="size-4" /> {t("scan")}
-        </Link>
-      </nav>
+      <DriverTabBar />
     </div>
   );
 }

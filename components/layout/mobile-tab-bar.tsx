@@ -37,9 +37,9 @@ export function MobileTabBar({
   const pathname = usePathname();
   const { count: cartCount } = useCart();
 
-  // The wallet screen renders its own wallet-focused bottom bar, so the default
-  // storefront bar steps aside there instead of stacking on top of it.
-  if (pathname === "/account/wallet") return null;
+  // The account area renders its own contextual bottom bars (account + wallet),
+  // so the default storefront bar steps aside there instead of stacking.
+  if (pathname === "/account" || pathname.startsWith("/account/")) return null;
 
   const badgeFor = (key: Tab["key"]) => {
     if (key === "cart") return cartCount;
