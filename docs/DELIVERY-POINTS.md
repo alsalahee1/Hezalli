@@ -112,11 +112,11 @@ New platform settings (`lib/settings.ts` defaults):
 - [x] Ship flow: `shipSubOrder` accepts optional `deliveryPointId` (platform-managed only) → `LABEL_CREATED`, auto-assign deferred to point receive; `deliveryCode` minted for platform-managed parcels
 
 ### Phase 3 — Server actions
-- [ ] `lib/actions/point-application.ts`: apply + admin review (approve grants role & creates point)
-- [ ] `lib/actions/point.ts`: `pointReceiveParcel`, `pointHandoverParcel`, `pointReceiveReturn`, `pointReturnToSeller` (all by tracking token)
-- [ ] `lib/actions/point-ledger.ts` (admin): payout + adjustment
-- [ ] Buyer: `requestRedelivery(subOrderId, date, note)` (only while FAILED / RETURNED_TO_POINT)
-- [ ] Driver: delivery-code verification wired into `courierAdvance` DELIVERED proof
+- [x] `lib/actions/point-application.ts`: apply + admin review (approve grants role & creates point)
+- [x] `lib/actions/point.ts`: `pointReceiveParcel`, `pointHandoverParcel`, `pointReceiveReturn`, `pointReturnToSeller` (all by tracking token)
+- [x] `lib/actions/point-ledger.ts` (admin): payout + adjustment
+- [x] Buyer: `requestRedelivery(subOrderId, date, note)` (only while FAILED / RETURNED_TO_POINT)
+- [x] Driver: delivery-code verification wired into `courierAdvance` DELIVERED proof
 
 ### Phase 4 — Point operator app (`/point`)
 - [ ] Layout + tab bar (Parcels · Scan · Ledger), role-guarded like `/driver`
