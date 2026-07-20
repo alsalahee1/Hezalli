@@ -83,6 +83,8 @@ export async function payBill(input: {
         type: entryType,
         amountUsd: -amount,
         note: `${biller.slug} · ${account} (${bill.id})`,
+        refType: "bill",
+        refId: bill.id,
       });
     });
   } catch (e) {
@@ -192,6 +194,8 @@ export async function failBillPayment(
       type: "BILL_REFUND",
       amountUsd: amount,
       note: `Refund for failed purchase (${bill.id})`,
+      refType: "bill",
+      refId: bill.id,
     });
   });
 

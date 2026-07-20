@@ -75,11 +75,15 @@ export async function transferFunds(
         type: "TRANSFER_OUT",
         amountUsd: -amount,
         note: `Sent to another user (${transfer.id})`,
+        refType: "transfer",
+        refId: transfer.id,
       });
       await creditWalletTx(tx, toWalletId, {
         type: "TRANSFER_IN",
         amountUsd: amount,
         note: `Received from another user (${transfer.id})`,
+        refType: "transfer",
+        refId: transfer.id,
       });
     });
   } catch (e) {

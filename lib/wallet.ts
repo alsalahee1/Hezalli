@@ -54,6 +54,9 @@ export async function creditWalletTx(
     orderId?: string | null;
     subOrderId?: string | null;
     note?: string | null;
+    // Source record this entry came from, so a receipt/detail can enrich it.
+    refType?: "transfer" | "bill" | "topup" | "withdrawal" | null;
+    refId?: string | null;
   },
 ): Promise<void> {
   await tx.walletEntry.create({
@@ -64,6 +67,8 @@ export async function creditWalletTx(
       orderId: input.orderId ?? null,
       subOrderId: input.subOrderId ?? null,
       note: input.note ?? null,
+      refType: input.refType ?? null,
+      refId: input.refId ?? null,
     },
   });
 }
