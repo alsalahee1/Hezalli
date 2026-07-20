@@ -98,18 +98,18 @@ New platform settings (`lib/settings.ts` defaults):
 ## 5. Build phases & checklist
 
 ### Phase 1 — Schema & settings
-- [ ] Prisma models: `DeliveryPoint`, `DeliveryPointApplication`, `DeliveryPointLedgerEntry` + enums (`DeliveryPointStatus`, `PointLedgerType`), `Role.DELIVERY_POINT`
-- [ ] `Shipment` additions: `deliveryPointId`, `deliveryCode`, `redeliverAt`, `redeliverNote`; `DeliveryAttempt.codeVerified`
-- [ ] `ShipmentStatus` + `AT_POINT`, `RETURNED_TO_POINT`
-- [ ] Migration SQL (`prisma/migrations/.../delivery_points`)
-- [ ] Settings defaults: `points_enabled`, `point_handling_fee`, `max_delivery_attempts`
+- [x] Prisma models: `DeliveryPoint`, `DeliveryPointApplication`, `DeliveryPointLedgerEntry` + enums (`DeliveryPointStatus`, `PointLedgerType`), `Role.DELIVERY_POINT`
+- [x] `Shipment` additions: `deliveryPointId`, `deliveryCode`, `redeliverAt`, `redeliverNote`; `DeliveryAttempt.codeVerified`
+- [x] `ShipmentStatus` + `AT_POINT`, `RETURNED_TO_POINT`
+- [x] Migration SQL (`prisma/migrations/.../delivery_points`)
+- [x] Settings defaults: `points_enabled`, `point_handling_fee`, `max_delivery_attempts`
 
 ### Phase 2 — Core libs
-- [ ] `lib/authz.ts`: `requireDeliveryPoint()` (active owner of an ACTIVE point)
-- [ ] `lib/point-core.ts`: receive / handover / return-to-point / return-to-seller transitions (scan-driven, event-logged, race-guarded)
-- [ ] `lib/point-ledger.ts`: fee accrual, balance summary (mirrors courier ledger)
-- [ ] `lib/shipment-core.ts`: credit point handling fee on DELIVERED; record `codeVerified` proof
-- [ ] Ship flow: `shipSubOrder` accepts optional `deliveryPointId` (platform-managed only) → `LABEL_CREATED`, auto-assign deferred to point receive; `deliveryCode` minted for platform-managed parcels
+- [x] `lib/authz.ts`: `requireDeliveryPoint()` (active owner of an ACTIVE point)
+- [x] `lib/point-core.ts`: receive / handover / return-to-point / return-to-seller transitions (scan-driven, event-logged, race-guarded)
+- [x] `lib/point-ledger.ts`: fee accrual, balance summary (mirrors courier ledger)
+- [x] `lib/shipment-core.ts`: credit point handling fee on DELIVERED; record `codeVerified` proof
+- [x] Ship flow: `shipSubOrder` accepts optional `deliveryPointId` (platform-managed only) → `LABEL_CREATED`, auto-assign deferred to point receive; `deliveryCode` minted for platform-managed parcels
 
 ### Phase 3 — Server actions
 - [ ] `lib/actions/point-application.ts`: apply + admin review (approve grants role & creates point)
@@ -132,7 +132,7 @@ New platform settings (`lib/settings.ts` defaults):
 
 ### Phase 6 — Admin
 - [ ] `/admin/points`: list points (status toggle), review applications, ledger with payout/adjustment recording
-- [ ] Settings page: the three new keys editable
+- [x] Settings page: the three new keys editable
 
 ### Phase 7 — i18n, tests, docs
 - [ ] `messages/en.json` + `messages/ar.json`: `Point`, `AdminPoints` namespaces + Driver/Orders/SellerOrders additions
