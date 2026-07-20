@@ -89,6 +89,111 @@ export type ListingResult = {
   params: ListingParams;
 };
 
+// The exact product projection toCardItem() consumes.
+const CARD_SELECT = {
+  id: true,
+  slug: true,
+  title: true,
+  condition: true,
+  ratingAvg: true,
+  ratingCount: true,
+  createdAt: true,
+  images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+  variants: {
+    where: { isActive: true },
+    select: { id: true, price: true, compareAtPrice: true, stock: true },
+  },
+  store: { select: { name: true } },
+} satisfies Prisma.ProductSelect;
+
+/**
+ * Resolve the ordered product ids for the requested page. Column-based sorts
+ * (newest / top_rated / no-query relevance) paginate directly in SQL — no scan.
+ * The computed sorts (price / best_selling / query relevance) still rank the
+ * matched set, but over a lightweight id+price projection rather than full card
+ * data, and only the page's ids flow on to the heavy card fetch.
+ */
+async function pageProductIds(
+  where: Prisma.ProductWhereInput,
+  params: ListingParams,
+  ranks: Map<string, number> | null,
+  skip: number,
+  take: number,
+): Promise<string[]> {
+  if (params.sort === "newest" || (params.sort === "relevance" && !ranks)) {
+    const rows = await prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+  if (params.sort === "top_rated") {
+    const rows = await prisma.product.findMany({
+      where,
+      orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
+      skip,
+      take,
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+
+  // Computed sorts: rank the matched set over a minimal projection.
+  const rows = await prisma.product.findMany({
+    where,
+    select: {
+      id: true,
+      variants: {
+        where: { isActive: true },
+        select: { id: true, price: true },
+      },
+    },
+  });
+
+  let keyed: { id: string; key: number }[];
+  if (params.sort === "best_selling") {
+    const variantIds = rows.flatMap((r) => r.variants.map((v) => v.id));
+    const soldByProduct = new Map<string, number>();
+    if (variantIds.length) {
+      const grouped = await prisma.orderItem.groupBy({
+        by: ["variantId"],
+        where: {
+          variantId: { in: variantIds },
+          subOrder: { status: "COMPLETED" },
+        },
+        _sum: { quantity: true },
+      });
+      const soldByVariant = new Map(
+        grouped.map((g) => [g.variantId, g._sum.quantity ?? 0]),
+      );
+      for (const r of rows) {
+        let s = 0;
+        for (const v of r.variants) s += soldByVariant.get(v.id) ?? 0;
+        soldByProduct.set(r.id, s);
+      }
+    }
+    keyed = rows.map((r) => ({ id: r.id, key: soldByProduct.get(r.id) ?? 0 }));
+    keyed.sort((a, b) => b.key - a.key);
+  } else if (params.sort === "price_asc" || params.sort === "price_desc") {
+    const minPriceOf = (r: (typeof rows)[number]) =>
+      r.variants.length
+        ? Math.min(...r.variants.map((v) => Number(v.price)))
+        : Number.POSITIVE_INFINITY;
+    keyed = rows.map((r) => ({ id: r.id, key: minPriceOf(r) }));
+    keyed.sort((a, b) =>
+      params.sort === "price_asc" ? a.key - b.key : b.key - a.key,
+    );
+  } else {
+    // relevance with a query: order by FTS rank.
+    keyed = rows.map((r) => ({ id: r.id, key: ranks?.get(r.id) ?? 0 }));
+    keyed.sort((a, b) => b.key - a.key);
+  }
+  return keyed.slice(skip, skip + take).map((k) => k.id);
+}
+
 export async function getListing(
   sp: RawSearchParams,
   locale: string,
@@ -106,78 +211,28 @@ export async function getListing(
 
   const where = buildWhere(params, ftsIdList);
 
-  const matched = await prisma.product.findMany({
-    where,
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      condition: true,
-      ratingAvg: true,
-      ratingCount: true,
-      createdAt: true,
-      images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-      variants: {
-        where: { isActive: true },
-        select: { id: true, price: true, compareAtPrice: true, stock: true },
-      },
-      store: { select: { name: true } },
-    },
-  });
-
-  // Sold counts (for best-selling) over the matched products' variants.
-  const variantIds = matched.flatMap((m) => m.variants.map((v) => v.id));
-  const soldByProduct = new Map<string, number>();
-  if (variantIds.length) {
-    const grouped = await prisma.orderItem.groupBy({
-      by: ["variantId"],
-      where: {
-        variantId: { in: variantIds },
-        subOrder: { status: "COMPLETED" },
-      },
-      _sum: { quantity: true },
-    });
-    const soldByVariant = new Map(
-      grouped.map((g) => [g.variantId, g._sum.quantity ?? 0]),
-    );
-    for (const m of matched) {
-      let s = 0;
-      for (const v of m.variants) s += soldByVariant.get(v.id) ?? 0;
-      soldByProduct.set(m.id, s);
-    }
-  }
-
-  const minPriceOf = (m: (typeof matched)[number]) =>
-    m.variants.length
-      ? Math.min(...m.variants.map((v) => Number(v.price)))
-      : Number.POSITIVE_INFINITY;
-
-  const sorted = [...matched].sort((a, b) => {
-    switch (params.sort) {
-      case "newest":
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      case "price_asc":
-        return minPriceOf(a) - minPriceOf(b);
-      case "price_desc":
-        return minPriceOf(b) - minPriceOf(a);
-      case "top_rated":
-        return b.ratingAvg - a.ratingAvg || b.ratingCount - a.ratingCount;
-      case "best_selling":
-        return (soldByProduct.get(b.id) ?? 0) - (soldByProduct.get(a.id) ?? 0);
-      case "relevance":
-      default:
-        if (ranks) return (ranks.get(b.id) ?? 0) - (ranks.get(a.id) ?? 0);
-        return b.createdAt.getTime() - a.createdAt.getTime();
-    }
-  });
-
-  const total = sorted.length;
+  // Total is an indexed count; pagination + ordering are resolved to a page of
+  // ids without materializing the whole catalog's card data.
+  const total = await prisma.product.count({ where });
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(params.page, totalPages);
-  const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const items = pageItems.map((m) => toCardItem(m, locale));
+  const skip = (page - 1) * PAGE_SIZE;
 
-  const facets = await buildFacets(params, ftsIdList, locale);
+  const [pageIds, facets] = await Promise.all([
+    pageProductIds(where, params, ranks, skip, PAGE_SIZE),
+    buildFacets(params, ftsIdList, locale),
+  ]);
+
+  // Heavy card fetch for just this page, re-ordered to match the ranking.
+  const cards = await prisma.product.findMany({
+    where: { id: { in: pageIds } },
+    select: CARD_SELECT,
+  });
+  const byId = new Map(cards.map((c) => [c.id, c]));
+  const items = pageIds
+    .map((id) => byId.get(id))
+    .filter((c): c is (typeof cards)[number] => Boolean(c))
+    .map((m) => toCardItem(m, locale));
 
   return { items, total, page, totalPages, facets, params };
 }
@@ -187,15 +242,7 @@ async function buildFacets(
   ids: string[] | null,
   locale: string,
 ): Promise<Facets> {
-  const [
-    catGroups,
-    brandGroups,
-    sellerGroups,
-    priceAgg,
-    categories,
-    brands,
-    stores,
-  ] = await Promise.all([
+  const [catGroups, brandGroups, sellerGroups, priceAgg] = await Promise.all([
     prisma.product.groupBy({
       by: ["categoryId"],
       where: buildWhere(params, ids, "category"),
@@ -219,11 +266,34 @@ async function buildFacets(
       _min: { price: true },
       _max: { price: true },
     }),
-    prisma.category.findMany({
-      select: { id: true, slug: true, name: true, icon: true },
-    }),
-    prisma.brand.findMany({ select: { id: true, slug: true, name: true } }),
-    prisma.store.findMany({ select: { id: true, slug: true, name: true } }),
+  ]);
+
+  // Only load the category/brand/store records that actually appear in the
+  // results — never the whole tables.
+  const catIds = catGroups.map((g) => g.categoryId);
+  const brandIds = brandGroups
+    .map((g) => g.brandId)
+    .filter((x): x is string => Boolean(x));
+  const storeIds = sellerGroups.map((g) => g.storeId);
+  const [categories, brands, stores] = await Promise.all([
+    catIds.length
+      ? prisma.category.findMany({
+          where: { id: { in: catIds } },
+          select: { id: true, slug: true, name: true, icon: true },
+        })
+      : [],
+    brandIds.length
+      ? prisma.brand.findMany({
+          where: { id: { in: brandIds } },
+          select: { id: true, slug: true, name: true },
+        })
+      : [],
+    storeIds.length
+      ? prisma.store.findMany({
+          where: { id: { in: storeIds } },
+          select: { id: true, slug: true, name: true },
+        })
+      : [],
   ]);
 
   const catCount = new Map(catGroups.map((g) => [g.categoryId, g._count._all]));
