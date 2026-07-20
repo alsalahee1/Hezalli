@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -10,6 +10,7 @@ import { useRouter } from "@/i18n/navigation";
 import { WALLET_OPEN_TOPUP } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 
 type Method = "LOCAL_WALLET" | "BANK_TRANSFER" | "USDT";
 const METHODS: Method[] = ["LOCAL_WALLET", "BANK_TRANSFER", "USDT"];
@@ -27,7 +28,6 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
   const [network, setNetwork] = useState<"TRC20" | "ERC20">("TRC20");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const sectionRef = useRef<HTMLElement>(null);
 
   // The wallet bottom bar opens this form by firing a window event.
   useEffect(() => {
@@ -35,15 +35,6 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
     window.addEventListener(WALLET_OPEN_TOPUP, onOpen);
     return () => window.removeEventListener(WALLET_OPEN_TOPUP, onOpen);
   }, []);
-
-  // Bring the form into view once it opens (e.g. tapped from the bottom bar).
-  useEffect(() => {
-    if (open)
-      sectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-  }, [open]);
 
   const isUsdt = method === "USDT";
 
@@ -70,115 +61,120 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
       }
     });
 
-  if (!open) {
-    return (
+  return (
+    <>
       <Button size="sm" onClick={() => setOpen(true)}>
         <Plus className="size-4" /> {t("topUp")}
       </Button>
-    );
-  }
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        closeLabel={t("cancel")}
+      >
+        <div className="space-y-3">
+          <div>
+            <h3 className="font-medium">{t("topUpTitle")}</h3>
+            <p className="text-muted-foreground text-sm">{t("topUpDesc")}</p>
+          </div>
 
-  return (
-    <section ref={sectionRef} className="space-y-3 rounded-lg border p-4">
-      <div>
-        <h3 className="font-medium">{t("topUpTitle")}</h3>
-        <p className="text-muted-foreground text-sm">{t("topUpDesc")}</p>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Input
-          type="number"
-          inputMode="decimal"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder={t("amount")}
-          dir="ltr"
-          className="sm:w-40"
-        />
-        <select
-          value={method}
-          onChange={(e) => setMethod(e.target.value as Method)}
-          className="bg-background h-10 flex-1 rounded-md border px-3 text-sm"
-        >
-          {METHODS.map((m) => (
-            <option key={m} value={m}>
-              {t(`method_${m}`)}
-            </option>
-          ))}
-        </select>
-      </div>
-      {presets.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {presets.map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setAmount(String(n))}
-              className={
-                Number(amount) === n
-                  ? "border-primary bg-primary/10 text-primary rounded-full border px-3 py-1 text-sm font-semibold"
-                  : "hover:border-muted-foreground/40 rounded-full border px-3 py-1 text-sm"
-              }
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder={t("amount")}
               dir="ltr"
+              className="sm:w-40"
+            />
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value as Method)}
+              className="bg-background h-10 flex-1 rounded-md border px-3 text-sm"
             >
-              {formatUsd(n, locale)}
-            </button>
-          ))}
+              {METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {t(`method_${m}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {presets.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {presets.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setAmount(String(n))}
+                  className={
+                    Number(amount) === n
+                      ? "border-primary bg-primary/10 text-primary rounded-full border px-3 py-1 text-sm font-semibold"
+                      : "hover:border-muted-foreground/40 rounded-full border px-3 py-1 text-sm"
+                  }
+                  dir="ltr"
+                >
+                  {formatUsd(n, locale)}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <p className="text-muted-foreground text-xs">
+            {t("limits", {
+              min: formatUsd(min, locale),
+              max: formatUsd(max, locale),
+            })}
+          </p>
+
+          {/* Where to send the money (platform rail details). */}
+          <div className="bg-muted/40 rounded-md p-3 text-sm">
+            <p className="font-medium">{tp(`dest_${method}_title`)}</p>
+            <p className="text-muted-foreground whitespace-pre-line">
+              {tp(`dest_${method}_body`)}
+            </p>
+          </div>
+
+          {isUsdt ? (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <select
+                value={network}
+                onChange={(e) =>
+                  setNetwork(e.target.value as "TRC20" | "ERC20")
+                }
+                className="bg-background h-10 rounded-md border px-3 text-sm"
+              >
+                <option value="TRC20">TRC20</option>
+                <option value="ERC20">ERC20</option>
+              </select>
+              <Input
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                placeholder={tp("txHash")}
+                dir="ltr"
+                className="flex-1"
+              />
+            </div>
+          ) : (
+            <Input
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder={tp("reference")}
+            />
+          )}
+
+          {err ? (
+            <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
+          ) : null}
+
+          <div className="flex gap-2">
+            <Button disabled={pending || !amount} onClick={submit}>
+              {pending ? t("submitting") : t("topUpSubmit")}
+            </Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t("cancel")}
+            </Button>
+          </div>
         </div>
-      ) : null}
-      <p className="text-muted-foreground text-xs">
-        {t("limits", {
-          min: formatUsd(min, locale),
-          max: formatUsd(max, locale),
-        })}
-      </p>
-
-      {/* Where to send the money (platform rail details). */}
-      <div className="bg-muted/40 rounded-md p-3 text-sm">
-        <p className="font-medium">{tp(`dest_${method}_title`)}</p>
-        <p className="text-muted-foreground whitespace-pre-line">
-          {tp(`dest_${method}_body`)}
-        </p>
-      </div>
-
-      {isUsdt ? (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <select
-            value={network}
-            onChange={(e) => setNetwork(e.target.value as "TRC20" | "ERC20")}
-            className="bg-background h-10 rounded-md border px-3 text-sm"
-          >
-            <option value="TRC20">TRC20</option>
-            <option value="ERC20">ERC20</option>
-          </select>
-          <Input
-            value={txHash}
-            onChange={(e) => setTxHash(e.target.value)}
-            placeholder={tp("txHash")}
-            dir="ltr"
-            className="flex-1"
-          />
-        </div>
-      ) : (
-        <Input
-          value={reference}
-          onChange={(e) => setReference(e.target.value)}
-          placeholder={tp("reference")}
-        />
-      )}
-
-      {err ? (
-        <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
-      ) : null}
-
-      <div className="flex gap-2">
-        <Button disabled={pending || !amount} onClick={submit}>
-          {pending ? t("submitting") : t("topUpSubmit")}
-        </Button>
-        <Button variant="ghost" onClick={() => setOpen(false)}>
-          {t("cancel")}
-        </Button>
-      </div>
-    </section>
+      </Modal>
+    </>
   );
 }

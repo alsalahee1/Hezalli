@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Send } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -10,6 +10,7 @@ import { useRouter } from "@/i18n/navigation";
 import { WALLET_OPEN_SEND } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 
 export function WalletSendForm({ balance }: { balance: number }) {
   const t = useTranslations("Wallet");
@@ -21,7 +22,6 @@ export function WalletSendForm({ balance }: { balance: number }) {
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const sectionRef = useRef<HTMLElement>(null);
 
   // Opened from the wallet bottom bar via a window event.
   useEffect(() => {
@@ -29,14 +29,6 @@ export function WalletSendForm({ balance }: { balance: number }) {
     window.addEventListener(WALLET_OPEN_SEND, onOpen);
     return () => window.removeEventListener(WALLET_OPEN_SEND, onOpen);
   }, []);
-
-  useEffect(() => {
-    if (open)
-      sectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-  }, [open]);
 
   const submit = () =>
     start(async () => {
@@ -56,54 +48,62 @@ export function WalletSendForm({ balance }: { balance: number }) {
       }
     });
 
-  if (!open) {
-    return (
+  return (
+    <>
       <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
         <Send className="size-4" /> {t("send")}
       </Button>
-    );
-  }
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        closeLabel={t("cancel")}
+      >
+        <div className="space-y-3">
+          <div>
+            <h3 className="font-medium">{t("sendTitle")}</h3>
+            <p className="text-muted-foreground text-sm">{t("sendDesc")}</p>
+          </div>
 
-  return (
-    <section ref={sectionRef} className="space-y-3 rounded-lg border p-4">
-      <div>
-        <h3 className="font-medium">{t("sendTitle")}</h3>
-        <p className="text-muted-foreground text-sm">{t("sendDesc")}</p>
-      </div>
+          <Input
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder={t("sendRecipient")}
+            dir="ltr"
+          />
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={t("sendAmount", {
+              balance: formatUsd(balance, locale),
+            })}
+            dir="ltr"
+            className="sm:w-56"
+          />
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("sendNote")}
+          />
 
-      <Input
-        value={recipient}
-        onChange={(e) => setRecipient(e.target.value)}
-        placeholder={t("sendRecipient")}
-        dir="ltr"
-      />
-      <Input
-        type="number"
-        inputMode="decimal"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder={t("sendAmount", { balance: formatUsd(balance, locale) })}
-        dir="ltr"
-        className="sm:w-56"
-      />
-      <Input
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder={t("sendNote")}
-      />
+          {err ? (
+            <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
+          ) : null}
 
-      {err ? (
-        <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
-      ) : null}
-
-      <div className="flex gap-2">
-        <Button disabled={pending || !recipient || !amount} onClick={submit}>
-          {pending ? t("submitting") : t("sendSubmit")}
-        </Button>
-        <Button variant="ghost" onClick={() => setOpen(false)}>
-          {t("cancel")}
-        </Button>
-      </div>
-    </section>
+          <div className="flex gap-2">
+            <Button
+              disabled={pending || !recipient || !amount}
+              onClick={submit}
+            >
+              {pending ? t("submitting") : t("sendSubmit")}
+            </Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t("cancel")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
