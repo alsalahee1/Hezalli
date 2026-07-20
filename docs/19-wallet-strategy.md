@@ -453,6 +453,28 @@ a logged-in session alone. Every outflow requires a 4–6 digit PIN.
 
 ---
 
+## Step 19.10 — Outflow velocity limits ✅
+
+Caps how much money can LEAVE a wallet over rolling 24h / 30d windows — a core
+anti-fraud / AML control that bounds the loss from a compromised account.
+
+- Two admin settings: `wallet_daily_outflow_usd` (default 1000) and
+  `wallet_monthly_outflow_usd` (default 5000). `0` = no limit. VERIFIED users get
+  a 5× ceiling (mirrors the top-up cap tiering).
+- **`lib/wallet-velocity.ts`** — `checkOutflowLimit(userId, amount)` sums the
+  wallet's *outflow* entries (`TRANSFER_OUT`, `CASHOUT`, `BILL_PAYMENT`,
+  `AIRTIME_TOPUP`) in each window and blocks if the projected total would breach
+  the cap. Order payments to sellers stay in-platform and are **not** counted.
+- Enforced after the PIN + funds checks in `sendWalletFunds`, `payUser`,
+  `payPaymentRequest`, `payBill`, `requestWithdrawal`.
+
+✅ **Acceptance criteria**
+- [x] An outflow at exactly the cap passes; one over it is blocked
+- [x] Only outflows count — an order payment doesn't consume the cap
+- [x] A cap of 0 disables that window; VERIFIED users get 5×
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -468,8 +490,9 @@ a logged-in session alone. Every outflow requires a 4–6 digit PIN.
 | 19.7 Bills + airtime | Digital-wallet staple | Low (funds stay in-platform) | ✅ built, framework — off by default |
 | 19.8 Detail + receipts | Proof of payment | Low | ✅ shipped |
 | 19.9 Wallet PIN | Step-up security | Low | ✅ shipped |
+| 19.10 Velocity limits | Anti-fraud / AML | Low | ✅ shipped |
 
-**Bottom line:** 19.1–19.9 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.10 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on

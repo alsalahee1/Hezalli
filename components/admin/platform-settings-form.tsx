@@ -36,6 +36,8 @@ export function PlatformSettingsForm({
     wallet_cashback_percent: String(
       Math.round(current.wallet_cashback_rate * 10000) / 100,
     ),
+    wallet_daily_outflow_usd: String(current.wallet_daily_outflow_usd),
+    wallet_monthly_outflow_usd: String(current.wallet_monthly_outflow_usd),
     default_express_fee: String(current.default_express_fee),
     std_eta_min_days: String(current.std_eta_min_days),
     std_eta_max_days: String(current.std_eta_max_days),
@@ -69,6 +71,8 @@ export function PlatformSettingsForm({
         wallet_topup_max_usd: Number(f.wallet_topup_max_usd),
         wallet_balance_cap_usd: Number(f.wallet_balance_cap_usd),
         wallet_cashback_percent: Number(f.wallet_cashback_percent),
+        wallet_daily_outflow_usd: Number(f.wallet_daily_outflow_usd),
+        wallet_monthly_outflow_usd: Number(f.wallet_monthly_outflow_usd),
         default_express_fee: Number(f.default_express_fee),
         std_eta_min_days: Number(f.std_eta_min_days),
         std_eta_max_days: Number(f.std_eta_max_days),
@@ -180,6 +184,22 @@ export function PlatformSettingsForm({
             type="number"
             value={f.wallet_cashback_percent}
             onChange={(e) => set("wallet_cashback_percent", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletDailyOut")} hint={t("walletOutflowHint")}>
+          <Input
+            type="number"
+            value={f.wallet_daily_outflow_usd}
+            onChange={(e) => set("wallet_daily_outflow_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("walletMonthlyOut")} hint={t("walletOutflowHint")}>
+          <Input
+            type="number"
+            value={f.wallet_monthly_outflow_usd}
+            onChange={(e) => set("wallet_monthly_outflow_usd", e.target.value)}
             dir="ltr"
           />
         </Field>

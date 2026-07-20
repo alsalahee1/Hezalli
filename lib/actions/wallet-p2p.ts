@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { transferFunds } from "@/lib/wallet-transfers";
 import { verifyWalletPin } from "@/lib/wallet-pin";
+import { checkOutflowLimit } from "@/lib/wallet-velocity";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -28,6 +29,9 @@ export async function sendWalletFunds(input: {
 
   const pinCheck = await verifyWalletPin(session.user.id, input.pin);
   if (!pinCheck.ok) return { error: pinCheck.error };
+
+  const velocity = await checkOutflowLimit(session.user.id, input.amountUsd);
+  if (!velocity.ok) return { error: velocity.error };
 
   const id = input.recipient.trim();
   if (!id) return { error: "recipientRequired" };
@@ -63,6 +67,9 @@ export async function payUser(input: {
 
   const pinCheck = await verifyWalletPin(session.user.id, input.pin);
   if (!pinCheck.ok) return { error: pinCheck.error };
+
+  const velocity = await checkOutflowLimit(session.user.id, input.amountUsd);
+  if (!velocity.ok) return { error: velocity.error };
 
   const res = await transferFunds(
     session.user.id,

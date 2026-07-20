@@ -1537,7 +1537,10 @@
     "strategyBalanced": "Balanced (least busy)",
     "strategyNearest": "Nearest driver (by governorate)",
     "walletBills": "Enable bill payments & airtime",
-    "walletBillsHint": "Buyers pay bills / top up airtime from their wallet; admins fulfill each purchase manually until a provider API is wired."
+    "walletBillsHint": "Buyers pay bills / top up airtime from their wallet; admins fulfill each purchase manually until a provider API is wired.",
+    "walletDailyOut": "Daily outflow cap (USD)",
+    "walletMonthlyOut": "Monthly outflow cap (USD)",
+    "walletOutflowHint": "Max that can leave a wallet (send + cash-out + bills) per rolling window. 0 = no limit; VERIFIED users get 5×."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -1877,7 +1880,9 @@
     "err_wrongCurrentPin": "Current PIN is incorrect.",
     "err_noPin": "Set a wallet PIN first.",
     "err_locked": "Too many wrong PINs. Try again later.",
-    "err_wrongPin": "Incorrect PIN."
+    "err_wrongPin": "Incorrect PIN.",
+    "err_dailyLimit": "You've reached today's transfer limit. Try again tomorrow.",
+    "err_monthlyLimit": "You've reached this month's transfer limit."
   },
   "ShippingLabel": {
     "title": "Shipping label",

@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { transferFunds } from "@/lib/wallet-transfers";
 import { verifyWalletPin } from "@/lib/wallet-pin";
+import { checkOutflowLimit } from "@/lib/wallet-velocity";
 
 type Result = { ok?: boolean; error?: string; id?: string };
 
@@ -66,6 +67,12 @@ export async function payPaymentRequest(
   if (!req) return { error: "notFound" };
   if (req.status !== "PENDING") return { error: "alreadyHandled" };
   if (req.requesterId === session.user.id) return { error: "cannotPayOwn" };
+
+  const velocity = await checkOutflowLimit(
+    session.user.id,
+    Number(req.amountUsd),
+  );
+  if (!velocity.ok) return { error: velocity.error };
 
   const res = await transferFunds(
     session.user.id,
