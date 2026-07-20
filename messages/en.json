@@ -23,6 +23,14 @@
     "adminPanel": "Admin panel",
     "wallet": "Wallet"
   },
+  "MobileNav": {
+    "label": "Primary",
+    "home": "Home",
+    "search": "Search",
+    "cart": "Cart",
+    "wishlist": "Wishlist",
+    "account": "Account"
+  },
   "Sell": {
     "title": "Sell on Hezalli",
     "subtitle": "Open your store in minutes and reach buyers across Yemen. No approval wait — start listing right away.",
