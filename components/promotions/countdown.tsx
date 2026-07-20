@@ -6,7 +6,9 @@ import { useTranslations } from "next-intl";
 // Live countdown to an end time. Renders HH:MM:SS (with days when > 24h).
 export function Countdown({ to, onDone }: { to: string; onDone?: () => void }) {
   const t = useTranslations("Flash");
-  const [ms, setMs] = useState(() => new Date(to).getTime() - Date.now());
+  // Start null so the server and the first client render agree (no time-based
+  // text mismatch); the real value is computed after mount.
+  const [ms, setMs] = useState<number | null>(null);
 
   useEffect(() => {
     const tick = () => {
@@ -19,6 +21,14 @@ export function Countdown({ to, onDone }: { to: string; onDone?: () => void }) {
     return () => clearInterval(timer);
   }, [to, onDone]);
 
+  if (ms === null) {
+    // Stable placeholder rendered identically on server + first client paint.
+    return (
+      <span className="font-mono text-sm tabular-nums" dir="ltr">
+        --:--:--
+      </span>
+    );
+  }
   if (ms <= 0) return <span className="font-mono text-sm">{t("ended")}</span>;
 
   const s = Math.floor(ms / 1000);

@@ -110,6 +110,7 @@ export function DashboardShell({
   const titleKey = variant === "seller" ? "center" : "panel";
   const t = useTranslations(ns);
   const c = useTranslations("Common");
+  const a11y = useTranslations("A11y");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { mounted, shown } = useMountTransition(open);
@@ -199,7 +200,7 @@ export function DashboardShell({
             type="button"
             onClick={() => setOpen(true)}
             className="hover:bg-muted inline-flex size-9 items-center justify-center rounded-md md:hidden"
-            aria-label="Open menu"
+            aria-label={a11y("openMenu")}
           >
             <Menu className="size-5" />
           </button>
