@@ -4,6 +4,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { walletHasPin } from "@/lib/wallet-pin";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,8 @@ export default async function PayRequestPage({
     );
   }
 
+  const hasPin = await walletHasPin(session.user.id);
+
   return shell(
     <div className="space-y-4">
       <div className="rounded-lg border p-4 text-center">
@@ -100,7 +103,11 @@ export default async function PayRequestPage({
           <p className="text-muted-foreground mt-1 text-sm">{req.note}</p>
         ) : null}
       </div>
-      <PayRequestButton requestId={req.id} amountLabel={amountLabel} />
+      <PayRequestButton
+        requestId={req.id}
+        amountLabel={amountLabel}
+        hasPin={hasPin}
+      />
     </div>,
   );
 }

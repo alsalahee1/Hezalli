@@ -19,12 +19,15 @@ import {
   failBillPayment,
   payBill,
 } from "@/lib/actions/wallet-bills";
+import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import {
   getWalletId,
   getWalletView,
   recomputeWalletBalance,
 } from "@/lib/wallet";
+
+const PIN = "1357";
 
 const as = (id: string | null) =>
   authMock.mockResolvedValue(id ? { user: { id } } : null);
@@ -58,10 +61,14 @@ beforeAll(async () => {
     update: { value: true },
   });
 
-  // Fund the buyer's wallet with $100.
+  // Fund the buyer's wallet with $100 and set a PIN (outflows require it).
   const walletId = await getWalletId(buyerId);
   await prisma.walletEntry.create({
     data: { walletId, type: "TOP_UP", amountUsd: 100 },
+  });
+  await prisma.wallet.update({
+    where: { id: walletId },
+    data: { pinHash: await hashPassword(PIN) },
   });
   await recomputeWalletBalance(buyerId);
 });
@@ -92,6 +99,7 @@ describe("wallet bill payment framework (Step 19.7)", () => {
       biller: "public-electricity",
       account: "1234567",
       amountUsd: 30,
+      pin: PIN,
     });
     expect(res.ok).toBe(true);
     expect(res.id).toBeTruthy();
@@ -115,6 +123,7 @@ describe("wallet bill payment framework (Step 19.7)", () => {
       biller: "yemen-mobile",
       account: "770123456",
       amountUsd: 20,
+      pin: PIN,
     });
     expect(created.ok).toBe(true);
     expect((await getWalletView(buyerId)).balance).toBe(50);
@@ -139,6 +148,7 @@ describe("wallet bill payment framework (Step 19.7)", () => {
       biller: "yemen-net",
       account: "ACC-9",
       amountUsd: 10,
+      pin: PIN,
     });
     expect(created.ok).toBe(true);
     expect((await getWalletView(buyerId)).balance).toBe(60);
@@ -163,6 +173,7 @@ describe("wallet bill payment framework (Step 19.7)", () => {
       biller: "yemen-mobile",
       account: "x",
       amountUsd: 5,
+      pin: PIN,
     });
     expect(bad.error).toBe("badBiller");
 
@@ -171,6 +182,7 @@ describe("wallet bill payment framework (Step 19.7)", () => {
       biller: "public-electricity",
       account: "1",
       amountUsd: 999,
+      pin: PIN,
     });
     expect(tooMuch.error).toBe("insufficient");
   });

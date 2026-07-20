@@ -11,8 +11,15 @@ import { WALLET_OPEN_SEND } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { WalletPinField } from "@/components/wallet/wallet-pin-field";
 
-export function WalletSendForm({ balance }: { balance: number }) {
+export function WalletSendForm({
+  balance,
+  hasPin,
+}: {
+  balance: number;
+  hasPin: boolean;
+}) {
   const t = useTranslations("Wallet");
   const locale = useLocale();
   const router = useRouter();
@@ -20,6 +27,7 @@ export function WalletSendForm({ balance }: { balance: number }) {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -37,6 +45,7 @@ export function WalletSendForm({ balance }: { balance: number }) {
         recipient,
         amountUsd: Number(amount),
         note: note || undefined,
+        pin,
       });
       if (res.error) setErr(res.error);
       else {
@@ -44,6 +53,7 @@ export function WalletSendForm({ balance }: { balance: number }) {
         setRecipient("");
         setAmount("");
         setNote("");
+        setPin("");
         router.refresh();
       }
     });
@@ -86,6 +96,7 @@ export function WalletSendForm({ balance }: { balance: number }) {
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("sendNote")}
           />
+          <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
 
           {err ? (
             <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
@@ -93,7 +104,9 @@ export function WalletSendForm({ balance }: { balance: number }) {
 
           <div className="flex gap-2">
             <Button
-              disabled={pending || !recipient || !amount}
+              disabled={
+                pending || !recipient || !amount || !hasPin || pin.length < 4
+              }
               onClick={submit}
             >
               {pending ? t("submitting") : t("sendSubmit")}

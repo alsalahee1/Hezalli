@@ -9,6 +9,7 @@ import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { getBiller } from "@/lib/wallet-billers";
+import { verifyWalletPin } from "@/lib/wallet-pin";
 import {
   creditWalletTx,
   getWalletId,
@@ -29,6 +30,7 @@ export async function payBill(input: {
   account: string;
   amountUsd: number;
   note?: string;
+  pin: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
@@ -36,6 +38,9 @@ export async function payBill(input: {
   const userId = session.user.id;
 
   if (!(await getSetting("wallet_bills_enabled"))) return { error: "disabled" };
+
+  const pinCheck = await verifyWalletPin(userId, input.pin);
+  if (!pinCheck.ok) return { error: pinCheck.error };
 
   const biller = getBiller(input.biller);
   if (!biller || biller.kind !== input.kind) return { error: "badBiller" };

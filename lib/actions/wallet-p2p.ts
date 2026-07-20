@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { transferFunds } from "@/lib/wallet-transfers";
+import { verifyWalletPin } from "@/lib/wallet-pin";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -17,12 +18,16 @@ export async function sendWalletFunds(input: {
   recipient: string; // email or phone
   amountUsd: number;
   note?: string;
+  pin: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
   if (!session?.user?.id) return { error: "unauthorized" };
 
   if (!(await getSetting("wallet_p2p_enabled"))) return { error: "disabled" };
+
+  const pinCheck = await verifyWalletPin(session.user.id, input.pin);
+  if (!pinCheck.ok) return { error: pinCheck.error };
 
   const id = input.recipient.trim();
   if (!id) return { error: "recipientRequired" };
@@ -48,12 +53,16 @@ export async function payUser(input: {
   recipientId: string;
   amountUsd: number;
   note?: string;
+  pin: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
   if (!session?.user?.id) return { error: "unauthorized" };
 
   if (!(await getSetting("wallet_p2p_enabled"))) return { error: "disabled" };
+
+  const pinCheck = await verifyWalletPin(session.user.id, input.pin);
+  if (!pinCheck.ok) return { error: pinCheck.error };
 
   const res = await transferFunds(
     session.user.id,

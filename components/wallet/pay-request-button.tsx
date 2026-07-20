@@ -7,16 +7,20 @@ import { useTranslations } from "next-intl";
 import { payPaymentRequest } from "@/lib/actions/wallet-request";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { WalletPinField } from "@/components/wallet/wallet-pin-field";
 
 export function PayRequestButton({
   requestId,
   amountLabel,
+  hasPin,
 }: {
   requestId: string;
   amountLabel: string;
+  hasPin: boolean;
 }) {
   const t = useTranslations("Wallet");
   const router = useRouter();
+  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -24,7 +28,7 @@ export function PayRequestButton({
   const submit = () =>
     start(async () => {
       setErr(null);
-      const res = await payPaymentRequest(requestId);
+      const res = await payPaymentRequest(requestId, pin);
       if (res.error) setErr(res.error);
       else {
         setDone(true);
@@ -43,12 +47,17 @@ export function PayRequestButton({
 
   return (
     <div className="space-y-2">
+      <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
       {err ? (
         <p className="text-destructive text-center text-sm">
           {t(`err_${err}`)}
         </p>
       ) : null}
-      <Button className="w-full" disabled={pending} onClick={submit}>
+      <Button
+        className="w-full"
+        disabled={pending || !hasPin || pin.length < 4}
+        onClick={submit}
+      >
         {pending
           ? t("submitting")
           : t("payRequestCta", { amount: amountLabel })}
