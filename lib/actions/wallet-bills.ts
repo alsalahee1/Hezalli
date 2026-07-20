@@ -11,6 +11,9 @@ import { getSetting } from "@/lib/settings";
 import { getBiller } from "@/lib/wallet-billers";
 import { completeBill, failBill } from "@/lib/wallet-bills-core";
 import { getBillProvider } from "@/lib/providers/bill-provider";
+// Side-effect import: registers concrete providers (e.g. Reloadly airtime) so
+// `wallet_bills_provider` can select them by id.
+import "@/lib/providers/reloadly-airtime";
 import { verifyWalletPin } from "@/lib/wallet-pin";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 import {
