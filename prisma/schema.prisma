@@ -245,6 +245,23 @@ model User {
   courierLocation  CourierLocation?
   courierApplication CourierApplication?
   courierLedger    CourierLedgerEntry[] @relation("CourierLedger")
+  pushSubscriptions PushSubscription[]
+}
+
+// A browser/device Web Push subscription. One user may have several (phone,
+// desktop). Used to ping couriers when a parcel is assigned even if the driver
+// app is closed. Requires VAPID keys in the server env (see lib/push.ts) — the
+// whole feature no-ops when they're unset.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // A courier's cash-and-earnings ledger. COD_COLLECTED (+) is buyer cash the

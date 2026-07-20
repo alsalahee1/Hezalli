@@ -16,6 +16,7 @@ import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocationShare } from "@/components/driver/location-share";
+import { PushToggle } from "@/components/driver/push-toggle";
 
 export default async function DriverJobsPage() {
   const courierId = await requireCourierId();
@@ -84,6 +85,7 @@ export default async function DriverJobsPage() {
   return (
     <div className="space-y-4">
       <LocationShare currentGovernorate={location?.governorate ?? null} />
+      <PushToggle />
 
       {/* Cash the driver is holding + fees earned. */}
       {cash.cashOnHand > 0 || cash.earnings > 0 ? (

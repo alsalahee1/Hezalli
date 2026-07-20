@@ -1994,7 +1994,12 @@
     "proofRecipient": "استلمها",
     "proofPhotoAlt": "صورة التسليم عند الباب",
     "cashToRemit": "نقد للتسليم",
-    "earnings": "أرباحك"
+    "earnings": "أرباحك",
+    "enableNotif": "تفعيل الإشعارات",
+    "notifOn": "الإشعارات مفعّلة",
+    "notifBlocked": "الإشعارات محظورة في المتصفح",
+    "notifTapOn": "اضغط للتفعيل",
+    "notifTapOff": "اضغط للإيقاف"
   },
   "Dispatch": {
     "title": "التوزيع",

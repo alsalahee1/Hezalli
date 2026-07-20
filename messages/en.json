@@ -1994,7 +1994,12 @@
     "proofRecipient": "Received by",
     "proofPhotoAlt": "Doorstep delivery photo",
     "cashToRemit": "Cash to remit",
-    "earnings": "Earnings"
+    "earnings": "Earnings",
+    "enableNotif": "Enable notifications",
+    "notifOn": "Notifications on",
+    "notifBlocked": "Notifications blocked in browser",
+    "notifTapOn": "Tap to enable",
+    "notifTapOff": "Tap to turn off"
   },
   "Dispatch": {
     "title": "Dispatch",
