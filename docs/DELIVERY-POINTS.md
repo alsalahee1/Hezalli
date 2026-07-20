@@ -125,9 +125,9 @@ New platform settings (`lib/settings.ts` defaults):
 - [x] Ledger page: balance + entries
 
 ### Phase 5 — Driver / seller / buyer touchpoints
-- [ ] Driver page: "My collection QR" card; job page shows pickup point; delivered dialog gets optional delivery-code field
-- [ ] Seller ship dialog: optional point selector (active points, platform carrier only)
-- [ ] Buyer order page: delivery QR + code while out for delivery; reschedule form after a failed attempt
+- [x] Driver page: "My collection QR" card; job page shows pickup point; delivered dialog gets optional delivery-code field
+- [x] Seller ship dialog: optional point selector (active points, platform carrier only)
+- [x] Buyer order page: delivery QR + code while out for delivery; reschedule form after a failed attempt
 - [ ] Public tracking timeline: labels for the two new statuses
 
 ### Phase 6 — Admin

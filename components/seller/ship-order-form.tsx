@@ -13,7 +13,12 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export type CarrierOption = { id: string; name: string };
+export type CarrierOption = {
+  id: string;
+  name: string;
+  platformManaged?: boolean;
+};
+export type PointOption = { id: string; label: string };
 export type ShipmentInfo = {
   carrierId: string | null;
   carrierName: string | null;
@@ -28,6 +33,7 @@ export function ShipOrderForm({
   shipment,
   shippingMethod = "STANDARD",
   preferredCarrierId = null,
+  points = [],
 }: {
   subOrderId: string;
   status: string;
@@ -35,6 +41,7 @@ export function ShipOrderForm({
   shipment: ShipmentInfo;
   shippingMethod?: "STANDARD" | "EXPRESS";
   preferredCarrierId?: string | null;
+  points?: PointOption[];
 }) {
   const t = useTranslations("Shipment");
   const router = useRouter();
@@ -46,6 +53,12 @@ export function ShipOrderForm({
   );
   const [tracking, setTracking] = useState(shipment?.trackingNumber ?? "");
   const [note, setNote] = useState("");
+  const [pointId, setPointId] = useState("");
+
+  // Drop-off at a Hezalli Point is only meaningful for our own carrier.
+  const platformCarrier = Boolean(
+    carriers.find((c) => c.id === carrierId)?.platformManaged,
+  );
 
   const submit = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
@@ -105,6 +118,26 @@ export function ShipOrderForm({
             />
           </label>
         </div>
+        {platformCarrier && points.length > 0 ? (
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            {t("dropOffPoint")}
+            <select
+              value={pointId}
+              onChange={(e) => setPointId(e.target.value)}
+              className="h-9 max-w-md rounded-md border bg-transparent px-3 text-sm"
+            >
+              <option value="">{t("directToCourier")}</option>
+              {points.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-muted-foreground font-normal">
+              {t("dropOffHint")}
+            </span>
+          </label>
+        ) : null}
         <label className="flex flex-col gap-1 text-xs font-medium">
           {t("note")}
           <Input
@@ -124,6 +157,8 @@ export function ShipOrderForm({
                 carrierId,
                 trackingNumber: tracking,
                 note,
+                deliveryPointId:
+                  platformCarrier && pointId ? pointId : undefined,
               }),
             )
           }

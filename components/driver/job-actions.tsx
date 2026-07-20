@@ -38,6 +38,7 @@ export function JobActions({
 
   // Proof-of-delivery state.
   const [recipient, setRecipient] = useState("");
+  const [deliveryCode, setDeliveryCode] = useState("");
   const [photoKey, setPhotoKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -86,6 +87,7 @@ export function JobActions({
       const res = await courierAdvance(shipmentId, "DELIVERED", {
         recipientName: recipient.trim() || undefined,
         photoKey: photoKey ?? undefined,
+        deliveryCode: deliveryCode.trim() || undefined,
       });
       if (res.error) setErr(res.error);
       else router.push("/driver");
@@ -176,6 +178,19 @@ export function JobActions({
               onChange={(e) => setRecipient(e.target.value)}
               placeholder={t("recipientHint")}
               className="border-input focus-visible:border-primary w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none"
+            />
+          </label>
+
+          {/* Optional strongest proof: the code under the buyer's delivery QR. */}
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium">{t("deliveryCode")}</span>
+            <input
+              value={deliveryCode}
+              onChange={(e) => setDeliveryCode(e.target.value)}
+              placeholder={t("deliveryCodeHint")}
+              dir="ltr"
+              autoCapitalize="characters"
+              className="border-input focus-visible:border-primary w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm uppercase outline-none"
             />
           </label>
 
@@ -296,6 +311,7 @@ function errMsg(t: ReturnType<typeof useTranslations>, key: string): string {
     "notFound",
     "badState",
     "badReason",
+    "badCode",
     "uploadFailed",
   ]);
   return known.has(key) ? t(`err_${key}`) : t("err_badState");
