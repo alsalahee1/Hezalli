@@ -764,6 +764,9 @@ enum WalletEntryType {
   SELLER_EARNINGS // swept in from the seller balance (Step 19.5+)
   TRANSFER_OUT // sent to another user via P2P (Step 19.5+, licensed only)
   TRANSFER_IN // received from another user via P2P (Step 19.5+, licensed only)
+  BILL_PAYMENT // paid a utility bill from the wallet (Step 19.7)
+  AIRTIME_TOPUP // bought mobile credit from the wallet (Step 19.7)
+  BILL_REFUND // a failed bill/airtime purchase returned to the wallet (Step 19.7)
 }
 
 enum WalletTopUpStatus {
@@ -785,6 +788,7 @@ model Wallet {
   withdrawals  WalletWithdrawal[]
   sent         WalletTransfer[]   @relation("SentTransfers")
   received     WalletTransfer[]   @relation("ReceivedTransfers")
+  billPayments WalletBillPayment[]
 }
 
 // Peer-to-peer wallet transfer (Step 19.5+). LICENSED ONLY — money transmission
@@ -827,6 +831,46 @@ model WalletPaymentRequest {
 
   @@index([requesterId])
   @@index([status])
+}
+
+enum WalletBillKind {
+  BILL // a utility / service bill: electricity, water, internet, landline…
+  AIRTIME // mobile credit top-up for a phone number
+}
+
+enum WalletBillStatus {
+  PENDING // submitted; wallet debited (reserved) awaiting fulfillment
+  COMPLETED // provider fulfilled (admin-confirmed for now)
+  FAILED // couldn't fulfill → funds returned to the wallet
+}
+
+// Bill payment & airtime top-up (Step 19.7). A provider-ready framework: the
+// buyer picks a biller/operator, enters the account/phone + amount, and pays
+// from their HezalliPay wallet. The wallet is debited immediately (reserved)
+// and the row goes PENDING; an admin confirms fulfillment (COMPLETED) or fails
+// it, which refunds the wallet. Wire a real biller/telco aggregator API later
+// by auto-transitioning PENDING → COMPLETED/FAILED. Gated by wallet_bills_enabled
+// (default off). See docs/19-wallet-strategy.md §5.
+model WalletBillPayment {
+  id          String           @id @default(cuid())
+  walletId    String
+  kind        WalletBillKind
+  biller      String // biller/operator slug from lib/wallet-billers.ts
+  account     String // account number (bill) or phone number (airtime) being paid
+  amountUsd   Decimal          @db.Decimal(12, 2)
+  status      WalletBillStatus @default(PENDING)
+  note        String?
+  reference   String? // provider confirmation reference (admin fills on complete)
+  reviewedBy  String?
+  reviewNote  String?
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  wallet      Wallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([status])
+  @@index([kind])
 }
 
 // Cash-out to a rail (Step 19.4). Gated on VERIFIED KYC. The wallet is debited

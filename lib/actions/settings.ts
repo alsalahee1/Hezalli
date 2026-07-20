@@ -24,6 +24,7 @@ export type SettingsInput = {
   wallet_balance_cap_usd: number;
   wallet_cashback_percent: number; // human percent, e.g. 2 = 2%
   wallet_p2p_enabled: boolean;
+  wallet_bills_enabled: boolean;
   express_enabled: boolean;
   default_express_fee: number;
   std_eta_min_days: number;
@@ -99,6 +100,7 @@ export async function savePlatformSettings(
     wallet_balance_cap_usd: tCap,
     wallet_cashback_rate: Math.round(cashPct * 100) / 10000,
     wallet_p2p_enabled: Boolean(input.wallet_p2p_enabled),
+    wallet_bills_enabled: Boolean(input.wallet_bills_enabled),
     express_enabled: Boolean(input.express_enabled),
     default_express_fee: expressFee,
     std_eta_min_days: etas[0],

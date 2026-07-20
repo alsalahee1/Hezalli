@@ -13,8 +13,10 @@ import { WalletWithdrawForm } from "@/components/wallet/wallet-withdraw-form";
 import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
 import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
+import { BillPayForm } from "@/components/wallet/bill-pay-form";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
+import { BILLERS, billerName } from "@/lib/wallet-billers";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,9 @@ const ENTRY_LABEL: Record<string, string> = {
   SELLER_EARNINGS: "sellerEarnings",
   TRANSFER_OUT: "transferOut",
   TRANSFER_IN: "transferIn",
+  BILL_PAYMENT: "billPaymentEntry",
+  AIRTIME_TOPUP: "airtimeEntry",
+  BILL_REFUND: "billRefundEntry",
 };
 
 export default async function WalletPage() {
@@ -63,14 +68,17 @@ export default async function WalletPage() {
     limits,
     minPayout,
     p2pEnabled,
+    billsEnabled,
     stats,
     profile,
     pendingTopUps,
     pendingWithdrawals,
+    pendingBills,
   ] = await Promise.all([
     getWalletLimits(userId),
     getSetting("min_payout_usd"),
     getSetting("wallet_p2p_enabled"),
+    getSetting("wallet_bills_enabled"),
     getWalletStats(userId),
     prisma.sellerProfile.findUnique({
       where: { userId },
@@ -89,6 +97,18 @@ export default async function WalletPage() {
       orderBy: { createdAt: "desc" },
       select: { id: true, amountUsd: true, method: true, createdAt: true },
     }),
+    prisma.walletBillPayment.findMany({
+      where: { walletId, status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        kind: true,
+        biller: true,
+        account: true,
+        amountUsd: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   // Cash-out is offered to VERIFIED users with a saved payout method and enough
@@ -100,6 +120,14 @@ export default async function WalletPage() {
   // P2P send: available to any signed-in user with funds once an admin has
   // enabled the (regulated) transfer feature. See docs/19-wallet-strategy.md §4.
   const canSend = !frozen && p2pEnabled && balance > 0;
+  // Bill payment / airtime: spend from the wallet once an admin enables the
+  // (provider-ready) framework. See docs/19-wallet-strategy.md §5.
+  const canPayBills = !frozen && billsEnabled && balance > 0;
+  const billerOptions = BILLERS.map((b) => ({
+    slug: b.slug,
+    kind: b.kind,
+    name: billerName(b.slug, locale),
+  }));
 
   return (
     <div className="space-y-6">
@@ -156,6 +184,9 @@ export default async function WalletPage() {
           ) : null}
           {canSend ? <WalletSendForm balance={balance} /> : null}
           {p2pEnabled ? <WalletRequestForm /> : null}
+          {canPayBills ? (
+            <BillPayForm billers={billerOptions} balance={balance} />
+          ) : null}
         </div>
       )}
 
@@ -224,6 +255,37 @@ export default async function WalletPage() {
                   <p className="text-muted-foreground text-xs">
                     {t("pendingNote")} ·{" "}
                     {format.dateTime(p.createdAt, { dateStyle: "medium" })}
+                  </p>
+                </div>
+                <span className="font-semibold text-amber-600" dir="ltr">
+                  −{money(Number(p.amountUsd))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {pendingBills.length > 0 ? (
+        <section className="space-y-2">
+          <h2 className="font-medium">{t("pendingBillsTitle")}</h2>
+          <ul className="divide-y rounded-lg border">
+            {pendingBills.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+              >
+                <div>
+                  <p className="font-medium">
+                    {t(
+                      p.kind === "AIRTIME"
+                        ? "airtimeEntry"
+                        : "billPaymentEntry",
+                    )}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {billerName(p.biller, locale)} ·{" "}
+                    <span dir="ltr">{p.account}</span> · {t("pendingNote")}
                   </p>
                 </div>
                 <span className="font-semibold text-amber-600" dir="ltr">
