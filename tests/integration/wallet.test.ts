@@ -375,3 +375,40 @@ describe("wallet withdrawal reserve/return (Step 19.4)", () => {
     }
   });
 });
+
+describe("wallet transfer core (Step 19.6 — pay by QR / request money)", () => {
+  it("moves funds between two users, both ledgers consistent", async () => {
+    const { transferFunds } = await import("@/lib/wallet-transfers");
+    const fx = await makeFixture();
+    try {
+      const buyerWalletId = await getWalletId(fx.buyerId);
+      await prisma.walletEntry.create({
+        data: { walletId: buyerWalletId, type: "TOP_UP", amountUsd: 100 },
+      });
+      await recomputeWalletBalance(fx.buyerId);
+
+      const res = await transferFunds(fx.buyerId, fx.sellerUserId, 30, "test");
+      expect(res.ok).toBe(true);
+
+      expect((await getWalletView(fx.buyerId)).balance).toBe(70);
+      expect((await getWalletView(fx.sellerUserId)).balance).toBe(30);
+
+      // Self-transfer is rejected.
+      const self = await transferFunds(fx.buyerId, fx.buyerId, 5);
+      expect(self.error).toBe("cannotSendSelf");
+    } finally {
+      for (const uid of [fx.buyerId, fx.sellerUserId]) {
+        await prisma.walletEntry
+          .deleteMany({ where: { wallet: { userId: uid } } })
+          .catch(() => {});
+        await prisma.walletTransfer
+          .deleteMany({ where: { fromWallet: { userId: uid } } })
+          .catch(() => {});
+        await prisma.wallet
+          .deleteMany({ where: { userId: uid } })
+          .catch(() => {});
+      }
+      await fx.cleanup();
+    }
+  });
+});

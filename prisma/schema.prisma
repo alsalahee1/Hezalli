@@ -805,6 +805,30 @@ model WalletTransfer {
   @@index([toWalletId])
 }
 
+enum WalletRequestStatus {
+  PENDING // awaiting payment
+  PAID // fulfilled via a wallet transfer
+  CANCELLED // withdrawn by the requester
+}
+
+// "Request money" (Step 19.6). A user asks another user to pay them; the payer
+// opens a shareable link / QR and pays from their wallet, which runs the normal
+// P2P transfer and marks the request PAID. Gated by the same wallet_p2p_enabled
+// toggle as direct transfers.
+model WalletPaymentRequest {
+  id          String              @id @default(cuid())
+  requesterId String // User.id who is requesting money
+  amountUsd   Decimal             @db.Decimal(12, 2)
+  note        String?
+  status      WalletRequestStatus @default(PENDING)
+  payerId     String? // User.id who paid it
+  paidAt      DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@index([requesterId])
+  @@index([status])
+}
+
 // Cash-out to a rail (Step 19.4). Gated on VERIFIED KYC. The wallet is debited
 // (reserved) at request time — balances are spendable, so the funds are held
 // immediately to prevent double-spend; a rejection returns them. Reuses
