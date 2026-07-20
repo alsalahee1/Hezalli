@@ -9,6 +9,7 @@ import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { verifyWalletPin } from "@/lib/wallet-pin";
+import { checkOutflowLimit } from "@/lib/wallet-velocity";
 import {
   creditWalletTx,
   getWalletId,
@@ -65,6 +66,9 @@ export async function requestWithdrawal(
     amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(available);
   if (amount < min) return { error: "belowMin" };
   if (amount > available) return { error: "insufficient" };
+
+  const velocity = await checkOutflowLimit(userId, amount);
+  if (!velocity.ok) return { error: velocity.error };
 
   try {
     await prisma.$transaction(async (tx) => {

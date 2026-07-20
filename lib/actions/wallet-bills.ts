@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { getBiller } from "@/lib/wallet-billers";
 import { verifyWalletPin } from "@/lib/wallet-pin";
+import { checkOutflowLimit } from "@/lib/wallet-velocity";
 import {
   creditWalletTx,
   getWalletId,
@@ -58,6 +59,10 @@ export async function payBill(input: {
   });
   if (wallet.frozen) return { error: "frozen" };
   if (amount > Number(wallet.availableUsd)) return { error: "insufficient" };
+
+  // Velocity cap only matters once we know the funds exist.
+  const velocity = await checkOutflowLimit(userId, amount);
+  if (!velocity.ok) return { error: velocity.error };
 
   const entryType = input.kind === "AIRTIME" ? "AIRTIME_TOPUP" : "BILL_PAYMENT";
   const cleanNote = input.note?.trim() || null;

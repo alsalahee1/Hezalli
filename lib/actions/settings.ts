@@ -25,6 +25,8 @@ export type SettingsInput = {
   wallet_cashback_percent: number; // human percent, e.g. 2 = 2%
   wallet_p2p_enabled: boolean;
   wallet_bills_enabled: boolean;
+  wallet_daily_outflow_usd: number;
+  wallet_monthly_outflow_usd: number;
   express_enabled: boolean;
   default_express_fee: number;
   std_eta_min_days: number;
@@ -72,6 +74,11 @@ export async function savePlatformSettings(
   if (!Number.isFinite(cashPct) || cashPct < 0 || cashPct >= 100)
     return { error: "badCashback" };
 
+  const dailyOut = money2(input.wallet_daily_outflow_usd);
+  const monthlyOut = money2(input.wallet_monthly_outflow_usd);
+  if (![dailyOut, monthlyOut].every((n) => Number.isFinite(n) && n >= 0))
+    return { error: "badWalletLimits" };
+
   const expressFee = money2(input.default_express_fee);
   if (!Number.isFinite(expressFee) || expressFee < 0)
     return { error: "badExpressFee" };
@@ -101,6 +108,8 @@ export async function savePlatformSettings(
     wallet_cashback_rate: Math.round(cashPct * 100) / 10000,
     wallet_p2p_enabled: Boolean(input.wallet_p2p_enabled),
     wallet_bills_enabled: Boolean(input.wallet_bills_enabled),
+    wallet_daily_outflow_usd: dailyOut,
+    wallet_monthly_outflow_usd: monthlyOut,
     express_enabled: Boolean(input.express_enabled),
     default_express_fee: expressFee,
     std_eta_min_days: etas[0],
