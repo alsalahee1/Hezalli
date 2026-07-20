@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
 
 type ProductCard = {
@@ -32,6 +33,7 @@ export function AiAssistant() {
   const isRtl = locale === "ar";
 
   const [open, setOpen] = useState(false);
+  const { mounted, shown } = useMountTransition(open, 200);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -117,12 +119,13 @@ export function AiAssistant() {
       </button>
 
       {/* Panel */}
-      {open && (
+      {mounted && (
         <div
           dir={isRtl ? "rtl" : "ltr"}
           className={cn(
-            "bg-background fixed bottom-36 z-50 flex h-[min(70vh,32rem)] w-[min(92vw,24rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl md:bottom-20",
-            isRtl ? "left-4" : "right-4",
+            "bg-background fixed bottom-36 z-50 flex h-[min(70vh,32rem)] w-[min(92vw,24rem)] transform-gpu flex-col overflow-hidden rounded-2xl border shadow-2xl transition duration-200 ease-out will-change-transform motion-reduce:transition-none md:bottom-20",
+            isRtl ? "left-4 origin-bottom-left" : "right-4 origin-bottom-right",
+            shown ? "scale-100 opacity-100" : "scale-95 opacity-0",
           )}
         >
           {/* Header */}

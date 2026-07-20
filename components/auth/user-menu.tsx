@@ -14,8 +14,10 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/products";
 import { signOutAction } from "@/lib/actions/auth";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 
 const MENU_LINKS = [
   { href: "/account", key: "profile", icon: User },
@@ -44,6 +46,7 @@ export function UserMenu({
   const t = useTranslations("Header");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
+  const { mounted, shown } = useMountTransition(open, 200);
 
   // Links that depend on the signed-in user's role. Admins reach the admin
   // panel, sellers reach their store dashboard — buyers see neither.
@@ -83,7 +86,7 @@ export function UserMenu({
         )}
       </button>
 
-      {open && (
+      {mounted && (
         <>
           <div
             className="fixed inset-0 z-40"
@@ -92,7 +95,10 @@ export function UserMenu({
           />
           <div
             role="menu"
-            className="bg-background absolute end-0 z-50 mt-2 w-56 overflow-hidden rounded-md border shadow-lg"
+            className={cn(
+              "bg-background absolute end-0 z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-md border shadow-lg transition duration-200 ease-out will-change-transform motion-reduce:transition-none rtl:origin-top-left",
+              shown ? "scale-100 opacity-100" : "scale-95 opacity-0",
+            )}
           >
             <div className="border-b px-3 py-2">
               <p className="truncate text-sm font-medium">{label}</p>

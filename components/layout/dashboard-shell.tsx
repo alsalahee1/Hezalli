@@ -36,6 +36,7 @@ import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ChatIcon } from "@/components/chat/chat-icon";
 import { CenterTabBar } from "@/components/layout/center-tab-bar";
@@ -111,6 +112,7 @@ export function DashboardShell({
   const c = useTranslations("Common");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { mounted, shown } = useMountTransition(open);
 
   // Build the phone bottom bar from the same nav list: four primary tabs plus
   // everything (in sidebar order) behind "More".
@@ -168,14 +170,24 @@ export function DashboardShell({
       </aside>
 
       {/* Mobile drawer */}
-      {open && (
+      {mounted && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="absolute inset-0 bg-black/50"
+            className={cn(
+              "absolute inset-0 bg-black/50 transition-opacity duration-300 ease-out motion-reduce:transition-none",
+              shown ? "opacity-100" : "opacity-0",
+            )}
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <aside className="bg-background absolute inset-y-0 start-0 w-64 border-e shadow-lg">
+          <aside
+            className={cn(
+              "bg-background absolute inset-y-0 start-0 w-64 transform-gpu border-e shadow-lg transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none",
+              shown
+                ? "translate-x-0"
+                : "-translate-x-full rtl:translate-x-full",
+            )}
+          >
             {sidebar}
           </aside>
         </div>

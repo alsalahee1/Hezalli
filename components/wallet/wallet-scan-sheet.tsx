@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ReferralLink } from "@/components/account/referral-link";
@@ -54,6 +55,7 @@ export function WalletScanSheet({
 }) {
   const t = useTranslations("WalletScan");
   const router = useRouter();
+  const { mounted, shown } = useMountTransition(open);
   const [mode, setMode] = useState<Mode>("pay");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -131,7 +133,7 @@ export function WalletScanSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   const tabClass = (active: boolean) =>
     cn(
@@ -142,7 +144,12 @@ export function WalletScanSheet({
     );
 
   return (
-    <div className="bg-background fixed inset-0 z-50 flex flex-col">
+    <div
+      className={cn(
+        "bg-background fixed inset-0 z-50 flex transform-gpu flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none",
+        shown ? "translate-y-0" : "translate-y-full",
+      )}
+    >
       <header className="flex items-center justify-between border-b px-4 py-3">
         <span className="font-semibold">{t("title")}</span>
         <button

@@ -5,6 +5,8 @@ import { Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Link, useRouter } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 
 type Suggestions = {
   products: { slug: string; title: string; image: string | null }[];
@@ -66,6 +68,7 @@ export function SearchBar({ className }: { className?: string }) {
   };
 
   const hasSug = sug.products.length > 0 || sug.categories.length > 0;
+  const { mounted, shown } = useMountTransition(open && hasSug, 150);
 
   return (
     <div ref={boxRef} className={className}>
@@ -85,8 +88,13 @@ export function SearchBar({ className }: { className?: string }) {
         />
       </form>
 
-      {open && hasSug ? (
-        <div className="bg-popover absolute z-50 mt-1 max-h-96 w-full overflow-auto rounded-md border shadow-lg">
+      {mounted ? (
+        <div
+          className={cn(
+            "bg-popover absolute z-50 mt-1 max-h-96 w-full origin-top overflow-auto rounded-md border shadow-lg transition duration-150 ease-out will-change-transform motion-reduce:transition-none",
+            shown ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+          )}
+        >
           {sug.categories.length > 0 ? (
             <div className="p-1">
               <p className="text-muted-foreground px-2 py-1 text-xs font-medium">
