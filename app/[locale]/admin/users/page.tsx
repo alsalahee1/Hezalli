@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { UserActions } from "@/components/admin/user-actions";
+import { WalletAdminControls } from "@/components/admin/wallet-admin-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function AdminUsersPage({
       deletedAt: true,
       createdAt: true,
       _count: { select: { orders: true } },
+      wallet: { select: { frozen: true, availableUsd: true } },
     },
   });
 
@@ -97,12 +99,22 @@ export default async function AdminUsersPage({
                   {format.dateTime(u.createdAt, { dateStyle: "medium" })}
                 </p>
               </div>
-              <UserActions
-                userId={u.id}
-                suspended={u.isSuspended}
-                deleted={Boolean(u.deletedAt)}
-                roles={u.roles}
-              />
+              <div className="flex flex-col items-end gap-2">
+                <UserActions
+                  userId={u.id}
+                  suspended={u.isSuspended}
+                  deleted={Boolean(u.deletedAt)}
+                  roles={u.roles}
+                />
+                <WalletAdminControls
+                  userId={u.id}
+                  frozen={u.wallet?.frozen ?? false}
+                  balanceLabel={format.number(
+                    Number(u.wallet?.availableUsd ?? 0),
+                    { style: "currency", currency: "USD" },
+                  )}
+                />
+              </div>
             </li>
           ))}
         </ul>
