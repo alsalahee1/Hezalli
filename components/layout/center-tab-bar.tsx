@@ -27,14 +27,22 @@ export function CenterTabBar({
   moreItems = [],
   moreLabel = "More",
   ariaLabel,
+  responsive = true,
 }: {
   primary: CenterTab[];
   moreItems?: CenterTab[];
   moreLabel?: string;
   ariaLabel: string;
+  /**
+   * When true (default) the bar shows on phones only and hides at `md`, where a
+   * center has its full sidebar. Set false for phone-first surfaces (the driver
+   * app) that want the bar at every width.
+   */
+  responsive?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const hiddenAtMd = responsive ? "md:hidden" : "";
 
   const isActive = (tab: CenterTab) =>
     tab.exact
@@ -56,7 +64,7 @@ export function CenterTabBar({
     <>
       {/* Overflow sheet */}
       {open && hasMore ? (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className={cn("fixed inset-0 z-50", hiddenAtMd)}>
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setOpen(false)}
@@ -106,7 +114,10 @@ export function CenterTabBar({
 
       <nav
         aria-label={ariaLabel}
-        className="bg-background/95 supports-[backdrop-filter]:bg-background/85 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className={cn(
+          "bg-background/95 supports-[backdrop-filter]:bg-background/85 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur",
+          hiddenAtMd,
+        )}
       >
         <ul className="mx-auto flex max-w-md items-stretch justify-around">
           {primary.map((tab) => {

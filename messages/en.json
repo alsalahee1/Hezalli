@@ -39,7 +39,23 @@
     "topUp": "Top up",
     "send": "Send",
     "history": "History",
-    "exit": "Store"
+    "exit": "Store",
+    "scan": "Scan"
+  },
+  "WalletScan": {
+    "title": "Scan & Pay",
+    "payTab": "Scan to pay",
+    "receiveTab": "My code",
+    "scanHint": "Point your camera at a Hezalli pay code.",
+    "starting": "Starting camera…",
+    "cameraUnavailable": "Camera unavailable — paste a pay link or ID below.",
+    "notAPayCode": "That is not a Hezalli pay code.",
+    "manualLabel": "Paste a pay link or ID",
+    "go": "Go",
+    "receiveHint": "Show this code to get paid straight into your wallet.",
+    "copyLink": "Copy my pay link",
+    "copied": "Copied",
+    "close": "Close"
   },
   "Sell": {
     "title": "Sell on Hezalli",
