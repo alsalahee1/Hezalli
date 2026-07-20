@@ -21,7 +21,10 @@ export function AnnouncementBanner({ text }: { text: string }) {
 
   if (!show) return null;
   return (
-    <div className="bg-primary text-primary-foreground relative px-4 py-2 text-center text-sm">
+    <div
+      data-announcement
+      className="bg-primary text-primary-foreground relative px-4 py-2 text-center text-sm"
+    >
       <span className="pe-6">{text}</span>
       <button
         type="button"
