@@ -17,12 +17,15 @@ export default async function AccountLayout({
   const t = await getTranslations("Account");
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">
+    <div data-account-shell className="mx-auto max-w-5xl px-4 py-8">
+      <h1
+        data-account-heading
+        className="mb-6 text-2xl font-semibold tracking-tight"
+      >
         {t("title")}
       </h1>
       <div className="grid gap-8 md:grid-cols-[200px_1fr]">
-        <aside className="min-w-0">
+        <aside data-account-nav className="min-w-0">
           <AccountNav />
         </aside>
         <div className="min-w-0">{children}</div>

@@ -119,3 +119,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Native-app wallet on phones.
+   The wallet screen renders a [data-native-wallet] marker; on mobile we hide
+   the storefront chrome (announcement banner, site header, footer, and the
+   account heading + nav) so the wallet reads like a standalone mobile-app
+   screen — leaving just the balance card, stats/actions, and the wallet's own
+   bottom tab bar. Desktop (md and up) is unaffected. */
+@media (max-width: 767px) {
+  body:has([data-native-wallet]) [data-announcement],
+  body:has([data-native-wallet]) header,
+  body:has([data-native-wallet]) footer,
+  body:has([data-native-wallet]) [data-account-heading],
+  body:has([data-native-wallet]) [data-account-nav] {
+    display: none !important;
+  }
+  /* Sit the wallet at the very top like a native screen (no big page padding). */
+  body:has([data-native-wallet]) [data-account-shell] {
+    padding-top: max(env(safe-area-inset-top), 0.75rem);
+    padding-bottom: 0;
+  }
+}

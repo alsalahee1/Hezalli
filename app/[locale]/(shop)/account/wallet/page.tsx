@@ -103,6 +103,12 @@ export default async function WalletPage() {
 
   return (
     <div className="space-y-6">
+      {/* Native-app wallet treatment on phones: this marker drives the CSS in
+          globals.css that hides the storefront chrome (announcement, header,
+          footer, account heading + nav) on mobile so the screen reads like a
+          standalone mobile wallet. Desktop is unaffected. */}
+      <div data-native-wallet hidden />
+
       <div className="from-primary/10 flex items-center gap-4 rounded-xl border bg-gradient-to-br to-transparent p-5">
         <Wallet className="text-primary size-8 shrink-0" />
         <div>
