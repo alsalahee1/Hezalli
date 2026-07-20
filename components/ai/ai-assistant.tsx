@@ -107,7 +107,9 @@ export function AiAssistant() {
         aria-label={t("open")}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "bg-primary text-primary-foreground fixed bottom-4 z-50 flex size-14 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+          // Sit above the mobile bottom tab bar (~4rem tall) on phones, drop
+          // back to the normal corner offset once the tab bar hides at `md`.
+          "bg-primary text-primary-foreground fixed bottom-20 z-50 flex size-14 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:bottom-4",
           isRtl ? "left-4" : "right-4",
         )}
       >
@@ -119,7 +121,7 @@ export function AiAssistant() {
         <div
           dir={isRtl ? "rtl" : "ltr"}
           className={cn(
-            "bg-background fixed bottom-20 z-50 flex h-[min(70vh,32rem)] w-[min(92vw,24rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl",
+            "bg-background fixed bottom-36 z-50 flex h-[min(70vh,32rem)] w-[min(92vw,24rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl md:bottom-20",
             isRtl ? "left-4" : "right-4",
           )}
         >

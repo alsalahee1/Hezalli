@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
@@ -21,6 +21,15 @@ export const metadata: Metadata = {
   },
   description:
     "Hezalli is Yemen's multi-vendor marketplace where buyers shop from many sellers, and sellers open stores, list products, and get paid.",
+};
+
+// `viewport-fit=cover` lets the layout extend into the phone's safe areas so the
+// bottom tab bar can pad itself with env(safe-area-inset-bottom) and sit flush
+// above the home indicator, the way a native app does.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export function generateStaticParams() {

@@ -11,6 +11,7 @@ import type { Locale } from "@/i18n/routing";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
+import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
@@ -27,7 +28,7 @@ export default async function ShopLayout({
 
   // Read the header identity from the DB so profile edits (name, and later the
   // avatar) show up immediately, rather than staying stale until the next login.
-  const [user, catRows] = await Promise.all([
+  const [user, catRows, wishlistCount] = await Promise.all([
     session?.user?.id
       ? prisma.user.findUnique({
           where: { id: session.user.id },
@@ -54,6 +55,11 @@ export default async function ShopLayout({
         },
       },
     }),
+    session?.user?.id
+      ? prisma.wishlistItem.count({
+          where: { wishlist: { userId: session.user.id } },
+        })
+      : Promise.resolve(0),
   ]);
 
   const categories = toNavCategories(catRows, locale as Locale);
@@ -92,7 +98,15 @@ export default async function ShopLayout({
         />
         <div className="flex-1">{children}</div>
         <SiteFooter />
+        {/* Reserve room so the fixed bottom tab bar never covers footer content
+            on phones; the extra space collapses at `md` where the bar hides. */}
+        <div
+          className="h-16 md:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          aria-hidden
+        />
         {process.env.GEMINI_API_KEY ? <AiAssistant /> : null}
+        <MobileTabBar wishlistCount={wishlistCount} />
       </div>
     </CartProvider>
   );
