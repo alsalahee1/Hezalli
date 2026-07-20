@@ -76,7 +76,8 @@ export async function shipSubOrder(
   let pointName: string | null = null;
   if (input.deliveryPointId?.trim()) {
     if (!carrier.platformManaged) return { error: "pointNotAllowed" };
-    if (!(await getSetting("points_enabled"))) return { error: "pointNotAllowed" };
+    if (!(await getSetting("points_enabled")))
+      return { error: "pointNotAllowed" };
     const point = await prisma.deliveryPoint.findFirst({
       where: { id: input.deliveryPointId.trim(), status: "ACTIVE" },
       select: { id: true, name: true },

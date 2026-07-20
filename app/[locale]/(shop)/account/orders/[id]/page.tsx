@@ -375,7 +375,10 @@ export default async function OrderDetailPage({
                       <p className="text-muted-foreground text-xs">
                         {t("deliveryQrHint")}
                       </p>
-                      <p className="mt-1 font-mono text-base tracking-widest" dir="ltr">
+                      <p
+                        className="mt-1 font-mono text-base tracking-widest"
+                        dir="ltr"
+                      >
                         {s.shipment.deliveryCode}
                       </p>
                     </div>
