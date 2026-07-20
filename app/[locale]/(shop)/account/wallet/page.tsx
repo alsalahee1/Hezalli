@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { ChevronRight, Wallet } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { Link } from "@/i18n/navigation";
 import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
@@ -306,29 +307,38 @@ export default async function WalletPage() {
             {entries.map((e) => {
               const amount = Number(e.amountUsd);
               return (
-                <li
-                  key={e.id}
-                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {t(ENTRY_LABEL[e.type] ?? "adjustment")}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {format.dateTime(e.createdAt, { dateStyle: "medium" })}
-                    </p>
-                  </div>
-                  <span
-                    className={
-                      amount >= 0
-                        ? "font-semibold text-emerald-600"
-                        : "text-destructive font-semibold"
-                    }
-                    dir="ltr"
+                <li key={e.id}>
+                  <Link
+                    href={`/account/wallet/tx/${e.id}`}
+                    className="hover:bg-muted/40 flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors"
                   >
-                    {amount >= 0 ? "+" : "−"}
-                    {money(Math.abs(amount))}
-                  </span>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="font-medium">
+                          {t(ENTRY_LABEL[e.type] ?? "adjustment")}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {format.dateTime(e.createdAt, {
+                            dateStyle: "medium",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className={
+                          amount >= 0
+                            ? "font-semibold text-emerald-600"
+                            : "text-destructive font-semibold"
+                        }
+                        dir="ltr"
+                      >
+                        {amount >= 0 ? "+" : "−"}
+                        {money(Math.abs(amount))}
+                      </span>
+                      <ChevronRight className="text-muted-foreground size-4 rtl:rotate-180" />
+                    </span>
+                  </Link>
                 </li>
               );
             })}

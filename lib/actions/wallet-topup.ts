@@ -116,6 +116,8 @@ export async function confirmTopUp(topUpId: string): Promise<Result> {
       type: "TOP_UP",
       amountUsd: amount,
       note: "Wallet top-up confirmed",
+      refType: "topup",
+      refId: topUp.id,
     });
     const ar = topUp.wallet.user.locale === "ar";
     await tx.notification.create({
