@@ -4,6 +4,7 @@ import { CheckCircle2, MapPin, Phone, Store } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { storage } from "@/lib/storage";
 import { Link } from "@/i18n/navigation";
 import { JobActions } from "@/components/driver/job-actions";
 
@@ -29,6 +30,12 @@ export default async function DriverJobPage({
         orderBy: { createdAt: "asc" },
         select: { id: true, status: true, createdAt: true },
       },
+      attempts: {
+        where: { outcome: "DELIVERED" },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { recipientName: true, proofPhotoKey: true },
+      },
       subOrder: {
         select: {
           status: true,
@@ -52,6 +59,7 @@ export default async function DriverJobPage({
   const a = sub.order.address;
   const done = sub.status !== "SHIPPED";
   const isCod = sub.order.paymentMethod === "COD";
+  const proof = shipment.attempts[0] ?? null;
 
   return (
     <div className="space-y-5">
@@ -132,8 +140,30 @@ export default async function DriverJobPage({
 
       {/* Actions */}
       {done ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm font-medium text-emerald-700 dark:text-emerald-500">
-          <CheckCircle2 className="size-5" /> {t("jobDone")}
+        <div className="space-y-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
+          <div className="flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-500">
+            <CheckCircle2 className="size-5" /> {t("jobDone")}
+          </div>
+          {proof ? (
+            <div className="space-y-2 border-t border-emerald-500/30 pt-3 text-sm">
+              {proof.recipientName ? (
+                <p>
+                  <span className="text-muted-foreground">
+                    {t("proofRecipient")}:{" "}
+                  </span>
+                  <span className="font-medium">{proof.recipientName}</span>
+                </p>
+              ) : null}
+              {proof.proofPhotoKey ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={storage.publicUrl(proof.proofPhotoKey)}
+                  alt={t("proofPhotoAlt")}
+                  className="max-h-56 w-full rounded-lg object-cover"
+                />
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : (
         <JobActions shipmentId={shipment.id} status={shipment.status} />

@@ -1968,7 +1968,29 @@
     "locationOff": "Location off",
     "shareLocation": "Share location",
     "updateLocation": "Update location",
-    "locationError": "Couldn't get your location — check permissions."
+    "locationError": "Couldn't get your location — check permissions.",
+    "couldntDeliver": "Couldn't deliver",
+    "retryDelivery": "Try delivery again",
+    "deliverTitle": "Confirm delivery",
+    "recipientName": "Received by (optional)",
+    "recipientHint": "Name of who took the parcel",
+    "addPhoto": "Add doorstep photo",
+    "photoAdded": "Photo added ✓",
+    "uploading": "Uploading…",
+    "confirmDeliverBtn": "Confirm delivered",
+    "cancel": "Cancel",
+    "failTitle": "Why couldn't you deliver?",
+    "failReason_unreachable": "Customer unreachable",
+    "failReason_refused": "Customer refused the parcel",
+    "failReason_wrong_address": "Wrong or incomplete address",
+    "failReason_rescheduled": "Customer asked to reschedule",
+    "failReason_other": "Other reason",
+    "failNote": "Add a note (optional)",
+    "submitFail": "Log failed attempt",
+    "err_badReason": "Please pick a reason",
+    "err_uploadFailed": "Couldn't upload the photo. Try again.",
+    "proofRecipient": "Received by",
+    "proofPhotoAlt": "Doorstep delivery photo"
   },
   "Dispatch": {
     "title": "Dispatch",
@@ -1984,7 +2006,8 @@
     "dueSoon": "Due soon",
     "overdueCount": "{count} overdue",
     "dueSoonCount": "{count} due soon",
-    "dueByLabel": "Due by"
+    "dueByLabel": "Due by",
+    "attempts": "{count, plural, one {# attempt} other {# attempts}}"
   },
   "Drive": {
     "title": "Deliver with Hezalli",
