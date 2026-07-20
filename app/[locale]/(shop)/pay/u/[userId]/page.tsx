@@ -5,6 +5,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getWalletView } from "@/lib/wallet";
+import { walletHasPin } from "@/lib/wallet-pin";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,7 @@ export default async function PayUserPage({
 
   const name = recipient.name || recipient.email || "—";
   const { balance } = await getWalletView(session.user.id, 0);
+  const hasPin = await walletHasPin(session.user.id);
 
   return shell(
     <div className="space-y-4">
@@ -79,6 +81,7 @@ export default async function PayUserPage({
         recipientId={recipient.id}
         recipientName={name}
         balance={balance}
+        hasPin={hasPin}
       />
     </div>,
   );

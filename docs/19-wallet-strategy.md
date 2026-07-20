@@ -425,6 +425,34 @@ transfer.
 
 ---
 
+## Step 19.9 — Wallet PIN (step-up on every outflow) ✅
+
+The wallet's first real security layer: money can no longer leave an account on
+a logged-in session alone. Every outflow requires a 4–6 digit PIN.
+
+- **`Wallet.pinHash`** (scrypt, same format as `passwordHash`) +
+  `pinFailedCount`/`pinLockedUntil` for brute-force lockout (5 wrong tries → a
+  15-minute cool-off).
+- **`lib/wallet-pin.ts`** (plain module, authenticated-id only):
+  `verifyWalletPin(userId, pin)` returns `noPin` / `locked` / `wrongPin`, resets
+  the counter on success; `walletHasPin(userId)`.
+- **`setWalletPin`** (`lib/actions/wallet-pin.ts`): set or change (changing needs
+  the current PIN); validates 4–6 digits and clears any lockout.
+- **Enforced on every outflow** — `sendWalletFunds`, `payUser`,
+  `payPaymentRequest`, `payBill`, `requestWithdrawal` all verify the PIN before
+  moving money. The client forms carry a `WalletPinField`; a Security panel on
+  the wallet page sets/changes the PIN.
+- Users without a PIN see a "set a PIN first" prompt and can't spend until they
+  do — funds can't leave an un-PINned wallet.
+
+✅ **Acceptance criteria**
+- [x] Every outflow rejects a missing/wrong PIN and succeeds with the right one
+- [x] 5 wrong PINs lock the wallet for the cool-off window
+- [x] Changing the PIN requires the current one
+- [x] The PIN is stored only as a scrypt hash, never in plaintext
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -439,8 +467,9 @@ transfer.
 | 19.6 Pay by QR + request money | Peer payments | **Licensed only** | ✅ built, ⚠️ off by default |
 | 19.7 Bills + airtime | Digital-wallet staple | Low (funds stay in-platform) | ✅ built, framework — off by default |
 | 19.8 Detail + receipts | Proof of payment | Low | ✅ shipped |
+| 19.9 Wallet PIN | Step-up security | Low | ✅ shipped |
 
-**Bottom line:** 19.1–19.8 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.9 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on
