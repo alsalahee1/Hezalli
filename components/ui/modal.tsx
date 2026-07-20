@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-
-// Duration of the open/close transition (ms). Keep in sync with the CSS
-// `duration-300` below so the node unmounts exactly when the animation ends.
-const DURATION = 300;
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 
 // Lightweight modal dialog: a backdrop + centered card (bottom sheet on phones)
 // rendered through a portal on <body>. Closes on Escape, backdrop click, or the
@@ -26,30 +23,7 @@ export function Modal({
   closeLabel?: string;
   children: React.ReactNode;
 }) {
-  // `mounted` keeps the node in the DOM through the closing animation; `shown`
-  // drives the enter/leave CSS transition.
-  const [mounted, setMounted] = useState(open);
-  const [shown, setShown] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setMounted(true);
-      // Double rAF: guarantees the browser paints the closed (off-screen) state
-      // once before we flip to open, so the enter transition actually plays
-      // instead of snapping straight to the final position.
-      let raf2 = 0;
-      const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => setShown(true));
-      });
-      return () => {
-        cancelAnimationFrame(raf1);
-        cancelAnimationFrame(raf2);
-      };
-    }
-    setShown(false);
-    const id = setTimeout(() => setMounted(false), DURATION);
-    return () => clearTimeout(id);
-  }, [open]);
+  const { mounted, shown } = useMountTransition(open);
 
   useEffect(() => {
     if (!mounted) return;

@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 
 export type CenterTab = {
   href: string;
@@ -42,6 +43,7 @@ export function CenterTabBar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { mounted, shown } = useMountTransition(open);
   const hiddenAtMd = responsive ? "md:hidden" : "";
 
   const isActive = (tab: CenterTab) =>
@@ -63,14 +65,22 @@ export function CenterTabBar({
   return (
     <>
       {/* Overflow sheet */}
-      {open && hasMore ? (
+      {mounted && hasMore ? (
         <div className={cn("fixed inset-0 z-50", hiddenAtMd)}>
           <div
-            className="absolute inset-0 bg-black/50"
+            className={cn(
+              "absolute inset-0 bg-black/50 transition-opacity duration-300 ease-out motion-reduce:transition-none",
+              shown ? "opacity-100" : "opacity-0",
+            )}
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="bg-background absolute inset-x-0 bottom-0 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t pb-[env(safe-area-inset-bottom)] shadow-2xl">
+          <div
+            className={cn(
+              "bg-background absolute inset-x-0 bottom-0 max-h-[70vh] transform-gpu overflow-y-auto rounded-t-2xl border-t pb-[env(safe-area-inset-bottom)] shadow-2xl transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none",
+              shown ? "translate-y-0" : "translate-y-full",
+            )}
+          >
             <div className="flex items-center justify-between border-b px-4 py-3">
               <span className="font-semibold">{moreLabel}</span>
               <button

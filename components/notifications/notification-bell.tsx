@@ -11,6 +11,7 @@ import {
 import { notificationHref, type NotifVariant } from "@/lib/notifications";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 
 type Item = {
   id: string;
@@ -31,6 +32,7 @@ export function NotificationBell({
   const format = useFormatter();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { mounted, shown } = useMountTransition(open, 200);
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<Item[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -93,14 +95,21 @@ export function NotificationBell({
         ) : null}
       </button>
 
-      {open ? (
+      {mounted ? (
         <>
           <div
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="bg-background fixed inset-x-2 top-16 z-50 overflow-hidden rounded-lg border shadow-lg sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-1 sm:w-80">
+          <div
+            className={cn(
+              "bg-background fixed inset-x-2 top-16 z-50 origin-top overflow-hidden rounded-lg border shadow-lg transition duration-200 ease-out will-change-transform motion-reduce:transition-none sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-1 sm:w-80",
+              shown
+                ? "translate-y-0 scale-100 opacity-100"
+                : "-translate-y-1 scale-95 opacity-0",
+            )}
+          >
             <div className="flex items-center justify-between border-b px-3 py-2">
               <span className="text-sm font-semibold">{t("title")}</span>
               {unread > 0 ? (

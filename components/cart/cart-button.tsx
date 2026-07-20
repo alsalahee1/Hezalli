@@ -5,8 +5,10 @@ import { ShoppingCart } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { formatUsd } from "@/lib/products";
+import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { useMountTransition } from "@/components/ui/use-mount-transition";
 
 import { useCart } from "./cart-provider";
 
@@ -15,6 +17,7 @@ export function CartButton() {
   const locale = useLocale();
   const { lines, count } = useCart();
   const [open, setOpen] = useState(false);
+  const { mounted, shown } = useMountTransition(open, 200);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,8 +49,15 @@ export function CartButton() {
         </span>
       </Button>
 
-      {open ? (
-        <div className="bg-popover fixed inset-x-2 top-16 z-50 rounded-md border shadow-lg sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-2 sm:w-80">
+      {mounted ? (
+        <div
+          className={cn(
+            "bg-popover fixed inset-x-2 top-16 z-50 origin-top rounded-md border shadow-lg transition duration-200 ease-out will-change-transform motion-reduce:transition-none sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-2 sm:w-80",
+            shown
+              ? "translate-y-0 scale-100 opacity-100"
+              : "-translate-y-1 scale-95 opacity-0",
+          )}
+        >
           {lines.length === 0 ? (
             <p className="text-muted-foreground p-6 text-center text-sm">
               {t("empty")}
