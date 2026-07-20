@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useState, type ReactNode } from "react";
-import { LocateFixed, MapPin } from "lucide-react";
+import { LocateFixed, Map as MapIcon, MapPin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+
+import { MapPicker } from "@/components/map/map-picker";
 
 import { saveAddress, type FormState } from "@/lib/actions/account";
 import { GOVERNORATES, localizedGovernorate } from "@/lib/yemen";
@@ -68,6 +70,7 @@ export function AddressForm({
   );
   const [geoErr, setGeoErr] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const pin = () => {
     setGeoErr(false);
@@ -162,7 +165,7 @@ export function AddressForm({
                 })
               : t("locationHint")}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {coords ? (
               <button
                 type="button"
@@ -172,6 +175,15 @@ export function AddressForm({
                 {t("clearLocation")}
               </button>
             ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowMap((v) => !v)}
+            >
+              <MapIcon className="size-4" />
+              {showMap ? t("hideMap") : t("showMap")}
+            </Button>
             <Button
               type="button"
               size="sm"
@@ -188,6 +200,17 @@ export function AddressForm({
             </Button>
           </div>
         </div>
+        {showMap ? (
+          <>
+            <MapPicker
+              value={coords}
+              onChange={(lat, lng) => setCoords({ lat, lng })}
+            />
+            <p className="text-muted-foreground mt-1.5 text-xs">
+              {t("mapHint")}
+            </p>
+          </>
+        ) : null}
         {geoErr ? (
           <p className="text-destructive mt-2 text-xs">{t("locationError")}</p>
         ) : null}

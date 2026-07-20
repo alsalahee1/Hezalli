@@ -6,6 +6,7 @@ import { getPlatformSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { QrCode } from "@/components/orders/qr-code";
+import { TrackingMap } from "@/components/map/tracking-map";
 
 // Public shipment tracking — reachable by anyone holding the tracking number
 // (the Hezalli Express carrier link points here: hezalli.com/track/{tracking}).
@@ -169,6 +170,11 @@ export default async function TrackingPage({
           </div>
         ) : null}
       </dl>
+
+      {/* Live courier map — self-hides unless the driver is actively en route. */}
+      {shipment.status === "OUT_FOR_DELIVERY" ? (
+        <TrackingMap tracking={tracking} />
+      ) : null}
 
       {/* Timeline */}
       <div className="mt-5">
