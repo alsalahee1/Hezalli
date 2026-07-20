@@ -927,6 +927,13 @@ model WalletEntry {
   orderId    String? // set for PAYMENT / REFUND
   subOrderId String?
   note       String?
+  // Link to the source record so a transaction detail / receipt can enrich the
+  // entry (transfer | bill | topup | withdrawal). `refId` is that record's id.
+  refType    String? // transfer | bill | topup | withdrawal
+  refId      String?
+  // Unguessable token minted the first time the owner shares this transaction's
+  // receipt; the public /receipt/[token] page resolves it (Step 19.8).
+  receiptToken String?       @unique
   createdAt  DateTime        @default(now())
   wallet     Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
 

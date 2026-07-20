@@ -395,6 +395,36 @@ integration.
 
 ---
 
+## Step 19.8 — Transaction detail + shareable receipts ✅
+
+Every wallet activity row is now tappable and every transaction has a receipt
+the owner can share as proof of payment — the thing users reach for after a P2P
+transfer.
+
+- **Entry → source linkage.** `WalletEntry` gains `refType`/`refId` (transfer |
+  bill | topup | withdrawal), set by every writer, so a receipt can join the
+  source record and show the counterparty, biller/account, or rail — without
+  guessing from the note text.
+- **`lib/wallet-receipt.ts`** enriches an entry into a `ReceiptData`
+  (direction, amount, status, counterparty, reference `HZ-…`). Two loaders:
+  `loadReceiptForOwner(entryId, userId)` (ownership-checked) and
+  `loadReceiptByToken(token)` (public).
+- **Owner detail** `/account/wallet/tx/[entryId]` renders the receipt + a
+  **Share** button. Sharing mints an unguessable `receiptToken` once
+  (`createReceiptShareLink`, idempotent) and opens the native share sheet /
+  copies the link.
+- **Public receipt** `/receipt/[token]` — no auth, shows only that one
+  transaction (never a balance or any other activity), safe to forward as proof.
+- `ReceiptView` is a pure server component reused by both pages.
+
+✅ **Acceptance criteria**
+- [x] Tapping an activity row opens its full detail
+- [x] A transfer receipt shows the right direction + counterparty for each side
+- [x] A receipt is never readable by a non-owner until they share the link
+- [x] The public receipt exposes no balance or other transactions
+
+---
+
 ## 8. Build order summary (value per risk) — status
 
 | Phase | Ships | Regulatory risk | Status |
@@ -408,8 +438,9 @@ integration.
 | 19.5+ P2P transfer | Growth loop | **Licensed only** | ✅ built, ⚠️ off by default |
 | 19.6 Pay by QR + request money | Peer payments | **Licensed only** | ✅ built, ⚠️ off by default |
 | 19.7 Bills + airtime | Digital-wallet staple | Low (funds stay in-platform) | ✅ built, framework — off by default |
+| 19.8 Detail + receipts | Proof of payment | Low | ✅ shipped |
 
-**Bottom line:** 19.1–19.7 are implemented. 19.1/19.2/19.5 are safe to run now;
+**Bottom line:** 19.1–19.8 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in
 production** — the code is built and gated, the remaining blocker is legal, not
 technical. The wallet lives in this repo; the mobile app is a separate client on

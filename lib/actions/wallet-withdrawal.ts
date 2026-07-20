@@ -82,6 +82,8 @@ export async function requestWithdrawal(amountUsd?: number): Promise<Result> {
         type: "CASHOUT",
         amountUsd: -amount,
         note: `Withdrawal requested (${withdrawal.id})`,
+        refType: "withdrawal",
+        refId: withdrawal.id,
       });
     });
   } catch (e) {
@@ -185,6 +187,8 @@ export async function rejectWithdrawal(
       type: "ADJUSTMENT",
       amountUsd: Number(w.amountUsd),
       note: `Withdrawal rejected — returned to wallet (${w.id})`,
+      refType: "withdrawal",
+      refId: w.id,
     });
     await tx.notification.create({
       data: {
