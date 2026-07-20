@@ -93,7 +93,6 @@ export function WalletWithdrawForm({
             error={err}
             submitLabel={t("withdrawSubmit")}
             onAuthorize={run}
-            onCancel={() => setOpen(false)}
           />
         </div>
       </Modal>

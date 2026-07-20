@@ -163,7 +163,6 @@ export function BillPayForm({
             error={err}
             submitLabel={t("billsSubmit")}
             onAuthorize={run}
-            onCancel={() => setOpen(false)}
           />
         </div>
       </Modal>

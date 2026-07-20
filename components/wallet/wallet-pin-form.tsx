@@ -112,14 +112,9 @@ export function WalletPinForm({ hasPin }: { hasPin: boolean }) {
           {err ? (
             <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
           ) : null}
-          <div className="flex gap-2">
-            <Button disabled={pending || !pin || !confirm} onClick={submit}>
-              {pending ? t("submitting") : t("pinSave")}
-            </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              {t("cancel")}
-            </Button>
-          </div>
+          <Button disabled={pending || !pin || !confirm} onClick={submit}>
+            {pending ? t("submitting") : t("pinSave")}
+          </Button>
         </div>
       </Modal>
     </>
