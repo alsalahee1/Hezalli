@@ -392,6 +392,8 @@
     "photoSoon": "Photo upload is coming with image storage.",
     "changePassword": "Change password",
     "changePasswordDesc": "Enter your current password and choose a new one.",
+    "walletSecurity": "Wallet security",
+    "walletSecurityDesc": "Set a PIN and biometric unlock used to authorize wallet payments.",
     "currentPassword": "Current password",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",

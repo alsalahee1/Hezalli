@@ -392,6 +392,8 @@
     "photoSoon": "رفع الصورة سيتوفر مع خدمة تخزين الصور.",
     "changePassword": "تغيير كلمة المرور",
     "changePasswordDesc": "أدخل كلمة المرور الحالية واختر كلمة مرور جديدة.",
+    "walletSecurity": "أمان المحفظة",
+    "walletSecurityDesc": "عيّن رمز PIN وبصمة للمصادقة على مدفوعات المحفظة.",
     "currentPassword": "كلمة المرور الحالية",
     "newPassword": "كلمة المرور الجديدة",
     "confirmPassword": "تأكيد كلمة المرور الجديدة",

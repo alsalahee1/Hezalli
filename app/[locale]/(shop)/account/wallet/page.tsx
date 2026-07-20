@@ -15,8 +15,6 @@ import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
 import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 import { BillPayForm } from "@/components/wallet/bill-pay-form";
-import { WalletPinForm } from "@/components/wallet/wallet-pin-form";
-import { PasskeyManager } from "@/components/wallet/passkey-manager";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
 import { BILLERS, billerName } from "@/lib/wallet-billers";
@@ -215,15 +213,6 @@ export default async function WalletPage() {
           ) : null}
         </div>
       )}
-
-      {!frozen ? (
-        <section className="space-y-4 rounded-lg border p-4">
-          <WalletPinForm hasPin={hasPin} />
-          <div className="border-t pt-4">
-            <PasskeyManager passkeys={passkeys} />
-          </div>
-        </section>
-      ) : null}
 
       {/* Desktop only: on phones the bottom bar's Scan button already shows the
           user's receive QR (its "My code" tab), so this is redundant there.
