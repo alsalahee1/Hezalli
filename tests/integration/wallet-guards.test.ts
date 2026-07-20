@@ -22,6 +22,7 @@ import { settleSubOrder } from "@/lib/finance";
 import { confirmTopUp } from "@/lib/actions/wallet-topup";
 import { markPayoutPaid } from "@/lib/actions/payout";
 import { confirmPayment } from "@/lib/actions/payment";
+import { cancelOrder } from "@/lib/actions/order";
 import { cancelSubOrder } from "@/lib/actions/seller-order";
 import { transferEarningsToWallet } from "@/lib/actions/wallet-transfer";
 import {
@@ -469,6 +470,127 @@ describe("seller cancelSubOrder — a paid buyer is refunded, not left short", (
         .deleteMany({ where: { userId: fx.buyerId } })
         .catch(() => {});
       await fx.cleanup();
+    }
+  });
+});
+
+describe("buyer cancelOrder — restores redeemed points and frees the coupon", () => {
+  it("returns points and decrements coupon usage on cancel", async () => {
+    const fx = await makeFixture({ price: 100, commissionRate: 0.1 });
+    const uniq = Date.now().toString(36);
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: `CANCEL-${uniq}`,
+        scope: "PLATFORM",
+        discountType: "FIXED",
+        value: 5,
+        maxUses: 10,
+        usedCount: 1, // this order consumed one use
+      },
+    });
+    try {
+      // A wallet-paid, CONFIRMED order that redeemed 200 points and a coupon.
+      const order = await prisma.order.create({
+        data: {
+          buyer: { connect: { id: fx.buyerId } },
+          address: { connect: { id: fx.addressId } },
+          coupon: { connect: { id: coupon.id } },
+          status: "CONFIRMED",
+          paymentMethod: "HEZALLI_BALANCE",
+          itemsTotal: 100,
+          shippingTotal: 0,
+          discountTotal: 7, // $5 coupon + $2 of points
+          grandTotal: 93,
+          displayCurrency: "USD",
+          exchangeRate: 1,
+          displayTotal: 93,
+          subOrders: {
+            create: [
+              {
+                store: { connect: { id: fx.storeId } },
+                status: "CONFIRMED",
+                itemsTotal: 100,
+                shippingTotal: 0,
+                discountTotal: 7,
+                commissionRate: 0.1,
+                items: {
+                  create: [
+                    {
+                      variantId: fx.variantId,
+                      titleSnapshot: "Test Product",
+                      skuSnapshot: fx.variantSku,
+                      unitPrice: 100,
+                      quantity: 1,
+                      lineTotal: 100,
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          payment: {
+            create: {
+              method: "HEZALLI_BALANCE",
+              status: "CONFIRMED",
+              amountUsd: 93,
+              confirmedAt: new Date(),
+            },
+          },
+          redemptions: { create: { couponId: coupon.id, userId: fx.buyerId } },
+        },
+      });
+      // Record the checkout point redemption the way placeOrder does.
+      await prisma.loyaltyTransaction.create({
+        data: {
+          userId: fx.buyerId,
+          points: -200,
+          type: "REDEEM",
+          orderId: order.id,
+          note: "Checkout redemption",
+        },
+      });
+      const before = await prisma.user.findUnique({
+        where: { id: fx.buyerId },
+        select: { loyaltyPoints: true },
+      });
+
+      as(fx.buyerId);
+      const res = await cancelOrder(order.id);
+      expect(res.ok).toBe(true);
+
+      // Coupon usage freed and its redemption row removed.
+      const c = await prisma.coupon.findUnique({ where: { id: coupon.id } });
+      expect(c?.usedCount).toBe(0);
+      const redemptions = await prisma.couponRedemption.findMany({
+        where: { orderId: order.id },
+      });
+      expect(redemptions).toHaveLength(0);
+
+      // Points restored, with a matching REFUND ledger row.
+      const after = await prisma.user.findUnique({
+        where: { id: fx.buyerId },
+        select: { loyaltyPoints: true },
+      });
+      expect(after!.loyaltyPoints).toBe((before?.loyaltyPoints ?? 0) + 200);
+      const restore = await prisma.loyaltyTransaction.findFirst({
+        where: { orderId: order.id, type: "REFUND" },
+      });
+      expect(restore?.points).toBe(200);
+    } finally {
+      await prisma.walletEntry
+        .deleteMany({ where: { wallet: { userId: fx.buyerId } } })
+        .catch(() => {});
+      await prisma.wallet
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await prisma.loyaltyTransaction
+        .deleteMany({ where: { userId: fx.buyerId } })
+        .catch(() => {});
+      await prisma.couponRedemption
+        .deleteMany({ where: { couponId: coupon.id } })
+        .catch(() => {});
+      await fx.cleanup();
+      await prisma.coupon.delete({ where: { id: coupon.id } }).catch(() => {});
     }
   });
 });

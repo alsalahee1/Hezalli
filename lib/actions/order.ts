@@ -513,6 +513,7 @@ export async function cancelOrder(
       buyerId: true,
       paymentMethod: true,
       grandTotal: true,
+      couponId: true,
       payment: { select: { id: true, status: true } },
       subOrders: {
         select: {
@@ -587,6 +588,43 @@ export async function cancelOrder(
         data: { status: "REFUNDED" },
       });
     }
+
+    // Reverse a redeemed coupon: free a usage slot and drop the redemption row
+    // so the buyer isn't charged a use for an order that never happened.
+    if (order.couponId) {
+      await tx.coupon.updateMany({
+        where: { id: order.couponId, usedCount: { gt: 0 } },
+        data: { usedCount: { decrement: 1 } },
+      });
+      await tx.couponRedemption.deleteMany({
+        where: { couponId: order.couponId, orderId: order.id },
+      });
+    }
+
+    // Restore loyalty points redeemed at checkout (platform-funded, independent
+    // of how the cash portion was paid) so a cancel doesn't burn the buyer's
+    // points. The conditional order-flip guard above ensures this runs once.
+    const redeem = await tx.loyaltyTransaction.findFirst({
+      where: { orderId: order.id, type: "REDEEM" },
+      select: { points: true },
+    });
+    if (redeem && redeem.points < 0) {
+      const restore = -redeem.points;
+      await tx.loyaltyTransaction.create({
+        data: {
+          userId: order.buyerId,
+          points: restore,
+          type: "REFUND",
+          orderId: order.id,
+          note: "Points restored on cancel",
+        },
+      });
+      await tx.user.update({
+        where: { id: order.buyerId },
+        data: { loyaltyPoints: { increment: restore } },
+      });
+    }
+
     await tx.orderStatusHistory.create({
       data: {
         orderId: order.id,
