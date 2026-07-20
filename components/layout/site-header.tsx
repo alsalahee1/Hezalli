@@ -62,7 +62,10 @@ export function SiteHeader({
         <SearchBar className="relative hidden flex-1 md:block" />
 
         <div className="ms-auto flex items-center gap-1">
-          <LanguageSwitcher />
+          {/* Desktop only — hidden on mobile to keep the header uncluttered. */}
+          <div className="hidden md:flex">
+            <LanguageSwitcher />
+          </div>
           <Button
             variant="ghost"
             size="sm"
