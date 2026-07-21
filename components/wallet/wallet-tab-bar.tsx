@@ -25,13 +25,6 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function scrollToId(id: string) {
-  document.getElementById(id)?.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-}
-
 type Item = {
   key: string;
   icon: LucideIcon;
@@ -83,7 +76,7 @@ export function WalletTabBar({
   const history: Item = {
     key: "history",
     icon: ReceiptText,
-    onClick: () => scrollToId("wallet-history"),
+    href: "/account/wallet/history",
   };
   const exit: Item = { key: "exit", icon: Store, href: "/" };
 
