@@ -34,14 +34,17 @@ export function ShipOrderForm({
   shippingMethod = "STANDARD",
   preferredCarrierId = null,
   points = [],
+  pickupPointLabel = null,
 }: {
   subOrderId: string;
   status: string;
   carriers: CarrierOption[];
   shipment: ShipmentInfo;
-  shippingMethod?: "STANDARD" | "EXPRESS";
+  shippingMethod?: "STANDARD" | "EXPRESS" | "PICKUP";
   preferredCarrierId?: string | null;
   points?: PointOption[];
+  /** PICKUP orders: the buyer's chosen point (destination is forced). */
+  pickupPointLabel?: string | null;
 }) {
   const t = useTranslations("Shipment");
   const router = useRouter();
@@ -102,6 +105,11 @@ export function ShipOrderForm({
             {t("expressChosen")}
           </p>
         ) : null}
+        {shippingMethod === "PICKUP" ? (
+          <p className="rounded-md bg-sky-500/10 px-3 py-2 text-xs text-sky-700 dark:text-sky-400">
+            {t("pickupChosen", { point: pickupPointLabel ?? "—" })}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("carrier")}
@@ -118,7 +126,7 @@ export function ShipOrderForm({
             />
           </label>
         </div>
-        {platformCarrier && points.length > 0 ? (
+        {platformCarrier && shippingMethod !== "PICKUP" && points.length > 0 ? (
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("dropOffPoint")}
             <select

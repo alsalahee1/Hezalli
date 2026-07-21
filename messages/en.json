@@ -902,7 +902,13 @@
     "err_pointsAndCoupon": "You can’t use points and a coupon on the same order.",
     "hezalliBalance": "HezalliPay balance",
     "hezalliBalanceHint": "Pay instantly · Balance: {balance}",
-    "err_insufficientBalance": "Your wallet balance doesn’t cover this order."
+    "err_insufficientBalance": "Your wallet balance doesn’t cover this order.",
+    "pickupShipping": "Pick up from a Hezalli Point",
+    "pickupBadge": "Pickup",
+    "pickupPointLabel": "Where will you collect your order?",
+    "pickupPointPlaceholder": "Choose a Hezalli Point…",
+    "pickupPointHint": "We'll notify you when it's ready. Bring your delivery code (shown on the order page) and pay there if you chose cash.",
+    "err_pickupPointRequired": "Choose the Hezalli Point you'll collect from."
   },
   "Orders": {
     "title": "My orders",
@@ -983,7 +989,10 @@
     "redeliveryErr_forbidden": "Please sign in again.",
     "redeliveryErr_badDate": "Pick a valid day within the next 14 days.",
     "redeliveryErr_notFound": "Order not found.",
-    "redeliveryErr_badState": "This order can't be rescheduled right now."
+    "redeliveryErr_badState": "This order can't be rescheduled right now.",
+    "pickupReadyTitle": "Ready for pickup!",
+    "pickupPendingTitle": "You'll collect this order from:",
+    "pickupBringCode": "Bring the delivery code below — the counter scans it to hand you the parcel (and takes payment if you chose cash)."
   },
   "Invoice": {
     "invoice": "Invoice",
@@ -1268,7 +1277,8 @@
     "directToCourier": "Direct — courier collects from you",
     "dropOffHint": "Drop the parcel at the chosen point; staff scan it in and a courier collects it there.",
     "err_pointNotAllowed": "Point drop-off is only available with Hezalli Express.",
-    "err_invalidPoint": "That delivery point isn't available."
+    "err_invalidPoint": "That delivery point isn't available.",
+    "pickupChosen": "The buyer collects this order from {point} — ship it there via Hezalli Express."
   },
   "Reviews": {
     "title": "Ratings & reviews",
@@ -1576,7 +1586,9 @@
     "pointsEnabled": "Enable Hezalli Points",
     "pointsEnabledHint": "Let sellers drop Hezalli Express parcels at partner points.",
     "err_badPointFee": "Check the point handling fee.",
-    "err_badMaxAttempts": "Max attempts must be between 1 and 10."
+    "err_badMaxAttempts": "Max attempts must be between 1 and 10.",
+    "pickupFee": "Pickup fee (USD)",
+    "pickupFeeHint": "What buyers pay to collect from a Hezalli Point themselves. 0 = free."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -2228,7 +2240,18 @@
     "noEntries": "No ledger entries yet.",
     "ledger_HANDLING_FEE": "Handling fee",
     "ledger_PAYOUT": "Payout",
-    "ledger_ADJUSTMENT": "Adjustment"
+    "ledger_ADJUSTMENT": "Adjustment",
+    "modePickup": "Pickup",
+    "pickupHint": "Scan the BUYER's delivery QR (or type their code). It releases the parcel and shows any cash to collect.",
+    "pickupOk": "Handed to the buyer — delivered.",
+    "pickupOkCod": "Handed to the buyer — collect {amount} cash.",
+    "pickupBadge": "Pickup",
+    "err_pickupOnly": "This is a pickup parcel — the buyer collects it with their code (Pickup mode).",
+    "cashToRemit": "Cash to hand in",
+    "totalCodCollected": "COD collected",
+    "totalCodRemitted": "Cash handed in",
+    "ledger_COD_COLLECTED": "COD collected at counter",
+    "ledger_COD_REMITTANCE": "Cash handed in"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2310,6 +2333,13 @@
     "record": "Record",
     "err_forbidden": "Not allowed.",
     "err_badInput": "Check the amount.",
-    "err_notPoint": "Delivery point not found."
+    "err_notPoint": "Delivery point not found.",
+    "cashOnHand": "Counter cash on hand",
+    "totalCodCollected": "COD collected",
+    "totalCodRemitted": "Cash remitted",
+    "kind_remittance": "Cash remittance",
+    "remitAmount": "Cash handed in",
+    "type_COD_COLLECTED": "COD collected at counter",
+    "type_COD_REMITTANCE": "Cash remittance"
   }
 }

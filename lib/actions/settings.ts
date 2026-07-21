@@ -38,6 +38,7 @@ export type SettingsInput = {
   points_enabled: boolean;
   point_handling_fee: number;
   max_delivery_attempts: number;
+  pickup_fee: number;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -98,6 +99,9 @@ export async function savePlatformSettings(
   const pointFee = money2(input.point_handling_fee);
   if (!Number.isFinite(pointFee) || pointFee < 0)
     return { error: "badPointFee" };
+  const pickupFee = money2(input.pickup_fee);
+  if (!Number.isFinite(pickupFee) || pickupFee < 0)
+    return { error: "badPointFee" };
   const maxAttempts = int(input.max_delivery_attempts);
   if (!Number.isFinite(maxAttempts) || maxAttempts < 1 || maxAttempts > 10)
     return { error: "badMaxAttempts" };
@@ -138,6 +142,7 @@ export async function savePlatformSettings(
     points_enabled: Boolean(input.points_enabled),
     point_handling_fee: pointFee,
     max_delivery_attempts: maxAttempts,
+    pickup_fee: pickupFee,
   };
 
   await prisma.$transaction(

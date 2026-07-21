@@ -24,6 +24,8 @@ export type CheckoutAddress = {
   line2: string | null;
 };
 
+export type PickupPointOption = { id: string; label: string };
+
 export function CheckoutFlow({
   lines,
   addresses,
@@ -31,6 +33,7 @@ export function CheckoutFlow({
   codEnabled = true,
   points = 0,
   walletBalance = 0,
+  pickupPoints = [],
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
@@ -38,6 +41,7 @@ export function CheckoutFlow({
   codEnabled?: boolean;
   points?: number;
   walletBalance?: number;
+  pickupPoints?: PickupPointOption[];
 }) {
   const t = useTranslations("Checkout");
   const locale = useLocale();
@@ -51,6 +55,8 @@ export function CheckoutFlow({
   );
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The ONE Hezalli Point the buyer collects from (when any group is PICKUP).
+  const [pickupPointId, setPickupPointId] = useState("");
 
   const [couponInput, setCouponInput] = useState("");
   const [appliedCode, setAppliedCode] = useState("");
@@ -78,21 +84,31 @@ export function CheckoutFlow({
       const itemsTotal = g.lines.reduce((s, l) => s + l.price * l.quantity, 0);
       const o = opts[g.storeId];
       const express = o?.express ?? null;
+      const pickup = o?.pickup && pickupPoints.length > 0 ? o.pickup : null;
       const wanted = methodByStore[g.storeId] ?? "STANDARD";
       const selectedMethod: ShippingMethod =
-        wanted === "EXPRESS" && express ? "EXPRESS" : "STANDARD";
+        wanted === "EXPRESS" && express
+          ? "EXPRESS"
+          : wanted === "PICKUP" && pickup
+            ? "PICKUP"
+            : "STANDARD";
       const option =
-        selectedMethod === "EXPRESS" && express ? express : o?.standard;
+        selectedMethod === "EXPRESS" && express
+          ? express
+          : selectedMethod === "PICKUP" && pickup
+            ? pickup
+            : o?.standard;
       return {
         ...g,
         itemsTotal,
         standard: o?.standard ?? null,
         express,
+        pickup,
         selectedMethod,
         shipping: option?.fee ?? 0,
       };
     });
-  }, [lines, shippingByAddress, addressId, methodByStore]);
+  }, [lines, shippingByAddress, addressId, methodByStore, pickupPoints]);
 
   const itemsTotal = groups.reduce((s, g) => s + g.itemsTotal, 0);
   const shippingTotal = groups.reduce((s, g) => s + g.shipping, 0);
@@ -172,10 +188,16 @@ export function CheckoutFlow({
     setCouponErr(null);
   };
 
+  const anyPickup = groups.some((g) => g.selectedMethod === "PICKUP");
+
   const submit = async () => {
     setError(null);
     if (!addressId) {
       setError("addressRequired");
+      return;
+    }
+    if (anyPickup && !pickupPointId) {
+      setError("pickupPointRequired");
       return;
     }
     setPlacing(true);
@@ -191,6 +213,7 @@ export function CheckoutFlow({
       shippingMethods: Object.fromEntries(
         groups.map((g) => [g.storeId, g.selectedMethod]),
       ),
+      pickupPointId: anyPickup ? pickupPointId : undefined,
     });
     if (res.error) {
       setError(res.error);
@@ -287,79 +310,78 @@ export function CheckoutFlow({
                     <StoreIcon className="text-muted-foreground size-3.5" />
                     {g.storeName}
                   </span>
-                  {g.express ? (
+                  {g.express || g.pickup ? (
                     <div className="space-y-2">
-                      <label
-                        className={cn(
-                          "flex cursor-pointer items-center justify-between gap-3 rounded-md border p-2.5 text-sm",
-                          g.selectedMethod === "STANDARD"
-                            ? "border-primary bg-primary/5"
-                            : "hover:border-muted-foreground/40",
-                        )}
-                      >
-                        <span className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`ship-${g.storeId}`}
-                            className="size-4"
-                            checked={g.selectedMethod === "STANDARD"}
-                            onChange={() =>
-                              setMethodByStore((m) => ({
-                                ...m,
-                                [g.storeId]: "STANDARD",
-                              }))
-                            }
-                          />
-                          <span>
-                            <span className="font-medium">
-                              {t("standardShipping")}
+                      {(
+                        [
+                          {
+                            method: "STANDARD" as const,
+                            label: t("standardShipping"),
+                            opt: g.standard,
+                            badge: null,
+                          },
+                          ...(g.express
+                            ? [
+                                {
+                                  method: "EXPRESS" as const,
+                                  label: t("expressShipping"),
+                                  opt: g.express,
+                                  badge: t("expressBadge"),
+                                },
+                              ]
+                            : []),
+                          ...(g.pickup
+                            ? [
+                                {
+                                  method: "PICKUP" as const,
+                                  label: t("pickupShipping"),
+                                  opt: g.pickup,
+                                  badge: t("pickupBadge"),
+                                },
+                              ]
+                            : []),
+                        ] as const
+                      ).map((row) => (
+                        <label
+                          key={row.method}
+                          className={cn(
+                            "flex cursor-pointer items-center justify-between gap-3 rounded-md border p-2.5 text-sm",
+                            g.selectedMethod === row.method
+                              ? "border-primary bg-primary/5"
+                              : "hover:border-muted-foreground/40",
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name={`ship-${g.storeId}`}
+                              className="size-4"
+                              checked={g.selectedMethod === row.method}
+                              onChange={() =>
+                                setMethodByStore((m) => ({
+                                  ...m,
+                                  [g.storeId]: row.method,
+                                }))
+                              }
+                            />
+                            <span>
+                              <span className="font-medium">{row.label}</span>
+                              {row.opt ? (
+                                <span className="text-muted-foreground">
+                                  {" · "}
+                                  {eta(row.opt)}
+                                </span>
+                              ) : null}
+                              {row.badge ? (
+                                <span className="ms-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                                  {row.badge}
+                                </span>
+                              ) : null}
                             </span>
-                            {g.standard ? (
-                              <span className="text-muted-foreground">
-                                {" · "}
-                                {eta(g.standard)}
-                              </span>
-                            ) : null}
                           </span>
-                        </span>
-                        {feeLabel(g.standard?.fee ?? 0)}
-                      </label>
-                      <label
-                        className={cn(
-                          "flex cursor-pointer items-center justify-between gap-3 rounded-md border p-2.5 text-sm",
-                          g.selectedMethod === "EXPRESS"
-                            ? "border-primary bg-primary/5"
-                            : "hover:border-muted-foreground/40",
-                        )}
-                      >
-                        <span className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`ship-${g.storeId}`}
-                            className="size-4"
-                            checked={g.selectedMethod === "EXPRESS"}
-                            onChange={() =>
-                              setMethodByStore((m) => ({
-                                ...m,
-                                [g.storeId]: "EXPRESS",
-                              }))
-                            }
-                          />
-                          <span>
-                            <span className="font-medium">
-                              {t("expressShipping")}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {" · "}
-                              {eta(g.express)}
-                            </span>
-                            <span className="ms-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
-                              {t("expressBadge")}
-                            </span>
-                          </span>
-                        </span>
-                        {feeLabel(g.express.fee)}
-                      </label>
+                          {feeLabel(row.opt?.fee ?? 0)}
+                        </label>
+                      ))}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between rounded-md border p-2.5 text-sm">
@@ -380,6 +402,31 @@ export function CheckoutFlow({
                 </div>
               );
             })}
+
+            {/* One collection point for the whole order. */}
+            {anyPickup ? (
+              <div className="space-y-1.5 rounded-md border border-sky-500/40 bg-sky-500/5 p-3">
+                <label className="text-sm font-medium" htmlFor="pickup-point">
+                  {t("pickupPointLabel")}
+                </label>
+                <select
+                  id="pickup-point"
+                  value={pickupPointId}
+                  onChange={(e) => setPickupPointId(e.target.value)}
+                  className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+                >
+                  <option value="">{t("pickupPointPlaceholder")}</option>
+                  {pickupPoints.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-muted-foreground text-xs">
+                  {t("pickupPointHint")}
+                </p>
+              </div>
+            ) : null}
           </div>
         </section>
 

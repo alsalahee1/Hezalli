@@ -34,6 +34,7 @@ export default async function PointDashboardPage() {
         driver: { select: { name: true, email: true } },
         subOrder: {
           select: {
+            shippingMethod: true,
             store: { select: { name: true } },
             order: {
               select: {
@@ -111,6 +112,11 @@ export default async function PointDashboardPage() {
                       <span className="font-medium" dir="ltr">
                         {p.trackingNumber}
                       </span>
+                      {p.subOrder.shippingMethod === "PICKUP" ? (
+                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
+                          {t("pickupBadge")}
+                        </span>
+                      ) : null}
                       {p.status === "FAILED" ? (
                         <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-red-600">
                           {t("failedBadge")}

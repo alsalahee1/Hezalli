@@ -47,6 +47,15 @@ export default async function OrderDetailPage({
           shipment: {
             include: {
               carrier: true,
+              deliveryPoint: {
+                select: {
+                  name: true,
+                  addressLine: true,
+                  city: true,
+                  governorate: true,
+                  phone: true,
+                },
+              },
               events: { orderBy: { createdAt: "asc" } },
             },
           },
@@ -360,6 +369,27 @@ export default async function OrderDetailPage({
                     </p>
                   ) : null}
                 </div>
+                {/* Pickup orders: where to collect, once the parcel is there. */}
+                {s.shippingMethod === "PICKUP" && s.shipment.deliveryPoint ? (
+                  <div className="rounded-lg border border-sky-500/40 bg-sky-500/5 p-3 text-sm">
+                    <p className="font-medium">
+                      {s.shipment.status === "AT_POINT"
+                        ? t("pickupReadyTitle")
+                        : t("pickupPendingTitle")}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      {s.shipment.deliveryPoint.name} —{" "}
+                      {s.shipment.deliveryPoint.addressLine},{" "}
+                      {s.shipment.deliveryPoint.city},{" "}
+                      {s.shipment.deliveryPoint.governorate} ·{" "}
+                      <span dir="ltr">{s.shipment.deliveryPoint.phone}</span>
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("pickupBringCode")}
+                    </p>
+                  </div>
+                ) : null}
+
                 {/* Delivery QR: the courier can scan (or type) this code at the
                     doorstep as verified proof of delivery. Optional — delivery
                     also works without it. */}

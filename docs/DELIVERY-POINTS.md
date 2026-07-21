@@ -139,10 +139,62 @@ New platform settings (`lib/settings.ts` defaults):
 - [x] Integration tests: application approval, receive→handover→deliver (fee ledger), fail→return→reschedule→re-handover, RTS after max attempts, authz guards
 - [x] `docs/EXPRESS-DELIVERY.md` cross-link + this file kept current
 
-## 6. Out of scope (v1)
+## 6. v1.1 — Buyer pickup from point (PUDO)
+
+The buyer chooses **"collect from a Hezalli Point"** at checkout instead of
+home delivery: the seller drops the parcel at the buyer's chosen point, the
+buyer is notified when it's ready, shows their delivery QR/code at the
+counter, pays COD cash there, and the point marks it delivered. No courier is
+involved at all — failed doorstep attempts disappear for these orders, and
+the point still earns its handling fee. This pulls in **point cash handling**
+(the counter collects COD), so the point ledger is split into an earnings
+side and a cash side, mirroring the courier ledger.
+
+```
+Checkout: buyer picks PICKUP for a store group + ONE point for the order
+        ↓  SubOrder.shippingMethod = PICKUP, SubOrder.pickupPointId set
+Seller "Ship" (platform carrier) → route FORCED to the buyer's point
+        ↓  LABEL_CREATED → point receives [scan] → AT_POINT
+Buyer notified "ready for pickup — bring your code"   (no courier assigned)
+        ↓
+Point scans buyer's delivery QR (or types the code)   [pickup]
+        ↓  code must match → DELIVERED (codeVerified proof)
+COD cash → point ledger COD_COLLECTED · handling fee credited as usual
+Point remits cash to Hezalli → admin records COD_REMITTANCE
+```
+
+Rules: pickup is free for the buyer by default (`pickup_fee` setting);
+driver handover and doorstep-fail actions are blocked for PICKUP parcels;
+the pickup scan requires the buyer's code — it is the proof of handover.
+
+### Build checklist (v1.1)
+
+#### Phase A — Schema, settings & quotes
+- [x] `ShippingMethod.PICKUP`, `SubOrder.pickupPointId`, `PointLedgerType.COD_COLLECTED` / `COD_REMITTANCE` + migration
+- [x] Settings: `pickup_fee` (USD, default 0) editable in Admin → Settings
+- [x] `lib/shipping.ts`: `pickup` option (when points enabled + an active point exists) + `resolveShippingChoice` support
+
+#### Phase B — Order & custody flow
+- [x] `placeOrder`: accepts `PICKUP` per store + one `pickupPointId` per order (validated ACTIVE)
+- [x] `shipSubOrder`: PICKUP sub-orders route to the buyer's point automatically (platform carrier required)
+- [x] `point-core`: receive → "ready for pickup" notice, no courier auto-assign; handover/RTS scans reject PICKUP parcels
+- [x] `pointBuyerPickup(code)`: resolve by delivery code, deliver with `codeVerified` proof, COD cash → `COD_COLLECTED`
+- [x] `point-ledger`: summary split (earnings vs cash-on-hand); admin `remittance` kind on the payout action
+
+#### Phase C — UI
+- [x] Checkout: PICKUP option per store group + one point picker for the order
+- [x] Point app: "Pickup" scan mode (buyer QR/code) showing the COD amount to collect; dashboard pickup badge; ledger page cash tiles
+- [x] Admin points: cash-on-hand column + remittance recording; settings field for `pickup_fee`
+- [x] Buyer order page: "collect from {point}" card with address + code; seller ship form shows the forced destination
+
+#### Phase D — i18n, tests, docs
+- [x] en + ar keys for all of the above
+- [x] Integration tests: pickup quote/choice, forced routing, ready-notify without auto-assign, code-gated pickup + COD cash + fee ledgers, handover/fail blocked
+- [x] This file kept current
+
+## 7. Out of scope
 
 - Inter-point line haul (multi-hop routing between cities)
-- Point cash handling / COD remittance via points
+- Point COD on *courier-delivered* parcels (drivers still remit directly)
 - Automatic refunds on RTS
 - Capacity limits & auto-selection of the best point
-- Buyer pickup-from-point (PUDO as delivery destination)

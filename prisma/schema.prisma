@@ -345,12 +345,16 @@ model DeliveryPointApplication {
   @@index([status])
 }
 
-// Entries in a delivery point's earnings ledger (signed, like the courier
-// ledger, so a plain SUM is the balance Hezalli owes the point).
+// Entries in a delivery point's ledger, signed. Two independent sides:
+// EARNINGS (HANDLING_FEE + PAYOUT + ADJUSTMENT — what Hezalli owes the point)
+// and CASH (COD_COLLECTED + COD_REMITTANCE — buyer cash the point holds on
+// Hezalli's behalf from counter pickups). See lib/point-ledger.ts.
 enum PointLedgerType {
   HANDLING_FEE // + fee earned when a routed parcel is delivered
   PAYOUT // − Hezalli paid the point operator
-  ADJUSTMENT // ± manual correction by an admin
+  ADJUSTMENT // ± manual correction by an admin (earnings side)
+  COD_COLLECTED // + COD cash the counter took from a buyer at pickup
+  COD_REMITTANCE // − cash the point handed in to Hezalli
 }
 
 model DeliveryPointLedgerEntry {
@@ -764,6 +768,9 @@ model SubOrder {
   storeId        String
   status         SubOrderStatus @default(PENDING)
   shippingMethod ShippingMethod @default(STANDARD)
+  // PICKUP only: the Hezalli Point the buyer collects from (plain id — the
+  // shipment's deliveryPointId FK is set when the seller ships).
+  pickupPointId  String?
   itemsTotal     Decimal        @db.Decimal(12, 2)
   shippingTotal  Decimal        @db.Decimal(12, 2)
   discountTotal  Decimal        @default(0) @db.Decimal(12, 2)
@@ -1157,10 +1164,12 @@ model CourierLocation {
 
 // Delivery tier a buyer picks per store group at checkout. STANDARD is the
 // zone-based rate; EXPRESS is the faster, premium-priced option (our own
-// Hezalli Express carrier) — see lib/shipping.ts.
+// Hezalli Express carrier); PICKUP means the buyer collects from a Hezalli
+// Point themselves (docs/DELIVERY-POINTS.md §6) — see lib/shipping.ts.
 enum ShippingMethod {
   STANDARD
   EXPRESS
+  PICKUP
 }
 
 model ShippingZone {

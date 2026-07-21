@@ -59,6 +59,9 @@ export default async function AdminPointDetailPage({
     { key: "balanceOwed", value: summary.balance, accent: true },
     { key: "totalFees", value: summary.totalFees },
     { key: "totalPaidOut", value: summary.totalPaidOut },
+    { key: "cashOnHand", value: summary.cashOnHand, accent: true },
+    { key: "totalCodCollected", value: summary.totalCodCollected },
+    { key: "totalCodRemitted", value: summary.totalCodRemitted },
   ];
 
   return (

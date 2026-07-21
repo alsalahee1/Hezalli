@@ -39,6 +39,9 @@ export type PlatformSettings = {
   points_enabled: boolean;
   point_handling_fee: number;
   max_delivery_attempts: number;
+  // What the buyer pays to collect from a Hezalli Point themselves (PUDO).
+  // Free by default — pickup removes the whole last-mile cost.
+  pickup_fee: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -88,6 +91,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   points_enabled: true,
   point_handling_fee: 0.5,
   max_delivery_attempts: 3,
+  pickup_fee: 0,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,
