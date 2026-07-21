@@ -15,6 +15,7 @@ import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { cn } from "@/lib/utils";
 import { Forbidden } from "@/components/auth/forbidden";
 import { DispatchAssign } from "@/components/admin/dispatch-assign";
+import { DispatchBulkAssign } from "@/components/admin/dispatch-bulk-assign";
 
 // Ops dispatch board: every in-flight Hezalli Express parcel, its assigned
 // courier, and its delivery-SLA state. Overdue parcels sort first so ops chase
@@ -90,6 +91,19 @@ export default async function DispatchPage() {
   const overdue = rows.filter((s) => s.sla === "overdue").length;
   const dueSoon = rows.filter((s) => s.sla === "due_soon").length;
 
+  // Unassigned parcels grouped by destination governorate, for bulk assignment.
+  const bulkGroups = Object.entries(
+    rows
+      .filter((s) => !s.driverId)
+      .reduce<Record<string, string[]>>((acc, s) => {
+        const gov = s.subOrder.order.address.governorate;
+        (acc[gov] ??= []).push(s.id);
+        return acc;
+      }, {}),
+  )
+    .map(([governorate, ids]) => ({ governorate, ids }))
+    .sort((a, b) => b.ids.length - a.ids.length);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -118,7 +132,9 @@ export default async function DispatchPage() {
         <p className="rounded-lg border border-dashed p-4 text-sm text-amber-600">
           {t("noCouriers")}
         </p>
-      ) : null}
+      ) : (
+        <DispatchBulkAssign groups={bulkGroups} couriers={courierOptions} />
+      )}
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed py-14 text-center text-sm">

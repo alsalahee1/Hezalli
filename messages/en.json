@@ -2115,7 +2115,12 @@
     "overdueCount": "{count} overdue",
     "dueSoonCount": "{count} due soon",
     "dueByLabel": "Due by",
-    "attempts": "{count, plural, one {# attempt} other {# attempts}}"
+    "attempts": "{count, plural, one {# attempt} other {# attempts}}",
+    "bulkTitle": "Bulk assign",
+    "bulkGovernorate": "Governorate",
+    "bulkPickDriver": "Pick a driver…",
+    "bulkAssign": "Assign area",
+    "bulkAssigned": "{count, plural, one {# parcel assigned} other {# parcels assigned}}"
   },
   "Drive": {
     "title": "Deliver with Hezalli",

@@ -101,6 +101,64 @@ export async function assignCourier(
   return { ok: true };
 }
 
+// Ops assigns several unassigned parcels to one courier in a single action
+// (e.g. "give this driver everything in Sana'a"). Race-guarded: only parcels
+// that are still platform-managed AND unassigned are claimed, so it never
+// steals a parcel another dispatcher just assigned. Notifies + pushes once.
+export async function assignManyCouriers(
+  shipmentIds: string[],
+  driverId: string,
+): Promise<Result & { count?: number }> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+  const id = driverId.trim();
+  if (!id) return { error: "invalidDriver" };
+  const ids = Array.from(new Set(shipmentIds.filter(Boolean)));
+  if (ids.length === 0) return { error: "noParcels" };
+
+  const driver = await prisma.user.findUnique({
+    where: { id },
+    select: { roles: true, isSuspended: true, deletedAt: true },
+  });
+  if (
+    !driver ||
+    driver.isSuspended ||
+    driver.deletedAt ||
+    !driver.roles.includes("COURIER")
+  ) {
+    return { error: "invalidDriver" };
+  }
+
+  const claimed = await prisma.shipment.updateMany({
+    where: { id: { in: ids }, driverId: null, platformManaged: true },
+    data: { driverId: id },
+  });
+  const count = claimed.count;
+
+  if (count > 0) {
+    await prisma.notification.create({
+      data: {
+        userId: id,
+        type: "SHIPMENT",
+        title: "New deliveries assigned",
+        body: `${count} Hezalli Express deliveries were assigned to you.`,
+        data: { link: "/driver" },
+      },
+    });
+    await sendPushToUser(id, {
+      title: "New deliveries assigned",
+      body: `${count} Hezalli Express deliveries were assigned to you.`,
+      url: "/driver",
+      tag: "assignment",
+    }).catch(() => {});
+  }
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/dispatch`);
+  revalidatePath(`/${locale}/driver`);
+  return { ok: true, count };
+}
+
 export type CourierAction = "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED";
 
 // Proof captured on the "Delivered" tap (all optional).

@@ -2115,7 +2115,12 @@
     "overdueCount": "{count} متأخّر",
     "dueSoonCount": "{count} قريب الاستحقاق",
     "dueByLabel": "الاستحقاق",
-    "attempts": "{count, plural, zero {# محاولات} one {محاولة واحدة} two {محاولتان} few {# محاولات} many {# محاولة} other {# محاولة}}"
+    "attempts": "{count, plural, zero {# محاولات} one {محاولة واحدة} two {محاولتان} few {# محاولات} many {# محاولة} other {# محاولة}}",
+    "bulkTitle": "إسناد جماعي",
+    "bulkGovernorate": "المحافظة",
+    "bulkPickDriver": "اختر سائقاً…",
+    "bulkAssign": "إسناد المنطقة",
+    "bulkAssigned": "{count, plural, zero {تم إسناد # طرد} one {تم إسناد طرد واحد} two {تم إسناد طردين} few {تم إسناد # طرود} many {تم إسناد # طرداً} other {تم إسناد # طرد}}"
   },
   "Drive": {
     "title": "وصّل مع هزلي",
