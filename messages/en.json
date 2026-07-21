@@ -188,7 +188,10 @@
     "notSeller": "You don't have a store yet",
     "shippingTitle": "Shipping",
     "shippingDesc": "Set delivery fees per zone for your store.",
-    "shippingManage": "Manage shipping rates"
+    "shippingManage": "Manage shipping rates",
+    "notifTitle": "Notifications",
+    "notifDesc": "Choose how you're alerted about new orders and payments.",
+    "notifManage": "Manage notifications"
   },
   "SellerProducts": {
     "title": "Products",

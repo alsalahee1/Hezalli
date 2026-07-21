@@ -188,7 +188,10 @@
     "notSeller": "ليس لديك متجر بعد",
     "shippingTitle": "الشحن",
     "shippingDesc": "حدّد رسوم التوصيل لكل منطقة لمتجرك.",
-    "shippingManage": "إدارة أسعار الشحن"
+    "shippingManage": "إدارة أسعار الشحن",
+    "notifTitle": "الإشعارات",
+    "notifDesc": "اختر كيف تريد تنبيهك عند وصول طلبات ومدفوعات جديدة.",
+    "notifManage": "إدارة الإشعارات"
   },
   "SellerProducts": {
     "title": "المنتجات",
