@@ -1,12 +1,10 @@
 import {
   ArrowRight,
   BadgeCheck,
-  FileClock,
   ShieldCheck,
   ShoppingBag,
   Store,
   Truck,
-  User,
   Users,
 } from "lucide-react";
 
@@ -24,33 +22,16 @@ const ADMIN = {
   desc: "Full access",
 };
 
+// One account per role beside Admin: seller, point center, courier, buyer.
 const ROLES = [
   {
     email: "seller1@hezalli.com",
     label: "Seller",
-    desc: "Verified store",
+    desc: "Store & products",
     icon: BadgeCheck,
     tile: "bg-blue-500",
     title: "text-blue-700 dark:text-blue-400",
     card: "border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10",
-  },
-  {
-    email: "seller2@hezalli.com",
-    label: "Seller · KYC",
-    desc: "Pending verification",
-    icon: FileClock,
-    tile: "bg-orange-500",
-    title: "text-orange-700 dark:text-orange-400",
-    card: "border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10",
-  },
-  {
-    email: "driver@hezalli.com",
-    label: "Courier",
-    desc: "Driver app",
-    icon: Truck,
-    tile: "bg-violet-500",
-    title: "text-violet-700 dark:text-violet-400",
-    card: "border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10",
   },
   {
     email: "point@hezalli.com",
@@ -60,6 +41,15 @@ const ROLES = [
     tile: "bg-rose-500",
     title: "text-rose-700 dark:text-rose-400",
     card: "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10",
+  },
+  {
+    email: "driver@hezalli.com",
+    label: "Courier",
+    desc: "Driver app",
+    icon: Truck,
+    tile: "bg-violet-500",
+    title: "text-violet-700 dark:text-violet-400",
+    card: "border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10",
   },
   {
     email: "buyer1@example.com",
@@ -72,19 +62,10 @@ const ROLES = [
   },
 ];
 
-const EXTRA_BUYERS = [
-  { email: "buyer2@example.com", label: "Buyer 2", desc: "Aden" },
-  { email: "buyer3@example.com", label: "Buyer 3", desc: "Taiz" },
-];
-
 export async function DevQuickLogin() {
   if (process.env.DEV_LOGIN_ENABLED !== "true") return null;
 
-  const emails = [
-    ADMIN.email,
-    ...ROLES.map((r) => r.email),
-    ...EXTRA_BUYERS.map((b) => b.email),
-  ];
+  const emails = [ADMIN.email, ...ROLES.map((r) => r.email)];
   const found = await prisma.user.findMany({
     where: { email: { in: emails } },
     select: { email: true },
@@ -93,7 +74,6 @@ export async function DevQuickLogin() {
   if (have.size === 0) return null;
 
   const roles = ROLES.filter((r) => have.has(r.email));
-  const buyers = EXTRA_BUYERS.filter((b) => have.has(b.email));
 
   return (
     <div className="space-y-2.5">
@@ -148,30 +128,6 @@ export async function DevQuickLogin() {
                   </span>
                   <span className="text-muted-foreground block text-xs">
                     {r.desc}
-                  </span>
-                </span>
-              </button>
-            </form>
-          ))}
-        </div>
-      ) : null}
-
-      {buyers.length > 0 ? (
-        <div className="grid grid-cols-2 gap-2">
-          {buyers.map((b) => (
-            <form key={b.email} action={devSignIn} className="h-full">
-              <input type="hidden" name="email" value={b.email} />
-              <button
-                type="submit"
-                className="bg-muted/40 hover:bg-muted flex h-full w-full items-center gap-2.5 rounded-xl border p-2.5 text-start transition-colors"
-              >
-                <span className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
-                  <User className="size-4" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">{b.label}</span>
-                  <span className="text-muted-foreground block truncate text-xs">
-                    {b.desc}
                   </span>
                 </span>
               </button>

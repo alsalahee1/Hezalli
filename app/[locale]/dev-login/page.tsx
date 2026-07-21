@@ -17,17 +17,7 @@ const DEMO = [
   {
     email: "seller1@hezalli.com",
     label: "Seller",
-    desc: "Verified store (Aden Electronics)",
-  },
-  {
-    email: "seller2@hezalli.com",
-    label: "Seller",
-    desc: "Store with pending KYC",
-  },
-  {
-    email: "driver@hezalli.com",
-    label: "Courier",
-    desc: "Hezalli Express driver app (/driver)",
+    desc: "Store & products (Sana'a Electronics)",
   },
   {
     email: "point@hezalli.com",
@@ -35,19 +25,14 @@ const DEMO = [
     desc: "Hezalli Point parcel-hub dashboard (/point)",
   },
   {
+    email: "driver@hezalli.com",
+    label: "Courier",
+    desc: "Hezalli Express driver app (/driver)",
+  },
+  {
     email: "buyer1@example.com",
     label: "Buyer",
-    desc: "Shopper — browse, checkout, track (Sana'a)",
-  },
-  {
-    email: "buyer2@example.com",
-    label: "Buyer",
-    desc: "Second shopper (Aden)",
-  },
-  {
-    email: "buyer3@example.com",
-    label: "Buyer",
-    desc: "Third shopper (Taiz)",
+    desc: "Shopper — browse, checkout, track",
   },
 ];
 
