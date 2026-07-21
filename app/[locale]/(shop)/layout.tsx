@@ -7,6 +7,7 @@ import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
+import { getTheme } from "@/lib/theme";
 import type { Locale } from "@/i18n/routing";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 import { CartProvider } from "@/components/cart/cart-provider";
@@ -66,6 +67,7 @@ export default async function ShopLayout({
 
   const categories = toNavCategories(catRows, locale as Locale);
   const announcement = await getAnnouncement();
+  const theme = await getTheme();
 
   // Maintenance mode: the storefront is closed to everyone except admins, who
   // keep full access so they can verify the site before reopening it.
@@ -104,6 +106,7 @@ export default async function ShopLayout({
           isFleetOwner={user?.ownedFleet?.isActive ?? false}
           walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
           categories={categories}
+          theme={theme}
         />
         <div className="flex-1">{children}</div>
         <SiteFooter />

@@ -5,6 +5,8 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 
 import { routing } from "@/i18n/routing";
+import { cn } from "@/lib/utils";
+import { getTheme } from "@/lib/theme";
 
 import "../globals.css";
 
@@ -50,12 +52,13 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const dir = locale === "ar" ? "rtl" : "ltr";
+  const theme = await getTheme();
 
   return (
     <html
       lang={locale}
       dir={dir}
-      className={cairo.variable}
+      className={cn(cairo.variable, theme === "yemeni" && "theme-yemeni")}
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
