@@ -2123,7 +2123,8 @@
     "bulkGovernorate": "Governorate",
     "bulkPickDriver": "Pick a driver…",
     "bulkAssign": "Assign area",
-    "bulkAssigned": "{count, plural, one {# parcel assigned} other {# parcels assigned}}"
+    "bulkAssigned": "{count, plural, one {# parcel assigned} other {# parcels assigned}}",
+    "performance": "Performance"
   },
   "Drive": {
     "title": "Deliver with Hezalli",
@@ -2484,5 +2485,26 @@
     "empty": "No points yet — the network is growing. Check back soon.",
     "becomeHint": "Run a shop with spare shelf space?",
     "becomeLink": "Become a Hezalli Point"
+  },
+  "DeliveryAnalytics": {
+    "title": "Delivery performance",
+    "desc": "Fleet health at a glance.",
+    "backToDispatch": "Back to dispatch",
+    "win7": "7 days",
+    "win30": "30 days",
+    "winAll": "All time",
+    "delivered": "Delivered",
+    "onTime": "On-time",
+    "avgTime": "Avg delivery time",
+    "returned": "Returned",
+    "failedAttempts": "Failed attempts",
+    "avgAttempts": "Avg attempts / drop",
+    "codOutstanding": "COD outstanding",
+    "leaderboard": "Courier leaderboard",
+    "noCouriers": "No couriers yet.",
+    "colDriver": "Driver",
+    "colDeliveries": "Deliveries",
+    "colRating": "Rating",
+    "colCash": "Cash on hand"
   }
 }
