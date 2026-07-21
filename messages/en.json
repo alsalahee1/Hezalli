@@ -1745,7 +1745,19 @@
     "commission": "Commission earned",
     "discounts": "Discounts",
     "refunds": "Refunds",
-    "payouts": "Payouts paid"
+    "payouts": "Payouts paid",
+    "networkTitle": "Delivery network",
+    "netShipped": "Parcels shipped",
+    "netDelivered": "Delivered",
+    "netFailedAttempts": "Failed attempts",
+    "netRts": "Returned to seller",
+    "netSuccessRate": "Success rate",
+    "netAvgHours": "Avg ship → deliver",
+    "netPickupShare": "Pickup share",
+    "netPoint": "Hub",
+    "netPointDelivered": "Delivered",
+    "netPointFees": "Fees earned",
+    "netNoPoints": "No hub activity in this range."
   },
   "AdminUsers": {
     "title": "Users",

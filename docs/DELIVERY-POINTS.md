@@ -344,11 +344,11 @@ ops can see how the network performs, not just what it owes:
 
 ### Build checklist (v1.7)
 
-- [ ] `lib/point-stats.ts`: `networkSummary(from, to)` — aggregates over shipments, attempts, events, and the point ledger
-- [ ] Reports page: Delivery network section reusing the existing date range
-- [ ] i18n (en + ar)
-- [ ] Integration test: a delivered + an RTS parcel in range produce the expected headline numbers and per-hub rows
-- [ ] This file kept current
+- [x] `lib/point-stats.ts`: `networkSummary(from, to)` — aggregates over shipments, attempts, events, and the point ledger
+- [x] Reports page: Delivery network section reusing the existing date range
+- [x] i18n (en + ar)
+- [x] Integration test: a delivered + an RTS parcel in range produce the expected headline numbers and per-hub rows
+- [x] This file kept current
 
 ## 19. Out of scope
 

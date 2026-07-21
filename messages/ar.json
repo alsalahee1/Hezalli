@@ -1745,7 +1745,19 @@
     "commission": "العمولة المكتسبة",
     "discounts": "الخصومات",
     "refunds": "المبالغ المستردة",
-    "payouts": "السحوبات المدفوعة"
+    "payouts": "السحوبات المدفوعة",
+    "networkTitle": "شبكة التوصيل",
+    "netShipped": "طرود شُحنت",
+    "netDelivered": "سُلِّمت",
+    "netFailedAttempts": "محاولات فاشلة",
+    "netRts": "أُرجعت للبائع",
+    "netSuccessRate": "نسبة النجاح",
+    "netAvgHours": "متوسط الشحن → التسليم",
+    "netPickupShare": "حصة الاستلام الذاتي",
+    "netPoint": "النقطة",
+    "netPointDelivered": "سُلِّمت",
+    "netPointFees": "الرسوم المكتسبة",
+    "netNoPoints": "لا نشاط للنقاط في هذه الفترة."
   },
   "AdminUsers": {
     "title": "المستخدمون",
