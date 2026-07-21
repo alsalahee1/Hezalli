@@ -11,7 +11,8 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { WalletPinField } from "@/components/wallet/wallet-pin-field";
+import { WalletAuthField } from "@/components/wallet/wallet-auth-field";
+import type { WalletAuth } from "@/lib/wallet-step-auth";
 
 type Kind = "BILL" | "AIRTIME";
 export type BillerOption = { slug: string; kind: Kind; name: string };
@@ -20,10 +21,12 @@ export function BillPayForm({
   billers,
   balance,
   hasPin,
+  hasPasskey,
 }: {
   billers: BillerOption[];
   balance: number;
   hasPin: boolean;
+  hasPasskey: boolean;
 }) {
   const t = useTranslations("Wallet");
   const locale = useLocale();
@@ -33,7 +36,6 @@ export function BillPayForm({
   const [biller, setBiller] = useState("");
   const [account, setAccount] = useState("");
   const [amount, setAmount] = useState("");
-  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -49,7 +51,7 @@ export function BillPayForm({
     setErr(null);
   };
 
-  const submit = () =>
+  const run = (auth: WalletAuth) =>
     start(async () => {
       setErr(null);
       const res = await payBill({
@@ -57,7 +59,7 @@ export function BillPayForm({
         biller: biller || options[0]?.slug || "",
         account,
         amountUsd: Number(amount),
-        pin,
+        ...auth,
       });
       if (res.error) setErr(res.error);
       else {
@@ -65,7 +67,6 @@ export function BillPayForm({
         setAccount("");
         setAmount("");
         setBiller("");
-        setPin("");
         router.refresh();
       }
     });
@@ -154,25 +155,15 @@ export function BillPayForm({
             </div>
           ) : null}
 
-          <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
-
-          {err ? (
-            <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
-          ) : null}
-
-          <div className="flex gap-2">
-            <Button
-              disabled={
-                pending || !account || !amount || !hasPin || pin.length < 4
-              }
-              onClick={submit}
-            >
-              {pending ? t("submitting") : t("billsSubmit")}
-            </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              {t("cancel")}
-            </Button>
-          </div>
+          <WalletAuthField
+            hasPin={hasPin}
+            hasPasskey={hasPasskey}
+            disabled={!account || !amount}
+            pending={pending}
+            error={err}
+            submitLabel={t("billsSubmit")}
+            onAuthorize={run}
+          />
         </div>
       </Modal>
     </>

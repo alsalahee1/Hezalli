@@ -10,6 +10,7 @@ import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -36,6 +37,9 @@ export type PlaceOrderInput = {
   // default to STANDARD. The server re-quotes the fee — the client choice only
   // selects which option applies.
   shippingMethods?: Record<string, ShippingMethod>;
+  // The ONE Hezalli Point the buyer collects from, required when any store
+  // group chose PICKUP (docs/DELIVERY-POINTS.md §6).
+  pickupPointId?: string;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
 
@@ -142,12 +146,29 @@ export async function placeOrder(
   );
   const wantMethods = input.shippingMethods ?? {};
   const groupsBase = rawGroups.map((g) => {
+    const want = wantMethods[g.storeId];
     const choice = resolveShippingChoice(
       shipQuote.get(g.storeId),
-      wantMethods[g.storeId] === "EXPRESS" ? "EXPRESS" : "STANDARD",
+      want === "EXPRESS"
+        ? "EXPRESS"
+        : want === "PICKUP"
+          ? "PICKUP"
+          : "STANDARD",
     );
     return { ...g, shipping: choice.fee, shippingMethod: choice.method };
   });
+
+  // Any group collected from a point needs the buyer's chosen point — one per
+  // order, validated ACTIVE server-side.
+  let pickupPointId: string | null = null;
+  if (groupsBase.some((g) => g.shippingMethod === "PICKUP")) {
+    const wanted = input.pickupPointId?.trim();
+    if (!wanted) return { error: "pickupPointRequired" };
+    const routable = await checkPointRoutable(wanted);
+    if (routable === "full") return { error: "pointFull" };
+    if (routable !== "ok") return { error: "pickupPointRequired" };
+    pickupPointId = wanted;
+  }
 
   // Optional voucher: validate + compute per-store discount.
   let couponId: string | null = null;
@@ -308,6 +329,8 @@ export async function placeOrder(
               store: { connect: { id: g.storeId } },
               status: orderStatus,
               shippingMethod: g.shippingMethod,
+              pickupPointId:
+                g.shippingMethod === "PICKUP" ? pickupPointId : null,
               itemsTotal: g.itemsTotal,
               shippingTotal: g.shipping,
               discountTotal: g.discount,

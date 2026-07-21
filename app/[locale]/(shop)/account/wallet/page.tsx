@@ -15,7 +15,6 @@ import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
 import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 import { BillPayForm } from "@/components/wallet/bill-pay-form";
-import { WalletPinForm } from "@/components/wallet/wallet-pin-form";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
 import { BILLERS, billerName } from "@/lib/wallet-billers";
@@ -74,6 +73,7 @@ export default async function WalletPage() {
     billsEnabled,
     stats,
     hasPin,
+    passkeys,
     profile,
     pendingTopUps,
     pendingWithdrawals,
@@ -85,6 +85,11 @@ export default async function WalletPage() {
     getSetting("wallet_bills_enabled"),
     getWalletStats(userId),
     walletHasPin(userId),
+    prisma.walletCredential.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, label: true },
+    }),
     prisma.sellerProfile.findUnique({
       where: { userId },
       select: {
@@ -120,6 +125,7 @@ export default async function WalletPage() {
   // balance (Step 19.4 — regulation-gated).
   const payoutMethod = profile?.payoutMethods[0];
   const verified = profile?.kycStatus === "VERIFIED";
+  const hasPasskey = passkeys.length > 0;
   const canWithdraw =
     !frozen && verified && !!payoutMethod && balance >= minPayout;
   // P2P send: available to any signed-in user with funds once an admin has
@@ -186,10 +192,15 @@ export default async function WalletPage() {
                 payoutMethod.details,
               )}
               hasPin={hasPin}
+              hasPasskey={hasPasskey}
             />
           ) : null}
           {canSend ? (
-            <WalletSendForm balance={balance} hasPin={hasPin} />
+            <WalletSendForm
+              balance={balance}
+              hasPin={hasPin}
+              hasPasskey={hasPasskey}
+            />
           ) : null}
           {p2pEnabled ? <WalletRequestForm /> : null}
           {canPayBills ? (
@@ -197,16 +208,11 @@ export default async function WalletPage() {
               billers={billerOptions}
               balance={balance}
               hasPin={hasPin}
+              hasPasskey={hasPasskey}
             />
           ) : null}
         </div>
       )}
-
-      {!frozen ? (
-        <section className="rounded-lg border p-4">
-          <WalletPinForm hasPin={hasPin} />
-        </section>
-      ) : null}
 
       {/* Desktop only: on phones the bottom bar's Scan button already shows the
           user's receive QR (its "My code" tab), so this is redundant there.

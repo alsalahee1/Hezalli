@@ -22,6 +22,7 @@ enum Role {
   SELLER
   ADMIN
   COURIER // Hezalli Express delivery driver
+  DELIVERY_POINT // partner-operated parcel hub operator (Hezalli Point)
 }
 
 enum Currency {
@@ -119,10 +120,27 @@ enum ShipmentStatus {
   LABEL_CREATED
   PICKED_UP
   IN_TRANSIT
+  AT_POINT // received & held at a Hezalli Point (custody: point)
   OUT_FOR_DELIVERY
   DELIVERED
   FAILED
+  RETURNED_TO_POINT // failed parcel scanned back into the point
   RETURNED
+}
+
+// Outcome of a single doorstep delivery attempt by a courier. A parcel can have
+// several FAILED attempts before a DELIVERED one — see DeliveryAttempt.
+enum DeliveryOutcome {
+  DELIVERED
+  FAILED
+}
+
+// Entries in a courier's cash + earnings ledger (see CourierLedgerEntry).
+enum CourierLedgerType {
+  COD_COLLECTED // + COD cash the driver took from the buyer on delivery
+  REMITTANCE // − cash the driver handed in to the office
+  EARNING // + the driver's delivery fee (owed by Hezalli to the driver)
+  ADJUSTMENT // ± manual correction by an admin
 }
 
 enum ReturnStatus {
@@ -224,11 +242,140 @@ model User {
   referrals      User[]   @relation("Referrals")
   loyaltyTxns    LoyaltyTransaction[]
   wallet         Wallet?
+  walletCredentials WalletCredential[]
+  walletWebauthnChallenge WalletWebauthnChallenge?
   courierShipments Shipment[] @relation("CourierShipments")
   courierLocation  CourierLocation?
   courierApplication CourierApplication?
+  courierLedger    CourierLedgerEntry[] @relation("CourierLedger")
+  pushSubscriptions PushSubscription[]
+  deliveryPoint    DeliveryPoint? @relation("PointOwner")
+  deliveryPointApplication DeliveryPointApplication?
 
   @@index([referredById])
+}
+
+// A browser/device Web Push subscription. One user may have several (phone,
+// desktop). Used to ping couriers when a parcel is assigned even if the driver
+// app is closed. Requires VAPID keys in the server env (see lib/push.ts) — the
+// whole feature no-ops when they're unset.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A courier's cash-and-earnings ledger. COD_COLLECTED (+) is buyer cash the
+// driver is holding; REMITTANCE (−) is cash handed to the office; the running
+// sum of those two is the driver's CASH ON HAND. EARNING (+) is the delivery
+// fee Hezalli owes the driver. Amounts are signed so a plain SUM reconciles.
+model CourierLedgerEntry {
+  id          String            @id @default(cuid())
+  courierId   String
+  type        CourierLedgerType
+  amountUsd   Decimal           @db.Decimal(12, 2) // signed
+  subOrderId  String?
+  shipmentId  String?
+  note        String?
+  createdById String? // admin who recorded a remittance / adjustment
+  createdAt   DateTime          @default(now())
+  courier     User              @relation("CourierLedger", fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId])
+  @@index([subOrderId])
+}
+
+enum DeliveryPointStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+// A partner-operated parcel hub ("Hezalli Point"): sellers drop parcels here,
+// couriers collect them via QR handover, failed deliveries flow back through
+// it. The operator is a partner (not staff) and earns a per-parcel handling
+// fee — see DeliveryPointLedgerEntry and docs/DELIVERY-POINTS.md.
+model DeliveryPoint {
+  id          String              @id @default(cuid())
+  ownerId     String              @unique
+  name        String
+  phone       String
+  governorate String
+  city        String
+  addressLine String
+  lat         Float?
+  lng         Float?
+  // Max parcels held/inbound at once (null = unlimited). Gates NEW routing
+  // only — counter scans always accept announced parcels. See §8 of the docs.
+  capacity    Int?
+  status      DeliveryPointStatus @default(ACTIVE)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  owner       User                @relation("PointOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  shipments   Shipment[]
+  ledger      DeliveryPointLedgerEntry[]
+
+  @@index([governorate, status])
+}
+
+// One "become a delivery point" application per user, mirroring
+// CourierApplication: created PENDING, admin reviews; approval grants the
+// DELIVERY_POINT role and creates the DeliveryPoint. Rejected applicants may
+// resubmit — the row is reused and flipped back to PENDING.
+model DeliveryPointApplication {
+  id           String                   @id @default(cuid())
+  userId       String                   @unique
+  pointName    String
+  fullName     String
+  phone        String
+  governorate  String
+  city         String
+  addressLine  String
+  lat          Float?
+  lng          Float?
+  notes        String?
+  status       CourierApplicationStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  user         User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+// Entries in a delivery point's ledger, signed. Two independent sides:
+// EARNINGS (HANDLING_FEE + PAYOUT + ADJUSTMENT — what Hezalli owes the point)
+// and CASH (COD_COLLECTED + COD_REMITTANCE — buyer cash the point holds on
+// Hezalli's behalf from counter pickups). See lib/point-ledger.ts.
+enum PointLedgerType {
+  HANDLING_FEE // + fee earned when a routed parcel is delivered
+  PAYOUT // − Hezalli paid the point operator
+  ADJUSTMENT // ± manual correction by an admin (earnings side)
+  COD_COLLECTED // + COD cash the counter took from a buyer at pickup
+  COD_REMITTANCE // − cash the point handed in to Hezalli
+}
+
+model DeliveryPointLedgerEntry {
+  id          String          @id @default(cuid())
+  pointId     String
+  type        PointLedgerType
+  amountUsd   Decimal         @db.Decimal(12, 2) // signed
+  subOrderId  String?
+  shipmentId  String?
+  note        String?
+  createdById String? // admin who recorded a payout / adjustment
+  createdAt   DateTime        @default(now())
+  point       DeliveryPoint   @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@index([pointId])
+  @@index([subOrderId])
 }
 
 // One "become a driver" application per user. Created PENDING by the applicant;
@@ -629,6 +776,9 @@ model SubOrder {
   storeId        String
   status         SubOrderStatus @default(PENDING)
   shippingMethod ShippingMethod @default(STANDARD)
+  // PICKUP only: the Hezalli Point the buyer collects from (plain id — the
+  // shipment's deliveryPointId FK is set when the seller ships).
+  pickupPointId  String?
   itemsTotal     Decimal        @db.Decimal(12, 2)
   shippingTotal  Decimal        @db.Decimal(12, 2)
   discountTotal  Decimal        @default(0) @db.Decimal(12, 2)
@@ -961,6 +1111,36 @@ model WalletEntry {
   @@index([subOrderId])
 }
 
+// Biometric step-up via WebAuthn / passkeys (Step 21). A registered platform
+// authenticator (Face ID / Touch ID / fingerprint / Windows Hello) that can
+// authorize wallet outflows instead of typing the PIN. Only the PUBLIC key is
+// stored — the biometric never leaves the device. The PIN remains as a fallback.
+model WalletCredential {
+  id           String    @id @default(cuid())
+  userId       String
+  credentialId String    @unique // base64url of the authenticator credential ID
+  publicKey    String // base64url of the COSE public key
+  counter      Int       @default(0) // signature counter (clone-detection)
+  transports   String[] // e.g. ["internal", "hybrid"]
+  label        String? // friendly device label
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Short-lived server-issued WebAuthn challenge (one in-flight per user). Consumed
+// on the matching register/authenticate response; expired ones are ignored.
+model WalletWebauthnChallenge {
+  userId    String   @id
+  challenge String
+  purpose   String // "register" | "auth"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model ExchangeRate {
   id        String   @id @default(cuid())
   currency  Currency @unique
@@ -1002,10 +1182,12 @@ model CourierLocation {
 
 // Delivery tier a buyer picks per store group at checkout. STANDARD is the
 // zone-based rate; EXPRESS is the faster, premium-priced option (our own
-// Hezalli Express carrier) — see lib/shipping.ts.
+// Hezalli Express carrier); PICKUP means the buyer collects from a Hezalli
+// Point themselves (docs/DELIVERY-POINTS.md §6) — see lib/shipping.ts.
 enum ShippingMethod {
   STANDARD
   EXPRESS
+  PICKUP
 }
 
 model ShippingZone {
@@ -1040,17 +1222,49 @@ model Shipment {
   platformManaged Boolean         @default(false)
   // Assigned Hezalli Express courier (null = unassigned / third-party carrier).
   driverId        String?
+  // Route via a partner hub (null = direct seller → courier).
+  deliveryPointId String?
+  // Short random code for the optional buyer-QR proof of delivery.
+  deliveryCode    String?         @unique
+  // Buyer's requested redelivery day + note after a failed attempt.
+  redeliverAt     DateTime?
+  redeliverNote   String?
   shippedAt       DateTime?
   deliveredAt     DateTime?
+  // How many doorstep attempts the courier has made (failed + the final one).
+  attemptCount    Int             @default(0)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   subOrder        SubOrder        @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   carrier         Carrier?        @relation(fields: [carrierId], references: [id])
   driver          User?           @relation("CourierShipments", fields: [driverId], references: [id])
+  deliveryPoint   DeliveryPoint?  @relation(fields: [deliveryPointId], references: [id])
   events          ShipmentEvent[]
+  attempts        DeliveryAttempt[]
 
   @@index([driverId])
   @@index([carrierId])
+  @@index([deliveryPointId])
+}
+
+// One doorstep delivery attempt. FAILED records why (unreachable, refused,
+// wrong address, rescheduled, …); DELIVERED records proof (who received it and
+// an optional photo). Gives the parcel a real attempt history instead of a
+// single terminal flag, and powers retry + COD dispute evidence.
+model DeliveryAttempt {
+  id            String          @id @default(cuid())
+  shipmentId    String
+  courierId     String? // the driver at the time (plain id; no FK churn on User)
+  outcome       DeliveryOutcome
+  reason        String? // FAILED: unreachable | refused | wrong_address | rescheduled | other
+  recipientName String? // DELIVERED: who took the parcel
+  proofPhotoKey String? // DELIVERED: storage key of a doorstep photo
+  codeVerified  Boolean         @default(false) // DELIVERED: buyer's delivery code/QR was verified
+  note          String?
+  createdAt     DateTime        @default(now())
+  shipment      Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
 }
 
 model ShipmentEvent {

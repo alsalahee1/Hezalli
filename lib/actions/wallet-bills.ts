@@ -14,7 +14,7 @@ import { getBillProvider } from "@/lib/providers/bill-provider";
 // Side-effect import: registers concrete providers (e.g. Reloadly airtime) so
 // `wallet_bills_provider` can select them by id.
 import "@/lib/providers/reloadly-airtime";
-import { verifyWalletPin } from "@/lib/wallet-pin";
+import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 import {
   creditWalletTx,
@@ -38,7 +38,8 @@ export async function payBill(input: {
   account: string;
   amountUsd: number;
   note?: string;
-  pin: string;
+  pin?: string;
+  passkey?: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
@@ -47,8 +48,8 @@ export async function payBill(input: {
 
   if (!(await getSetting("wallet_bills_enabled"))) return { error: "disabled" };
 
-  const pinCheck = await verifyWalletPin(userId, input.pin);
-  if (!pinCheck.ok) return { error: pinCheck.error };
+  const authCheck = await verifyWalletAuth(userId, input);
+  if (!authCheck.ok) return { error: authCheck.error };
 
   const biller = getBiller(input.biller);
   if (!biller || biller.kind !== input.kind) return { error: "badBiller" };

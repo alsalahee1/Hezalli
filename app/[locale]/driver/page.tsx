@@ -1,27 +1,35 @@
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import {
   AlertTriangle,
   ChevronRight,
   Clock,
   MapPin,
   PackageCheck,
+  Wallet,
 } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
+import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocationShare } from "@/components/driver/location-share";
+import { PushToggle } from "@/components/driver/push-toggle";
+import { QrCode } from "@/components/orders/qr-code";
 
 export default async function DriverJobsPage() {
   const courierId = await requireCourierId();
   const t = await getTranslations("Driver");
   const tShip = await getTranslations("Orders");
+  const format = await getFormatter();
   if (!courierId) return null;
 
-  const [rawJobs, settings, location] = await Promise.all([
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
+
+  const [rawJobs, settings, location, cash] = await Promise.all([
     prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
       select: {
@@ -53,6 +61,7 @@ export default async function DriverJobsPage() {
       where: { userId: courierId },
       select: { governorate: true },
     }),
+    courierCashSummary(courierId),
   ]);
 
   const now = new Date();
@@ -77,6 +86,44 @@ export default async function DriverJobsPage() {
   return (
     <div className="space-y-4">
       <LocationShare currentGovernorate={location?.governorate ?? null} />
+      <PushToggle />
+
+      {/* Collection QR: point staff scan this to pull up the driver's manifest
+          at the counter (docs/DELIVERY-POINTS.md §3). Collapsed by default. */}
+      <details className="rounded-xl border">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+          {t("myQr")}
+        </summary>
+        <div className="flex flex-col items-center gap-2 border-t px-4 py-4">
+          <QrCode value={`hezalli:driver:${courierId}`} size={180} />
+          <p className="text-muted-foreground text-center text-xs">
+            {t("myQrHint")}
+          </p>
+        </div>
+      </details>
+
+      {/* Cash the driver is holding + fees earned. */}
+      {cash.cashOnHand > 0 || cash.earnings > 0 ? (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
+              <Wallet className="size-3.5" /> {t("cashToRemit")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(cash.cashOnHand)}
+            </p>
+          </div>
+          <div className="rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("earnings")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(cash.earnings)}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
         <p className="text-muted-foreground text-sm">

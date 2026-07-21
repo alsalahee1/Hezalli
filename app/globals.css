@@ -4,6 +4,10 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Match native controls (select popups, date pickers, scrollbars) to the
+     app theme, so a device in dark mode doesn't render a dark OS picker over
+     the light app. */
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.2 0.02 220);
@@ -39,6 +43,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.18 0.02 220);
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.23 0.02 220);

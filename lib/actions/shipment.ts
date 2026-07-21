@@ -1,11 +1,14 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
 import { autoAssignShipment } from "@/lib/courier-assign";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
@@ -17,7 +20,13 @@ export type ShipInput = {
   carrierId: string;
   trackingNumber: string;
   note?: string;
+  // Route the parcel through a Hezalli Point (platform carrier only): the
+  // seller drops it there instead of handing it to a courier directly.
+  deliveryPointId?: string;
 };
+
+// Short unguessable code for the buyer's delivery QR (unique on Shipment).
+const mintDeliveryCode = () => randomBytes(5).toString("hex").toUpperCase();
 
 // Seller ships a sub-order: records the carrier + tracking number, moves the
 // sub-order to SHIPPED, and notifies the buyer with a tracking link.
@@ -41,6 +50,8 @@ export async function shipSubOrder(
         id: true,
         orderId: true,
         status: true,
+        shippingMethod: true,
+        pickupPointId: true,
         store: { select: { name: true } },
         order: {
           select: { buyerId: true, buyer: { select: { locale: true } } },
@@ -61,37 +72,87 @@ export async function shipSubOrder(
   if (!carrier) return { error: "carrierRequired" };
   if (sub.status !== "PROCESSING") return { error: "badState" };
 
+  // Optional routing via a Hezalli Point (platform carrier only): the parcel
+  // starts LABEL_CREATED (awaiting drop-off) instead of IN_TRANSIT, and
+  // courier auto-assignment waits until the point receives it. For a PICKUP
+  // sub-order the destination is FORCED to the buyer's chosen point — the
+  // seller can't reroute it, and only the platform carrier can serve it.
+  let pointId: string | null = null;
+  let pointName: string | null = null;
+  const wantedPointId =
+    sub.shippingMethod === "PICKUP"
+      ? sub.pickupPointId
+      : input.deliveryPointId?.trim() || null;
+  if (sub.shippingMethod === "PICKUP" && !carrier.platformManaged) {
+    return { error: "pointNotAllowed" };
+  }
+  if (wantedPointId) {
+    if (!carrier.platformManaged) return { error: "pointNotAllowed" };
+    // A buyer-chosen pickup point stays routable even if points were later
+    // switched off platform-wide — the buyer already paid for that option.
+    if (
+      sub.shippingMethod !== "PICKUP" &&
+      !(await getSetting("points_enabled"))
+    ) {
+      return { error: "pointNotAllowed" };
+    }
+    // Capacity gates NEW seller-chosen routing only; a buyer's committed
+    // pickup destination is honored even if the point filled up meanwhile.
+    if (sub.shippingMethod !== "PICKUP") {
+      const routable = await checkPointRoutable(wantedPointId);
+      if (routable === "full") return { error: "pointFull" };
+      if (routable !== "ok") return { error: "invalidPoint" };
+    }
+    const point = await prisma.deliveryPoint.findFirst({
+      where: { id: wantedPointId, status: "ACTIVE" },
+      select: { id: true, name: true },
+    });
+    if (!point) return { error: "invalidPoint" };
+    pointId = point.id;
+    pointName = point.name;
+  }
+  const initialStatus = pointId ? "LABEL_CREATED" : "IN_TRANSIT";
+
   const trackUrl = buildTrackingUrl(carrier.trackingUrl, trackingNumber);
   const ar = sub.order.buyer.locale === "ar";
   let shipmentId: string | null = null;
 
   await prisma.$transaction(async (tx) => {
     // A sub-order has at most one shipment (unique). Upsert to be safe.
+    const data = {
+      carrierId: carrier.id,
+      trackingNumber,
+      status: initialStatus as "IN_TRANSIT" | "LABEL_CREATED",
+      platformManaged: carrier.platformManaged,
+      deliveryPointId: pointId,
+      shippedAt: new Date(),
+    };
     const shipment = await tx.shipment.upsert({
       where: { subOrderId },
       create: {
         subOrderId,
-        carrierId: carrier.id,
-        trackingNumber,
-        status: "IN_TRANSIT",
-        platformManaged: carrier.platformManaged,
-        shippedAt: new Date(),
+        ...data,
+        // Buyer-QR proof of delivery works on every Hezalli Express parcel.
+        deliveryCode: carrier.platformManaged ? mintDeliveryCode() : null,
       },
-      update: {
-        carrierId: carrier.id,
-        trackingNumber,
-        status: "IN_TRANSIT",
-        platformManaged: carrier.platformManaged,
-        shippedAt: new Date(),
-      },
-      select: { id: true },
+      update: data,
+      select: { id: true, deliveryCode: true },
     });
     shipmentId = shipment.id;
+    // An upserted (re-shipped) platform parcel may predate delivery codes.
+    if (carrier.platformManaged && !shipment.deliveryCode) {
+      await tx.shipment.update({
+        where: { id: shipment.id },
+        data: { deliveryCode: mintDeliveryCode() },
+      });
+    }
     await tx.shipmentEvent.create({
       data: {
         shipmentId: shipment.id,
-        status: "IN_TRANSIT",
-        note: input.note?.trim() || null,
+        status: initialStatus,
+        note:
+          input.note?.trim() ||
+          (pointName ? `Dropping off at ${pointName}` : null),
       },
     });
 
@@ -139,7 +200,9 @@ export async function shipSubOrder(
 
   // Hand platform-managed (Hezalli Express) parcels to the least-loaded courier
   // automatically, when enabled. Best-effort: never blocks the ship action.
-  if (carrier.platformManaged && shipmentId) {
+  // Point-routed parcels wait — assignment happens when the point receives
+  // them (lib/point-core.ts).
+  if (carrier.platformManaged && shipmentId && !pointId) {
     if (await getSetting("express_auto_assign")) {
       try {
         await autoAssignShipment(shipmentId);

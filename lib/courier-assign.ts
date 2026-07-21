@@ -7,6 +7,7 @@
 //                 governorate (locality), then least-loaded among those; else
 //                 global least-loaded. Ops can always reassign from dispatch.
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push";
 import { getSetting } from "@/lib/settings";
 import { haversineKm } from "@/lib/yemen-geo";
 
@@ -149,5 +150,12 @@ export async function autoAssignShipment(
       data: { link: "/driver" },
     },
   });
+  // Ping the driver's phone (no-op unless push is configured).
+  await sendPushToUser(driverId, {
+    title: "New delivery assigned",
+    body: "A Hezalli Express delivery was auto-assigned to you.",
+    url: "/driver",
+    tag: "assignment",
+  }).catch(() => {});
   return driverId;
 }

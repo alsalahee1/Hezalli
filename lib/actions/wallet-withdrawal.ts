@@ -8,7 +8,7 @@ import { requireAdminId } from "@/lib/authz";
 import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
-import { verifyWalletPin } from "@/lib/wallet-pin";
+import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 import {
   creditWalletTx,
@@ -26,15 +26,15 @@ class ReserveError extends Error {}
 // cannot also be spent at checkout (double-spend guard). A rejection returns it.
 export async function requestWithdrawal(
   amountUsd?: number,
-  pin?: string,
+  auth_?: { pin?: string; passkey?: string },
 ): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
   if (!session?.user?.id) return { error: "unauthorized" };
   const userId = session.user.id;
 
-  const pinCheck = await verifyWalletPin(userId, pin ?? "");
-  if (!pinCheck.ok) return { error: pinCheck.error };
+  const authCheck = await verifyWalletAuth(userId, auth_ ?? {});
+  if (!authCheck.ok) return { error: authCheck.error };
 
   // KYC gate (same VERIFIED gate sellers have) + a saved destination.
   const profile = await prisma.sellerProfile.findUnique({

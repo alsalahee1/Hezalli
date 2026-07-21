@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { ConfirmReceivedButton } from "@/components/orders/confirm-received-button";
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
+import { QrCode } from "@/components/orders/qr-code";
+import { RedeliveryForm } from "@/components/orders/redelivery-form";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
 import {
   ReturnBlock,
@@ -45,6 +47,15 @@ export default async function OrderDetailPage({
           shipment: {
             include: {
               carrier: true,
+              deliveryPoint: {
+                select: {
+                  name: true,
+                  addressLine: true,
+                  city: true,
+                  governorate: true,
+                  phone: true,
+                },
+              },
               events: { orderBy: { createdAt: "asc" } },
             },
           },
@@ -358,6 +369,66 @@ export default async function OrderDetailPage({
                     </p>
                   ) : null}
                 </div>
+                {/* Pickup orders: where to collect, once the parcel is there. */}
+                {s.shippingMethod === "PICKUP" && s.shipment.deliveryPoint ? (
+                  <div className="rounded-lg border border-sky-500/40 bg-sky-500/5 p-3 text-sm">
+                    <p className="font-medium">
+                      {s.shipment.status === "AT_POINT"
+                        ? t("pickupReadyTitle")
+                        : t("pickupPendingTitle")}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      {s.shipment.deliveryPoint.name} —{" "}
+                      {s.shipment.deliveryPoint.addressLine},{" "}
+                      {s.shipment.deliveryPoint.city},{" "}
+                      {s.shipment.deliveryPoint.governorate} ·{" "}
+                      <span dir="ltr">{s.shipment.deliveryPoint.phone}</span>
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("pickupBringCode")}
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* Delivery QR: the courier can scan (or type) this code at the
+                    doorstep as verified proof of delivery. Optional — delivery
+                    also works without it. */}
+                {s.shipment.deliveryCode && s.status === "SHIPPED" ? (
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <QrCode
+                      value={s.shipment.deliveryCode}
+                      size={84}
+                      className="shrink-0"
+                    />
+                    <div className="min-w-0 text-sm">
+                      <p className="font-medium">{t("deliveryQrTitle")}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {t("deliveryQrHint")}
+                      </p>
+                      <p
+                        className="mt-1 font-mono text-base tracking-widest"
+                        dir="ltr"
+                      >
+                        {s.shipment.deliveryCode}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Failed attempt → let the buyer pick a new delivery day. */}
+                {s.status === "SHIPPED" &&
+                (s.shipment.status === "FAILED" ||
+                  s.shipment.status === "RETURNED_TO_POINT") ? (
+                  <RedeliveryForm
+                    subOrderId={s.id}
+                    currentDate={
+                      s.shipment.redeliverAt
+                        ? s.shipment.redeliverAt.toISOString().slice(0, 10)
+                        : null
+                    }
+                  />
+                ) : null}
+
                 {s.shipment.events.length > 0 ? (
                   <ol className="space-y-2 border-t pt-3">
                     {s.shipment.events.map((ev) => (

@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireAdminId, requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
 import { nearestGovernorate } from "@/lib/yemen-geo";
 
@@ -84,6 +85,13 @@ export async function assignCourier(
         data: { link: "/driver" },
       },
     });
+    // Ping the driver's phone (no-op unless push is configured).
+    await sendPushToUser(id, {
+      title: "New delivery assigned",
+      body: "A Hezalli Express delivery was assigned to you.",
+      url: "/driver",
+      tag: "assignment",
+    });
   }
 
   revalidatePath(`/${locale}/admin/dispatch`);
@@ -93,11 +101,32 @@ export async function assignCourier(
 
 export type CourierAction = "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED";
 
+// Proof captured on the "Delivered" tap (all optional).
+export type DeliveryProofInput = {
+  recipientName?: string;
+  photoKey?: string;
+  note?: string;
+  // The buyer's delivery code (typed or scanned from their QR). When present
+  // it must match the shipment's code; a match is recorded as verified proof.
+  deliveryCode?: string;
+};
+
+// Reasons a doorstep delivery can fail. Kept in sync with the driver reason
+// picker and the `Driver.failReason_*` i18n keys.
+const FAIL_REASONS = new Set([
+  "unreachable",
+  "refused",
+  "wrong_address",
+  "rescheduled",
+  "other",
+]);
+
 // Driver advances one of their assigned shipments through the delivery states.
 // DELIVERED defers to the shared core (COD capture, auto-complete, buyer notice).
 export async function courierAdvance(
   shipmentId: string,
   action: CourierAction,
+  proof?: DeliveryProofInput,
 ): Promise<Result> {
   const courierId = await requireCourierId();
   if (!courierId) return { error: "forbidden" };
@@ -107,6 +136,9 @@ export async function courierAdvance(
     where: { id: shipmentId, driverId: courierId },
     select: {
       id: true,
+      status: true,
+      deliveryPointId: true,
+      deliveryCode: true,
       subOrder: {
         select: {
           id: true,
@@ -124,9 +156,29 @@ export async function courierAdvance(
   const sub = shipment.subOrder;
   // Only an in-flight (SHIPPED) sub-order can be advanced by a driver.
   if (sub.status !== "SHIPPED") return { error: "badState" };
+  // A point-routed parcel the point still holds moves ONLY via point scans
+  // (docs/DELIVERY-POINTS.md) — the driver can't advance it from their phone.
+  if (
+    shipment.deliveryPointId &&
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+  ) {
+    return { error: "badState" };
+  }
 
   if (action === "DELIVERED") {
-    const res = await markSubOrderDelivered(sub.id, "courier", locale);
+    // Optional strongest proof: the buyer's delivery code (typed or scanned
+    // from their QR). Wrong code = hard error; empty = ordinary proof.
+    const typed = proof?.deliveryCode?.trim().toUpperCase();
+    if (typed && typed !== shipment.deliveryCode?.toUpperCase()) {
+      return { error: "badCode" };
+    }
+    const res = await markSubOrderDelivered(sub.id, "courier", locale, {
+      courierId,
+      recipientName: proof?.recipientName,
+      photoKey: proof?.photoKey,
+      note: proof?.note,
+      codeVerified: Boolean(typed),
+    });
     revalidatePath(`/${locale}/driver`);
     revalidatePath(`/${locale}/driver/job/${shipmentId}`);
     return res;
@@ -159,5 +211,90 @@ export async function courierAdvance(
 
   revalidatePath(`/${locale}/driver`);
   revalidatePath(`/${locale}/driver/job/${shipmentId}`);
+  return { ok: true };
+}
+
+// Driver logs a FAILED doorstep attempt (customer unreachable, refused, wrong
+// address, asked to reschedule…). The parcel stays with the courier (sub-order
+// remains SHIPPED) so it can be re-attempted or reassigned from dispatch; the
+// Shipment flips to FAILED and the reason is recorded as a DeliveryAttempt.
+export async function courierFailDelivery(
+  shipmentId: string,
+  reason: string,
+  note?: string,
+): Promise<Result> {
+  const courierId = await requireCourierId();
+  if (!courierId) return { error: "forbidden" };
+  if (!FAIL_REASONS.has(reason)) return { error: "badReason" };
+  const locale = await getLocale();
+
+  const shipment = await prisma.shipment.findFirst({
+    where: { id: shipmentId, driverId: courierId },
+    select: {
+      id: true,
+      status: true,
+      deliveryPointId: true,
+      subOrder: {
+        select: {
+          status: true,
+          orderId: true,
+          store: { select: { name: true } },
+          order: {
+            select: { buyerId: true, buyer: { select: { locale: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (!shipment || !shipment.subOrder) return { error: "notFound" };
+  const sub = shipment.subOrder;
+  if (sub.status !== "SHIPPED") return { error: "badState" };
+  // A parcel the point still holds can't fail a doorstep attempt — it hasn't
+  // left the hub. (Same guard as courierAdvance.)
+  if (
+    shipment.deliveryPointId &&
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+  ) {
+    return { error: "badState" };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.shipment.update({
+      where: { id: shipmentId },
+      data: { status: "FAILED", attemptCount: { increment: 1 } },
+    });
+    // The localized "FAILED" status label carries the meaning on the public
+    // timeline; only the courier's free note (if any) is shown alongside it.
+    // The machine-readable reason lives on the DeliveryAttempt for ops.
+    await tx.shipmentEvent.create({
+      data: { shipmentId, status: "FAILED", note: note?.trim() || null },
+    });
+    await tx.deliveryAttempt.create({
+      data: {
+        shipmentId,
+        courierId,
+        outcome: "FAILED",
+        reason,
+        note: note?.trim() || null,
+      },
+    });
+    // Let the buyer know an attempt was made and will be retried.
+    const ar = sub.order.buyer.locale === "ar";
+    await tx.notification.create({
+      data: {
+        userId: sub.order.buyerId,
+        type: "SHIPMENT",
+        title: ar ? "تعذّر توصيل طلبك" : "Delivery attempt unsuccessful",
+        body: ar
+          ? `حاول مندوبنا توصيل طلبك من ${sub.store.name} ولم يتمكّن. سنعيد المحاولة قريبًا.`
+          : `Our courier tried to deliver your order from ${sub.store.name} but couldn't. We'll try again soon.`,
+        data: { orderId: sub.orderId },
+      },
+    });
+  });
+
+  revalidatePath(`/${locale}/driver`);
+  revalidatePath(`/${locale}/driver/job/${shipmentId}`);
+  revalidatePath(`/${locale}/admin/dispatch`);
   return { ok: true };
 }

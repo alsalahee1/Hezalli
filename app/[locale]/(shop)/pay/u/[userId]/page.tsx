@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getWalletView } from "@/lib/wallet";
 import { walletHasPin } from "@/lib/wallet-pin";
+import { walletHasPasskey } from "@/lib/webauthn";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,10 @@ export default async function PayUserPage({
 
   const shell = (children: React.ReactNode) => (
     <main className="mx-auto max-w-md px-4 py-10">
+      {/* Native-app wallet treatment on phones: hides the storefront chrome
+          (announcement, header, footer) so the pay flow reads like a
+          standalone wallet screen. Desktop is unaffected. */}
+      <div data-native-wallet hidden />
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
         <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
           <Wallet className="size-6" />
@@ -61,7 +66,10 @@ export default async function PayUserPage({
 
   const name = recipient.name || recipient.email || "—";
   const { balance } = await getWalletView(session.user.id, 0);
-  const hasPin = await walletHasPin(session.user.id);
+  const [hasPin, hasPasskey] = await Promise.all([
+    walletHasPin(session.user.id),
+    walletHasPasskey(session.user.id),
+  ]);
 
   return shell(
     <div className="space-y-4">
@@ -82,6 +90,7 @@ export default async function PayUserPage({
         recipientName={name}
         balance={balance}
         hasPin={hasPin}
+        hasPasskey={hasPasskey}
       />
     </div>,
   );

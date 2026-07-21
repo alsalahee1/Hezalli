@@ -13,7 +13,12 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export type CarrierOption = { id: string; name: string };
+export type CarrierOption = {
+  id: string;
+  name: string;
+  platformManaged?: boolean;
+};
+export type PointOption = { id: string; label: string };
 export type ShipmentInfo = {
   carrierId: string | null;
   carrierName: string | null;
@@ -28,13 +33,18 @@ export function ShipOrderForm({
   shipment,
   shippingMethod = "STANDARD",
   preferredCarrierId = null,
+  points = [],
+  pickupPointLabel = null,
 }: {
   subOrderId: string;
   status: string;
   carriers: CarrierOption[];
   shipment: ShipmentInfo;
-  shippingMethod?: "STANDARD" | "EXPRESS";
+  shippingMethod?: "STANDARD" | "EXPRESS" | "PICKUP";
   preferredCarrierId?: string | null;
+  points?: PointOption[];
+  /** PICKUP orders: the buyer's chosen point (destination is forced). */
+  pickupPointLabel?: string | null;
 }) {
   const t = useTranslations("Shipment");
   const router = useRouter();
@@ -46,6 +56,12 @@ export function ShipOrderForm({
   );
   const [tracking, setTracking] = useState(shipment?.trackingNumber ?? "");
   const [note, setNote] = useState("");
+  const [pointId, setPointId] = useState("");
+
+  // Drop-off at a Hezalli Point is only meaningful for our own carrier.
+  const platformCarrier = Boolean(
+    carriers.find((c) => c.id === carrierId)?.platformManaged,
+  );
 
   const submit = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
@@ -89,6 +105,11 @@ export function ShipOrderForm({
             {t("expressChosen")}
           </p>
         ) : null}
+        {shippingMethod === "PICKUP" ? (
+          <p className="rounded-md bg-sky-500/10 px-3 py-2 text-xs text-sky-700 dark:text-sky-400">
+            {t("pickupChosen", { point: pickupPointLabel ?? "—" })}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("carrier")}
@@ -105,6 +126,26 @@ export function ShipOrderForm({
             />
           </label>
         </div>
+        {platformCarrier && shippingMethod !== "PICKUP" && points.length > 0 ? (
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            {t("dropOffPoint")}
+            <select
+              value={pointId}
+              onChange={(e) => setPointId(e.target.value)}
+              className="h-9 max-w-md rounded-md border bg-transparent px-3 text-sm"
+            >
+              <option value="">{t("directToCourier")}</option>
+              {points.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-muted-foreground font-normal">
+              {t("dropOffHint")}
+            </span>
+          </label>
+        ) : null}
         <label className="flex flex-col gap-1 text-xs font-medium">
           {t("note")}
           <Input
@@ -124,6 +165,8 @@ export function ShipOrderForm({
                 carrierId,
                 trackingNumber: tracking,
                 note,
+                deliveryPointId:
+                  platformCarrier && pointId ? pointId : undefined,
               }),
             )
           }

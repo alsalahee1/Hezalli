@@ -8,7 +8,7 @@ import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { transferFunds } from "@/lib/wallet-transfers";
-import { verifyWalletPin } from "@/lib/wallet-pin";
+import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 
 type Result = { ok?: boolean; error?: string; id?: string };
@@ -43,7 +43,7 @@ export async function createPaymentRequest(input: {
 // Pay a pending money request from the payer's wallet.
 export async function payPaymentRequest(
   requestId: string,
-  pin: string,
+  auth_: { pin?: string; passkey?: string },
 ): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
@@ -51,8 +51,8 @@ export async function payPaymentRequest(
 
   if (!(await getSetting("wallet_p2p_enabled"))) return { error: "disabled" };
 
-  const pinCheck = await verifyWalletPin(session.user.id, pin);
-  if (!pinCheck.ok) return { error: pinCheck.error };
+  const authCheck = await verifyWalletAuth(session.user.id, auth_);
+  if (!authCheck.ok) return { error: authCheck.error };
 
   const req = await prisma.walletPaymentRequest.findUnique({
     where: { id: requestId },

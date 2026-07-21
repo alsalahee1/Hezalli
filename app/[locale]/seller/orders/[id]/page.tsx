@@ -5,6 +5,8 @@ import { ArrowLeft, Printer } from "lucide-react";
 import { requireSellerStore } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE } from "@/lib/order-status";
+import { listRoutablePoints } from "@/lib/point-select";
+import { getSetting } from "@/lib/settings";
 import { buildTrackingUrl } from "@/lib/tracking";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,19 @@ export default async function SellerOrderDetailPage({
   const isExpress = sub.shippingMethod === "EXPRESS";
   const preferredCarrierId = isExpress
     ? (carriers.find((c) => c.platformManaged)?.id ?? null)
+    : null;
+  // Hezalli Points the seller can drop the parcel at (platform carrier only):
+  // full points excluded, destination-governorate matches listed first.
+  const pointsEnabled = await getSetting("points_enabled");
+  const points = pointsEnabled
+    ? await listRoutablePoints(sub.order.address.governorate)
+    : [];
+  // PICKUP orders: the buyer already chose the destination point.
+  const pickupPoint = sub.pickupPointId
+    ? await prisma.deliveryPoint.findUnique({
+        where: { id: sub.pickupPointId },
+        select: { name: true, city: true, governorate: true },
+      })
     : null;
   const shipmentInfo = sub.shipment
     ? {
@@ -126,10 +141,23 @@ export default async function SellerOrderDetailPage({
         <ShipOrderForm
           subOrderId={sub.id}
           status={sub.status}
-          carriers={carriers.map((c) => ({ id: c.id, name: c.name }))}
+          carriers={carriers.map((c) => ({
+            id: c.id,
+            name: c.name,
+            platformManaged: c.platformManaged,
+          }))}
           shipment={shipmentInfo}
           shippingMethod={sub.shippingMethod}
           preferredCarrierId={preferredCarrierId}
+          points={points.map((p) => ({
+            id: p.id,
+            label: `${p.name} — ${p.city}, ${p.governorate}`,
+          }))}
+          pickupPointLabel={
+            pickupPoint
+              ? `${pickupPoint.name} — ${pickupPoint.city}, ${pickupPoint.governorate}`
+              : null
+          }
         />
       ) : null}
 

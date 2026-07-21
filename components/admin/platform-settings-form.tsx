@@ -50,6 +50,10 @@ export function PlatformSettingsForm({
     express_enabled: current.express_enabled,
     express_auto_assign: current.express_auto_assign,
     courier_assign_strategy: current.courier_assign_strategy,
+    points_enabled: current.points_enabled,
+    point_handling_fee: String(current.point_handling_fee),
+    max_delivery_attempts: String(current.max_delivery_attempts),
+    pickup_fee: String(current.pickup_fee),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -85,6 +89,10 @@ export function PlatformSettingsForm({
         express_enabled: f.express_enabled,
         express_auto_assign: f.express_auto_assign,
         courier_assign_strategy: f.courier_assign_strategy,
+        points_enabled: f.points_enabled,
+        point_handling_fee: Number(f.point_handling_fee),
+        max_delivery_attempts: Number(f.max_delivery_attempts),
+        pickup_fee: Number(f.pickup_fee),
       });
       if (res.error) setErr(res.error);
       else {
@@ -245,6 +253,30 @@ export function PlatformSettingsForm({
             />
           </div>
         </Field>
+        <Field label={t("pointFee")} hint={t("pointFeeHint")}>
+          <Input
+            type="number"
+            value={f.point_handling_fee}
+            onChange={(e) => set("point_handling_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("pickupFee")} hint={t("pickupFeeHint")}>
+          <Input
+            type="number"
+            value={f.pickup_fee}
+            onChange={(e) => set("pickup_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("maxAttempts")} hint={t("maxAttemptsHint")}>
+          <Input
+            type="number"
+            value={f.max_delivery_attempts}
+            onChange={(e) => set("max_delivery_attempts", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
         <Field label={t("assignStrategy")} hint={t("assignStrategyHint")}>
           <select
             value={f.courier_assign_strategy}
@@ -289,6 +321,18 @@ export function PlatformSettingsForm({
           {t("expressAutoAssign")}
           <span className="text-muted-foreground text-xs">
             {t("expressAutoAssignHint")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.points_enabled}
+            onChange={(e) => set("points_enabled", e.target.checked)}
+          />
+          {t("pointsEnabled")}
+          <span className="text-muted-foreground text-xs">
+            {t("pointsEnabledHint")}
           </span>
         </label>
         <label className="flex items-center gap-2 text-sm">

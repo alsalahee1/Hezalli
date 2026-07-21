@@ -10,40 +10,41 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { WalletPinField } from "@/components/wallet/wallet-pin-field";
+import { WalletAuthField } from "@/components/wallet/wallet-auth-field";
+import type { WalletAuth } from "@/lib/wallet-step-auth";
 
 export function WalletWithdrawForm({
   balance,
   min,
   destination,
   hasPin,
+  hasPasskey,
 }: {
   balance: number;
   min: number;
   destination: string;
   hasPin: boolean;
+  hasPasskey: boolean;
 }) {
   const t = useTranslations("Wallet");
   const locale = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
-  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
-  const submit = () =>
+  const run = (auth: WalletAuth) =>
     start(async () => {
       setErr(null);
       const res = await requestWithdrawal(
         amount ? Number(amount) : undefined,
-        pin,
+        auth,
       );
       if (res.error) setErr(res.error);
       else {
         setOpen(false);
         setAmount("");
-        setPin("");
         router.refresh();
       }
     });
@@ -85,23 +86,14 @@ export function WalletWithdrawForm({
               {destination}
             </p>
           </div>
-          <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
-
-          {err ? (
-            <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
-          ) : null}
-
-          <div className="flex gap-2">
-            <Button
-              disabled={pending || !hasPin || pin.length < 4}
-              onClick={submit}
-            >
-              {pending ? t("submitting") : t("withdrawSubmit")}
-            </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              {t("cancel")}
-            </Button>
-          </div>
+          <WalletAuthField
+            hasPin={hasPin}
+            hasPasskey={hasPasskey}
+            pending={pending}
+            error={err}
+            submitLabel={t("withdrawSubmit")}
+            onAuthorize={run}
+          />
         </div>
       </Modal>
     </>

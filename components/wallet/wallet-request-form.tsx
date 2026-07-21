@@ -88,14 +88,9 @@ export function WalletRequestForm() {
               {err ? (
                 <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
               ) : null}
-              <div className="flex gap-2">
-                <Button disabled={pending || !amount} onClick={submit}>
-                  {pending ? t("submitting") : t("requestCreate")}
-                </Button>
-                <Button variant="ghost" onClick={() => setOpen(false)}>
-                  {t("cancel")}
-                </Button>
-              </div>
+              <Button disabled={pending || !amount} onClick={submit}>
+                {pending ? t("submitting") : t("requestCreate")}
+              </Button>
             </>
           )}
         </div>

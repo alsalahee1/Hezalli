@@ -29,6 +29,19 @@ export type PlatformSettings = {
   // How auto-assignment chooses a courier: "balanced" (fewest active jobs) or
   // "nearest" (a driver in the destination governorate, then fewest jobs).
   courier_assign_strategy: "balanced" | "nearest";
+  // Flat fee (USD) Hezalli pays a courier for each completed Hezalli Express
+  // delivery — accrued to the driver's earnings ledger on delivery.
+  courier_delivery_fee: number;
+  // Hezalli Delivery Points (partner parcel hubs — docs/DELIVERY-POINTS.md).
+  // When off, sellers can't route parcels through a point. Handling fee is the
+  // USD amount a point earns per delivered parcel routed through it. Max
+  // attempts is when the point should return a failing parcel to the seller.
+  points_enabled: boolean;
+  point_handling_fee: number;
+  max_delivery_attempts: number;
+  // What the buyer pays to collect from a Hezalli Point themselves (PUDO).
+  // Free by default — pickup removes the whole last-mile cost.
+  pickup_fee: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -74,6 +87,11 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   express_eta_max_days: 2,
   express_auto_assign: true,
   courier_assign_strategy: "balanced",
+  courier_delivery_fee: 1.5,
+  points_enabled: true,
+  point_handling_fee: 0.5,
+  max_delivery_attempts: 3,
+  pickup_fee: 0,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

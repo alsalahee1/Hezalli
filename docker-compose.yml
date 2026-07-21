@@ -68,6 +68,10 @@ services:
       # Passwordless test-account login (/dev-login + login-screen chips).
       # Off unless set to "true" in .env. NEVER set it on a real production host.
       DEV_LOGIN_ENABLED: ${DEV_LOGIN_ENABLED:-}
+      # Web Push (driver notifications). No-ops unless both keys are set.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@hezalli.com}
       PORT: "3000"
     depends_on:
       db:

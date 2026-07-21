@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { resolveCartLines } from "@/lib/cart";
+import { listRoutablePoints } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { quoteShippingForStores, type StoreShipOptions } from "@/lib/shipping";
 import { getSetting } from "@/lib/settings";
@@ -93,6 +94,15 @@ export default async function CheckoutPage({
 
   const codEnabled = await getSetting("cod_enabled");
 
+  // Points that can still take parcels (full ones are filtered out); the
+  // client re-sorts nearest-first for whichever address is selected.
+  const pointRows = await listRoutablePoints();
+  const pickupPoints = pointRows.map((p) => ({
+    id: p.id,
+    label: `${p.name} — ${p.city}, ${p.governorate}`,
+    governorate: p.governorate,
+  }));
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="mb-5 text-2xl font-semibold tracking-tight">
@@ -105,6 +115,7 @@ export default async function CheckoutPage({
         codEnabled={codEnabled}
         points={buyer?.loyaltyPoints ?? 0}
         walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
+        pickupPoints={pickupPoints}
       />
     </main>
   );

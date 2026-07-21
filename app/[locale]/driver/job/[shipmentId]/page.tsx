@@ -4,6 +4,7 @@ import { CheckCircle2, MapPin, Phone, Store } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { storage } from "@/lib/storage";
 import { Link } from "@/i18n/navigation";
 import { JobActions } from "@/components/driver/job-actions";
 
@@ -25,9 +26,20 @@ export default async function DriverJobPage({
       id: true,
       status: true,
       trackingNumber: true,
+      redeliverAt: true,
+      redeliverNote: true,
+      deliveryPoint: {
+        select: { name: true, addressLine: true, city: true, phone: true },
+      },
       events: {
         orderBy: { createdAt: "asc" },
         select: { id: true, status: true, createdAt: true },
+      },
+      attempts: {
+        where: { outcome: "DELIVERED" },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { recipientName: true, proofPhotoKey: true },
       },
       subOrder: {
         select: {
@@ -52,6 +64,14 @@ export default async function DriverJobPage({
   const a = sub.order.address;
   const done = sub.status !== "SHIPPED";
   const isCod = sub.order.paymentMethod === "COD";
+  const proof = shipment.attempts[0] ?? null;
+  // A point-routed parcel the hub still holds: the driver collects it with a
+  // scan at the counter — no phone-side actions until then.
+  const heldAtPoint =
+    Boolean(shipment.deliveryPoint) &&
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(
+      shipment.status,
+    );
 
   return (
     <div className="space-y-5">
@@ -70,6 +90,43 @@ export default async function DriverJobPage({
           {tShip(`shipStatus_${shipment.status}`)}
         </p>
       </div>
+
+      {/* Pickup point + buyer's requested redelivery day, when applicable. */}
+      {shipment.deliveryPoint ? (
+        <div className="rounded-lg border p-3 text-sm">
+          <p className="font-medium">
+            {heldAtPoint ? t("collectFromPoint") : t("pickupPoint")}:{" "}
+            {shipment.deliveryPoint.name}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {shipment.deliveryPoint.addressLine}, {shipment.deliveryPoint.city}
+            {" · "}
+            <a
+              href={`tel:${shipment.deliveryPoint.phone}`}
+              className="text-primary"
+              dir="ltr"
+            >
+              {shipment.deliveryPoint.phone}
+            </a>
+          </p>
+        </div>
+      ) : null}
+      {shipment.redeliverAt && !done ? (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <p className="font-medium text-amber-700 dark:text-amber-500">
+            {t("redeliverOn", {
+              date: format.dateTime(shipment.redeliverAt, {
+                dateStyle: "medium",
+              }),
+            })}
+          </p>
+          {shipment.redeliverNote ? (
+            <p className="text-muted-foreground text-xs">
+              {shipment.redeliverNote}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* COD collection callout — the driver collects cash on delivery. */}
       {isCod ? (
@@ -132,8 +189,34 @@ export default async function DriverJobPage({
 
       {/* Actions */}
       {done ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm font-medium text-emerald-700 dark:text-emerald-500">
-          <CheckCircle2 className="size-5" /> {t("jobDone")}
+        <div className="space-y-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
+          <div className="flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-500">
+            <CheckCircle2 className="size-5" /> {t("jobDone")}
+          </div>
+          {proof ? (
+            <div className="space-y-2 border-t border-emerald-500/30 pt-3 text-sm">
+              {proof.recipientName ? (
+                <p>
+                  <span className="text-muted-foreground">
+                    {t("proofRecipient")}:{" "}
+                  </span>
+                  <span className="font-medium">{proof.recipientName}</span>
+                </p>
+              ) : null}
+              {proof.proofPhotoKey ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={storage.publicUrl(proof.proofPhotoKey)}
+                  alt={t("proofPhotoAlt")}
+                  className="max-h-56 w-full rounded-lg object-cover"
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : heldAtPoint ? (
+        <div className="text-muted-foreground rounded-xl border border-dashed p-4 text-center text-sm">
+          {t("heldAtPointHint")}
         </div>
       ) : (
         <JobActions shipmentId={shipment.id} status={shipment.status} />

@@ -11,14 +11,17 @@ import { WALLET_OPEN_SEND } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { WalletPinField } from "@/components/wallet/wallet-pin-field";
+import { WalletAuthField } from "@/components/wallet/wallet-auth-field";
+import type { WalletAuth } from "@/lib/wallet-step-auth";
 
 export function WalletSendForm({
   balance,
   hasPin,
+  hasPasskey,
 }: {
   balance: number;
   hasPin: boolean;
+  hasPasskey: boolean;
 }) {
   const t = useTranslations("Wallet");
   const locale = useLocale();
@@ -27,7 +30,6 @@ export function WalletSendForm({
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [pin, setPin] = useState("");
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
@@ -38,14 +40,14 @@ export function WalletSendForm({
     return () => window.removeEventListener(WALLET_OPEN_SEND, onOpen);
   }, []);
 
-  const submit = () =>
+  const run = (auth: WalletAuth) =>
     start(async () => {
       setErr(null);
       const res = await sendWalletFunds({
         recipient,
         amountUsd: Number(amount),
         note: note || undefined,
-        pin,
+        ...auth,
       });
       if (res.error) setErr(res.error);
       else {
@@ -53,7 +55,6 @@ export function WalletSendForm({
         setRecipient("");
         setAmount("");
         setNote("");
-        setPin("");
         router.refresh();
       }
     });
@@ -96,25 +97,15 @@ export function WalletSendForm({
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("sendNote")}
           />
-          <WalletPinField hasPin={hasPin} value={pin} onChange={setPin} />
-
-          {err ? (
-            <p className="text-destructive text-sm">{t(`err_${err}`)}</p>
-          ) : null}
-
-          <div className="flex gap-2">
-            <Button
-              disabled={
-                pending || !recipient || !amount || !hasPin || pin.length < 4
-              }
-              onClick={submit}
-            >
-              {pending ? t("submitting") : t("sendSubmit")}
-            </Button>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              {t("cancel")}
-            </Button>
-          </div>
+          <WalletAuthField
+            hasPin={hasPin}
+            hasPasskey={hasPasskey}
+            disabled={!recipient || !amount}
+            pending={pending}
+            error={err}
+            submitLabel={t("sendSubmit")}
+            onAuthorize={run}
+          />
         </div>
       </Modal>
     </>

@@ -1,5 +1,12 @@
 import { getFormatter, getTranslations } from "next-intl/server";
-import { AlertTriangle, Clock, MapPin, Package, Route } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock,
+  MapPin,
+  Package,
+  RotateCcw,
+  Route,
+} from "lucide-react";
 
 import { requireAdminId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
@@ -28,6 +35,7 @@ export default async function DispatchPage() {
         trackingNumber: true,
         driverId: true,
         shippedAt: true,
+        attemptCount: true,
         subOrder: {
           select: {
             shippingMethod: true,
@@ -144,6 +152,12 @@ export default async function DispatchPage() {
                   ) : s.sla === "due_soon" ? (
                     <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600">
                       <Clock className="size-3" /> {t("dueSoon")}
+                    </span>
+                  ) : null}
+                  {s.status === "FAILED" || s.attemptCount > 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded bg-orange-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-orange-600">
+                      <RotateCcw className="size-3" />{" "}
+                      {t("attempts", { count: s.attemptCount })}
                     </span>
                   ) : null}
                 </p>
