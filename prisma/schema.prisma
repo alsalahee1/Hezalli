@@ -140,6 +140,7 @@ enum CourierLedgerType {
   COD_COLLECTED // + COD cash the driver took from the buyer on delivery
   REMITTANCE // − cash the driver handed in to the office
   EARNING // + the driver's delivery fee (owed by Hezalli to the driver)
+  PAYOUT // − delivery fees Hezalli has paid out to the driver
   ADJUSTMENT // ± manual correction by an admin
 }
 

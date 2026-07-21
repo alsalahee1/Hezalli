@@ -1618,7 +1618,10 @@
     "staleDays": "Stale parcel threshold (days)",
     "staleDaysHint": "Held parcels that haven't moved for this many days are flagged.",
     "pickupWindow": "Pickup window (days)",
-    "pickupWindowHint": "How long a pickup parcel waits at a point before it should be returned to the seller."
+    "pickupWindowHint": "How long a pickup parcel waits at a point before it should be returned to the seller.",
+    "courierFee": "Courier delivery fee (USD)",
+    "courierFeeHint": "Paid to the driver for each completed Hezalli Express delivery.",
+    "err_badDeliveryFee": "Enter a valid delivery fee."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -2203,7 +2206,14 @@
     "recording": "Recording…",
     "err_forbidden": "Not allowed.",
     "err_badInput": "Enter a valid amount.",
-    "err_notCourier": "That user isn't a courier."
+    "err_notCourier": "That user isn't a courier.",
+    "earningsPaid": "Earnings paid",
+    "payoutTitle": "Pay out earnings",
+    "payoutOwed": "Owed",
+    "payoutAmount": "Amount to pay",
+    "payoutNotePlaceholder": "Reference (optional)",
+    "payoutBtn": "Pay out",
+    "type_PAYOUT": "Earnings payout"
   },
   "AdminWalletAudit": {
     "title": "Wallet audit & reconciliation",

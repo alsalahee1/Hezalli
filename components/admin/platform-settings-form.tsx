@@ -39,6 +39,7 @@ export function PlatformSettingsForm({
     wallet_daily_outflow_usd: String(current.wallet_daily_outflow_usd),
     wallet_monthly_outflow_usd: String(current.wallet_monthly_outflow_usd),
     default_express_fee: String(current.default_express_fee),
+    courier_delivery_fee: String(current.courier_delivery_fee),
     std_eta_min_days: String(current.std_eta_min_days),
     std_eta_max_days: String(current.std_eta_max_days),
     express_eta_min_days: String(current.express_eta_min_days),
@@ -81,6 +82,7 @@ export function PlatformSettingsForm({
         wallet_daily_outflow_usd: Number(f.wallet_daily_outflow_usd),
         wallet_monthly_outflow_usd: Number(f.wallet_monthly_outflow_usd),
         default_express_fee: Number(f.default_express_fee),
+        courier_delivery_fee: Number(f.courier_delivery_fee),
         std_eta_min_days: Number(f.std_eta_min_days),
         std_eta_max_days: Number(f.std_eta_max_days),
         express_eta_min_days: Number(f.express_eta_min_days),
@@ -222,6 +224,14 @@ export function PlatformSettingsForm({
             type="number"
             value={f.default_express_fee}
             onChange={(e) => set("default_express_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("courierFee")} hint={t("courierFeeHint")}>
+          <Input
+            type="number"
+            value={f.courier_delivery_fee}
+            onChange={(e) => set("courier_delivery_fee", e.target.value)}
             dir="ltr"
           />
         </Field>

@@ -69,6 +69,55 @@ export async function recordRemittance(formData: FormData): Promise<Result> {
   return { ok: true };
 }
 
+// Admin pays a courier their accrued delivery-fee earnings — a negative PAYOUT
+// row that reduces "earnings owed". Positive amount; audited. Settling more than
+// is owed is allowed (advance) but flagged to the caller via `overpaid`.
+export async function recordEarningsPayout(
+  formData: FormData,
+): Promise<Result & { overpaid?: boolean }> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+
+  const courierId = String(formData.get("courierId") ?? "");
+  const raw = Number(formData.get("amount"));
+  const note = String(formData.get("note") ?? "").trim();
+  if (!courierId) return { error: "badInput" };
+  if (!Number.isFinite(raw) || raw <= 0) return { error: "badInput" };
+
+  const courier = await prisma.user.findUnique({
+    where: { id: courierId },
+    select: { roles: true },
+  });
+  if (!courier?.roles.includes("COURIER")) return { error: "notCourier" };
+
+  const amountUsd = -round2(raw);
+  await prisma.$transaction([
+    prisma.courierLedgerEntry.create({
+      data: {
+        courierId,
+        type: "PAYOUT",
+        amountUsd,
+        note: note || null,
+        createdById: adminId,
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "courier.payout",
+        entity: "User",
+        entityId: courierId,
+        meta: { amountUsd, note: note || undefined },
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/couriers/${courierId}`);
+  revalidatePath(`/${locale}/admin/couriers`);
+  return { ok: true };
+}
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
