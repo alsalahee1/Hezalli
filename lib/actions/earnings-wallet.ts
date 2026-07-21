@@ -55,6 +55,8 @@ export async function transferCourierEarningsToWallet(
       const free = round2(Number(agg._sum.amountUsd ?? 0));
       if (free <= 0) throw new MoveError("nothingToMove");
       const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
+      // amount can round to 0 (e.g. 0.004) — refuse rather than write 0-rows.
+      if (amount <= 0) throw new MoveError("nothingToMove");
       if (amount > free) throw new MoveError("insufficient");
 
       // Debit the courier ledger (reduces earnings owed).
@@ -105,6 +107,19 @@ export async function transferPointEarningsToWallet(
     await prisma.$transaction(async (tx) => {
       // Serialize concurrent moves/requests for the same hub.
       await tx.$queryRaw`SELECT "id" FROM "DeliveryPoint" WHERE "id" = ${gate.pointId} FOR UPDATE`;
+      // Reserve against payout requests already claiming this balance. Read the
+      // requests BEFORE the ledger: markPointPayoutPaid flips a request to PAID
+      // and writes its ledger debit in one commit without taking the point lock,
+      // and under READ COMMITTED each statement sees a fresh snapshot — in this
+      // order a flip landing between the reads is counted twice (still reserved
+      // AND already debited) so the sweep fails closed instead of double-paying.
+      const outstanding = await tx.pointPayoutRequest.aggregate({
+        where: {
+          pointId: gate.pointId,
+          status: { in: ["REQUESTED", "APPROVED"] },
+        },
+        _sum: { amountUsd: true },
+      });
       const agg = await tx.deliveryPointLedgerEntry.aggregate({
         where: {
           pointId: gate.pointId,
@@ -113,17 +128,11 @@ export async function transferPointEarningsToWallet(
         _sum: { amountUsd: true },
       });
       const balance = round2(Number(agg._sum.amountUsd ?? 0));
-      // Reserve against payout requests already claiming this balance.
-      const outstanding = await tx.pointPayoutRequest.aggregate({
-        where: {
-          pointId: gate.pointId,
-          status: { in: ["REQUESTED", "APPROVED"] },
-        },
-        _sum: { amountUsd: true },
-      });
       const free = round2(balance - Number(outstanding._sum.amountUsd ?? 0));
       if (free <= 0) throw new MoveError("nothingToMove");
       const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
+      // amount can round to 0 (e.g. 0.004) — refuse rather than write 0-rows.
+      if (amount <= 0) throw new MoveError("nothingToMove");
       if (amount > free) throw new MoveError("insufficient");
 
       // Debit the point ledger (reduces earnings owed).
