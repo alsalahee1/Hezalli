@@ -908,7 +908,8 @@
     "pickupPointLabel": "Where will you collect your order?",
     "pickupPointPlaceholder": "Choose a Hezalli Point…",
     "pickupPointHint": "We'll notify you when it's ready. Bring your delivery code (shown on the order page) and pay there if you chose cash.",
-    "err_pickupPointRequired": "Choose the Hezalli Point you'll collect from."
+    "err_pickupPointRequired": "Choose the Hezalli Point you'll collect from.",
+    "err_pointFull": "That Hezalli Point is full right now — please pick another."
   },
   "Orders": {
     "title": "My orders",
@@ -1278,7 +1279,8 @@
     "dropOffHint": "Drop the parcel at the chosen point; staff scan it in and a courier collects it there.",
     "err_pointNotAllowed": "Point drop-off is only available with Hezalli Express.",
     "err_invalidPoint": "That delivery point isn't available.",
-    "pickupChosen": "The buyer collects this order from {point} — ship it there via Hezalli Express."
+    "pickupChosen": "The buyer collects this order from {point} — ship it there via Hezalli Express.",
+    "err_pointFull": "That point is at capacity — choose another or ship direct."
   },
   "Reviews": {
     "title": "Ratings & reviews",
@@ -2251,7 +2253,8 @@
     "totalCodCollected": "COD collected",
     "totalCodRemitted": "Cash handed in",
     "ledger_COD_COLLECTED": "COD collected at counter",
-    "ledger_COD_REMITTANCE": "Cash handed in"
+    "ledger_COD_REMITTANCE": "Cash handed in",
+    "capacityTitle": "Parcels held or inbound vs your capacity"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2340,6 +2343,11 @@
     "kind_remittance": "Cash remittance",
     "remitAmount": "Cash handed in",
     "type_COD_COLLECTED": "COD collected at counter",
-    "type_COD_REMITTANCE": "Cash remittance"
+    "type_COD_REMITTANCE": "Cash remittance",
+    "capacityHeading": "Capacity",
+    "capacityLoad": "Current load: {load} parcels",
+    "capacityUnlimited": "Unlimited",
+    "capacitySave": "Save",
+    "capacityHint": "Max parcels held or inbound at once. Empty = unlimited. Full points stop receiving new routing; counter scans always work."
   }
 }

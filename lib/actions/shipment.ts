@@ -8,6 +8,7 @@ import { getLocale } from "next-intl/server";
 import { requireSellerStore } from "@/lib/authz";
 import { autoAssignShipment } from "@/lib/courier-assign";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
@@ -94,6 +95,13 @@ export async function shipSubOrder(
       !(await getSetting("points_enabled"))
     ) {
       return { error: "pointNotAllowed" };
+    }
+    // Capacity gates NEW seller-chosen routing only; a buyer's committed
+    // pickup destination is honored even if the point filled up meanwhile.
+    if (sub.shippingMethod !== "PICKUP") {
+      const routable = await checkPointRoutable(wantedPointId);
+      if (routable === "full") return { error: "pointFull" };
+      if (routable !== "ok") return { error: "invalidPoint" };
     }
     const point = await prisma.deliveryPoint.findFirst({
       where: { id: wantedPointId, status: "ACTIVE" },

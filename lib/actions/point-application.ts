@@ -217,6 +217,45 @@ export async function reviewPointApplication(
   revalidatePath(`/${locale}/admin/points`);
 }
 
+// Admin sets a point's parcel capacity (max held/inbound at once). Empty or
+// zero clears it back to unlimited. Gates NEW routing only — see the docs §8.
+export async function setPointCapacity(formData: FormData): Promise<void> {
+  const adminId = await requireAdminId();
+  if (!adminId) return;
+
+  const pointId = String(formData.get("pointId") ?? "");
+  if (!pointId) return;
+  const raw = String(formData.get("capacity") ?? "").trim();
+  const n = Math.trunc(Number(raw));
+  const capacity = raw !== "" && Number.isFinite(n) && n > 0 ? n : null;
+
+  const point = await prisma.deliveryPoint.findUnique({
+    where: { id: pointId },
+    select: { id: true },
+  });
+  if (!point) return;
+
+  await prisma.$transaction([
+    prisma.deliveryPoint.update({
+      where: { id: pointId },
+      data: { capacity },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "point.capacity",
+        entity: "DeliveryPoint",
+        entityId: pointId,
+        meta: { capacity },
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/points/${pointId}`);
+  revalidatePath(`/${locale}/admin/points`);
+}
+
 // Admin toggles a point's status. Suspending stops new routing (the seller
 // picker only lists ACTIVE points) and locks the operator out of /point.
 export async function setPointStatus(formData: FormData): Promise<void> {

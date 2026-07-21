@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { resolveCartLines } from "@/lib/cart";
+import { listRoutablePoints } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { quoteShippingForStores, type StoreShipOptions } from "@/lib/shipping";
 import { getSetting } from "@/lib/settings";
@@ -93,16 +94,13 @@ export default async function CheckoutPage({
 
   const codEnabled = await getSetting("cod_enabled");
 
-  // Active Hezalli Points for the collect-from-point option (sorted by
-  // governorate so the buyer's local points cluster together).
-  const pointRows = await prisma.deliveryPoint.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: [{ governorate: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, governorate: true, city: true },
-  });
+  // Points that can still take parcels (full ones are filtered out); the
+  // client re-sorts nearest-first for whichever address is selected.
+  const pointRows = await listRoutablePoints();
   const pickupPoints = pointRows.map((p) => ({
     id: p.id,
     label: `${p.name} — ${p.city}, ${p.governorate}`,
+    governorate: p.governorate,
   }));
 
   return (

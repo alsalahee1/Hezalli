@@ -194,7 +194,42 @@ the pickup scan requires the buyer's code — it is the proof of handover.
 
 ## 7. Out of scope
 
+## 8. v1.2 — Point capacity & smart selection
+
+Keeps small shops from being buried in parcels and puts the *right* point
+first in every picker. Each point gets an optional **capacity** (max parcels
+held at once; empty = unlimited). Capacity gates **new routing only** — a
+parcel already announced to a point is always accepted at the counter, so a
+scan at the desk never bounces; ops fix overload by raising capacity or
+suspending the point.
+
+Rules:
+
+- **Load** = parcels currently held or inbound (`LABEL_CREATED`, `AT_POINT`,
+  `RETURNED_TO_POINT`) on in-flight sub-orders.
+- A point is **full** when load ≥ capacity. Full points disappear from the
+  checkout picker and the seller drop-off picker, and `placeOrder` /
+  `shipSubOrder` re-validate server-side (client lists are never trusted).
+- **Ordering**: pickers list points in the buyer's destination governorate
+  first, least-loaded first within a governorate (the checkout picker
+  re-sorts live when the buyer switches address).
+- Admins set capacity on the point detail page; the operator sees their own
+  load vs capacity on the dashboard.
+
+### Build checklist (v1.2)
+
+- [x] Schema: `DeliveryPoint.capacity Int?` + migration
+- [x] `lib/point-select.ts`: load counting, full-point filtering, governorate-first ordering (shared by checkout, seller page, validation)
+- [x] `placeOrder` + `shipSubOrder`: reject routing to a full point (`pointFull`); forced PICKUP routes stay valid
+- [x] Checkout picker: nearest-first per selected address, full points excluded
+- [x] Seller drop-off picker: same ordering by the order's destination
+- [x] Admin point detail: capacity editor; network list shows load/capacity
+- [x] Point dashboard: load vs capacity header
+- [x] i18n (en + ar) + integration tests (full-point rejection, ordering, unlimited default, forced-pickup exemption)
+- [x] This file kept current
+
+## 9. Out of scope
+
 - Inter-point line haul (multi-hop routing between cities)
 - Point COD on *courier-delivered* parcels (drivers still remit directly)
 - Automatic refunds on RTS
-- Capacity limits & auto-selection of the best point
