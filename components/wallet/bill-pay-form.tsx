@@ -83,6 +83,34 @@ function ServiceBadge({
   );
 }
 
+// Module-level so it isn't recreated on every parent render (which would remount
+// the tiles and reload their logo images on each keystroke in the modal).
+function BillerGrid({
+  items,
+  onSelect,
+}: {
+  items: BillerOption[];
+  onSelect: (b: BillerOption) => void;
+}) {
+  return (
+    <div className="grid grid-cols-4 gap-3">
+      {items.map((b) => (
+        <button
+          key={b.slug}
+          type="button"
+          onClick={() => onSelect(b)}
+          className="flex flex-col items-center gap-1.5 text-center"
+        >
+          <ServiceBadge slug={b.slug} />
+          <span className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">
+            {b.name}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function BillPayForm({
   billers,
   balance,
@@ -132,24 +160,6 @@ export function BillPayForm({
       }
     });
 
-  const Grid = ({ items }: { items: BillerOption[] }) => (
-    <div className="grid grid-cols-4 gap-3">
-      {items.map((b) => (
-        <button
-          key={b.slug}
-          type="button"
-          onClick={() => setSelected(b)}
-          className="flex flex-col items-center gap-1.5 text-center"
-        >
-          <ServiceBadge slug={b.slug} />
-          <span className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">
-            {b.name}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-
   return (
     <section className="space-y-3">
       <h2 className="font-medium">{t("billsTitle")}</h2>
@@ -157,7 +167,7 @@ export function BillPayForm({
       {bills.length > 0 ? (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">{t("billsKindBill")}</p>
-          <Grid items={bills} />
+          <BillerGrid items={bills} onSelect={setSelected} />
         </div>
       ) : null}
 
@@ -166,7 +176,7 @@ export function BillPayForm({
           <p className="text-muted-foreground text-xs">
             {t("billsKindAirtime")}
           </p>
-          <Grid items={airtime} />
+          <BillerGrid items={airtime} onSelect={setSelected} />
         </div>
       ) : null}
 
