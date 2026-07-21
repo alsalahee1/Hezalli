@@ -415,6 +415,31 @@ manual admin entry (§12) — this flow only pays out the earnings side.
 - [x] Integration test: below-min / over-balance / double request rejected; pay writes exactly one ledger row and can't double-pay; reject has no ledger effect
 - [x] This file kept current
 
-## 23. Out of scope
+## 24. v1.10 — Buyer-facing network visibility
+
+The network works, but buyers can't _see_ it. Two public-facing pieces:
+
+1. **Pickup card on the public track page.** A pickup parcel held at a hub
+   (`AT_POINT` + `PICKUP`) shows a "ready for collection" card: hub name,
+   address, phone, and a reminder to bring the delivery code — instead of a
+   courier delivery estimate that doesn't apply. Privacy-safe: the hub is a
+   public business location; no buyer data is added.
+2. **Public points directory** at `/points` (shop layout): ACTIVE hubs
+   grouped by governorate with name, city, address, and phone, plus a
+   "become a Hezalli Point" link to the existing `/point-partner` page.
+   Linked from the checkout pickup picker ("see all points"). Grows both
+   sides of the marketplace: buyers discover pickup, partners discover the
+   program.
+
+### Build checklist (v1.10)
+
+- [x] `lib/point-public.ts`: `publicPointsByGovernorate()` (ACTIVE only) + `heldAtPoint(shipment)` hub lookup for the track page
+- [x] Track page: pickup-ready card (hub name / address / phone + bring-your-code hint); no courier ETA for pickup parcels
+- [x] `/points` public directory page + link from checkout picker
+- [x] i18n (en + ar) + SEO metadata for `/points`
+- [x] Integration test: directory lists only ACTIVE hubs grouped by governorate; held pickup parcel resolves its hub info
+- [x] This file kept current
+
+## 25. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

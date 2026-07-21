@@ -454,7 +454,14 @@ export function CheckoutFlow({
                   ))}
                 </select>
                 <p className="text-muted-foreground text-xs">
-                  {t("pickupPointHint")}
+                  {t("pickupPointHint")}{" "}
+                  <Link
+                    href="/points"
+                    target="_blank"
+                    className="text-primary hover:underline"
+                  >
+                    {t("pickupPointsDirectory")}
+                  </Link>
                 </p>
               </div>
             ) : null}

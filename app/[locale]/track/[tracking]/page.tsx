@@ -1,6 +1,7 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { CheckCircle2, MapPin, Package, Truck } from "lucide-react";
 
+import { pickupHubForShipment } from "@/lib/point-public";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/seo";
@@ -31,6 +32,7 @@ export default async function TrackingPage({
         orderBy: { createdAt: "desc" },
         select: {
           status: true,
+          atPointId: true,
           shippedAt: true,
           deliveredAt: true,
           carrier: { select: { name: true } },
@@ -85,6 +87,9 @@ export default async function TrackingPage({
 
   const sub = shipment.subOrder;
   const isExpress = sub?.shippingMethod === "EXPRESS";
+  const isPickup = sub?.shippingMethod === "PICKUP";
+  // The hub holding a pickup parcel — powers the "ready for collection" card.
+  const pickupHub = isPickup ? await pickupHubForShipment(shipment) : null;
   const orderRef = sub ? `#${sub.order.id.slice(-8).toUpperCase()}` : "—";
   const dest = sub?.order.address
     ? `${sub.order.address.city}, ${sub.order.address.governorate}`
@@ -95,8 +100,9 @@ export default async function TrackingPage({
     sub?.status === "COMPLETED";
 
   // Estimated delivery window (Express buyers paid for the faster promise).
+  // Pickup parcels have none — the buyer collects when it's ready.
   let estimate: { from: Date; to: Date } | null = null;
-  if (!delivered && shipment.shippedAt) {
+  if (!delivered && shipment.shippedAt && !isPickup) {
     const s = await getPlatformSettings();
     const [min, max] = isExpress
       ? [s.express_eta_min_days, s.express_eta_max_days]
@@ -146,6 +152,26 @@ export default async function TrackingPage({
           </p>
         ) : null}
       </div>
+
+      {/* Pickup parcel waiting at a hub: where to collect it (docs §24). */}
+      {pickupHub ? (
+        <div className="mt-4 rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4">
+          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-500">
+            {t("pickupReady")}
+          </p>
+          <p className="mt-1 text-sm font-medium">{pickupHub.name}</p>
+          <p className="text-muted-foreground flex items-center gap-1 text-sm">
+            <MapPin className="size-3.5 shrink-0" />
+            {pickupHub.addressLine}, {pickupHub.city}, {pickupHub.governorate}
+          </p>
+          <p className="text-muted-foreground text-sm" dir="ltr">
+            {pickupHub.phone}
+          </p>
+          <p className="text-muted-foreground mt-2 text-xs">
+            {t("pickupBringCode")}
+          </p>
+        </div>
+      ) : null}
 
       {/* Meta */}
       <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
