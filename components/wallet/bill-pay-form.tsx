@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  Droplets,
-  Phone,
-  Receipt,
-  Smartphone,
-  Wifi,
-  Zap,
-} from "lucide-react";
+import { Droplets, Phone, Receipt, Smartphone, Wifi, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 

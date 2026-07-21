@@ -46,6 +46,9 @@ export type PlatformSettings = {
   point_transfer_fee: number;
   // Days without movement before a held parcel is flagged as stale.
   stale_parcel_days: number;
+  // Days a PUDO parcel waits at the counter before the network prompts an RTS
+  // (docs/DELIVERY-POINTS.md §20). Must be ≥ stale_parcel_days in practice.
+  pickup_window_days: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -98,6 +101,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   pickup_fee: 0,
   point_transfer_fee: 0.25,
   stale_parcel_days: 3,
+  pickup_window_days: 7,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

@@ -376,13 +376,13 @@ alongside the existing auto-complete/marketing crons.
 
 ### Build checklist (v1.8)
 
-- [ ] Setting `pickup_window_days` (default 7) + admin form field
-- [ ] Migration: `Shipment.pickupRemindedAt` / `staleFlaggedAt` (nullable timestamps)
-- [ ] `lib/point-sweep.ts`: `sweepPointParcels()` → `{reminded, expired, flagged}` with one-shot guards
-- [ ] `/api/cron/points` route (CRON_SECRET, GET+POST) running the sweep
-- [ ] i18n (en + ar) for the new notifications + settings label
-- [ ] Integration test: backdated parcels trigger reminder → expiry → operator flag exactly once; second sweep is a no-op
-- [ ] This file kept current
+- [x] Setting `pickup_window_days` (default 7) + admin form field
+- [x] Migration: `Shipment.pickupRemindedAt` / `staleFlaggedAt` (nullable timestamps)
+- [x] `lib/point-sweep.ts`: `sweepPointParcels()` → `{reminded, expired, flagged}` with one-shot guards
+- [x] `/api/cron/points` route (CRON_SECRET, GET+POST) running the sweep
+- [x] i18n (en + ar) for the new notifications + settings label
+- [x] Integration test: backdated parcels trigger reminder → expiry → operator flag exactly once; second sweep is a no-op
+- [x] This file kept current
 
 ## 21. Out of scope
 

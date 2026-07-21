@@ -28,9 +28,7 @@ export default async function WalletHistoryPage() {
   const session = await auth();
   const locale = await getLocale();
   if (!session?.user?.id) {
-    redirect(
-      `/${locale}/login?callbackUrl=/${locale}/account/wallet/history`,
-    );
+    redirect(`/${locale}/login?callbackUrl=/${locale}/account/wallet/history`);
   }
   const t = await getTranslations("Wallet");
   const format = await getFormatter();
