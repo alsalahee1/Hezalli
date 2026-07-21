@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { SmartImage } from "@/components/ui/smart-image";
 
 export type HeroBanner = {
   id: string;
@@ -45,8 +46,15 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
     >
       {banners.map((b, i) => {
         const inner = (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={b.image} alt={b.title} className="size-full object-cover" />
+          <SmartImage
+            src={b.image}
+            alt={b.title}
+            fill
+            // The first banner is the above-the-fold LCP — preload it.
+            priority={i === 0}
+            sizes="100vw"
+            className="object-cover"
+          />
         );
         return (
           <div
@@ -58,7 +66,7 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
             aria-hidden={i !== index}
           >
             {b.href ? (
-              <Link href={b.href} className="block size-full">
+              <Link href={b.href} className="relative block size-full">
                 {inner}
               </Link>
             ) : (

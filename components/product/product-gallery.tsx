@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { SmartImage } from "@/components/ui/smart-image";
 
 type GalleryImage = { url: string; alt: string };
 
@@ -26,11 +27,12 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
         onMouseLeave={() => setZoom(null)}
       >
         {current.url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SmartImage
             src={current.url}
             alt={current.alt}
-            className="size-full object-cover transition-transform duration-150"
+            fill
+            sizes="(min-width: 1024px) 40vw, 100vw"
+            className="object-cover transition-transform duration-150"
             style={
               zoom
                 ? {
@@ -51,18 +53,19 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
               type="button"
               onClick={() => setActive(i)}
               className={cn(
-                "bg-muted aspect-square overflow-hidden rounded-md border-2",
+                "bg-muted relative aspect-square overflow-hidden rounded-md border-2",
                 i === active
                   ? "border-primary"
                   : "hover:border-muted-foreground/30 border-transparent",
               )}
             >
               {img.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <SmartImage
                   src={img.url}
                   alt={img.alt}
-                  className="size-full object-cover"
+                  fill
+                  sizes="10vw"
+                  className="object-cover"
                 />
               ) : null}
             </button>

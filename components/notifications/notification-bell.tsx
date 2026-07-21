@@ -11,7 +11,7 @@ import {
 import { notificationHref, type NotifVariant } from "@/lib/notifications";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { useMountTransition } from "@/components/ui/use-mount-transition";
+import { Popover } from "@/components/ui/popover";
 
 type Item = {
   id: string;
@@ -32,7 +32,6 @@ export function NotificationBell({
   const format = useFormatter();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { mounted, shown } = useMountTransition(open, 200);
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<Item[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -95,13 +94,8 @@ export function NotificationBell({
         ) : null}
       </button>
 
-      {mounted ? (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
+      <Popover open={open} onClose={() => setOpen(false)}>
+        {(shown) => (
           <div
             className={cn(
               "bg-background fixed inset-x-2 top-16 z-50 origin-top overflow-hidden rounded-lg border shadow-lg transition duration-200 ease-out will-change-transform motion-reduce:transition-none sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-1 sm:w-80",
@@ -174,8 +168,8 @@ export function NotificationBell({
               </button>
             ) : null}
           </div>
-        </>
-      ) : null}
+        )}
+      </Popover>
     </div>
   );
 }
