@@ -467,6 +467,38 @@ scans every parcel label one by one. v1.11 adds the batch:
 - [x] Integration test: manifest lists only this hub's assigned last-mile parcels; batch hands all; concurrent claim drops out; pickup parcels never appear
 - [x] This file kept current
 
-## 27. Out of scope
+## 28. v1.12 — Hub monthly statement
+
+What every real partner network mails its hubs: a monthly statement.
+Operators see their ledger as a running list today, but reconciling a month
+("what did I earn, what was I paid, how much cash did I owe?") means adding
+rows by hand. v1.12 gives them the accounting view:
+
+1. **Statement page** (`/point/statement?month=YYYY-MM`, prev/next nav):
+   for the chosen month, BOTH sides of the hub's books —
+   - _Earnings_: opening balance → fees earned, payouts, adjustments →
+     closing balance.
+   - _COD cash_: opening balance → counter COD taken, driver cash-in,
+     remittances → closing balance.
+   - The full entry list for the month underneath.
+2. **CSV export**: a `text/csv` download of the month's entries (date, type,
+   note, amount) from an operator-gated route — for spreadsheets, audits, or
+   the accountant.
+
+Math note: opening = signed sum of all entries strictly before the month;
+closing = opening + the month's delta. Because every ledger row is signed
+and immutable, both are pure SUMs — nothing stored, nothing to drift.
+
+### Build checklist (v1.12)
+
+- [ ] `lib/point-statement.ts`: `pointStatement(pointId, from, to)` — opening/delta/closing per side + per-type totals + entries
+- [ ] `/point/statement` page: month nav, both summaries, entry list, CSV link
+- [ ] `/api/point/statement` CSV route (operator-gated)
+- [ ] Link from the point ledger page
+- [ ] i18n (en + ar)
+- [ ] Integration test: seeded two-month ledger → opening excludes the month, closing = opening + delta, both sides; CSV route gated
+- [ ] This file kept current
+
+## 29. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
