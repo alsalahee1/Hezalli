@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import { ChevronRight, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { Link } from "@/i18n/navigation";
 import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
@@ -34,22 +33,6 @@ function describeDestination(method: string, details: unknown): string {
   return "—";
 }
 
-// Map wallet entry types to a translation key for the history list.
-const ENTRY_LABEL: Record<string, string> = {
-  TOP_UP: "topUp",
-  PAYMENT: "payment",
-  REFUND: "refund",
-  CASHBACK: "cashback",
-  CASHOUT: "cashout",
-  ADJUSTMENT: "adjustment",
-  SELLER_EARNINGS: "sellerEarnings",
-  TRANSFER_OUT: "transferOut",
-  TRANSFER_IN: "transferIn",
-  BILL_PAYMENT: "billPaymentEntry",
-  AIRTIME_TOPUP: "airtimeEntry",
-  BILL_REFUND: "billRefundEntry",
-};
-
 export default async function WalletPage() {
   const session = await auth();
   const locale = await getLocale();
@@ -60,7 +43,9 @@ export default async function WalletPage() {
   const format = await getFormatter();
 
   const userId = session.user.id;
-  const { balance, frozen, entries } = await getWalletView(userId);
+  // History moved to its own screen (/account/wallet/history); the overview
+  // only needs the balance and frozen flag here.
+  const { balance, frozen } = await getWalletView(userId, 0);
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
@@ -203,16 +188,17 @@ export default async function WalletPage() {
             />
           ) : null}
           {p2pEnabled ? <WalletRequestForm /> : null}
-          {canPayBills ? (
-            <BillPayForm
-              billers={billerOptions}
-              balance={balance}
-              hasPin={hasPin}
-              hasPasskey={hasPasskey}
-            />
-          ) : null}
         </div>
       )}
+
+      {canPayBills ? (
+        <BillPayForm
+          billers={billerOptions}
+          balance={balance}
+          hasPin={hasPin}
+          hasPasskey={hasPasskey}
+        />
+      ) : null}
 
       {/* Desktop only: on phones the bottom bar's Scan button already shows the
           user's receive QR (its "My code" tab), so this is redundant there.
@@ -320,54 +306,6 @@ export default async function WalletPage() {
           </ul>
         </section>
       ) : null}
-
-      <section id="wallet-history" className="scroll-mt-20 space-y-3">
-        <h2 className="font-medium">{t("history")}</h2>
-        {entries.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("empty")}</p>
-        ) : (
-          <ul className="divide-y rounded-lg border">
-            {entries.map((e) => {
-              const amount = Number(e.amountUsd);
-              return (
-                <li key={e.id}>
-                  <Link
-                    href={`/account/wallet/tx/${e.id}`}
-                    className="hover:bg-muted/40 flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div>
-                        <p className="font-medium">
-                          {t(ENTRY_LABEL[e.type] ?? "adjustment")}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {format.dateTime(e.createdAt, {
-                            dateStyle: "medium",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="flex items-center gap-1.5">
-                      <span
-                        className={
-                          amount >= 0
-                            ? "font-semibold text-emerald-600"
-                            : "text-destructive font-semibold"
-                        }
-                        dir="ltr"
-                      >
-                        {amount >= 0 ? "+" : "−"}
-                        {money(Math.abs(amount))}
-                      </span>
-                      <ChevronRight className="text-muted-foreground size-4 rtl:rotate-180" />
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
 
       {/* Wallet-focused bottom bar for phones — replaces the storefront's
           default tab bar while on this screen. The center Scan button (P2P only)
