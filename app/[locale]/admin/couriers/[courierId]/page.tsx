@@ -3,6 +3,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { courierRating } from "@/lib/courier-ratings";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
@@ -27,8 +28,9 @@ export default async function AdminCourierDetailPage({
   });
   if (!courier) notFound();
 
-  const [summary, entries] = await Promise.all([
+  const [summary, rating, entries] = await Promise.all([
     courierCashSummary(courierId),
+    courierRating(courierId),
     prisma.courierLedgerEntry.findMany({
       where: { courierId },
       orderBy: { createdAt: "desc" },
@@ -76,7 +78,14 @@ export default async function AdminCourierDetailPage({
         <h1 className="text-2xl font-semibold tracking-tight">
           {courier.name ?? courier.email ?? t("driver")}
         </h1>
-        <p className="text-muted-foreground text-sm">{courier.email}</p>
+        <p className="text-muted-foreground flex items-center gap-2 text-sm">
+          {courier.email}
+          {rating.count > 0 ? (
+            <span className="font-medium text-amber-600" dir="ltr">
+              ★ {rating.avg.toFixed(1)} ({rating.count})
+            </span>
+          ) : null}
+        </p>
       </div>
 
       {/* Headline figures */}

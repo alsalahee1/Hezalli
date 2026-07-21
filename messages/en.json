@@ -2213,7 +2213,8 @@
     "payoutAmount": "Amount to pay",
     "payoutNotePlaceholder": "Reference (optional)",
     "payoutBtn": "Pay out",
-    "type_PAYOUT": "Earnings payout"
+    "type_PAYOUT": "Earnings payout",
+    "ratingCount": "{count, plural, one {# rating} other {# ratings}}"
   },
   "AdminWalletAudit": {
     "title": "Wallet audit & reconciliation",
@@ -2417,5 +2418,19 @@
     "recipient": "Received by",
     "codeVerified": "Delivery code verified",
     "photoAlt": "Doorstep delivery photo"
+  },
+  "DeliveryRating": {
+    "rateCourier": "Rate your courier",
+    "yourRating": "Your rating",
+    "edit": "Edit",
+    "commentHint": "Add a comment (optional)",
+    "submit": "Submit rating",
+    "saving": "Saving…",
+    "badStars": "Please pick 1–5 stars",
+    "notSignedIn": "Please sign in.",
+    "forbidden": "You can only rate your own delivery.",
+    "noCourier": "This delivery had no Hezalli courier.",
+    "notEligible": "Rating opens once the parcel is delivered.",
+    "notFound": "Delivery not found."
   }
 }

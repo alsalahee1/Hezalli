@@ -15,6 +15,7 @@ import { ConfirmReceivedButton } from "@/components/orders/confirm-received-butt
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
 import { QrCode } from "@/components/orders/qr-code";
 import { RedeliveryForm } from "@/components/orders/redelivery-form";
+import { DeliveryRating } from "@/components/orders/delivery-rating";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
 import {
   ReturnBlock,
@@ -57,6 +58,7 @@ export default async function OrderDetailPage({
                 },
               },
               events: { orderBy: { createdAt: "asc" } },
+              deliveryRating: { select: { stars: true, comment: true } },
             },
           },
           return: { include: { dispute: { select: { id: true } } } },
@@ -426,6 +428,16 @@ export default async function OrderDetailPage({
                         ? s.shipment.redeliverAt.toISOString().slice(0, 10)
                         : null
                     }
+                  />
+                ) : null}
+
+                {/* Rate the courier once an Express parcel is delivered. */}
+                {s.shippingMethod === "EXPRESS" &&
+                s.shipment.driverId &&
+                (s.status === "DELIVERED" || s.status === "COMPLETED") ? (
+                  <DeliveryRating
+                    shipmentId={s.shipment.id}
+                    existing={s.shipment.deliveryRating}
                   />
                 ) : null}
 
