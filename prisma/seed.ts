@@ -787,6 +787,31 @@ async function main() {
     },
   });
 
+  // A Hezalli Point partner (parcel hub operator), so the /point dashboard can
+  // be signed into. Owns one ACTIVE DeliveryPoint — the guard requires that.
+  await prisma.user.create({
+    data: {
+      name: "Sana'a Central Point",
+      email: "point@hezalli.com",
+      emailVerified: new Date(),
+      phone: "+967700000010",
+      phoneVerified: new Date(),
+      passwordHash: PASSWORD,
+      roles: ["DELIVERY_POINT"],
+      locale: "ar",
+      deliveryPoint: {
+        create: {
+          name: "Sana'a Central Point",
+          phone: "+967700000010",
+          governorate: "Sana'a",
+          city: "Sana'a",
+          addressLine: "Al-Zubairi Street, Building 5",
+          status: "ACTIVE",
+        },
+      },
+    },
+  });
+
   // --- Sellers (+ profile + balance + store + shipping rates) ---
   async function createSeller(opts: {
     name: string;
