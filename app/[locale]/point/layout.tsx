@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { QrCode as QrIcon, Store } from "lucide-react";
+import { QrCode as QrIcon, ShoppingBag, Store } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -62,12 +62,25 @@ export default async function PointLayout({
         <Link href="/point" className="flex items-center gap-2 font-semibold">
           <Store className="text-primary size-5" /> {t("appName")}
         </Link>
-        <Link
-          href="/point/scan"
-          className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-        >
-          <QrIcon className="size-4" /> {t("scan")}
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Escape hatch back to the storefront — the point app is a
+              standalone shell, so without this an operator who opens it has no
+              way back to the shop (matches the driver/seller/admin shells). */}
+          <Link
+            href="/"
+            aria-label={t("storefront")}
+            title={t("storefront")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <ShoppingBag className="size-5" />
+          </Link>
+          <Link
+            href="/point/scan"
+            className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
+          >
+            <QrIcon className="size-4" /> {t("scan")}
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-4 pb-20">{children}</main>

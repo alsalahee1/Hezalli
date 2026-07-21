@@ -42,7 +42,9 @@
     "sellerCenter": "مركز البائع",
     "adminPanel": "لوحة الإدارة",
     "fleetPortal": "بوابة الأسطول",
-    "wallet": "المحفظة"
+    "wallet": "المحفظة",
+    "driverApp": "تطبيق السائق",
+    "pointPortal": "بوابة النقطة"
   },
   "MobileNav": {
     "label": "التنقل الرئيسي",
@@ -2139,7 +2141,8 @@
     "stmtOpening": "افتتاحي",
     "stmtChange": "هذا الشهر",
     "stmtClosing": "ختامي",
-    "stmtCsv": "تنزيل CSV"
+    "stmtCsv": "تنزيل CSV",
+    "storefront": "المتجر"
   },
   "Dispatch": {
     "title": "التوزيع",
@@ -2458,7 +2461,8 @@
     "stmtOpening": "افتتاحي",
     "stmtChange": "هذا الشهر",
     "stmtClosing": "ختامي",
-    "stmtCsv": "تنزيل CSV"
+    "stmtCsv": "تنزيل CSV",
+    "storefront": "المتجر"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
