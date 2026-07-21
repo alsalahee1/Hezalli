@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { QrCode as QrIcon, ShoppingBag, Store } from "lucide-react";
+import { QrCode as QrIcon, ShoppingBag, Store, Wallet } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -73,6 +73,16 @@ export default async function PointLayout({
             className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
           >
             <ShoppingBag className="size-5" />
+          </Link>
+          {/* Quick hop to the marketplace wallet (USD balance), separate from
+              the point cash ledger in the bottom bar. */}
+          <Link
+            href="/account/wallet"
+            aria-label={t("wallet")}
+            title={t("wallet")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <Wallet className="size-5" />
           </Link>
           <Link
             href="/point/scan"
