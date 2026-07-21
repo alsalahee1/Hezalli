@@ -32,7 +32,17 @@ const DEMO = [
   {
     email: "buyer1@example.com",
     label: "Buyer",
-    desc: "Shopper — browse, checkout, track",
+    desc: "Shopper — browse, checkout, track (Sana'a)",
+  },
+  {
+    email: "buyer2@example.com",
+    label: "Buyer",
+    desc: "Second shopper (Aden)",
+  },
+  {
+    email: "buyer3@example.com",
+    label: "Buyer",
+    desc: "Third shopper (Taiz)",
   },
 ];
 
