@@ -22,7 +22,8 @@ const ADMIN = {
   desc: "Full access",
 };
 
-// One account per role beside Admin: seller, point center, courier, buyer.
+// One account per role beside Admin. Order matters — the 2-column grid pairs
+// row 1: Seller + Buyer, row 2: Courier + Point Center.
 const ROLES = [
   {
     email: "seller1@hezalli.com",
@@ -34,13 +35,13 @@ const ROLES = [
     card: "border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10",
   },
   {
-    email: "point@hezalli.com",
-    label: "Point Center",
-    desc: "Parcel hub",
-    icon: Store,
-    tile: "bg-rose-500",
-    title: "text-rose-700 dark:text-rose-400",
-    card: "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10",
+    email: "buyer1@example.com",
+    label: "Buyer",
+    desc: "Shop & checkout",
+    icon: ShoppingBag,
+    tile: "bg-emerald-500",
+    title: "text-emerald-700 dark:text-emerald-400",
+    card: "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10",
   },
   {
     email: "driver@hezalli.com",
@@ -52,13 +53,13 @@ const ROLES = [
     card: "border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10",
   },
   {
-    email: "buyer1@example.com",
-    label: "Buyer",
-    desc: "Shop & checkout",
-    icon: ShoppingBag,
-    tile: "bg-emerald-500",
-    title: "text-emerald-700 dark:text-emerald-400",
-    card: "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10",
+    email: "point@hezalli.com",
+    label: "Point Center",
+    desc: "Parcel hub",
+    icon: Store,
+    tile: "bg-rose-500",
+    title: "text-rose-700 dark:text-rose-400",
+    card: "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10",
   },
 ];
 
