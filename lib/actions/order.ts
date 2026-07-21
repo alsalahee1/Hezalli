@@ -756,8 +756,7 @@ export async function cancelOrder(
     await notify({
       userId: order.buyerId,
       type: "PAYMENT",
-      title:
-        locale === "ar" ? "تم رد المبلغ إلى محفظتك" : "Refunded to wallet",
+      title: locale === "ar" ? "تم رد المبلغ إلى محفظتك" : "Refunded to wallet",
       body:
         locale === "ar"
           ? `تمت إعادة ${refundAmount.toFixed(2)}$ إلى محفظتك.`
