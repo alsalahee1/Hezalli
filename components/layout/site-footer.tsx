@@ -25,7 +25,7 @@ export function SiteFooter() {
 
   return (
     <footer className="bg-muted/30 mt-16 border-t">
-      <div className="yemeni-trim hidden yemeni:block" aria-hidden />
+      <div className="yemeni-trim yemeni:block hidden" aria-hidden />
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2 md:max-w-sm">

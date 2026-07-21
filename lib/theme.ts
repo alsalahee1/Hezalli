@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 
-export const THEME_COOKIE = "hezalli-theme";
-export const THEMES = ["default", "yemeni"] as const;
-export type ThemeId = (typeof THEMES)[number];
+import { THEME_COOKIE, THEMES, type ThemeId } from "./theme-constants";
 
 function isThemeId(value: string | undefined): value is ThemeId {
   return !!value && (THEMES as readonly string[]).includes(value);

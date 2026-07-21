@@ -5,13 +5,10 @@ import { Palette } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
-import { THEME_COOKIE, THEMES, type ThemeId } from "@/lib/theme";
+import { THEME_COOKIE, THEMES, type ThemeId } from "@/lib/theme-constants";
 
 function applyTheme(theme: ThemeId) {
-  document.documentElement.classList.toggle(
-    "theme-yemeni",
-    theme === "yemeni",
-  );
+  document.documentElement.classList.toggle("theme-yemeni", theme === "yemeni");
   document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=31536000; SameSite=Lax`;
 }
 

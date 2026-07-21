@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { NavCategory } from "@/lib/categories";
 import { formatUsd } from "@/lib/products";
-import type { ThemeId } from "@/lib/theme";
+import type { ThemeId } from "@/lib/theme-constants";
 import { CartButton } from "@/components/cart/cart-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -55,7 +55,7 @@ export function SiteHeader({
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="yemeni-trim hidden yemeni:block" aria-hidden />
+      <div className="yemeni-trim yemeni:block hidden" aria-hidden />
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <button
           type="button"
