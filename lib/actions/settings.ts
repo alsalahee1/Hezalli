@@ -35,6 +35,7 @@ export type SettingsInput = {
   express_eta_max_days: number;
   express_auto_assign: boolean;
   courier_assign_strategy: "balanced" | "nearest";
+  courier_delivery_fee: number;
   points_enabled: boolean;
   point_handling_fee: number;
   max_delivery_attempts: number;
@@ -118,13 +119,13 @@ export async function savePlatformSettings(
   if (!Number.isFinite(maxAttempts) || maxAttempts < 1 || maxAttempts > 10)
     return { error: "badMaxAttempts" };
 
-  // wallet_bills_provider and courier_delivery_fee are ops/advanced settings,
-  // not part of this form — left untouched here (set via seed / DB / a future
-  // dedicated control), so their stored values are preserved.
-  const values: Omit<
-    PlatformSettings,
-    "wallet_bills_provider" | "courier_delivery_fee"
-  > = {
+  const deliveryFee = money2(input.courier_delivery_fee);
+  if (!Number.isFinite(deliveryFee) || deliveryFee < 0)
+    return { error: "badDeliveryFee" };
+
+  // wallet_bills_provider is an ops/advanced setting not part of this form —
+  // left untouched here (set via seed / DB), so its stored value is preserved.
+  const values: Omit<PlatformSettings, "wallet_bills_provider"> = {
     platform_name: (input.platform_name || "Hezalli").trim().slice(0, 80),
     platform_logo: (input.platform_logo || "").trim().slice(0, 500),
     commission_rate: Math.round(pct * 100) / 10000,
@@ -151,6 +152,7 @@ export async function savePlatformSettings(
     express_auto_assign: Boolean(input.express_auto_assign),
     courier_assign_strategy:
       input.courier_assign_strategy === "nearest" ? "nearest" : "balanced",
+    courier_delivery_fee: deliveryFee,
     points_enabled: Boolean(input.points_enabled),
     point_handling_fee: pointFee,
     max_delivery_attempts: maxAttempts,

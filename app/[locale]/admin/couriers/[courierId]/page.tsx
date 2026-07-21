@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { CourierRemittanceForm } from "@/components/admin/courier-remittance-form";
+import { CourierPayoutForm } from "@/components/admin/courier-payout-form";
 
 // Per-courier COD reconciliation: headline cash-on-hand + earnings, a record-a-
 // remittance form, and the raw ledger. Cash-on-hand is what the driver still
@@ -49,6 +50,7 @@ export default async function AdminCourierDetailPage({
   const stats: { key: string; value: number; accent?: boolean }[] = [
     { key: "cashOnHand", value: summary.cashOnHand, accent: true },
     { key: "earnings", value: summary.earnings },
+    { key: "earningsPaid", value: summary.earningsPaid },
     { key: "totalCollected", value: summary.totalCollected },
     { key: "totalRemitted", value: summary.totalRemitted },
   ];
@@ -57,6 +59,7 @@ export default async function AdminCourierDetailPage({
     COD_COLLECTED: t("type_COD_COLLECTED"),
     REMITTANCE: t("type_REMITTANCE"),
     EARNING: t("type_EARNING"),
+    PAYOUT: t("type_PAYOUT"),
     ADJUSTMENT: t("type_ADJUSTMENT"),
   };
 
@@ -94,11 +97,25 @@ export default async function AdminCourierDetailPage({
         ))}
       </div>
 
-      {/* Record a hand-in */}
-      <section className="rounded-xl border p-4">
-        <h2 className="mb-3 text-sm font-semibold">{t("recordTitle")}</h2>
-        <CourierRemittanceForm courierId={courier.id} />
-      </section>
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Record a cash hand-in */}
+        <section className="rounded-xl border p-4">
+          <h2 className="mb-3 text-sm font-semibold">{t("recordTitle")}</h2>
+          <CourierRemittanceForm courierId={courier.id} />
+        </section>
+
+        {/* Pay out earnings */}
+        <section className="rounded-xl border p-4">
+          <h2 className="mb-1 text-sm font-semibold">{t("payoutTitle")}</h2>
+          <p className="text-muted-foreground mb-3 text-xs">
+            {t("payoutOwed")}:{" "}
+            <span className="text-foreground font-medium" dir="ltr">
+              {money(summary.earnings)}
+            </span>
+          </p>
+          <CourierPayoutForm courierId={courier.id} owed={summary.earnings} />
+        </section>
+      </div>
 
       {/* Ledger */}
       <section className="space-y-3">

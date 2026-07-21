@@ -44,7 +44,8 @@ export type CourierCashSummary = {
   cashOnHand: number; // collected − remitted (± adjustments): what the driver still holds
   totalCollected: number;
   totalRemitted: number;
-  earnings: number; // delivery fees owed to the driver
+  earnings: number; // delivery fees STILL OWED (accrued − paid out)
+  earningsPaid: number; // delivery fees already paid to the driver
 };
 
 // Reconcile one courier's ledger into the headline figures.
@@ -62,11 +63,14 @@ export async function courierCashSummary(
   const collected = sum("COD_COLLECTED");
   const remitted = sum("REMITTANCE"); // stored negative
   const adjustment = sum("ADJUSTMENT");
+  const earned = sum("EARNING");
+  const paid = sum("PAYOUT"); // stored negative
   return {
     cashOnHand: round2(collected + remitted + adjustment),
     totalCollected: round2(collected),
     totalRemitted: round2(-remitted),
-    earnings: round2(sum("EARNING")),
+    earnings: round2(earned + paid), // outstanding owed
+    earningsPaid: round2(-paid),
   };
 }
 

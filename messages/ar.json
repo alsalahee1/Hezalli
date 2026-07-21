@@ -1618,7 +1618,10 @@
     "staleDays": "حد الطرود الراكدة (أيام)",
     "staleDaysHint": "تُعلَّم الطرود المحتجزة التي لم تتحرك طوال هذه المدة.",
     "pickupWindow": "مهلة الاستلام (أيام)",
-    "pickupWindowHint": "المدة التي ينتظرها طرد الاستلام في النقطة قبل إعادته إلى البائع."
+    "pickupWindowHint": "المدة التي ينتظرها طرد الاستلام في النقطة قبل إعادته إلى البائع.",
+    "courierFee": "رسوم توصيل المندوب (دولار)",
+    "courierFeeHint": "تُدفع للسائق عن كل توصيلة إكسبريس مكتملة.",
+    "err_badDeliveryFee": "أدخل رسوم توصيل صحيحة."
   },
   "Vouchers": {
     "platformTitle": "قسائم المنصة",
@@ -2203,7 +2206,14 @@
     "recording": "جارٍ التسجيل…",
     "err_forbidden": "غير مسموح.",
     "err_badInput": "أدخل مبلغًا صحيحًا.",
-    "err_notCourier": "هذا المستخدم ليس سائقًا."
+    "err_notCourier": "هذا المستخدم ليس سائقًا.",
+    "earningsPaid": "الأرباح المدفوعة",
+    "payoutTitle": "صرف الأرباح",
+    "payoutOwed": "المستحق",
+    "payoutAmount": "المبلغ المدفوع",
+    "payoutNotePlaceholder": "مرجع (اختياري)",
+    "payoutBtn": "صرف",
+    "type_PAYOUT": "صرف أرباح"
   },
   "AdminWalletAudit": {
     "title": "تدقيق ومطابقة المحافظ",
