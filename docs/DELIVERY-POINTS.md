@@ -433,12 +433,12 @@ The network works, but buyers can't _see_ it. Two public-facing pieces:
 
 ### Build checklist (v1.10)
 
-- [ ] `lib/point-public.ts`: `publicPointsByGovernorate()` (ACTIVE only) + `heldAtPoint(shipment)` hub lookup for the track page
-- [ ] Track page: pickup-ready card (hub name / address / phone + bring-your-code hint); no courier ETA for pickup parcels
-- [ ] `/points` public directory page + link from checkout picker
-- [ ] i18n (en + ar) + SEO metadata for `/points`
-- [ ] Integration test: directory lists only ACTIVE hubs grouped by governorate; held pickup parcel resolves its hub info
-- [ ] This file kept current
+- [x] `lib/point-public.ts`: `publicPointsByGovernorate()` (ACTIVE only) + `heldAtPoint(shipment)` hub lookup for the track page
+- [x] Track page: pickup-ready card (hub name / address / phone + bring-your-code hint); no courier ETA for pickup parcels
+- [x] `/points` public directory page + link from checkout picker
+- [x] i18n (en + ar) + SEO metadata for `/points`
+- [x] Integration test: directory lists only ACTIVE hubs grouped by governorate; held pickup parcel resolves its hub info
+- [x] This file kept current
 
 ## 25. Out of scope
 
