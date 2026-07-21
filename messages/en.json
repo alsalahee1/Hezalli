@@ -1638,7 +1638,14 @@
     "pickupWindowHint": "How long a pickup parcel waits at a point before it should be returned to the seller.",
     "courierFee": "Courier delivery fee (USD)",
     "courierFeeHint": "Paid to the driver for each completed Hezalli Express delivery.",
-    "err_badDeliveryFee": "Enter a valid delivery fee."
+    "err_badDeliveryFee": "Enter a valid delivery fee.",
+    "driverCashLimit": "Driver cash limit (USD)",
+    "driverCashLimitHint": "A driver holding more unremitted COD than this stops receiving new assignments. 0 = off.",
+    "codMaxAge": "COD max age (hours)",
+    "codMaxAgeHint": "A driver holding any COD cash longer than this stops receiving new assignments. 0 = off.",
+    "pointCashLimit": "Point cash limit (USD)",
+    "pointCashLimitHint": "A point holding more unremitted cash than this stops receiving new parcels and driver cash-ins. 0 = off.",
+    "err_badCashLimit": "Enter valid COD credit-control limits."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -2111,6 +2118,11 @@
     "notifTapOff": "Tap to turn off",
     "myQr": "My collection QR",
     "myQrHint": "Show this at a Hezalli Point so staff can pull up your parcels.",
+    "codBlockedTitle": "New deliveries paused",
+    "codBlockedOverdue": "You have been holding {amount} of COD cash for too long.",
+    "codBlockedOverLimit": "You are holding {amount} of COD cash — over the {limit} limit.",
+    "codBlockedHow": "Hand the cash in at any Hezalli Point or the office and new deliveries resume right away.",
+    "codNearLimit": "You are holding {amount} of the {limit} COD cash allowed — hand it in soon to keep receiving deliveries.",
     "collectFromPoint": "Collect from",
     "pickupPoint": "Pickup point",
     "redeliverOn": "Buyer asked for redelivery on {date}",
@@ -2331,7 +2343,13 @@
     "payoutNotePlaceholder": "Reference (optional)",
     "payoutBtn": "Pay out",
     "type_PAYOUT": "Earnings payout",
-    "ratingCount": "{count, plural, one {# rating} other {# ratings}}"
+    "ratingCount": "{count, plural, one {# rating} other {# ratings}}",
+    "codBadgeOverdue": "COD overdue — assignments paused",
+    "codBadgeOverLimit": "Over cash limit — assignments paused",
+    "offsetHint": "Driver still holds COD cash. You can settle {amount} of it from their earnings instead of waiting for a hand-in.",
+    "offsetBtn": "Settle COD from earnings",
+    "err_cashOutstanding": "This driver still holds COD cash — settle it (hand-in or offset) before paying out earnings.",
+    "err_nothingToOffset": "Nothing to offset — the driver holds no cash or has no earnings."
   },
   "AdminWalletAudit": {
     "title": "Wallet audit & reconciliation",
@@ -2429,6 +2447,7 @@
     "cashInDone": "Recorded — the driver was notified.",
     "err_badAmount": "Enter a valid amount.",
     "err_overRemit": "That's more than this driver is holding.",
+    "err_cashLimit": "Your point holds too much unremitted cash — hand cash in to Hezalli before taking more.",
     "ledger_DRIVER_CASH_IN": "Driver cash-in",
     "transferBadge": "Transfer",
     "staleBadge": "{days}d",
@@ -2444,6 +2463,7 @@
     "err_alreadyOpen": "You already have a pending payout request.",
     "err_belowMin": "Amount is below the minimum payout.",
     "err_insufficient": "Amount exceeds your free balance.",
+    "err_cashOutstanding": "COD cash you hold for Hezalli is withheld from your payable balance — hand it in to free your earnings.",
     "manifestTitle": "{count, plural, one {# parcel for this driver} other {# parcels for this driver}}",
     "manifestEmpty": "No parcels assigned to this driver at your hub.",
     "manifestHandAll": "Hand over all ({count})",

@@ -6,6 +6,7 @@
 //                 tie-broken by load; otherwise a courier in the destination
 //                 governorate (locality), then least-loaded among those; else
 //                 global least-loaded. Ops can always reassign from dispatch.
+import { codBlockedCourierIds } from "@/lib/cod-guard";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { getSetting } from "@/lib/settings";
@@ -30,14 +31,21 @@ async function activeCouriersWithLoad(): Promise<CourierLoad[]> {
   });
   if (couriers.length === 0) return [];
 
-  const ids = couriers.map((c) => c.id);
+  // COD credit control: drivers over the cash limit or sitting on overdue
+  // COD don't get new work until they remit (lib/cod-guard.ts). Dispatch can
+  // still assign manually — this gates the automatic paths only.
+  const codBlocked = await codBlockedCourierIds(couriers.map((c) => c.id));
+  const eligible = couriers.filter((c) => !codBlocked.has(c.id));
+  if (eligible.length === 0) return [];
+
+  const ids = eligible.map((c) => c.id);
   const loads = await prisma.shipment.groupBy({
     by: ["driverId"],
     where: { driverId: { in: ids }, subOrder: { status: "SHIPPED" } },
     _count: { _all: true },
   });
   const loadBy = new Map(loads.map((l) => [l.driverId, l._count._all]));
-  return couriers.map((c) => ({
+  return eligible.map((c) => ({
     id: c.id,
     load: loadBy.get(c.id) ?? 0,
     governorate: c.courierLocation?.governorate ?? null,

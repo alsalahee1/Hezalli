@@ -78,6 +78,15 @@ export type PlatformSettings = {
   // VERIFIED multiplier. 0 = no limit. See lib/wallet-velocity.ts.
   wallet_daily_outflow_usd: number;
   wallet_monthly_outflow_usd: number;
+  // COD credit control (docs/DELIVERY-POINTS.md §32, lib/cod-guard.ts). A
+  // courier stops receiving new assignments while holding more unremitted COD
+  // cash than driver_cash_limit (USD), or while any of it is older than
+  // driver_cod_max_age_hours (FIFO — remittances settle the oldest cash
+  // first). A point whose unremitted cash exceeds point_cash_limit stops
+  // accepting new routing and driver cash-ins. 0 turns that check off.
+  driver_cash_limit: number;
+  driver_cod_max_age_hours: number;
+  point_cash_limit: number;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -118,6 +127,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   wallet_bills_provider: "manual",
   wallet_daily_outflow_usd: 1000,
   wallet_monthly_outflow_usd: 5000,
+  driver_cash_limit: 50,
+  driver_cod_max_age_hours: 24,
+  point_cash_limit: 200,
 };
 
 export const SETTING_KEYS = Object.keys(
