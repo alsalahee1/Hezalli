@@ -11,7 +11,12 @@ import { transferFunds } from "@/lib/wallet-transfers";
 import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 
-type Result = { ok?: boolean; error?: string; id?: string };
+type Result = {
+  ok?: boolean;
+  error?: string;
+  id?: string;
+  entryId?: string;
+};
 
 // Create a money request. Anyone can create one; it becomes payable once an
 // admin has enabled transfers (paying runs the P2P core). Returns the id so the
@@ -101,7 +106,8 @@ export async function payPaymentRequest(
   }
 
   revalidatePath(`/${locale}/account/wallet`);
-  return { ok: true };
+  // Surface the payer's transfer entry so the success screen can share a receipt.
+  return { ok: true, entryId: res.entryId };
 }
 
 // Requester cancels their own pending request.
