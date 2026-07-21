@@ -357,6 +357,7 @@ enum PointLedgerType {
   PAYOUT // − Hezalli paid the point operator
   ADJUSTMENT // ± manual correction by an admin (earnings side)
   COD_COLLECTED // + COD cash the counter took from a buyer at pickup
+  DRIVER_CASH_IN // + COD cash a courier handed in at the counter (docs §12)
   COD_REMITTANCE // − cash the point handed in to Hezalli
 }
 

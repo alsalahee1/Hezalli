@@ -2254,7 +2254,14 @@
     "totalCodRemitted": "Cash handed in",
     "ledger_COD_COLLECTED": "COD collected at counter",
     "ledger_COD_REMITTANCE": "Cash handed in",
-    "capacityTitle": "Parcels held or inbound vs your capacity"
+    "capacityTitle": "Parcels held or inbound vs your capacity",
+    "cashInTitle": "Driver cash hand-in",
+    "cashInHint": "Record COD cash a courier hands you. Their cash-on-hand drops; you now hold it for Hezalli.",
+    "cashInSubmit": "Record",
+    "cashInDone": "Recorded — the driver was notified.",
+    "err_badAmount": "Enter a valid amount.",
+    "err_overRemit": "That's more than this driver is holding.",
+    "ledger_DRIVER_CASH_IN": "Driver cash-in"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2348,6 +2355,7 @@
     "capacityLoad": "Current load: {load} parcels",
     "capacityUnlimited": "Unlimited",
     "capacitySave": "Save",
-    "capacityHint": "Max parcels held or inbound at once. Empty = unlimited. Full points stop receiving new routing; counter scans always work."
+    "capacityHint": "Max parcels held or inbound at once. Empty = unlimited. Full points stop receiving new routing; counter scans always work.",
+    "type_DRIVER_CASH_IN": "Driver cash-in"
   }
 }

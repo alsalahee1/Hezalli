@@ -266,13 +266,13 @@ money between the two ledgers atomically:
 
 ### Build checklist (v1.4)
 
-- [ ] `PointLedgerType.DRIVER_CASH_IN` + migration; cash-side sums updated (`pointLedgerSummary`)
-- [ ] Action `pointDriverCashIn(driverId, amount, note?)` — atomic double entry + audit + driver notification
-- [ ] Point ledger page: cash-in form (driver picker + amount)
-- [ ] Labels in point + admin ledgers; i18n (en + ar)
-- [ ] Integration tests: cash-in moves both ledgers, over-remit rejected, non-courier rejected
-- [ ] Tidy: unused `ownerId` lint warning in `point-capacity.test.ts`
-- [ ] This file kept current
+- [x] `PointLedgerType.DRIVER_CASH_IN` + migration; cash-side sums updated (`pointLedgerSummary`)
+- [x] Action `pointDriverCashIn(driverId, amount, note?)` — atomic double entry + audit + driver notification
+- [x] Point ledger page: cash-in form (driver picker + amount)
+- [x] Labels in point + admin ledgers; i18n (en + ar)
+- [x] Integration tests: cash-in moves both ledgers, over-remit rejected, non-courier rejected
+- [x] Tidy: unused `ownerId` lint warning in `point-capacity.test.ts`
+- [x] This file kept current
 
 ## 13. Out of scope
 
