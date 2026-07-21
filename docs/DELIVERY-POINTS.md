@@ -228,8 +228,29 @@ Rules:
 - [x] i18n (en + ar) + integration tests (full-point rejection, ordering, unlimited default, forced-pickup exemption)
 - [x] This file kept current
 
-## 9. Out of scope
+## 10. v1.3 — Automatic resolution & refunds on RTS
+
+Until now a return-to-seller left the sub-order stuck at SHIPPED for ops to
+untangle. Now the RTS scan settles everything in one step, through the same
+shared refund core (`lib/refunds.ts`) the admin and returns flows use:
+
+- **Prepaid & captured** (non-COD payment CONFIRMED): full refund credited to
+  the buyer's HezalliPay wallet, sub-order → REFUNDED, seller ledger
+  reversed, buyer notified — all via `applyRefund`.
+- **Nothing captured** (COD, or prepaid not yet confirmed): sub-order →
+  CANCELLED with an order-history entry and a buyer notice; no money moves.
+- **Both paths restock** the returned items (the goods are back with the
+  seller) and keep the seller's collect-from-point notification.
+
+### Build checklist (v1.3)
+
+- [x] `lib/point-core.ts`: `returnParcelToSeller` resolves the sub-order (refund via `applyRefund` / cancel), restocks items, records order history
+- [x] Buyer notified of the outcome (refund notice comes from the refund core; cancel path sends its own)
+- [x] i18n (en + ar) for the cancel notice
+- [x] Integration tests: COD RTS → CANCELLED + restock, wallet-paid RTS → REFUNDED + wallet credit + restock, RTS still blocked before attempts are exhausted
+- [x] This file kept current
+
+## 11. Out of scope
 
 - Inter-point line haul (multi-hop routing between cities)
 - Point COD on *courier-delivered* parcels (drivers still remit directly)
-- Automatic refunds on RTS
