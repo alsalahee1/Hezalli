@@ -575,6 +575,47 @@ Rules:
 - [x] i18n (en + ar) + integration tests (`cod-guard.test.ts`)
 - [x] This file kept current
 
-## 33. Out of scope
+## 34. v1.15 — Security deposits & trust-based limits
+
+v1.14's flat cash limits become **per-holder credit**. A deposit is optional
+— it's one of three ways a holder earns headroom, and history is another, so
+a driver with no money to deposit still grows a limit by delivering well:
+
+```
+driver limit = driver_cash_limit                     (base, everyone)
+             + security deposit                      (admin-recorded, 1:1)
+             + trust bonus                           (from delivery history)
+point limit  = point_cash_limit + point deposit      (1:1)
+```
+
+The trust bonus: every `trust_step_deliveries` completed deliveries
+(EARNING ledger rows) add `trust_step_bonus_usd`, capped at
+`trust_bonus_cap_usd` — defaults 20 / $10 / $100, so a driver with 200
+clean deliveries carries base + $100 with no deposit at all. The AGE limit
+stays fixed for everyone: trusted or not, cash must not sit overnight.
+
+Deposits are plain fields (`User.courierDepositUsd`,
+`DeliveryPoint.depositUsd`), not ledger rows — the cash lives outside the
+system (office safe / bank), like payout references. Admin-set only via
+`lib/actions/deposit.ts` (audited `courier.deposit` / `point.deposit`,
+holder notified). Zero is valid; the amount REPLACES the stored balance.
+
+UI: the admin courier page shows the full breakdown (base + deposit +
+trust = personal limit) beside the deposit form; the admin point page the
+same; the driver home cash tile shows "your cash limit: $X — it grows with
+every delivery" so the incentive is visible.
+
+### Build checklist (v1.15)
+
+- [x] Schema + migration: `User.courierDepositUsd`, `DeliveryPoint.depositUsd` (Decimal, default 0)
+- [x] Settings: `trust_step_deliveries`, `trust_step_bonus_usd`, `trust_bonus_cap_usd` + admin form fields
+- [x] `lib/cod-guard.ts`: effective per-holder limits (deposit 1:1 + capped trust bonus); status exposes the breakdown
+- [x] `lib/actions/deposit.ts`: `setCourierDeposit` / `setPointDeposit` (admin-only, audited, notified)
+- [x] Admin courier + point pages: deposit form & limit breakdown
+- [x] Driver home: personal limit line on the cash tile
+- [x] i18n (en + ar) + integration tests (deposit unblocks, trust steps, point deposit, guards)
+- [x] This file kept current
+
+## 35. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

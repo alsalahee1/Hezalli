@@ -46,6 +46,9 @@ export type SettingsInput = {
   driver_cash_limit: number;
   driver_cod_max_age_hours: number;
   point_cash_limit: number;
+  trust_step_deliveries: number;
+  trust_step_bonus_usd: number;
+  trust_bonus_cap_usd: number;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -138,6 +141,13 @@ export async function savePlatformSettings(
   const codMaxAge = int(input.driver_cod_max_age_hours);
   if (!Number.isFinite(codMaxAge) || codMaxAge < 0 || codMaxAge > 720)
     return { error: "badCashLimit" };
+  const trustStep = int(input.trust_step_deliveries);
+  if (!Number.isFinite(trustStep) || trustStep < 0 || trustStep > 10000)
+    return { error: "badCashLimit" };
+  const trustBonus = money2(input.trust_step_bonus_usd);
+  const trustCap = money2(input.trust_bonus_cap_usd);
+  if (![trustBonus, trustCap].every((n) => Number.isFinite(n) && n >= 0))
+    return { error: "badCashLimit" };
 
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
@@ -183,6 +193,9 @@ export async function savePlatformSettings(
     driver_cash_limit: driverCashLimit,
     driver_cod_max_age_hours: codMaxAge,
     point_cash_limit: pointCashLimit,
+    trust_step_deliveries: trustStep,
+    trust_step_bonus_usd: trustBonus,
+    trust_bonus_cap_usd: trustCap,
   };
 
   await prisma.$transaction(

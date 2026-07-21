@@ -28,6 +28,7 @@ import {
   offsetEarningsAgainstCod,
   recordEarningsPayout,
 } from "@/lib/actions/courier-ledger";
+import { setCourierDeposit, setPointDeposit } from "@/lib/actions/deposit";
 import { pointDriverCashIn } from "@/lib/actions/point";
 import { requestPointPayout } from "@/lib/actions/point-payout";
 import { courierCashSummary } from "@/lib/courier-ledger";
@@ -280,5 +281,98 @@ describe("point cash limit", () => {
     // Free balance is 50 − 20 held cash = 30.
     expect(await requestPointPayout(40)).toEqual({ error: "cashOutstanding" });
     expect(await requestPointPayout(25)).toEqual({ ok: true });
+  });
+});
+
+describe("deposits & trust bonus raise the personal limit", () => {
+  it("a deposit covers cash the base limit would block", async () => {
+    const c = await makeCourier("dep");
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 60 },
+    });
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(true); // base 50
+
+    as(adminId);
+    expect(
+      await setCourierDeposit(form({ courierId: c, amount: "20" })),
+    ).toEqual({ ok: true });
+    // Limit is now 50 + 20 = 70 ≥ 60 held.
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(false);
+
+    const status = await courierCodStatus(c);
+    expect(status.deposit).toBe(20);
+    expect(status.cashLimit).toBe(70);
+    expect(status.blocked).toBe(false);
+  });
+
+  it("delivery history earns limit: 45 deliveries → two $10 steps", async () => {
+    const c = await makeCourier("trust");
+    await prisma.courierLedgerEntry.createMany({
+      data: Array.from({ length: 45 }, () => ({
+        courierId: c,
+        type: "EARNING" as const,
+        amountUsd: 1.5,
+      })),
+    });
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 65 },
+    });
+    // Limit = 50 base + floor(45/20)*10 = 70 ≥ 65 → not blocked.
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(false);
+    const status = await courierCodStatus(c);
+    expect(status.trustBonus).toBe(20);
+    expect(status.deliveries).toBe(45);
+    expect(status.cashLimit).toBe(70);
+
+    // But history is not a blank cheque — $75 still trips the limit.
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 10 },
+    });
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(true);
+  });
+
+  it("a point deposit raises its cash holding limit 1:1", async () => {
+    const { pointId } = await makePoint("pdep");
+    await prisma.deliveryPointLedgerEntry.create({
+      data: { pointId, type: "COD_COLLECTED", amountUsd: 250 },
+    });
+    expect((await cashBlockedPointIds([pointId])).has(pointId)).toBe(true);
+
+    as(adminId);
+    expect(await setPointDeposit(form({ pointId, amount: "100" }))).toEqual({
+      ok: true,
+    });
+    // Limit is now 200 + 100 = 300 ≥ 250 held.
+    expect((await cashBlockedPointIds([pointId])).has(pointId)).toBe(false);
+    expect(await checkPointRoutable(pointId)).toBe("ok");
+  });
+
+  it("guards deposit updates: admin-only, non-negative, real target", async () => {
+    const c = await makeCourier("guard");
+    as(c); // not an admin
+    expect(
+      await setCourierDeposit(form({ courierId: c, amount: "10" })),
+    ).toEqual({ error: "forbidden" });
+
+    as(adminId);
+    expect(
+      await setCourierDeposit(form({ courierId: c, amount: "-5" })),
+    ).toEqual({ error: "badInput" });
+    expect(
+      await setCourierDeposit(form({ courierId: adminId, amount: "10" })),
+    ).toEqual({ error: "notCourier" });
+    expect(
+      await setPointDeposit(form({ pointId: "nope", amount: "10" })),
+    ).toEqual({ error: "notPoint" });
+
+    // Audited: the change writes an audit row with previous → new.
+    expect(
+      await setCourierDeposit(form({ courierId: c, amount: "30", note: "r1" })),
+    ).toEqual({ ok: true });
+    const audit = await prisma.auditLog.findFirst({
+      where: { action: "courier.deposit", entityId: c },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(audit).toBeTruthy();
   });
 });

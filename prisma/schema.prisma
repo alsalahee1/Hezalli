@@ -252,6 +252,9 @@ model User {
   pushSubscriptions PushSubscription[]
   deliveryPoint    DeliveryPoint? @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
+  // Security deposit Hezalli holds from this courier (docs §32). Optional —
+  // raises the driver's COD cash limit 1:1. Set by admins only, audited.
+  courierDepositUsd Decimal @default(0) @db.Decimal(12, 2)
   // Fleet-partner tier: a courier may belong to a fleet (fleetId); a user may
   // also OWN one fleet (ownedFleet), which grants the read-only fleet portal.
   fleetId          String?
@@ -340,6 +343,9 @@ model DeliveryPoint {
   // Max parcels held/inbound at once (null = unlimited). Gates NEW routing
   // only — counter scans always accept announced parcels. See §8 of the docs.
   capacity    Int?
+  // Security deposit Hezalli holds from this operator (docs §32). Optional —
+  // raises the point's unremitted-cash limit 1:1. Admin-set, audited.
+  depositUsd  Decimal             @default(0) @db.Decimal(12, 2)
   status      DeliveryPointStatus @default(ACTIVE)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
