@@ -1274,12 +1274,30 @@ model Shipment {
   deliveryPoint   DeliveryPoint?  @relation(fields: [deliveryPointId], references: [id])
   events          ShipmentEvent[]
   attempts        DeliveryAttempt[]
+  deliveryRating  DeliveryRating?
 
   @@index([driverId])
   @@index([carrierId])
   @@index([deliveryPointId])
   @@index([originPointId])
   @@index([atPointId])
+}
+
+// A buyer's rating of the courier who delivered their Hezalli Express parcel.
+// One per shipment (the buyer may update it). Aggregated per courier for the
+// admin fleet view. courierId/buyerId are plain ids (no FK churn on User).
+model DeliveryRating {
+  id         String   @id @default(cuid())
+  shipmentId String   @unique
+  courierId  String
+  buyerId    String
+  stars      Int // 1–5
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([courierId])
 }
 
 // One doorstep delivery attempt. FAILED records why (unreachable, refused,

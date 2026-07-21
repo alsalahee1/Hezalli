@@ -1,5 +1,6 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { courierRatingsByCourier } from "@/lib/courier-ratings";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
@@ -13,7 +14,7 @@ export default async function AdminCouriersPage() {
   const t = await getTranslations("AdminCouriers");
   const format = await getFormatter();
 
-  const [applications, couriers, ledger] = await Promise.all([
+  const [applications, couriers, ledger, ratings] = await Promise.all([
     prisma.courierApplication.findMany({
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       include: {
@@ -32,6 +33,7 @@ export default async function AdminCouriersPage() {
       where: { type: { not: "EARNING" } },
       _sum: { amountUsd: true },
     }),
+    courierRatingsByCourier(),
   ]);
 
   const cashByCourier = new Map(
@@ -114,6 +116,7 @@ export default async function AdminCouriersPage() {
           <ul className="divide-y rounded-lg border">
             {couriers.map((c) => {
               const cash = cashByCourier.get(c.id) ?? 0;
+              const rating = ratings.get(c.id);
               return (
                 <li key={c.id}>
                   <Link
@@ -127,6 +130,15 @@ export default async function AdminCouriersPage() {
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
+                      {rating ? (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600"
+                          title={t("ratingCount", { count: rating.count })}
+                          dir="ltr"
+                        >
+                          ★ {rating.avg.toFixed(1)}
+                        </span>
+                      ) : null}
                       {c.isSuspended ? (
                         <span className="bg-destructive/10 text-destructive rounded px-1.5 py-0.5 text-xs font-medium">
                           {t("suspended")}

@@ -2213,7 +2213,8 @@
     "payoutAmount": "المبلغ المدفوع",
     "payoutNotePlaceholder": "مرجع (اختياري)",
     "payoutBtn": "صرف",
-    "type_PAYOUT": "صرف أرباح"
+    "type_PAYOUT": "صرف أرباح",
+    "ratingCount": "{count, plural, zero {# تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييماً} other {# تقييم}}"
   },
   "AdminWalletAudit": {
     "title": "تدقيق ومطابقة المحافظ",
@@ -2439,5 +2440,19 @@
     "recipient": "استلمها",
     "codeVerified": "تم التحقق من رمز التسليم",
     "photoAlt": "صورة التسليم عند الباب"
+  },
+  "DeliveryRating": {
+    "rateCourier": "قيّم المندوب",
+    "yourRating": "تقييمك",
+    "edit": "تعديل",
+    "commentHint": "أضف تعليقاً (اختياري)",
+    "submit": "إرسال التقييم",
+    "saving": "جارٍ الحفظ…",
+    "badStars": "اختر من ١ إلى ٥ نجوم",
+    "notSignedIn": "يرجى تسجيل الدخول.",
+    "forbidden": "يمكنك تقييم توصيلتك فقط.",
+    "noCourier": "لم يكن لهذه التوصيلة مندوب هزلي.",
+    "notEligible": "يفتح التقييم بعد تسليم الطرد.",
+    "notFound": "لم يُعثر على التوصيلة."
   }
 }
