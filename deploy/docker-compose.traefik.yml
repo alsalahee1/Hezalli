@@ -74,6 +74,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://www.hezalli.com}
+      # One-tap demo login on the sign-in page. Off unless set to "true" in
+      # .env. NEVER enable on a real production site — it lets anyone sign in
+      # as a seed account (admin included) with one tap.
+      DEV_LOGIN_ENABLED: ${DEV_LOGIN_ENABLED:-}
       PORT: "3000"
     networks:
       - hezalli-internal
