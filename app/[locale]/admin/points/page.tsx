@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 
 import { prisma } from "@/lib/prisma";
 import { setPointStatus } from "@/lib/actions/point-application";
+import { getSetting } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { PointApplicationActions } from "@/components/admin/point-application-actions";
@@ -14,7 +15,9 @@ export default async function AdminPointsPage() {
   const t = await getTranslations("AdminPoints");
   const format = await getFormatter();
 
-  const [applications, points, balances, held] = await Promise.all([
+  const staleDays = await getSetting("stale_parcel_days");
+  const staleBefore = new Date(Date.now() - staleDays * 86_400_000);
+  const [applications, points, balances, held, stale] = await Promise.all([
     prisma.deliveryPointApplication.findMany({
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       include: { user: { select: { name: true, email: true } } },
@@ -48,6 +51,16 @@ export default async function AdminPointsPage() {
       },
       _count: { _all: true },
     }),
+    // Held parcels that haven't moved past the stale threshold, per hub.
+    prisma.shipment.groupBy({
+      by: ["atPointId"],
+      where: {
+        atPointId: { not: null },
+        updatedAt: { lt: staleBefore },
+        subOrder: { status: "SHIPPED" },
+      },
+      _count: { _all: true },
+    }),
   ]);
 
   const EARNING_TYPES = new Set(["HANDLING_FEE", "PAYOUT", "ADJUSTMENT"]);
@@ -61,6 +74,7 @@ export default async function AdminPointsPage() {
     );
   }
   const heldBy = new Map(held.map((g) => [g.deliveryPointId, g._count._all]));
+  const staleBy = new Map(stale.map((g) => [g.atPointId, g._count._all]));
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
@@ -137,6 +151,7 @@ export default async function AdminPointsPage() {
               const balance = balanceBy.get(p.id) ?? 0;
               const cash = cashBy.get(p.id) ?? 0;
               const holding = heldBy.get(p.id) ?? 0;
+              const staleCount = staleBy.get(p.id) ?? 0;
               return (
                 <li
                   key={p.id}
@@ -184,6 +199,14 @@ export default async function AdminPointsPage() {
                         title={t("cashOnHand")}
                       >
                         {money(cash)}
+                      </span>
+                    ) : null}
+                    {staleCount > 0 ? (
+                      <span
+                        className="rounded bg-red-500/15 px-1.5 py-0.5 text-xs font-medium text-red-600"
+                        title={t("staleTitle", { days: staleDays })}
+                      >
+                        {t("staleCount", { count: staleCount })}
                       </span>
                     ) : null}
                     {p.status === "SUSPENDED" ? (

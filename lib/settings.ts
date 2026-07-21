@@ -42,6 +42,10 @@ export type PlatformSettings = {
   // What the buyer pays to collect from a Hezalli Point themselves (PUDO).
   // Free by default — pickup removes the whole last-mile cost.
   pickup_fee: number;
+  // USD the ORIGIN hub earns when a two-hop parcel is delivered (docs §16).
+  point_transfer_fee: number;
+  // Days without movement before a held parcel is flagged as stale.
+  stale_parcel_days: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -92,6 +96,8 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   point_handling_fee: 0.5,
   max_delivery_attempts: 3,
   pickup_fee: 0,
+  point_transfer_fee: 0.25,
+  stale_parcel_days: 3,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

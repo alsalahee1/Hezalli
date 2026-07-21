@@ -324,12 +324,12 @@ Two finishing touches for a healthy network:
 
 ### Build checklist (v1.6)
 
-- [ ] Settings: `point_transfer_fee` (default 0.25), `stale_parcel_days` (default 3) + admin form fields
-- [ ] `shipment-core`: credit the origin point's transfer fee on DELIVERED (same tx as the handling fee)
-- [ ] Point dashboard: days-held age chip per parcel, amber past the threshold
-- [ ] Admin points list: stale-parcel count chip per point
-- [ ] i18n (en + ar) + integration test (two-hop delivery credits both ledgers; single-hop credits one)
-- [ ] This file kept current
+- [x] Settings: `point_transfer_fee` (default 0.25), `stale_parcel_days` (default 3) + admin form fields
+- [x] `shipment-core`: credit the origin point's transfer fee on DELIVERED (same tx as the handling fee)
+- [x] Point dashboard: days-held age chip per parcel, amber past the threshold
+- [x] Admin points list: stale-parcel count chip per point
+- [x] i18n (en + ar) + integration test (two-hop delivery credits both ledgers; single-hop credits one)
+- [x] This file kept current
 
 ## 17. Out of scope
 

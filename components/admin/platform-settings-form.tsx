@@ -54,6 +54,8 @@ export function PlatformSettingsForm({
     point_handling_fee: String(current.point_handling_fee),
     max_delivery_attempts: String(current.max_delivery_attempts),
     pickup_fee: String(current.pickup_fee),
+    point_transfer_fee: String(current.point_transfer_fee),
+    stale_parcel_days: String(current.stale_parcel_days),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -93,6 +95,8 @@ export function PlatformSettingsForm({
         point_handling_fee: Number(f.point_handling_fee),
         max_delivery_attempts: Number(f.max_delivery_attempts),
         pickup_fee: Number(f.pickup_fee),
+        point_transfer_fee: Number(f.point_transfer_fee),
+        stale_parcel_days: Number(f.stale_parcel_days),
       });
       if (res.error) setErr(res.error);
       else {
@@ -266,6 +270,22 @@ export function PlatformSettingsForm({
             type="number"
             value={f.pickup_fee}
             onChange={(e) => set("pickup_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("transferFee")} hint={t("transferFeeHint")}>
+          <Input
+            type="number"
+            value={f.point_transfer_fee}
+            onChange={(e) => set("point_transfer_fee", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("staleDays")} hint={t("staleDaysHint")}>
+          <Input
+            type="number"
+            value={f.stale_parcel_days}
+            onChange={(e) => set("stale_parcel_days", e.target.value)}
             dir="ltr"
           />
         </Field>

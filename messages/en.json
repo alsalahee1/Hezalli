@@ -1612,7 +1612,11 @@
     "err_badPointFee": "Check the point handling fee.",
     "err_badMaxAttempts": "Max attempts must be between 1 and 10.",
     "pickupFee": "Pickup fee (USD)",
-    "pickupFeeHint": "What buyers pay to collect from a Hezalli Point themselves. 0 = free."
+    "pickupFeeHint": "What buyers pay to collect from a Hezalli Point themselves. 0 = free.",
+    "transferFee": "Origin transfer fee (USD)",
+    "transferFeeHint": "Paid to the ORIGIN hub of a two-hop parcel when it is delivered.",
+    "staleDays": "Stale parcel threshold (days)",
+    "staleDaysHint": "Held parcels that haven't moved for this many days are flagged."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -2284,7 +2288,8 @@
     "err_badAmount": "Enter a valid amount.",
     "err_overRemit": "That's more than this driver is holding.",
     "ledger_DRIVER_CASH_IN": "Driver cash-in",
-    "transferBadge": "Transfer"
+    "transferBadge": "Transfer",
+    "staleBadge": "{days}d"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2379,6 +2384,8 @@
     "capacityUnlimited": "Unlimited",
     "capacitySave": "Save",
     "capacityHint": "Max parcels held or inbound at once. Empty = unlimited. Full points stop receiving new routing; counter scans always work.",
-    "type_DRIVER_CASH_IN": "Driver cash-in"
+    "type_DRIVER_CASH_IN": "Driver cash-in",
+    "staleTitle": "Held parcels unmoved for {days}+ days",
+    "staleCount": "{count, plural, one {# stale} other {# stale}}"
   }
 }

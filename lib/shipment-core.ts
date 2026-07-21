@@ -69,7 +69,9 @@ export async function markSubOrderDelivered(
       shippingTotal: true,
       discountTotal: true,
       store: { select: { name: true } },
-      shipment: { select: { id: true, deliveryPointId: true } },
+      shipment: {
+        select: { id: true, deliveryPointId: true, originPointId: true },
+      },
       order: {
         select: {
           id: true,
@@ -97,6 +99,12 @@ export async function markSubOrderDelivered(
   const pointFee = sub.shipment?.deliveryPointId
     ? await getSetting("point_handling_fee")
     : 0;
+  // Two-hop parcels also pay the ORIGIN hub its transfer fee (docs §16).
+  const isTwoHop = Boolean(
+    sub.shipment?.originPointId &&
+    sub.shipment.originPointId !== sub.shipment.deliveryPointId,
+  );
+  const transferFee = isTwoHop ? await getSetting("point_transfer_fee") : 0;
   const codAmount = isCod
     ? Number(sub.itemsTotal) +
       Number(sub.shippingTotal) -
@@ -153,6 +161,16 @@ export async function markSubOrderDelivered(
           subOrderId,
           shipmentId: sub.shipment.id,
           fee: pointFee,
+        });
+      }
+
+      // The origin hub's transfer-leg fee for two-hop parcels.
+      if (isTwoHop && sub.shipment.originPointId) {
+        await recordPointHandlingFee(tx, {
+          pointId: sub.shipment.originPointId,
+          subOrderId,
+          shipmentId: sub.shipment.id,
+          fee: transferFee,
         });
       }
 
