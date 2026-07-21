@@ -308,6 +308,29 @@ fee; origin compensation via `ADJUSTMENT` until a dedicated fee exists).
 - [x] i18n (en + ar) + integration tests (two-hop happy path incl. pickup orders, wrong-point scans rejected, capacity counts origin leg)
 - [x] This file kept current
 
-## 15. Out of scope
+## 16. v1.6 — Origin transfer fee & stale-parcel visibility
+
+Two finishing touches for a healthy network:
+
+1. **Origin hubs get paid.** A two-hop parcel now credits BOTH ledgers when
+   it is finally delivered: the destination point earns `point_handling_fee`
+   as before, and the origin point earns the new `point_transfer_fee`
+   (default 0.25 USD) — recorded in the same delivery transaction, labelled
+   as a transfer leg. No more unpaid work at entry hubs.
+2. **Stuck parcels become visible.** A parcel that hasn't moved for
+   `stale_parcel_days` (default 3) shows an aged badge ("5d") on the point
+   dashboard, and the admin network list shows a red stale-count chip per
+   point, so ops can chase the exact hub that's sitting on parcels.
+
+### Build checklist (v1.6)
+
+- [x] Settings: `point_transfer_fee` (default 0.25), `stale_parcel_days` (default 3) + admin form fields
+- [x] `shipment-core`: credit the origin point's transfer fee on DELIVERED (same tx as the handling fee)
+- [x] Point dashboard: days-held age chip per parcel, amber past the threshold
+- [x] Admin points list: stale-parcel count chip per point
+- [x] i18n (en + ar) + integration test (two-hop delivery credits both ledgers; single-hop credits one)
+- [x] This file kept current
+
+## 17. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

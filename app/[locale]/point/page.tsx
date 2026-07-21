@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { getSetting } from "@/lib/settings";
 import { maxDeliveryAttempts } from "@/lib/point-core";
 import { prisma } from "@/lib/prisma";
 import { RtsButton } from "@/components/point/rts-button";
@@ -20,7 +21,7 @@ export default async function PointDashboardPage() {
   const t = await getTranslations("Point");
   const format = await getFormatter();
 
-  const [parcels, maxAttempts, me] = await Promise.all([
+  const [parcels, maxAttempts, me, staleDays] = await Promise.all([
     prisma.shipment.findMany({
       where: {
         OR: [
@@ -34,6 +35,7 @@ export default async function PointDashboardPage() {
         id: true,
         status: true,
         trackingNumber: true,
+        updatedAt: true,
         originPointId: true,
         deliveryPointId: true,
         atPointId: true,
@@ -62,6 +64,7 @@ export default async function PointDashboardPage() {
       where: { id: gate.pointId },
       select: { capacity: true },
     }),
+    getSetting("stale_parcel_days"),
   ]);
 
   // Load vs capacity (held + inbound), same definition as lib/point-select.ts.
@@ -74,6 +77,9 @@ export default async function PointDashboardPage() {
           : p.deliveryPointId === gate.pointId)),
   ).length;
   const capacity = me?.capacity ?? null;
+  // Days since a parcel last moved; past the threshold it gets an aged badge.
+  const ageDays = (d: Date) =>
+    Math.floor((Date.now() - d.getTime()) / 86_400_000);
 
   const groups = [
     {
@@ -165,6 +171,11 @@ export default async function PointDashboardPage() {
                       {p.subOrder.shippingMethod === "PICKUP" ? (
                         <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
                           {t("pickupBadge")}
+                        </span>
+                      ) : null}
+                      {ageDays(p.updatedAt) >= staleDays ? (
+                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600">
+                          {t("staleBadge", { days: ageDays(p.updatedAt) })}
                         </span>
                       ) : null}
                       {p.status === "FAILED" ? (
