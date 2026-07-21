@@ -20,7 +20,7 @@ export default async function PointDashboardPage() {
   const t = await getTranslations("Point");
   const format = await getFormatter();
 
-  const [parcels, maxAttempts] = await Promise.all([
+  const [parcels, maxAttempts, me] = await Promise.all([
     prisma.shipment.findMany({
       where: { deliveryPointId: gate.pointId, subOrder: { status: "SHIPPED" } },
       orderBy: { updatedAt: "desc" },
@@ -49,7 +49,17 @@ export default async function PointDashboardPage() {
       },
     }),
     maxDeliveryAttempts(),
+    prisma.deliveryPoint.findUnique({
+      where: { id: gate.pointId },
+      select: { capacity: true },
+    }),
   ]);
+
+  // Load vs capacity (held + inbound), same definition as lib/point-select.ts.
+  const load = parcels.filter((p) =>
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(p.status),
+  ).length;
+  const capacity = me?.capacity ?? null;
 
   const groups = [
     {
@@ -82,11 +92,26 @@ export default async function PointDashboardPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold">{t("parcelsTitle")}</h1>
-        <p className="text-muted-foreground text-sm">
-          {t("parcelsCount", { count: parcels.length })}
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-lg font-semibold">{t("parcelsTitle")}</h1>
+          <p className="text-muted-foreground text-sm">
+            {t("parcelsCount", { count: parcels.length })}
+          </p>
+        </div>
+        {capacity != null ? (
+          <span
+            className={
+              load >= capacity
+                ? "rounded bg-red-500/15 px-2 py-1 text-xs font-semibold text-red-600"
+                : "bg-muted rounded px-2 py-1 text-xs font-medium"
+            }
+            title={t("capacityTitle")}
+            dir="ltr"
+          >
+            {load}/{capacity}
+          </span>
+        ) : null}
       </div>
 
       {parcels.length === 0 ? (

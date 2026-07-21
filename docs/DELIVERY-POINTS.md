@@ -218,15 +218,15 @@ Rules:
 
 ### Build checklist (v1.2)
 
-- [ ] Schema: `DeliveryPoint.capacity Int?` + migration
-- [ ] `lib/point-select.ts`: load counting, full-point filtering, governorate-first ordering (shared by checkout, seller page, validation)
-- [ ] `placeOrder` + `shipSubOrder`: reject routing to a full point (`pointFull`); forced PICKUP routes stay valid
-- [ ] Checkout picker: nearest-first per selected address, full points excluded
-- [ ] Seller drop-off picker: same ordering by the order's destination
-- [ ] Admin point detail: capacity editor; network list shows load/capacity
-- [ ] Point dashboard: load vs capacity header
-- [ ] i18n (en + ar) + integration tests (full-point rejection, ordering, unlimited default, forced-pickup exemption)
-- [ ] This file kept current
+- [x] Schema: `DeliveryPoint.capacity Int?` + migration
+- [x] `lib/point-select.ts`: load counting, full-point filtering, governorate-first ordering (shared by checkout, seller page, validation)
+- [x] `placeOrder` + `shipSubOrder`: reject routing to a full point (`pointFull`); forced PICKUP routes stay valid
+- [x] Checkout picker: nearest-first per selected address, full points excluded
+- [x] Seller drop-off picker: same ordering by the order's destination
+- [x] Admin point detail: capacity editor; network list shows load/capacity
+- [x] Point dashboard: load vs capacity header
+- [x] i18n (en + ar) + integration tests (full-point rejection, ordering, unlimited default, forced-pickup exemption)
+- [x] This file kept current
 
 ## 9. Out of scope
 

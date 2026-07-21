@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
+import { setPointCapacity } from "@/lib/actions/point-application";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
@@ -30,10 +31,20 @@ export default async function AdminPointDetailPage({
       addressLine: true,
       phone: true,
       status: true,
+      capacity: true,
       owner: { select: { name: true, email: true } },
     },
   });
   if (!point) notFound();
+
+  // Current load (held + inbound), same definition as lib/point-select.ts.
+  const load = await prisma.shipment.count({
+    where: {
+      deliveryPointId: pointId,
+      status: { in: ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"] },
+      subOrder: { status: "SHIPPED" },
+    },
+  });
 
   const [summary, entries] = await Promise.all([
     pointLedgerSummary(pointId),
@@ -106,6 +117,39 @@ export default async function AdminPointDetailPage({
           </div>
         ))}
       </div>
+
+      {/* Capacity: max parcels held/inbound at once. Empty = unlimited. */}
+      <section className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold">{t("capacityHeading")}</h2>
+        <p className="text-muted-foreground text-sm">
+          {t("capacityLoad", { load })}
+          {point.capacity != null ? ` / ${point.capacity}` : ""}
+        </p>
+        <form
+          action={setPointCapacity}
+          className="flex flex-wrap items-center gap-2"
+        >
+          <input type="hidden" name="pointId" value={point.id} />
+          <input
+            type="number"
+            name="capacity"
+            min={1}
+            defaultValue={point.capacity ?? ""}
+            placeholder={t("capacityUnlimited")}
+            className="h-9 w-36 rounded-md border bg-transparent px-3 text-sm"
+            dir="ltr"
+          />
+          <button
+            type="submit"
+            className="bg-primary text-primary-foreground h-9 rounded-md px-3 text-sm font-medium"
+          >
+            {t("capacitySave")}
+          </button>
+          <span className="text-muted-foreground text-xs">
+            {t("capacityHint")}
+          </span>
+        </form>
+      </section>
 
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="text-sm font-semibold">{t("recordHeading")}</h2>

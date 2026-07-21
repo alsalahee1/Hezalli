@@ -9,6 +9,7 @@ import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
+import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -160,12 +161,10 @@ export async function placeOrder(
   if (groupsBase.some((g) => g.shippingMethod === "PICKUP")) {
     const wanted = input.pickupPointId?.trim();
     if (!wanted) return { error: "pickupPointRequired" };
-    const point = await prisma.deliveryPoint.findFirst({
-      where: { id: wanted, status: "ACTIVE" },
-      select: { id: true },
-    });
-    if (!point) return { error: "pickupPointRequired" };
-    pickupPointId = point.id;
+    const routable = await checkPointRoutable(wanted);
+    if (routable === "full") return { error: "pointFull" };
+    if (routable !== "ok") return { error: "pickupPointRequired" };
+    pickupPointId = wanted;
   }
 
   // Optional voucher: validate + compute per-store discount.

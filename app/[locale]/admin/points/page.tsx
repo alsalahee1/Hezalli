@@ -28,6 +28,7 @@ export default async function AdminPointsPage() {
         city: true,
         phone: true,
         status: true,
+        capacity: true,
         owner: { select: { name: true, email: true } },
       },
     }),
@@ -37,12 +38,12 @@ export default async function AdminPointsPage() {
       by: ["pointId", "type"],
       _sum: { amountUsd: true },
     }),
-    // Parcels currently in the point's custody.
+    // Load = parcels held or inbound (same definition as lib/point-select.ts).
     prisma.shipment.groupBy({
       by: ["deliveryPointId"],
       where: {
         deliveryPointId: { not: null },
-        status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
+        status: { in: ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"] },
         subOrder: { status: "SHIPPED" },
       },
       _count: { _all: true },
@@ -151,12 +152,20 @@ export default async function AdminPointsPage() {
                     </span>
                   </Link>
                   <span className="flex shrink-0 items-center gap-2">
-                    {holding > 0 ? (
+                    {holding > 0 || p.capacity != null ? (
                       <span
-                        className="bg-muted rounded px-1.5 py-0.5 text-xs font-medium"
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-xs font-medium",
+                          p.capacity != null && holding >= p.capacity
+                            ? "bg-red-500/15 text-red-600"
+                            : "bg-muted",
+                        )}
                         title={t("holdingParcels")}
+                        dir="ltr"
                       >
-                        {t("parcelCount", { count: holding })}
+                        {p.capacity != null
+                          ? `${holding}/${p.capacity}`
+                          : t("parcelCount", { count: holding })}
                       </span>
                     ) : null}
                     {balance > 0 ? (

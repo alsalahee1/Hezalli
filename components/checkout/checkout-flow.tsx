@@ -24,7 +24,11 @@ export type CheckoutAddress = {
   line2: string | null;
 };
 
-export type PickupPointOption = { id: string; label: string };
+export type PickupPointOption = {
+  id: string;
+  label: string;
+  governorate?: string;
+};
 
 export function CheckoutFlow({
   lines,
@@ -189,6 +193,19 @@ export function CheckoutFlow({
   };
 
   const anyPickup = groups.some((g) => g.selectedMethod === "PICKUP");
+
+  // Nearest points first for the selected delivery address (same-governorate
+  // matches lead; the server already filtered out full points).
+  const addressGov = addresses.find((a) => a.id === addressId)?.governorate;
+  const sortedPickupPoints = useMemo(
+    () =>
+      [...pickupPoints].sort(
+        (a, b) =>
+          (a.governorate === addressGov ? 0 : 1) -
+          (b.governorate === addressGov ? 0 : 1),
+      ),
+    [pickupPoints, addressGov],
+  );
 
   const submit = async () => {
     setError(null);
@@ -416,7 +433,7 @@ export function CheckoutFlow({
                   className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
                 >
                   <option value="">{t("pickupPointPlaceholder")}</option>
-                  {pickupPoints.map((p) => (
+                  {sortedPickupPoints.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.label}
                     </option>

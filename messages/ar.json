@@ -908,7 +908,8 @@
     "pickupPointLabel": "من أين ستستلم طلبك؟",
     "pickupPointPlaceholder": "اختر نقطة هزلي…",
     "pickupPointHint": "سنخبرك عندما يصبح جاهزًا. أحضر رمز الاستلام (في صفحة الطلب) وادفع هناك إذا اخترت الدفع نقدًا.",
-    "err_pickupPointRequired": "اختر نقطة هزلي التي ستستلم منها."
+    "err_pickupPointRequired": "اختر نقطة هزلي التي ستستلم منها.",
+    "err_pointFull": "نقطة هزلي هذه ممتلئة حاليًا — اختر نقطة أخرى."
   },
   "Orders": {
     "title": "طلباتي",
@@ -1278,7 +1279,8 @@
     "dropOffHint": "سلّم الطرد في النقطة المختارة؛ يمسحه الموظف ويستلمه المندوب من هناك.",
     "err_pointNotAllowed": "التسليم عبر النقاط متاح فقط مع هزلي إكسبرس.",
     "err_invalidPoint": "نقطة التوصيل هذه غير متاحة.",
-    "pickupChosen": "سيستلم المشتري هذا الطلب من {point} — أرسله إلى هناك عبر هزلي إكسبرس."
+    "pickupChosen": "سيستلم المشتري هذا الطلب من {point} — أرسله إلى هناك عبر هزلي إكسبرس.",
+    "err_pointFull": "هذه النقطة ممتلئة — اختر نقطة أخرى أو أرسل مباشرة."
   },
   "Reviews": {
     "title": "التقييمات والمراجعات",
@@ -2251,7 +2253,8 @@
     "totalCodCollected": "المحصَّل نقدًا",
     "totalCodRemitted": "النقد المسلَّم",
     "ledger_COD_COLLECTED": "تحصيل نقدي عند الاستلام",
-    "ledger_COD_REMITTANCE": "نقد مسلَّم"
+    "ledger_COD_REMITTANCE": "نقد مسلَّم",
+    "capacityTitle": "الطرود المحتفظ بها أو القادمة مقابل سعتك"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
@@ -2340,6 +2343,11 @@
     "kind_remittance": "تسليم نقدي",
     "remitAmount": "النقد المسلَّم",
     "type_COD_COLLECTED": "تحصيل نقدي عند الاستلام",
-    "type_COD_REMITTANCE": "تسليم نقدي"
+    "type_COD_REMITTANCE": "تسليم نقدي",
+    "capacityHeading": "السعة",
+    "capacityLoad": "الحمولة الحالية: {load} طرد",
+    "capacityUnlimited": "غير محدودة",
+    "capacitySave": "حفظ",
+    "capacityHint": "أقصى عدد للطرود المحتفظ بها أو القادمة في آن واحد. فارغ = غير محدودة. النقاط الممتلئة تتوقف عن استقبال توجيه جديد؛ ومسح المنضدة يعمل دائمًا."
   }
 }
