@@ -8,6 +8,7 @@ import {
   MapPin,
   ShoppingBag,
   Store,
+  Truck,
   User,
   Wallet,
 } from "lucide-react";
@@ -36,11 +37,13 @@ export function UserMenu({
   user,
   isAdmin = false,
   isSeller = false,
+  isFleetOwner = false,
   walletBalance = 0,
 }: {
   user: MenuUser;
   isAdmin?: boolean;
   isSeller?: boolean;
+  isFleetOwner?: boolean;
   walletBalance?: number;
 }) {
   const t = useTranslations("Header");
@@ -54,6 +57,7 @@ export function UserMenu({
       ? { href: "/admin", key: "adminPanel", icon: LayoutDashboard }
       : null,
     isSeller ? { href: "/seller", key: "sellerCenter", icon: Store } : null,
+    isFleetOwner ? { href: "/fleet", key: "fleetPortal", icon: Truck } : null,
   ].filter((l): l is { href: string; key: string; icon: typeof User } =>
     Boolean(l),
   );

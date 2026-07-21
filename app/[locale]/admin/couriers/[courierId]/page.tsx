@@ -24,7 +24,12 @@ export default async function AdminCourierDetailPage({
 
   const courier = await prisma.user.findFirst({
     where: { id: courierId, roles: { has: "COURIER" } },
-    select: { id: true, name: true, email: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      fleet: { select: { id: true, name: true } },
+    },
   });
   if (!courier) notFound();
 
@@ -84,6 +89,14 @@ export default async function AdminCourierDetailPage({
             <span className="font-medium text-amber-600" dir="ltr">
               ★ {rating.avg.toFixed(1)} ({rating.count})
             </span>
+          ) : null}
+          {courier.fleet ? (
+            <Link
+              href={`/admin/fleets/${courier.fleet.id}`}
+              className="rounded bg-violet-500/15 px-1.5 py-0.5 text-xs font-medium text-violet-700 hover:underline dark:text-violet-400"
+            >
+              {courier.fleet.name}
+            </Link>
           ) : null}
         </p>
       </div>

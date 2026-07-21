@@ -87,6 +87,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/carriers", key: "carriers", icon: Truck },
   { href: "/admin/dispatch", key: "dispatch", icon: Route },
   { href: "/admin/couriers", key: "couriers", icon: Bike },
+  { href: "/admin/fleets", key: "fleets", icon: Truck },
   { href: "/admin/points", key: "points", icon: MapPinned },
   { href: "/admin/disputes", key: "disputes", icon: ShieldAlert },
   { href: "/admin/categories", key: "categories", icon: Shapes },

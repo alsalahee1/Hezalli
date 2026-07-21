@@ -38,6 +38,7 @@ export default async function ShopLayout({
             image: true,
             roles: true,
             wallet: { select: { availableUsd: true } },
+            ownedFleet: { select: { isActive: true } },
           },
         })
       : Promise.resolve(null),
@@ -93,6 +94,7 @@ export default async function ShopLayout({
           }
           isSeller={user?.roles.includes("SELLER") ?? false}
           isAdmin={isAdmin}
+          isFleetOwner={user?.ownedFleet?.isActive ?? false}
           walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
           categories={categories}
         />
