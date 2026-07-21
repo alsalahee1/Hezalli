@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import {
+  Bike,
   Heart,
   LayoutDashboard,
   LogOut,
   MapPin,
+  MapPinned,
   ShoppingBag,
   Store,
+  Truck,
   User,
   Wallet,
 } from "lucide-react";
@@ -36,11 +39,17 @@ export function UserMenu({
   user,
   isAdmin = false,
   isSeller = false,
+  isCourier = false,
+  isPointOperator = false,
+  isFleetOwner = false,
   walletBalance = 0,
 }: {
   user: MenuUser;
   isAdmin?: boolean;
   isSeller?: boolean;
+  isCourier?: boolean;
+  isPointOperator?: boolean;
+  isFleetOwner?: boolean;
   walletBalance?: number;
 }) {
   const t = useTranslations("Header");
@@ -54,6 +63,11 @@ export function UserMenu({
       ? { href: "/admin", key: "adminPanel", icon: LayoutDashboard }
       : null,
     isSeller ? { href: "/seller", key: "sellerCenter", icon: Store } : null,
+    isCourier ? { href: "/driver", key: "driverApp", icon: Bike } : null,
+    isPointOperator
+      ? { href: "/point", key: "pointPortal", icon: MapPinned }
+      : null,
+    isFleetOwner ? { href: "/fleet", key: "fleetPortal", icon: Truck } : null,
   ].filter((l): l is { href: string; key: string; icon: typeof User } =>
     Boolean(l),
   );

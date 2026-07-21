@@ -10,7 +10,7 @@ import { transferFunds } from "@/lib/wallet-transfers";
 import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 import { checkOutflowLimit } from "@/lib/wallet-velocity";
 
-type Result = { ok?: boolean; error?: string };
+type Result = { ok?: boolean; error?: string; entryId?: string };
 
 // Send wallet funds to another user by email/phone (P2P). LICENSED ONLY — money
 // transmission is regulated; off unless wallet_p2p_enabled is set. Any signed-in

@@ -38,6 +38,8 @@ export default async function ShopLayout({
             image: true,
             roles: true,
             wallet: { select: { availableUsd: true } },
+            ownedFleet: { select: { isActive: true } },
+            deliveryPoint: { select: { status: true } },
           },
         })
       : Promise.resolve(null),
@@ -93,6 +95,13 @@ export default async function ShopLayout({
           }
           isSeller={user?.roles.includes("SELLER") ?? false}
           isAdmin={isAdmin}
+          isCourier={user?.roles.includes("COURIER") ?? false}
+          isPointOperator={
+            (user?.roles.includes("DELIVERY_POINT") &&
+              user?.deliveryPoint?.status === "ACTIVE") ??
+            false
+          }
+          isFleetOwner={user?.ownedFleet?.isActive ?? false}
           walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
           categories={categories}
         />

@@ -4,6 +4,14 @@ import { prisma } from "@/lib/prisma";
 // Returns the current user's id only if they are an active ADMIN (checked
 // against the DB, never the JWT). Used to guard admin-only server actions.
 export async function requireAdminId(): Promise<string | null> {
+  return requireStaffId("ADMIN");
+}
+
+// Staff gate: the user must hold `role` — or ADMIN, which is a superset of
+// every staff role. Checked against the DB, never the JWT.
+async function requireStaffId(
+  role: "ADMIN" | "WALLET_MANAGER" | "DELIVERY_MANAGER",
+): Promise<string | null> {
   const session = await auth();
   const id = session?.user?.id;
   if (!id) return null;
@@ -11,10 +19,19 @@ export async function requireAdminId(): Promise<string | null> {
     where: { id },
     select: { roles: true, isSuspended: true, deletedAt: true },
   });
-  if (!u || u.isSuspended || u.deletedAt || !u.roles.includes("ADMIN")) {
-    return null;
-  }
+  if (!u || u.isSuspended || u.deletedAt) return null;
+  if (!u.roles.includes(role) && !u.roles.includes("ADMIN")) return null;
   return id;
+}
+
+// Guards wallet-domain staff actions (top-ups, withdrawals, ledger tools).
+export async function requireWalletManagerId(): Promise<string | null> {
+  return requireStaffId("WALLET_MANAGER");
+}
+
+// Guards delivery-domain staff actions (shipments, carriers, zones).
+export async function requireDeliveryManagerId(): Promise<string | null> {
+  return requireStaffId("DELIVERY_MANAGER");
 }
 
 // Returns the current active seller's user id + their store id, or null.
@@ -72,6 +89,36 @@ export async function requireDeliveryPoint(): Promise<{
     return null;
   }
   return { userId: id, pointId: u.deliveryPoint.id };
+}
+
+// Returns the current user's id + the fleet they own, only if they own an
+// ACTIVE fleet (checked against the DB). Guards the read-only fleet portal.
+// No dedicated role: ownership of an active fleet IS the grant.
+export async function requireFleetOwner(): Promise<{
+  userId: string;
+  fleetId: string;
+} | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      isSuspended: true,
+      deletedAt: true,
+      ownedFleet: { select: { id: true, isActive: true } },
+    },
+  });
+  if (
+    !u ||
+    u.isSuspended ||
+    u.deletedAt ||
+    !u.ownedFleet ||
+    !u.ownedFleet.isActive
+  ) {
+    return null;
+  }
+  return { userId: id, fleetId: u.ownedFleet.id };
 }
 
 // Returns the current user's id only if they are an active COURIER (Hezalli

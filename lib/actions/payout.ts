@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireAdminId } from "@/lib/authz";
+import { audit } from "@/lib/audit";
+import { requireWalletManagerId } from "@/lib/authz";
 import { getBalanceId, recomputeBalance, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { payoutMethodSchema } from "@/lib/validations/payout";
@@ -157,12 +158,13 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
   return { ok: true };
 }
 
-// Admin marks a payout PAID (money sent outside the system) → ledger debit.
+// Wallet staff marks a payout PAID (money sent outside the system) → ledger
+// debit.
 export async function markPayoutPaid(
   payoutId: string,
   reference: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -218,18 +220,23 @@ export async function markPayoutPaid(
 
   if (!paid) return { error: "badState" };
   await recomputeBalance(payout.sellerId);
+  await audit(adminId, "payout.paid", "Payout", payout.id, {
+    amountUsd: Number(payout.amountUsd),
+    reference: reference?.trim() || null,
+  });
 
   revalidatePath(`/${locale}/admin/payouts`);
+  revalidatePath(`/${locale}/wallet-manager/payouts`);
   revalidatePath(`/${locale}/seller/finance`);
   return { ok: true };
 }
 
-// Admin rejects a payout request (no ledger effect).
+// Wallet staff rejects a payout request (no ledger effect).
 export async function rejectPayout(
   payoutId: string,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
   const payout = await prisma.payout.findUnique({
@@ -271,7 +278,11 @@ export async function rejectPayout(
   });
 
   if (!rejected) return { error: "badState" };
+  await audit(adminId, "payout.reject", "Payout", payoutId, {
+    reason: reason?.trim() || null,
+  });
   revalidatePath(`/${locale}/admin/payouts`);
+  revalidatePath(`/${locale}/wallet-manager/payouts`);
   revalidatePath(`/${locale}/seller/finance`);
   return { ok: true };
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireWalletManagerId } from "@/lib/authz";
 import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import {
@@ -21,7 +21,7 @@ export async function setWalletFrozen(
   frozen: boolean,
   reason?: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -67,6 +67,8 @@ export async function setWalletFrozen(
   ]);
 
   revalidatePath(`/${locale}/admin/users`);
+  revalidatePath(`/${locale}/wallet-manager`);
+  revalidatePath(`/${locale}/wallet-manager/wallets`);
   return { ok: true };
 }
 
@@ -77,7 +79,7 @@ export async function adjustWalletBalance(
   amountUsd: number,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -131,5 +133,7 @@ export async function adjustWalletBalance(
   });
 
   revalidatePath(`/${locale}/admin/users`);
+  revalidatePath(`/${locale}/wallet-manager`);
+  revalidatePath(`/${locale}/wallet-manager/wallets`);
   return { ok: true };
 }

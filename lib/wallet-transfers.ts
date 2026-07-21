@@ -16,7 +16,7 @@ import {
   recomputeWalletBalance,
 } from "@/lib/wallet";
 
-type Result = { ok?: boolean; error?: string };
+type Result = { ok?: boolean; error?: string; entryId?: string };
 
 class TransferError extends Error {}
 
@@ -65,6 +65,7 @@ export async function transferFunds(
   // them authoritatively inside the transaction under a wallet row lock so parallel
   // sends can't collectively slip past the AML cap.
   const caps = await outflowCaps(fromUserId);
+  let senderEntryId = "";
   try {
     await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "Wallet" WHERE "id" = ${fromWalletId} FOR UPDATE`;
@@ -83,13 +84,14 @@ export async function transferFunds(
         data: { fromWalletId, toWalletId, amountUsd: amount, note: cleanNote },
         select: { id: true },
       });
-      await creditWalletTx(tx, fromWalletId, {
+      const senderEntry = await creditWalletTx(tx, fromWalletId, {
         type: "TRANSFER_OUT",
         amountUsd: -amount,
         note: `Sent to another user (${transfer.id})`,
         refType: "transfer",
         refId: transfer.id,
       });
+      senderEntryId = senderEntry.id;
       await creditWalletTx(tx, toWalletId, {
         type: "TRANSFER_IN",
         amountUsd: amount,
@@ -118,5 +120,5 @@ export async function transferFunds(
     link: "/account/wallet",
   });
 
-  return { ok: true };
+  return { ok: true, entryId: senderEntryId };
 }

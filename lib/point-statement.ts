@@ -35,7 +35,9 @@ export type PointStatement = {
   entries: StatementEntry[]; // all entries in range, oldest first
 };
 
-function side(
+// Shared with the courier statement (lib/courier-statement.ts) — same math,
+// different ledger table.
+export function buildStatementSide(
   types: readonly string[],
   opening: Map<string, number>,
   inRange: Map<string, number>,
@@ -83,8 +85,8 @@ export async function pointStatement(
   const inRange = toMap(during);
 
   return {
-    earnings: side(EARNING_TYPES, opening, inRange),
-    cash: side(CASH_TYPES, opening, inRange),
+    earnings: buildStatementSide(EARNING_TYPES, opening, inRange),
+    cash: buildStatementSide(CASH_TYPES, opening, inRange),
     entries: entries.map((e) => ({
       id: e.id,
       type: e.type,

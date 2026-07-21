@@ -28,12 +28,18 @@ export function SiteHeader({
   user,
   isSeller = false,
   isAdmin = false,
+  isCourier = false,
+  isPointOperator = false,
+  isFleetOwner = false,
   walletBalance = 0,
   categories = [],
 }: {
   user?: HeaderUser | null;
   isSeller?: boolean;
   isAdmin?: boolean;
+  isCourier?: boolean;
+  isPointOperator?: boolean;
+  isFleetOwner?: boolean;
   walletBalance?: number;
   categories?: NavCategory[];
 }) {
@@ -96,6 +102,9 @@ export function SiteHeader({
                 user={user}
                 isAdmin={isAdmin}
                 isSeller={isSeller}
+                isCourier={isCourier}
+                isPointOperator={isPointOperator}
+                isFleetOwner={isFleetOwner}
                 walletBalance={walletBalance}
               />
             </>

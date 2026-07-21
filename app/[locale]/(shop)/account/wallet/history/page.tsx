@@ -21,6 +21,8 @@ const ENTRY_LABEL: Record<string, string> = {
   CASHOUT: "cashout",
   ADJUSTMENT: "adjustment",
   SELLER_EARNINGS: "sellerEarnings",
+  COURIER_EARNINGS: "courierEarnings",
+  POINT_EARNINGS: "pointEarnings",
   TRANSFER_OUT: "transferOut",
   TRANSFER_IN: "transferIn",
   BILL_PAYMENT: "billPaymentEntry",

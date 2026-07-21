@@ -499,6 +499,34 @@ and immutable, both are pure SUMs — nothing stored, nothing to drift.
 - [x] Integration test: seeded two-month ledger → opening excludes the month, closing = opening + delta, both sides; CSV route gated
 - [x] This file kept current
 
-## 29. Out of scope
+## 30. v1.13 — Courier ledger & monthly statement
+
+The v1.12 statement, for the OTHER cash-handling role. Drivers see two
+headline tiles (cash to remit, earnings) but not the entries behind them —
+they can't answer "which parcels am I carrying cash for?" or reconcile a
+month the way hubs now can.
+
+1. **Driver ledger page** (`/driver/ledger`): the same headline tiles plus
+   the recent entry list (COD collected per drop, remittances, delivery-fee
+   earnings, payouts, adjustments).
+2. **Driver monthly statement** (`/driver/statement?month=YYYY-MM`):
+   opening → month's activity → closing for both sides — _earnings_
+   (EARNING / PAYOUT / ADJUSTMENT) and _COD cash_ (COD_COLLECTED /
+   REMITTANCE) — plus a CSV export, reusing v1.12's `monthRange` /
+   `statementCsv` and the same pure-SUM math over the immutable
+   `CourierLedgerEntry` table.
+3. Linked from the driver home's cash tiles. Gated by `requireCourierId`.
+
+### Build checklist (v1.13)
+
+- [x] `lib/courier-statement.ts`: `courierStatement(courierId, from, to)` (reuses v1.12 helpers)
+- [x] `/driver/ledger` page: tiles + recent entries
+- [x] `/driver/statement` page + `/api/driver/statement` CSV route (courier-gated)
+- [x] Links from the driver home
+- [x] i18n (en + ar)
+- [x] Integration test: seeded two-month courier ledger → opening/delta/closing both sides; out-of-range entries absent
+- [x] This file kept current
+
+## 31. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
