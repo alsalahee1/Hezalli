@@ -105,6 +105,7 @@ export async function requestRedelivery(
       body: "A buyer picked a new delivery day for one of your parcels.",
       url: "/driver",
       tag: "redelivery",
+      icon: "/driver-icon.svg",
     }).catch(() => {});
   }
 

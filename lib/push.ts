@@ -29,8 +29,9 @@ export function pushEnabled(): boolean {
 export type PushPayload = {
   title: string;
   body: string;
-  url?: string; // path to open on click (default /driver)
+  url?: string; // path to open on click (default /)
   tag?: string;
+  icon?: string; // default /icon.svg (see public/sw.js)
 };
 
 // Fire a push to every device the user has subscribed. Best-effort: never

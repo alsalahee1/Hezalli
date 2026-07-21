@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { resolvePrefs } from "@/lib/notif-prefs";
 import { prisma } from "@/lib/prisma";
 import { NotifPrefsForm } from "@/components/notifications/notif-prefs-form";
+import { PushToggle } from "@/components/notifications/push-toggle";
 
 export default async function NotifPrefsPage() {
   const session = await auth();
@@ -27,6 +28,7 @@ export default async function NotifPrefsPage() {
         <h1 className="text-xl font-semibold">{t("title")}</h1>
         <p className="text-muted-foreground text-sm">{t("desc")}</p>
       </div>
+      <PushToggle />
       <NotifPrefsForm initial={prefs} />
     </div>
   );

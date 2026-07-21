@@ -93,6 +93,7 @@ export async function assignCourier(
       body: "A Hezalli Express delivery was assigned to you.",
       url: "/driver",
       tag: "assignment",
+      icon: "/driver-icon.svg",
     });
   }
 
@@ -150,6 +151,7 @@ export async function assignManyCouriers(
       body: `${count} Hezalli Express deliveries were assigned to you.`,
       url: "/driver",
       tag: "assignment",
+      icon: "/driver-icon.svg",
     }).catch(() => {});
   }
 

@@ -47,9 +47,19 @@ export function resolvePrefs(raw: unknown): NotifPrefs {
   return prefs;
 }
 
-// System notifications always email; otherwise honour the category toggle.
-export function isEmailEnabled(raw: unknown, type: string): boolean {
+function categoryEnabled(raw: unknown, type: string): boolean {
   const cat = categoryOf(type);
   if (cat === "system") return true;
   return resolvePrefs(raw)[cat];
+}
+
+// System notifications always email; otherwise honour the category toggle.
+export function isEmailEnabled(raw: unknown, type: string): boolean {
+  return categoryEnabled(raw, type);
+}
+
+// Same category toggles gate push (no separate push preference to keep the
+// settings UI simple — a category you've muted stays muted on every channel).
+export function isPushEnabled(raw: unknown, type: string): boolean {
+  return categoryEnabled(raw, type);
 }

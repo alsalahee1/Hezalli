@@ -3,6 +3,7 @@
 // the *authenticated* sender id, so this can never be invoked with an arbitrary
 // `fromUserId` from the client. Callers own auth + the wallet_p2p_enabled gate.
 import { round2 } from "@/lib/finance";
+import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import {
   assertOutflowWithinLimitTx,
@@ -107,16 +108,14 @@ export async function transferFunds(
   await recomputeWalletBalance(toUserId);
 
   const ar = recipient.locale === "ar";
-  await prisma.notification.create({
-    data: {
-      userId: toUserId,
-      type: "PAYMENT",
-      title: ar ? "استلمت أموالاً" : "You received funds",
-      body: ar
-        ? `تمت إضافة ${amount.toFixed(2)}$ إلى محفظتك.`
-        : `$${amount.toFixed(2)} was added to your wallet.`,
-      data: { link: `/account/wallet` },
-    },
+  await notify({
+    userId: toUserId,
+    type: "PAYMENT",
+    title: ar ? "استلمت أموالاً" : "You received funds",
+    body: ar
+      ? `تمت إضافة ${amount.toFixed(2)}$ إلى محفظتك.`
+      : `$${amount.toFixed(2)} was added to your wallet.`,
+    link: "/account/wallet",
   });
 
   return { ok: true };

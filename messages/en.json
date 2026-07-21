@@ -2520,5 +2520,12 @@
     "colDeliveries": "Deliveries",
     "colRating": "Rating",
     "colCash": "Cash on hand"
+  },
+  "Push": {
+    "enableNotif": "Enable push notifications",
+    "notifOn": "Push notifications on",
+    "notifBlocked": "Notifications blocked in browser",
+    "notifTapOn": "Tap to enable",
+    "notifTapOff": "Tap to turn off"
   }
 }

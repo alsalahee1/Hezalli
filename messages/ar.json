@@ -2520,5 +2520,12 @@
     "colDeliveries": "التوصيلات",
     "colRating": "التقييم",
     "colCash": "النقد لديه"
+  },
+  "Push": {
+    "enableNotif": "تفعيل إشعارات الدفع",
+    "notifOn": "إشعارات الدفع مفعّلة",
+    "notifBlocked": "الإشعارات محظورة في المتصفح",
+    "notifTapOn": "اضغط للتفعيل",
+    "notifTapOff": "اضغط للإيقاف"
   }
 }

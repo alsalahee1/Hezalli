@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { auth } from "@/auth";
 import { requireAdminId } from "@/lib/authz";
 import { recomputeBalance } from "@/lib/finance";
+import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -159,29 +160,25 @@ export async function confirmPayment(paymentId: string): Promise<Result> {
   for (const s of payment.order.subOrders) {
     const seller = s.store.seller.user;
     const ar = seller.locale === "ar";
-    await prisma.notification.create({
-      data: {
-        userId: seller.id,
-        type: "ORDER",
-        title: ar ? "طلب جديد (مدفوع)" : "New paid order",
-        body: ar
-          ? `طلب مدفوع بقيمة ${Number(s.itemsTotal).toFixed(2)}$.`
-          : `A paid order worth $${Number(s.itemsTotal).toFixed(2)}.`,
-        data: { orderId: payment.order.id },
-      },
+    await notify({
+      userId: seller.id,
+      type: "ORDER",
+      title: ar ? "طلب جديد (مدفوع)" : "New paid order",
+      body: ar
+        ? `طلب مدفوع بقيمة ${Number(s.itemsTotal).toFixed(2)}$.`
+        : `A paid order worth $${Number(s.itemsTotal).toFixed(2)}.`,
+      data: { orderId: payment.order.id },
     });
   }
   const bAr = payment.order.buyer.locale === "ar";
-  await prisma.notification.create({
-    data: {
-      userId: payment.order.buyerId,
-      type: "PAYMENT",
-      title: bAr ? "تم تأكيد الدفع" : "Payment confirmed",
-      body: bAr
-        ? "تم تأكيد دفعتك وتأكيد طلبك."
-        : "Your payment was confirmed and your order is now confirmed.",
-      data: { orderId: payment.order.id },
-    },
+  await notify({
+    userId: payment.order.buyerId,
+    type: "PAYMENT",
+    title: bAr ? "تم تأكيد الدفع" : "Payment confirmed",
+    body: bAr
+      ? "تم تأكيد دفعتك وتأكيد طلبك."
+      : "Your payment was confirmed and your order is now confirmed.",
+    data: { orderId: payment.order.id },
   });
 
   revalidatePath(`/${locale}/admin/payments`);
@@ -227,31 +224,27 @@ export async function rejectPayment(
   });
   if (upd.count !== 1) return { error: "badState" };
 
-  await prisma.$transaction([
-    prisma.orderStatusHistory.create({
-      data: {
-        orderId: payment.order.id,
-        status: "PENDING",
-        actor: "admin",
-        note: reason ? `Payment rejected: ${reason}` : "Payment rejected",
-      },
-    }),
-    prisma.notification.create({
-      data: {
-        userId: payment.order.buyerId,
-        type: "PAYMENT",
-        title:
-          payment.order.buyer.locale === "ar"
-            ? "لم يتم تأكيد الدفع"
-            : "Payment not confirmed",
-        body:
-          payment.order.buyer.locale === "ar"
-            ? "لم نتمكن من تأكيد دفعتك. يرجى المحاولة مرة أخرى."
-            : "We couldn't confirm your payment. Please try again.",
-        data: { orderId: payment.order.id },
-      },
-    }),
-  ]);
+  await prisma.orderStatusHistory.create({
+    data: {
+      orderId: payment.order.id,
+      status: "PENDING",
+      actor: "admin",
+      note: reason ? `Payment rejected: ${reason}` : "Payment rejected",
+    },
+  });
+  await notify({
+    userId: payment.order.buyerId,
+    type: "PAYMENT",
+    title:
+      payment.order.buyer.locale === "ar"
+        ? "لم يتم تأكيد الدفع"
+        : "Payment not confirmed",
+    body:
+      payment.order.buyer.locale === "ar"
+        ? "لم نتمكن من تأكيد دفعتك. يرجى المحاولة مرة أخرى."
+        : "We couldn't confirm your payment. Please try again.",
+    data: { orderId: payment.order.id },
+  });
 
   revalidatePath(`/${locale}/admin/payments`);
   revalidatePath(`/${locale}/account/orders/${payment.order.id}`);
