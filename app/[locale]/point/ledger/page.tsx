@@ -5,9 +5,10 @@ import { requireDeliveryPoint } from "@/lib/authz";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
 import { DriverCashInForm } from "@/components/point/driver-cash-in-form";
+import { PayoutRequestForm } from "@/components/point/payout-request-form";
 
-// The operator's earnings: handling fees accrued, payouts received, and the
-// balance Hezalli still owes them. Read-only — payouts are recorded by admins.
+// The operator's earnings: handling fees accrued, payouts received, the
+// balance Hezalli still owes them — and a request-payout flow (docs §22).
 export default async function PointLedgerPage() {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
@@ -16,7 +17,7 @@ export default async function PointLedgerPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [summary, entries, couriers] = await Promise.all([
+  const [summary, entries, couriers, payoutRequests] = await Promise.all([
     pointLedgerSummary(gate.pointId),
     prisma.deliveryPointLedgerEntry.findMany({
       where: { pointId: gate.pointId },
@@ -35,7 +36,22 @@ export default async function PointLedgerPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true, email: true },
     }),
+    prisma.pointPayoutRequest.findMany({
+      where: { pointId: gate.pointId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        amountUsd: true,
+        status: true,
+        note: true,
+        createdAt: true,
+      },
+    }),
   ]);
+  const hasOpen = payoutRequests.some(
+    (r) => r.status === "REQUESTED" || r.status === "APPROVED",
+  );
   const drivers = couriers.map((c) => ({
     id: c.id,
     name: c.name ?? c.email ?? c.id.slice(-6),
@@ -103,6 +119,27 @@ export default async function PointLedgerPage() {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {/* Ask Hezalli to pay out the earnings balance (docs §22). */}
+      <PayoutRequestForm free={summary.balance} hasOpen={hasOpen} />
+      {payoutRequests.length > 0 ? (
+        <ul className="divide-y rounded-xl border">
+          {payoutRequests.map((r) => (
+            <li key={r.id} className="flex items-center gap-3 px-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{t(`payout_${r.status}`)}</p>
+                <p className="text-muted-foreground truncate text-xs">
+                  {format.dateTime(r.createdAt, { dateStyle: "medium" })}
+                  {r.note ? ` — ${r.note}` : null}
+                </p>
+              </div>
+              <span className="font-semibold" dir="ltr">
+                {money(Number(r.amountUsd))}
+              </span>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {/* Record COD cash a courier hands in at the counter. */}

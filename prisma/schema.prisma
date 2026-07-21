@@ -320,8 +320,28 @@ model DeliveryPoint {
   owner       User                @relation("PointOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   shipments   Shipment[]
   ledger      DeliveryPointLedgerEntry[]
+  payoutRequests PointPayoutRequest[]
 
   @@index([governorate, status])
+}
+
+// A hub operator's request to be paid their earnings balance, mirroring the
+// seller Payout flow (docs/DELIVERY-POINTS.md §22). Marking it PAID writes the
+// negative PAYOUT ledger entry in the same transaction, so the request queue
+// and the ledger can never disagree.
+model PointPayoutRequest {
+  id          String        @id @default(cuid())
+  pointId     String
+  amountUsd   Decimal       @db.Decimal(12, 2)
+  status      PayoutStatus  @default(REQUESTED)
+  note        String? // operator's note; on rejection, the admin's reason
+  processedBy String?
+  processedAt DateTime?
+  createdAt   DateTime      @default(now())
+  point       DeliveryPoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@index([pointId])
+  @@index([status])
 }
 
 // One "become a delivery point" application per user, mirroring

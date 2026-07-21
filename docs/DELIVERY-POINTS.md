@@ -407,13 +407,13 @@ manual admin entry (§12) — this flow only pays out the earnings side.
 
 ### Build checklist (v1.9)
 
-- [ ] `PointPayoutRequest` model + migration (status reuses `PayoutStatus`)
-- [ ] `lib/actions/point-payout.ts`: `requestPointPayout` (locked free-balance check, one open request), `markPointPayoutPaid` (flip + PAYOUT ledger row in one tx), `rejectPointPayout`
-- [ ] Point ledger page: free balance, request form, request history
-- [ ] Admin hub page: pending requests with pay (reference) / reject (reason)
-- [ ] i18n (en + ar) + notifications to the operator
-- [ ] Integration test: below-min / over-balance / double request rejected; pay writes exactly one ledger row and can't double-pay; reject has no ledger effect
-- [ ] This file kept current
+- [x] `PointPayoutRequest` model + migration (status reuses `PayoutStatus`)
+- [x] `lib/actions/point-payout.ts`: `requestPointPayout` (locked free-balance check, one open request), `markPointPayoutPaid` (flip + PAYOUT ledger row in one tx), `rejectPointPayout`
+- [x] Point ledger page: free balance, request form, request history
+- [x] Admin hub page: pending requests with pay (reference) / reject (reason)
+- [x] i18n (en + ar) + notifications to the operator
+- [x] Integration test: below-min / over-balance / double request rejected; pay writes exactly one ledger row and can't double-pay; reject has no ledger effect
+- [x] This file kept current
 
 ## 23. Out of scope
 
