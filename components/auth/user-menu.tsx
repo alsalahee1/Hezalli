@@ -17,7 +17,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/products";
 import { signOutAction } from "@/lib/actions/auth";
-import { useMountTransition } from "@/components/ui/use-mount-transition";
+import { Popover } from "@/components/ui/popover";
 
 const MENU_LINKS = [
   { href: "/account", key: "profile", icon: User },
@@ -46,7 +46,6 @@ export function UserMenu({
   const t = useTranslations("Header");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const { mounted, shown } = useMountTransition(open, 200);
 
   // Links that depend on the signed-in user's role. Admins reach the admin
   // panel, sellers reach their store dashboard — buyers see neither.
@@ -86,13 +85,8 @@ export function UserMenu({
         )}
       </button>
 
-      {mounted && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
+      <Popover open={open} onClose={() => setOpen(false)}>
+        {(shown) => (
           <div
             role="menu"
             className={cn(
@@ -169,8 +163,8 @@ export function UserMenu({
               </button>
             </form>
           </div>
-        </>
-      )}
+        )}
+      </Popover>
     </div>
   );
 }
