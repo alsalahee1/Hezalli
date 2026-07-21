@@ -440,6 +440,33 @@ The network works, but buyers can't _see_ it. Two public-facing pieces:
 - [x] Integration test: directory lists only ACTIVE hubs grouped by governorate; held pickup parcel resolves its hub info
 - [x] This file kept current
 
-## 25. Out of scope
+## 26. v1.11 — Driver collection manifest
+
+Closes the last gap to the original vision (§1): _"the driver shows their
+collecting QR, the point sees the orders assigned to them and hands them
+over"_. Today the counter scans the driver's QR to pick the driver but still
+scans every parcel label one by one. v1.11 adds the batch:
+
+1. **Manifest.** Scanning a driver's QR (or picking them) shows every parcel
+   at THIS hub assigned to that driver — tracking, destination city, COD
+   badge — the driver's pickup list, exactly like big-carrier manifests.
+2. **Hand over all.** One tap hands the whole manifest to the driver. Under
+   the hood each parcel still goes through the same race-guarded
+   `handoverParcelToDriver` transition (events, custody stamps, mismatch
+   guards) — the batch is a loop, not a new money/custody path. Per-parcel
+   scanning stays available for partial collections.
+3. **Result feedback.** The counter sees "N handed, M failed" — a parcel
+   grabbed by a concurrent scan just drops out of the batch.
+
+### Build checklist (v1.11)
+
+- [ ] `point-core`: `driverManifestAtPoint(pointId, driverId)` (held, assigned, last-mile only) + `handoverManifestToDriver` batch loop
+- [ ] Actions: `pointDriverManifest` / `pointHandoverManifest` (operator-gated)
+- [ ] Scan station: manifest panel when a driver is selected (list + "hand over all (N)"), per-parcel scan unchanged
+- [ ] i18n (en + ar)
+- [ ] Integration test: manifest lists only this hub's assigned last-mile parcels; batch hands all; concurrent claim drops out; pickup parcels never appear
+- [ ] This file kept current
+
+## 27. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
