@@ -252,8 +252,34 @@ model User {
   pushSubscriptions PushSubscription[]
   deliveryPoint    DeliveryPoint? @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
+  // Fleet-partner tier: a courier may belong to a fleet (fleetId); a user may
+  // also OWN one fleet (ownedFleet), which grants the read-only fleet portal.
+  fleetId          String?
+  fleet            Fleet? @relation("FleetMembers", fields: [fleetId], references: [id], onDelete: SetNull)
+  ownedFleet       Fleet? @relation("FleetOwner")
 
   @@index([referredById])
+  @@index([fleetId])
+}
+
+// A fleet-partner: a delivery company operating several Hezalli Express couriers
+// under one banner. Couriers are grouped into a fleet (User.fleetId) so their
+// jobs, cash-on-hand, and earnings roll up for the partner. An optional owner
+// user gets a read-only fleet dashboard. Fleets are created + staffed by admins,
+// never self-served (mirrors how couriers and points are onboarded).
+model Fleet {
+  id           String   @id @default(cuid())
+  name         String
+  contactPhone String?
+  contactEmail String?
+  ownerId      String?  @unique
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  owner        User?    @relation("FleetOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  couriers     User[]   @relation("FleetMembers")
+
+  @@index([isActive])
 }
 
 // A browser/device Web Push subscription. One user may have several (phone,

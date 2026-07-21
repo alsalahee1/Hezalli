@@ -74,6 +74,36 @@ export async function requireDeliveryPoint(): Promise<{
   return { userId: id, pointId: u.deliveryPoint.id };
 }
 
+// Returns the current user's id + the fleet they own, only if they own an
+// ACTIVE fleet (checked against the DB). Guards the read-only fleet portal.
+// No dedicated role: ownership of an active fleet IS the grant.
+export async function requireFleetOwner(): Promise<{
+  userId: string;
+  fleetId: string;
+} | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      isSuspended: true,
+      deletedAt: true,
+      ownedFleet: { select: { id: true, isActive: true } },
+    },
+  });
+  if (
+    !u ||
+    u.isSuspended ||
+    u.deletedAt ||
+    !u.ownedFleet ||
+    !u.ownedFleet.isActive
+  ) {
+    return null;
+  }
+  return { userId: id, fleetId: u.ownedFleet.id };
+}
+
 // Returns the current user's id only if they are an active COURIER (Hezalli
 // Express driver), checked against the DB. Guards driver-only actions/pages.
 export async function requireCourierId(): Promise<string | null> {

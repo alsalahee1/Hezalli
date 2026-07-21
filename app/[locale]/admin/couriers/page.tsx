@@ -24,7 +24,13 @@ export default async function AdminCouriersPage() {
     prisma.user.findMany({
       where: { roles: { has: "COURIER" } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, email: true, isSuspended: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isSuspended: true,
+        fleet: { select: { name: true } },
+      },
     }),
     // Cash-on-hand per courier = sum of every ledger entry except EARNING
     // (COD_COLLECTED + REMITTANCE + ADJUSTMENT), in one pass.
@@ -130,6 +136,11 @@ export default async function AdminCouriersPage() {
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
+                      {c.fleet ? (
+                        <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-400">
+                          {c.fleet.name}
+                        </span>
+                      ) : null}
                       {rating ? (
                         <span
                           className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600"
