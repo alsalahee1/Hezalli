@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  Bike,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -37,12 +38,14 @@ export function UserMenu({
   user,
   isAdmin = false,
   isSeller = false,
+  isCourier = false,
   isFleetOwner = false,
   walletBalance = 0,
 }: {
   user: MenuUser;
   isAdmin?: boolean;
   isSeller?: boolean;
+  isCourier?: boolean;
   isFleetOwner?: boolean;
   walletBalance?: number;
 }) {
@@ -57,6 +60,7 @@ export function UserMenu({
       ? { href: "/admin", key: "adminPanel", icon: LayoutDashboard }
       : null,
     isSeller ? { href: "/seller", key: "sellerCenter", icon: Store } : null,
+    isCourier ? { href: "/driver", key: "driverApp", icon: Bike } : null,
     isFleetOwner ? { href: "/fleet", key: "fleetPortal", icon: Truck } : null,
   ].filter((l): l is { href: string; key: string; icon: typeof User } =>
     Boolean(l),

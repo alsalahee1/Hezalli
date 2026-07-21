@@ -94,6 +94,7 @@ export default async function ShopLayout({
           }
           isSeller={user?.roles.includes("SELLER") ?? false}
           isAdmin={isAdmin}
+          isCourier={user?.roles.includes("COURIER") ?? false}
           isFleetOwner={user?.ownedFleet?.isActive ?? false}
           walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
           categories={categories}

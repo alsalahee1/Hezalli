@@ -42,7 +42,8 @@
     "sellerCenter": "Seller Center",
     "adminPanel": "Admin panel",
     "fleetPortal": "Fleet portal",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "driverApp": "Driver app"
   },
   "MobileNav": {
     "label": "Primary",
@@ -2139,7 +2140,8 @@
     "stmtOpening": "Opening",
     "stmtChange": "This month",
     "stmtClosing": "Closing",
-    "stmtCsv": "Download CSV"
+    "stmtCsv": "Download CSV",
+    "storefront": "Store"
   },
   "Dispatch": {
     "title": "Dispatch",
