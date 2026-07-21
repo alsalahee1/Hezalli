@@ -119,11 +119,12 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "SellerBalance" WHERE "id" = ${balanceId} FOR UPDATE`;
-      const availAgg = await tx.ledgerEntry.aggregate({
-        where: { balanceId },
-        _sum: { amountUsd: true },
-      });
-      const available = round2(Number(availAgg._sum.amountUsd ?? 0));
+      // Read outstanding requests BEFORE the ledger: markPayoutPaid flips a
+      // request to PAID and writes its ledger debit in one commit without
+      // taking this lock, and under READ COMMITTED each statement sees a fresh
+      // snapshot — in this order a flip landing between the reads is counted
+      // twice (still reserved AND already debited) so an over-request fails
+      // closed instead of slipping through to be paid.
       const outstanding = await tx.payout.aggregate({
         where: {
           sellerId: profile.id,
@@ -131,6 +132,11 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
         },
         _sum: { amountUsd: true },
       });
+      const availAgg = await tx.ledgerEntry.aggregate({
+        where: { balanceId },
+        _sum: { amountUsd: true },
+      });
+      const available = round2(Number(availAgg._sum.amountUsd ?? 0));
       const free = round2(available - Number(outstanding._sum.amountUsd ?? 0));
       const amount =
         amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(free);
