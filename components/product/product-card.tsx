@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import type { ProductCardItem } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { SmartImage } from "@/components/ui/smart-image";
 import { StarRating } from "@/components/product/star-rating";
 import { WishlistHeart } from "@/components/product/wishlist-heart";
 
@@ -27,17 +28,13 @@ export function ProductCard({
     >
       <div className="bg-muted relative aspect-square overflow-hidden">
         {item.cover ? (
-          // Raw <img> is deliberate: product images come from same-origin
-          // /api/files or a runtime-configured S3 host that next/image's static
-          // remotePatterns can't enumerate. The aspect-square wrapper prevents CLS.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SmartImage
             src={item.cover}
             alt={item.title}
-            loading="lazy"
-            decoding="async"
+            fill
+            sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
             className={cn(
-              "size-full object-cover transition-transform duration-300 group-hover:scale-105",
+              "object-cover transition-transform duration-300 group-hover:scale-105",
               item.outOfStock && "opacity-50",
             )}
           />
