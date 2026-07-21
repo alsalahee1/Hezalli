@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SellerOrderActions } from "@/components/seller/seller-order-actions";
 import { ShipOrderForm } from "@/components/seller/ship-order-form";
+import { DeliveryProofCard } from "@/components/orders/delivery-proof-card";
 
 export default async function SellerOrderDetailPage({
   params,
@@ -160,6 +161,9 @@ export default async function SellerOrderDetailPage({
           }
         />
       ) : null}
+
+      {/* Proof of delivery (evidence for COD / delivery disputes) */}
+      <DeliveryProofCard shipmentId={sub.shipment?.id} />
 
       {/* Items */}
       <section className="rounded-lg border">

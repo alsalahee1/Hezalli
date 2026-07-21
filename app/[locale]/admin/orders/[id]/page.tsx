@@ -8,6 +8,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { RefundButton } from "@/components/admin/refund-button";
 import { ForceStatus } from "@/components/admin/force-status";
+import { DeliveryProofCard } from "@/components/orders/delivery-proof-card";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -27,6 +28,7 @@ export default async function AdminOrderDetailPage({
         include: {
           store: { select: { name: true } },
           items: true,
+          shipment: { select: { id: true } },
         },
       },
     },
@@ -120,6 +122,9 @@ export default async function AdminOrderDetailPage({
             <div className="flex justify-between border-t px-4 py-2 text-sm">
               <span className="text-muted-foreground">{t("subTotal")}</span>
               <span dir="ltr">{money(subTotal)}</span>
+            </div>
+            <div className="border-t p-4 empty:hidden">
+              <DeliveryProofCard shipmentId={s.shipment?.id} />
             </div>
           </section>
         );

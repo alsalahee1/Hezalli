@@ -2411,5 +2411,11 @@
     "type_DRIVER_CASH_IN": "Driver cash-in",
     "staleTitle": "Held parcels unmoved for {days}+ days",
     "staleCount": "{count, plural, one {# stale} other {# stale}}"
+  },
+  "DeliveryProof": {
+    "title": "Proof of delivery",
+    "recipient": "Received by",
+    "codeVerified": "Delivery code verified",
+    "photoAlt": "Doorstep delivery photo"
   }
 }
