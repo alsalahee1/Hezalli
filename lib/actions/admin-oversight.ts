@@ -9,7 +9,13 @@ import type { Prisma } from "@/lib/generated/prisma/client";
 
 type Result = { ok?: boolean; error?: string };
 
-const ROLES = ["BUYER", "SELLER", "ADMIN"];
+const ROLES = [
+  "BUYER",
+  "SELLER",
+  "ADMIN",
+  "WALLET_MANAGER",
+  "DELIVERY_MANAGER",
+];
 
 async function audit(
   actorId: string,
@@ -128,9 +134,24 @@ export async function forceOrderStatus(
   if (!adminId) return { error: "forbidden" };
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true },
+    select: {
+      id: true,
+      status: true,
+      subOrders: {
+        select: { shipment: { select: { id: true, status: true } } },
+      },
+    },
   });
   if (!order) return { error: "notFound" };
+
+  // Keep shipment records consistent with the forced status: an order forced
+  // to DELIVERED/COMPLETED must not leave its shipments dangling IN_TRANSIT.
+  const openShipments =
+    status === "DELIVERED" || status === "COMPLETED"
+      ? order.subOrders.flatMap((s) =>
+          s.shipment && s.shipment.status !== "DELIVERED" ? [s.shipment] : [],
+        )
+      : [];
 
   await prisma.$transaction([
     prisma.order.update({
@@ -145,6 +166,19 @@ export async function forceOrderStatus(
         note: note || `Forced to ${status} by admin`,
       },
     }),
+    ...openShipments.flatMap((sh) => [
+      prisma.shipment.update({
+        where: { id: sh.id },
+        data: { status: "DELIVERED", deliveredAt: new Date() },
+      }),
+      prisma.shipmentEvent.create({
+        data: {
+          shipmentId: sh.id,
+          status: "DELIVERED",
+          note: note || `Order forced to ${status} by admin`,
+        },
+      }),
+    ]),
   ]);
   await audit(adminId, "order.forceStatus", "Order", orderId, {
     from: order.status,

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireDeliveryManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { GOVERNORATE_VALUES } from "@/lib/yemen";
 
@@ -16,7 +16,7 @@ export async function saveZone(input: {
   name: string;
   governorates: string[];
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -45,12 +45,13 @@ export async function saveZone(input: {
   }
 
   revalidatePath(`/${locale}/admin/shipping-zones`);
+  revalidatePath(`/${locale}/delivery-manager/shipping-zones`);
   return { ok: true };
 }
 
 // Delete a zone and any store rates attached to it.
 export async function deleteZone(id: string): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -60,5 +61,6 @@ export async function deleteZone(id: string): Promise<Result> {
   ]);
 
   revalidatePath(`/${locale}/admin/shipping-zones`);
+  revalidatePath(`/${locale}/delivery-manager/shipping-zones`);
   return { ok: true };
 }
