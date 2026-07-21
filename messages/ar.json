@@ -2334,7 +2334,11 @@
     "payout_REJECTED": "سحب مرفوض",
     "err_alreadyOpen": "لديك طلب سحب قيد المعالجة بالفعل.",
     "err_belowMin": "المبلغ أقل من الحد الأدنى للسحب.",
-    "err_insufficient": "المبلغ يتجاوز رصيدك المتاح."
+    "err_insufficient": "المبلغ يتجاوز رصيدك المتاح.",
+    "manifestTitle": "{count, plural, one {طرد واحد لهذا السائق} two {طردان لهذا السائق} few {# طرود لهذا السائق} many {# طردًا لهذا السائق} other {# طرد لهذا السائق}}",
+    "manifestEmpty": "لا توجد طرود مسندة لهذا السائق في نقطتك.",
+    "manifestHandAll": "تسليم الكل ({count})",
+    "manifestDone": "سُلِّم {handed}، وفشل {failed}"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",

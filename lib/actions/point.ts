@@ -8,10 +8,13 @@ import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 import {
   buyerPickupAtPoint,
+  driverManifestAtPoint,
+  handoverManifestToDriver,
   handoverParcelToDriver,
   receiveParcelAtPoint,
   receiveReturnAtPoint,
   returnParcelToSeller,
+  type ManifestRow,
 } from "@/lib/point-core";
 
 type Result = { ok?: boolean; error?: string };
@@ -43,6 +46,32 @@ export async function pointHandoverParcel(
   const res = await handoverParcelToDriver(gate.pointId, tracking, driverId);
   if (res.ok) await revalidatePoint();
   return res;
+}
+
+// The driver's pickup list at this hub (docs §26) — shown when the counter
+// scans a driver's collection QR or picks them from the list.
+export async function pointDriverManifest(
+  driverId: string,
+): Promise<{ ok?: boolean; error?: string; rows?: ManifestRow[] }> {
+  const gate = await requireDeliveryPoint();
+  if (!gate) return { error: "forbidden" };
+  const id = driverId.trim();
+  if (!id) return { error: "driverRequired" };
+  return { ok: true, rows: await driverManifestAtPoint(gate.pointId, id) };
+}
+
+// Hand the driver their whole manifest in one go. Each parcel still runs the
+// race-guarded per-parcel transition; concurrent claims just drop out.
+export async function pointHandoverManifest(
+  driverId: string,
+): Promise<{ ok?: boolean; error?: string; handed?: number; failed?: number }> {
+  const gate = await requireDeliveryPoint();
+  if (!gate) return { error: "forbidden" };
+  const id = driverId.trim();
+  if (!id) return { error: "driverRequired" };
+  const res = await handoverManifestToDriver(gate.pointId, id);
+  if (res.handed > 0) await revalidatePoint();
+  return { ok: true, ...res };
 }
 
 // Failed-delivery return scan: the parcel comes back from the driver.

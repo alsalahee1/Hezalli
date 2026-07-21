@@ -6,10 +6,13 @@ import { useTranslations } from "next-intl";
 
 import {
   pointBuyerPickup,
+  pointDriverManifest,
+  pointHandoverManifest,
   pointHandoverParcel,
   pointReceiveParcel,
   pointReceiveReturn,
 } from "@/lib/actions/point";
+import type { ManifestRow } from "@/lib/point-core";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,6 +69,17 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
   const [manual, setManual] = useState("");
   const [busy, setBusy] = useState(false);
   const [feed, setFeed] = useState<Feedback[]>([]);
+  // The selected driver's pickup list at this hub (docs §26).
+  const [manifest, setManifest] = useState<ManifestRow[] | null>(null);
+
+  const loadManifest = async (id: string) => {
+    if (!id) {
+      setManifest(null);
+      return;
+    }
+    const res = await pointDriverManifest(id);
+    setManifest(res.rows ?? null);
+  };
 
   const pickMode = (m: ScanMode) => {
     setMode(m);
@@ -74,6 +88,7 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
   const pickDriver = (id: string) => {
     setDriverId(id);
     driverRef.current = id;
+    void loadManifest(id);
   };
 
   const push = (ok: boolean, text: string, code: string) =>
@@ -131,6 +146,9 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
               : t("returnOk"),
           code,
         );
+        if (m === "handover" && driverRef.current) {
+          void loadManifest(driverRef.current);
+        }
         router.refresh();
       } else {
         push(false, t(`err_${res.error ?? "notFound"}`), code);
@@ -255,6 +273,75 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
             ))}
           </select>
           <p className="text-muted-foreground text-xs">{t("scanDriverHint")}</p>
+
+          {/* The driver's pickup list at this hub — hand it all over at once
+              (docs §26). Per-parcel scanning below still works for partials. */}
+          {driverId && manifest ? (
+            manifest.length === 0 ? (
+              <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-2 text-xs">
+                {t("manifestEmpty")}
+              </p>
+            ) : (
+              <div className="space-y-2 rounded-lg border p-3">
+                <p className="text-sm font-medium">
+                  {t("manifestTitle", { count: manifest.length })}
+                </p>
+                <ul className="space-y-1">
+                  {manifest.map((row) => (
+                    <li
+                      key={row.shipmentId}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <span className="min-w-0 flex-1 truncate" dir="ltr">
+                        {row.trackingNumber}
+                      </span>
+                      {row.city ? (
+                        <span className="text-muted-foreground truncate text-xs">
+                          {row.city}
+                        </span>
+                      ) : null}
+                      {row.isCod ? (
+                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                          COD
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  type="button"
+                  className="h-10 w-full"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      const res = await pointHandoverManifest(driverId);
+                      if (res.ok) {
+                        push(
+                          (res.failed ?? 0) === 0,
+                          t("manifestDone", {
+                            handed: res.handed ?? 0,
+                            failed: res.failed ?? 0,
+                          }),
+                          `${res.handed ?? 0}`,
+                        );
+                        await loadManifest(driverId);
+                        router.refresh();
+                      } else {
+                        push(false, t(`err_${res.error ?? "notFound"}`), "");
+                      }
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  {busy
+                    ? t("saving")
+                    : t("manifestHandAll", { count: manifest.length })}
+                </Button>
+              </div>
+            )
+          ) : null}
         </div>
       ) : null}
 
