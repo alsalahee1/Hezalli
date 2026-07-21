@@ -350,6 +350,40 @@ ops can see how the network performs, not just what it owes:
 - [x] Integration test: a delivered + an RTS parcel in range produce the expected headline numbers and per-hub rows
 - [x] This file kept current
 
-## 19. Out of scope
+## 20. v1.8 — Pickup window & stale-parcel sweep
+
+v1.6 made stuck parcels *visible*; v1.8 makes the network *act* on them,
+the way Shopee/Lazada PUDO networks do. Notifications only — no automatic
+money movement: the operator's RTS scan (§10) stays the single human-verified
+trigger for refunds/cancellation, so the sweep can never move cash on its own.
+
+1. **Pickup window.** New setting `pickup_window_days` (default 7): how long
+   a PUDO parcel waits at the counter before it should go back to the seller.
+2. **Buyer reminder.** A pickup parcel sitting `stale_parcel_days` without
+   being collected reminds the buyer once ("your parcel is waiting at
+   <hub>").
+3. **Window expiry.** Past `pickup_window_days`, the buyer is told the window
+   lapsed and the point operator + seller are prompted to run the normal RTS
+   scan — which already resolves money (refund / cancel / restock, §10).
+4. **Stuck courier parcels.** A courier-routed parcel held at a hub past
+   `stale_parcel_days` notifies the operator once to move it.
+
+Mechanics: staleness = `Shipment.updatedAt` age (same signal as the v1.6
+badges). One-shot guards are two new nullable timestamps on `Shipment`
+(`pickupRemindedAt`, `staleFlaggedAt`) so re-running the sweep is harmless.
+Runs from a new `CRON_SECRET`-protected endpoint `/api/cron/points`,
+alongside the existing auto-complete/marketing crons.
+
+### Build checklist (v1.8)
+
+- [x] Setting `pickup_window_days` (default 7) + admin form field
+- [x] Migration: `Shipment.pickupRemindedAt` / `staleFlaggedAt` (nullable timestamps)
+- [x] `lib/point-sweep.ts`: `sweepPointParcels()` → `{reminded, expired, flagged}` with one-shot guards
+- [x] `/api/cron/points` route (CRON_SECRET, GET+POST) running the sweep
+- [x] i18n (en + ar) for the new notifications + settings label
+- [x] Integration test: backdated parcels trigger reminder → expiry → operator flag exactly once; second sweep is a no-op
+- [x] This file kept current
+
+## 21. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

@@ -41,6 +41,7 @@ export type SettingsInput = {
   pickup_fee: number;
   point_transfer_fee: number;
   stale_parcel_days: number;
+  pickup_window_days: number;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -110,6 +111,9 @@ export async function savePlatformSettings(
   const staleDays = int(input.stale_parcel_days);
   if (!Number.isFinite(staleDays) || staleDays < 1 || staleDays > 60)
     return { error: "badDays" };
+  const pickupWindow = int(input.pickup_window_days);
+  if (!Number.isFinite(pickupWindow) || pickupWindow < 1 || pickupWindow > 60)
+    return { error: "badDays" };
   const maxAttempts = int(input.max_delivery_attempts);
   if (!Number.isFinite(maxAttempts) || maxAttempts < 1 || maxAttempts > 10)
     return { error: "badMaxAttempts" };
@@ -153,6 +157,7 @@ export async function savePlatformSettings(
     pickup_fee: pickupFee,
     point_transfer_fee: transferFee,
     stale_parcel_days: staleDays,
+    pickup_window_days: pickupWindow,
   };
 
   await prisma.$transaction(

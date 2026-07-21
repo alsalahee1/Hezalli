@@ -1237,6 +1237,10 @@ model Shipment {
   // Buyer's requested redelivery day + note after a failed attempt.
   redeliverAt     DateTime?
   redeliverNote   String?
+  // One-shot guards for the stale-parcel sweep (docs §20): when the buyer was
+  // reminded to collect, and when the hold was flagged (window expiry / stuck).
+  pickupRemindedAt DateTime?
+  staleFlaggedAt   DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   // How many doorstep attempts the courier has made (failed + the final one).
