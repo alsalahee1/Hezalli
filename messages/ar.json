@@ -2142,7 +2142,8 @@
     "stmtChange": "هذا الشهر",
     "stmtClosing": "ختامي",
     "stmtCsv": "تنزيل CSV",
-    "storefront": "المتجر"
+    "storefront": "المتجر",
+    "wallet": "المحفظة"
   },
   "Dispatch": {
     "title": "التوزيع",
@@ -2462,7 +2463,8 @@
     "stmtChange": "هذا الشهر",
     "stmtClosing": "ختامي",
     "stmtCsv": "تنزيل CSV",
-    "storefront": "المتجر"
+    "storefront": "المتجر",
+    "wallet": "المحفظة"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",

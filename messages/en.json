@@ -2142,7 +2142,8 @@
     "stmtChange": "This month",
     "stmtClosing": "Closing",
     "stmtCsv": "Download CSV",
-    "storefront": "Store"
+    "storefront": "Store",
+    "wallet": "Wallet"
   },
   "Dispatch": {
     "title": "Dispatch",
@@ -2462,7 +2463,8 @@
     "stmtChange": "This month",
     "stmtClosing": "Closing",
     "stmtCsv": "Download CSV",
-    "storefront": "Store"
+    "storefront": "Store",
+    "wallet": "Wallet"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
