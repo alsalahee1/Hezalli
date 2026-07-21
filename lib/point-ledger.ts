@@ -79,7 +79,7 @@ export async function pointLedgerSummary(
   const fees = sum("HANDLING_FEE");
   const payouts = sum("PAYOUT"); // stored negative
   const adjustment = sum("ADJUSTMENT");
-  const collected = sum("COD_COLLECTED");
+  const collected = sum("COD_COLLECTED") + sum("DRIVER_CASH_IN");
   const remitted = sum("COD_REMITTANCE"); // stored negative
   return {
     balance: round2(fees + payouts + adjustment),

@@ -250,7 +250,30 @@ shared refund core (`lib/refunds.ts`) the admin and returns flows use:
 - [x] Integration tests: COD RTS → CANCELLED + restock, wallet-paid RTS → REFUNDED + wallet credit + restock, RTS still blocked before attempts are exhausted
 - [x] This file kept current
 
-## 11. Out of scope
+## 12. v1.4 — Driver COD remittance via points
+
+Drivers no longer need to travel to Hezalli's office to hand in COD cash:
+the counter of any active point can take it. One operator action moves the
+money between the two ledgers atomically:
+
+- Courier ledger: `REMITTANCE` (−amount, recorded by the point operator,
+  note names the point) — the driver's cash-on-hand drops immediately.
+- Point ledger (cash side): new `DRIVER_CASH_IN` (+amount) — the point now
+  holds that cash for Hezalli alongside its counter-pickup COD, settled by
+  the same admin `COD_REMITTANCE` flow.
+- Guard: the amount may not exceed the driver's current cash-on-hand
+  (`overRemit`), and only active couriers qualify. The driver is notified.
+
+### Build checklist (v1.4)
+
+- [x] `PointLedgerType.DRIVER_CASH_IN` + migration; cash-side sums updated (`pointLedgerSummary`)
+- [x] Action `pointDriverCashIn(driverId, amount, note?)` — atomic double entry + audit + driver notification
+- [x] Point ledger page: cash-in form (driver picker + amount)
+- [x] Labels in point + admin ledgers; i18n (en + ar)
+- [x] Integration tests: cash-in moves both ledgers, over-remit rejected, non-courier rejected
+- [x] Tidy: unused `ownerId` lint warning in `point-capacity.test.ts`
+- [x] This file kept current
+
+## 13. Out of scope
 
 - Inter-point line haul (multi-hop routing between cities)
-- Point COD on *courier-delivered* parcels (drivers still remit directly)

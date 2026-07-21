@@ -4,6 +4,7 @@ import { Wallet } from "lucide-react";
 import { requireDeliveryPoint } from "@/lib/authz";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
+import { DriverCashInForm } from "@/components/point/driver-cash-in-form";
 
 // The operator's earnings: handling fees accrued, payouts received, and the
 // balance Hezalli still owes them. Read-only — payouts are recorded by admins.
@@ -15,7 +16,7 @@ export default async function PointLedgerPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [summary, entries] = await Promise.all([
+  const [summary, entries, couriers] = await Promise.all([
     pointLedgerSummary(gate.pointId),
     prisma.deliveryPointLedgerEntry.findMany({
       where: { pointId: gate.pointId },
@@ -29,7 +30,16 @@ export default async function PointLedgerPage() {
         createdAt: true,
       },
     }),
+    prisma.user.findMany({
+      where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, email: true },
+    }),
   ]);
+  const drivers = couriers.map((c) => ({
+    id: c.id,
+    name: c.name ?? c.email ?? c.id.slice(-6),
+  }));
 
   return (
     <div className="space-y-4">
@@ -94,6 +104,9 @@ export default async function PointLedgerPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Record COD cash a courier hands in at the counter. */}
+      <DriverCashInForm drivers={drivers} />
 
       {entries.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-12 text-center text-sm">

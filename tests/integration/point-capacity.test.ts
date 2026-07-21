@@ -25,7 +25,7 @@ const as = (id: string | null) =>
   authMock.mockResolvedValue(id ? { user: { id } } : null);
 
 let fx: Awaited<ReturnType<typeof makeFixture>>;
-let ownerId: string;
+
 let tinyPointId: string; // capacity 1, in the fixture's governorate (Aden)
 let bigPointId: string; // unlimited, other governorate
 let carrierId: string;
@@ -45,7 +45,7 @@ beforeAll(async () => {
       locale: "en",
     },
   });
-  ownerId = owner.id;
+
   // Two points under one owner isn't allowed (unique ownerId) — second owner.
   const owner2 = await prisma.user.create({
     data: {
