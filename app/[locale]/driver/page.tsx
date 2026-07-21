@@ -105,9 +105,9 @@ export default async function DriverJobsPage() {
         </div>
       </details>
 
-      {/* Cash the driver is holding + fees earned. */}
+      {/* Cash the driver is holding + fees earned → full ledger. */}
       {cash.cashOnHand > 0 || cash.earnings > 0 ? (
-        <div className="grid grid-cols-2 gap-3">
+        <Link href="/driver/ledger" className="grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
             <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
               <Wallet className="size-3.5" /> {t("cashToRemit")}
@@ -124,7 +124,7 @@ export default async function DriverJobsPage() {
               {money(cash.earnings)}
             </p>
           </div>
-        </div>
+        </Link>
       ) : null}
 
       <div>
