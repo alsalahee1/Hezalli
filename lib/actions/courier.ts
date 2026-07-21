@@ -6,6 +6,8 @@ import { getLocale } from "next-intl/server";
 import { requireAdminId, requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
+import { settleReturnedSubOrder } from "@/lib/return-core";
+import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
 import { nearestGovernorate } from "@/lib/yemen-geo";
 
@@ -234,11 +236,23 @@ export async function courierFailDelivery(
       id: true,
       status: true,
       deliveryPointId: true,
+      attemptCount: true,
       subOrder: {
         select: {
+          id: true,
           status: true,
           orderId: true,
-          store: { select: { name: true } },
+          store: {
+            select: {
+              name: true,
+              seller: {
+                select: {
+                  userId: true,
+                  user: { select: { locale: true } },
+                },
+              },
+            },
+          },
           order: {
             select: { buyerId: true, buyer: { select: { locale: true } } },
           },
@@ -258,16 +272,30 @@ export async function courierFailDelivery(
     return { error: "badState" };
   }
 
+  // A DIRECT parcel (no delivery point) that has now exhausted its allowed
+  // attempts is returned to the seller instead of sitting FAILED-and-retriable
+  // forever. Point-routed parcels keep flowing back through the point.
+  const maxAttempts = await getSetting("max_delivery_attempts");
+  const willReturn =
+    !shipment.deliveryPointId && shipment.attemptCount + 1 >= maxAttempts;
+
   await prisma.$transaction(async (tx) => {
     await tx.shipment.update({
       where: { id: shipmentId },
-      data: { status: "FAILED", attemptCount: { increment: 1 } },
+      data: {
+        status: willReturn ? "RETURNED" : "FAILED",
+        attemptCount: { increment: 1 },
+      },
     });
-    // The localized "FAILED" status label carries the meaning on the public
-    // timeline; only the courier's free note (if any) is shown alongside it.
-    // The machine-readable reason lives on the DeliveryAttempt for ops.
+    // The localized status label carries the meaning on the public timeline;
+    // only the courier's free note (if any) is shown alongside it. The
+    // machine-readable reason lives on the DeliveryAttempt for ops.
     await tx.shipmentEvent.create({
-      data: { shipmentId, status: "FAILED", note: note?.trim() || null },
+      data: {
+        shipmentId,
+        status: willReturn ? "RETURNED" : "FAILED",
+        note: note?.trim() || null,
+      },
     });
     await tx.deliveryAttempt.create({
       data: {
@@ -278,20 +306,47 @@ export async function courierFailDelivery(
         note: note?.trim() || null,
       },
     });
-    // Let the buyer know an attempt was made and will be retried.
-    const ar = sub.order.buyer.locale === "ar";
-    await tx.notification.create({
-      data: {
-        userId: sub.order.buyerId,
-        type: "SHIPMENT",
-        title: ar ? "تعذّر توصيل طلبك" : "Delivery attempt unsuccessful",
-        body: ar
-          ? `حاول مندوبنا توصيل طلبك من ${sub.store.name} ولم يتمكّن. سنعيد المحاولة قريبًا.`
-          : `Our courier tried to deliver your order from ${sub.store.name} but couldn't. We'll try again soon.`,
-        data: { orderId: sub.orderId },
-      },
-    });
+    // While still retriable, tell the buyer we'll try again. When the parcel is
+    // being returned, settleReturnedSubOrder sends the final (refund/cancel)
+    // notice instead, so we don't double-notify here.
+    if (!willReturn) {
+      const ar = sub.order.buyer.locale === "ar";
+      await tx.notification.create({
+        data: {
+          userId: sub.order.buyerId,
+          type: "SHIPMENT",
+          title: ar ? "تعذّر توصيل طلبك" : "Delivery attempt unsuccessful",
+          body: ar
+            ? `حاول مندوبنا توصيل طلبك من ${sub.store.name} ولم يتمكّن. سنعيد المحاولة قريبًا.`
+            : `Our courier tried to deliver your order from ${sub.store.name} but couldn't. We'll try again soon.`,
+          data: { orderId: sub.orderId },
+        },
+      });
+    }
   });
+
+  if (willReturn) {
+    // Resolve the order (refund-if-paid / cancel + restock) via the shared
+    // money-path, then tell the seller their parcel is coming back.
+    await settleReturnedSubOrder(sub.id);
+    const sellerUserId = sub.store.seller?.userId;
+    if (sellerUserId) {
+      const sellerAr = sub.store.seller?.user?.locale === "ar";
+      await prisma.notification.create({
+        data: {
+          userId: sellerUserId,
+          type: "SHIPMENT",
+          title: sellerAr
+            ? "طرد مرتجع بعد تعذّر التوصيل"
+            : "A parcel is being returned to you",
+          body: sellerAr
+            ? `تعذّر توصيل أحد طلباتك بعد ${maxAttempts} محاولات وسيُعاد إليك.`
+            : `A parcel couldn't be delivered after ${maxAttempts} attempts and is being returned to you.`,
+          data: { subOrderId: sub.id },
+        },
+      });
+    }
+  }
 
   revalidatePath(`/${locale}/driver`);
   revalidatePath(`/${locale}/driver/job/${shipmentId}`);

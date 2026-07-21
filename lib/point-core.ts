@@ -6,9 +6,8 @@
 // Callers (lib/actions/point.ts) are responsible for authorization; pointId
 // here is always the *authenticated* operator's point.
 import { autoAssignShipment } from "@/lib/courier-assign";
-import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
-import { applyRefund } from "@/lib/refunds";
+import { settleReturnedSubOrder } from "@/lib/return-core";
 import { sendPushToUser } from "@/lib/push";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
@@ -422,92 +421,9 @@ export async function returnParcelToSeller(
       : []),
   ]);
 
-  // Resolve the order itself. Fetch the money facts fresh (small + explicit).
-  const sub = await prisma.subOrder.findUnique({
-    where: { id: parcel.subOrder.id },
-    select: {
-      id: true,
-      status: true,
-      orderId: true,
-      items: { select: { variantId: true, quantity: true } },
-      order: {
-        select: {
-          buyerId: true,
-          paymentMethod: true,
-          buyer: { select: { locale: true } },
-          payment: { select: { status: true } },
-        },
-      },
-    },
-  });
-  if (sub && sub.status === "SHIPPED") {
-    const captured =
-      sub.order.paymentMethod !== "COD" &&
-      sub.order.payment?.status === "CONFIRMED";
-
-    if (captured) {
-      // Money came in and we failed to deliver → full refund to the buyer's
-      // wallet. applyRefund flips the sub-order to REFUNDED, reverses the
-      // seller ledger, aggregates the order, and notifies the buyer.
-      await applyRefund(sub.id, {
-        reason: "Returned to seller — delivery failed",
-        actor: "system",
-        toWallet: true,
-      });
-    } else {
-      // Nothing captured → plain cancellation.
-      const ar = sub.order.buyer.locale === "ar";
-      await prisma.$transaction(async (tx) => {
-        const claimedSub = await tx.subOrder.updateMany({
-          where: { id: sub.id, status: "SHIPPED" },
-          data: { status: "CANCELLED" },
-        });
-        if (claimedSub.count !== 1) return;
-        const subs = await tx.subOrder.findMany({
-          where: { orderId: sub.orderId },
-          select: { status: true },
-        });
-        await tx.order.update({
-          where: { id: sub.orderId },
-          data: {
-            status: aggregateOrderStatus(subs.map((s) => s.status)) as never,
-          },
-        });
-        await tx.orderStatusHistory.create({
-          data: {
-            orderId: sub.orderId,
-            status: "CANCELLED",
-            actor: "system",
-            note: `${parcel.subOrder.store.name}: returned to seller after failed delivery`,
-          },
-        });
-        await tx.notification.create({
-          data: {
-            userId: sub.order.buyerId,
-            type: "SHIPMENT",
-            title: ar
-              ? "أُلغي طلبك بعد تعذّر التوصيل"
-              : "Order cancelled — delivery failed",
-            body: ar
-              ? `تعذّر توصيل طلبك من ${parcel.subOrder.store.name} وأُعيد إلى البائع، وقد أُلغي الطلب. لم يُحصَّل منك أي مبلغ.`
-              : `We couldn't deliver your order from ${parcel.subOrder.store.name}; it was returned to the seller and the order is cancelled. Nothing was charged.`,
-            data: { orderId: sub.orderId },
-          },
-        });
-      });
-    }
-
-    // The goods are back with the seller — return them to sellable stock
-    // (same as the cancel and accepted-return flows).
-    await prisma.$transaction(
-      sub.items.map((it) =>
-        prisma.productVariant.update({
-          where: { id: it.variantId },
-          data: { stock: { increment: it.quantity } },
-        }),
-      ),
-    );
-  }
+  // Resolve the order itself (refund-if-captured-else-cancel + restock) — the
+  // shared money-path used for every returned parcel.
+  await settleReturnedSubOrder(parcel.subOrder.id);
   return { ok: true };
 }
 
