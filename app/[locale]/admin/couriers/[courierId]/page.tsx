@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
+import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { courierRating } from "@/lib/courier-ratings";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { CourierRemittanceForm } from "@/components/admin/courier-remittance-form";
 import { CourierPayoutForm } from "@/components/admin/courier-payout-form";
+import { CourierOffsetForm } from "@/components/admin/courier-offset-form";
 
 // Per-courier COD reconciliation: headline cash-on-hand + earnings, a record-a-
 // remittance form, and the raw ledger. Cash-on-hand is what the driver still
@@ -33,9 +35,10 @@ export default async function AdminCourierDetailPage({
   });
   if (!courier) notFound();
 
-  const [summary, rating, entries] = await Promise.all([
+  const [summary, rating, cod, entries] = await Promise.all([
     courierCashSummary(courierId),
     courierRating(courierId),
+    courierCodStatus(courierId),
     prisma.courierLedgerEntry.findMany({
       where: { courierId },
       orderBy: { createdAt: "desc" },
@@ -98,6 +101,13 @@ export default async function AdminCourierDetailPage({
               {courier.fleet.name}
             </Link>
           ) : null}
+          {cod.blocked ? (
+            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-xs font-semibold text-red-600">
+              {cod.reason === "overdue"
+                ? t("codBadgeOverdue")
+                : t("codBadgeOverLimit")}
+            </span>
+          ) : null}
         </p>
       </div>
 
@@ -136,6 +146,19 @@ export default async function AdminCourierDetailPage({
             </span>
           </p>
           <CourierPayoutForm courierId={courier.id} owed={summary.earnings} />
+          {summary.cashOnHand > 0 ? (
+            <div className="mt-4 border-t pt-3">
+              <p className="text-muted-foreground mb-2 text-xs">
+                {t("offsetHint", {
+                  amount: money(Math.min(summary.cashOnHand, summary.earnings)),
+                })}
+              </p>
+              <CourierOffsetForm
+                courierId={courier.id}
+                offsetable={Math.min(summary.cashOnHand, summary.earnings)}
+              />
+            </div>
+          ) : null}
         </section>
       </div>
 

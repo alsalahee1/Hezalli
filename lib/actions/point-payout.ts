@@ -19,8 +19,18 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 class GuardError extends Error {}
 
 const EARNING_TYPES = ["HANDLING_FEE", "PAYOUT", "ADJUSTMENT"] as const;
+const CASH_TYPES = [
+  "COD_COLLECTED",
+  "DRIVER_CASH_IN",
+  "COD_REMITTANCE",
+] as const;
 
-/** Operator asks to be paid `amountUsd` (or their whole free balance). */
+/**
+ * Operator asks to be paid `amountUsd` (or their whole free balance). Net
+ * settlement (docs §32): unremitted COD cash the point holds for Hezalli is
+ * withheld from the payable balance — a hub sitting on cash gets paid only
+ * what remains after that cash is covered.
+ */
 export async function requestPointPayout(amountUsd?: number): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
@@ -38,15 +48,23 @@ export async function requestPointPayout(amountUsd?: number): Promise<Result> {
         },
       });
       if (open > 0) throw new GuardError("alreadyOpen");
-      const agg = await tx.deliveryPointLedgerEntry.aggregate({
-        where: { pointId: gate.pointId, type: { in: [...EARNING_TYPES] } },
-        _sum: { amountUsd: true },
-      });
-      const free = round2(Number(agg._sum.amountUsd ?? 0));
+      const [agg, cashAgg] = await Promise.all([
+        tx.deliveryPointLedgerEntry.aggregate({
+          where: { pointId: gate.pointId, type: { in: [...EARNING_TYPES] } },
+          _sum: { amountUsd: true },
+        }),
+        tx.deliveryPointLedgerEntry.aggregate({
+          where: { pointId: gate.pointId, type: { in: [...CASH_TYPES] } },
+          _sum: { amountUsd: true },
+        }),
+      ]);
+      const cashHeld = Math.max(0, round2(Number(cashAgg._sum.amountUsd ?? 0)));
+      const free = round2(Number(agg._sum.amountUsd ?? 0) - cashHeld);
       const amount =
         amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(free);
       if (amount < min) throw new GuardError("belowMin");
-      if (amount > free) throw new GuardError("insufficient");
+      if (amount > free)
+        throw new GuardError(cashHeld > 0 ? "cashOutstanding" : "insufficient");
       await tx.pointPayoutRequest.create({
         data: { pointId: gate.pointId, amountUsd: amount },
       });

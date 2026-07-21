@@ -527,6 +527,54 @@ month the way hubs now can.
 - [x] Integration test: seeded two-month courier ledger → opening/delta/closing both sides; out-of-range entries absent
 - [x] This file kept current
 
-## 31. Out of scope
+## 32. v1.14 — COD credit control
+
+The standard playbook of Shopee/J&T/Lazada, adapted: **nobody may hold more
+of Hezalli's cash than the future income they'd lose by keeping it.** A
+driver's future income is new assignments and accrued delivery fees; a
+point's is parcel flow and handling-fee payouts. All rules are pure reads
+over the existing immutable ledgers (`lib/cod-guard.ts`) — no new tables.
+
+Three platform settings (Admin → Settings; 0 turns a check off):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `driver_cash_limit` | `50` | USD of unremitted COD a driver may hold before auto-assignment skips them. |
+| `driver_cod_max_age_hours` | `24` | How long a driver may sit on ANY collected COD. Remittances settle the oldest cash first (FIFO), so partial hand-ins don't reset the clock. |
+| `point_cash_limit` | `200` | USD of unremitted cash (counter COD + driver cash-ins) a point may hold before it stops receiving new routing and driver cash-ins. |
+
+Rules:
+
+- **Driver assignment gate** — `courier-assign` filters blocked drivers out
+  of every automatic pick (auto/bulk/nearest). Manual dispatch still works —
+  ops can override. The driver home shows a red "new deliveries paused"
+  banner with the reason and the fix (hand cash in at any point / office),
+  and an amber warning from 80% of the cash limit.
+- **Earnings are collateral** — `recordEarningsPayout` refuses while the
+  driver holds any COD cash; the admin courier page gains a one-click
+  "Settle COD from earnings" offset: one atomic double entry
+  (REMITTANCE −m, PAYOUT −m, m = min(cash held, earnings owed)) — the
+  industry-standard shortage-from-wages netting, no cash moves.
+- **Point routing gate** — `point-select` treats an over-limit point as
+  unavailable for NEW routing (picker + server re-check); committed parcels
+  and buyer pickups are unaffected. `pointDriverCashIn` refuses at an
+  over-limit hub so more of Hezalli's cash can't concentrate there.
+- **Point payout withholding** — `requestPointPayout` nets held cash out of
+  the payable balance: a hub sitting on $20 of cash can only draw
+  fees − $20 until it remits (`cashOutstanding` error explains why).
+
+### Build checklist (v1.14)
+
+- [x] Settings: `driver_cash_limit`, `driver_cod_max_age_hours`, `point_cash_limit` + admin form fields
+- [x] `lib/cod-guard.ts`: bulk + single courier checks (FIFO age), bulk point check
+- [x] `courier-assign`: blocked drivers excluded from automatic assignment
+- [x] Driver home: blocked banner (reason-specific) + near-limit warning
+- [x] Admin courier page: blocked badge, offset form; payout guarded by `cashOutstanding`
+- [x] `point-select`: over-limit points unroutable; `pointDriverCashIn` refuses (`cashLimit`)
+- [x] `requestPointPayout`: held cash withheld from the free balance
+- [x] i18n (en + ar) + integration tests (`cod-guard.test.ts`)
+- [x] This file kept current
+
+## 33. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

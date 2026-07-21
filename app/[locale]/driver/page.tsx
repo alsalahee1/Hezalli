@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
+import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -30,7 +31,7 @@ export default async function DriverJobsPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [rawJobs, settings, location, cash] = await Promise.all([
+  const [rawJobs, settings, location, cash, cod] = await Promise.all([
     prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
       select: {
@@ -65,6 +66,7 @@ export default async function DriverJobsPage() {
       select: { governorate: true },
     }),
     courierCashSummary(courierId),
+    courierCodStatus(courierId),
   ]);
 
   const now = new Date();
@@ -90,6 +92,38 @@ export default async function DriverJobsPage() {
     <div className="space-y-4">
       <LocationShare currentGovernorate={location?.governorate ?? null} />
       <PushToggle />
+
+      {/* COD credit control (lib/cod-guard.ts): blocked drivers see WHY they
+          get no new work and how to fix it; near-limit drivers get a heads-up
+          before the block lands. */}
+      {cod.blocked ? (
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700 dark:text-red-400">
+            <AlertTriangle className="size-4" /> {t("codBlockedTitle")}
+          </p>
+          <p className="mt-1 text-sm">
+            {cod.reason === "overdue"
+              ? t("codBlockedOverdue", { amount: money(cod.cashOnHand) })
+              : t("codBlockedOverLimit", {
+                  amount: money(cod.cashOnHand),
+                  limit: money(cod.cashLimit),
+                })}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {t("codBlockedHow")}
+          </p>
+        </div>
+      ) : cod.cashLimit > 0 && cod.cashOnHand > 0.8 * cod.cashLimit ? (
+        <div className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-4">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-amber-700 dark:text-amber-500">
+            <AlertTriangle className="size-4" />{" "}
+            {t("codNearLimit", {
+              amount: money(cod.cashOnHand),
+              limit: money(cod.cashLimit),
+            })}
+          </p>
+        </div>
+      ) : null}
 
       {/* Collection QR: point staff scan this to pull up the driver's manifest
           at the counter (docs/DELIVERY-POINTS.md §3). Collapsed by default. */}

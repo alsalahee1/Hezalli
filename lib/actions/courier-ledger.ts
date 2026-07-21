@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
+import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -72,6 +73,8 @@ export async function recordRemittance(formData: FormData): Promise<Result> {
 // Admin pays a courier their accrued delivery-fee earnings — a negative PAYOUT
 // row that reduces "earnings owed". Positive amount; audited. Settling more than
 // is owed is allowed (advance) but flagged to the caller via `overpaid`.
+// Refused while the driver still holds unremitted COD cash — offset that debt
+// first (offsetEarningsAgainstCod) so earnings stay the collateral for cash.
 export async function recordEarningsPayout(
   formData: FormData,
 ): Promise<Result & { overpaid?: boolean }> {
@@ -89,6 +92,9 @@ export async function recordEarningsPayout(
     select: { roles: true },
   });
   if (!courier?.roles.includes("COURIER")) return { error: "notCourier" };
+
+  const cash = await courierCashSummary(courierId);
+  if (cash.cashOnHand > 0.005) return { error: "cashOutstanding" };
 
   const amountUsd = -round2(raw);
   await prisma.$transaction([
@@ -116,6 +122,74 @@ export async function recordEarningsPayout(
   revalidatePath(`/${locale}/admin/couriers/${courierId}`);
   revalidatePath(`/${locale}/admin/couriers`);
   return { ok: true };
+}
+
+// Admin settles a driver's COD debt out of their accrued earnings — the
+// industry-standard netting (a shortage is deducted from wages, no cash moves).
+// One atomic double entry for min(cash held, earnings owed): REMITTANCE (−m)
+// clears the cash side, PAYOUT (−m) consumes the earnings that covered it.
+export async function offsetEarningsAgainstCod(
+  formData: FormData,
+): Promise<Result & { offset?: number }> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+
+  const courierId = String(formData.get("courierId") ?? "");
+  if (!courierId) return { error: "badInput" };
+
+  const courier = await prisma.user.findUnique({
+    where: { id: courierId },
+    select: { roles: true },
+  });
+  if (!courier?.roles.includes("COURIER")) return { error: "notCourier" };
+
+  const cash = await courierCashSummary(courierId);
+  const amount = round2(Math.min(cash.cashOnHand, cash.earnings));
+  if (amount <= 0) return { error: "nothingToOffset" };
+
+  await prisma.$transaction([
+    prisma.courierLedgerEntry.create({
+      data: {
+        courierId,
+        type: "REMITTANCE",
+        amountUsd: -amount,
+        note: "Settled from earnings (offset)",
+        createdById: adminId,
+      },
+    }),
+    prisma.courierLedgerEntry.create({
+      data: {
+        courierId,
+        type: "PAYOUT",
+        amountUsd: -amount,
+        note: "Applied to COD cash (offset)",
+        createdById: adminId,
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "courier.codOffset",
+        entity: "User",
+        entityId: courierId,
+        meta: { amountUsd: amount },
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        userId: courierId,
+        type: "PAYMENT",
+        title: "COD settled from earnings",
+        body: `${amount.toFixed(2)} USD of your earnings was used to settle COD cash you were holding.`,
+        data: { link: "/driver/ledger" },
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/couriers/${courierId}`);
+  revalidatePath(`/${locale}/admin/couriers`);
+  return { ok: true, offset: amount };
 }
 
 function round2(n: number): number {

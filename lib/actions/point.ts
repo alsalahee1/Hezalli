@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { cashBlockedPointIds } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 import {
@@ -130,6 +131,12 @@ export async function pointDriverCashIn(
     }),
   ]);
   if (!driver) return { error: "invalidDriver" };
+
+  // A point already over its unremitted-cash limit may not concentrate even
+  // more of Hezalli's cash — the driver remits at another point or the office.
+  if ((await cashBlockedPointIds([gate.pointId])).has(gate.pointId)) {
+    return { error: "cashLimit" };
+  }
 
   const cash = await courierCashSummary(driver.id);
   if (amountUsd > cash.cashOnHand + 0.001) return { error: "overRemit" };

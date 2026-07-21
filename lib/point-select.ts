@@ -1,7 +1,10 @@
 // Point capacity & smart selection (docs/DELIVERY-POINTS.md §8). One shared
 // definition of a point's LOAD (parcels held or inbound), whether it is FULL,
 // and how pickers order candidates — used by checkout, the seller ship form,
-// and the server-side validation in placeOrder / shipSubOrder.
+// and the server-side validation in placeOrder / shipSubOrder. A point over
+// its unremitted-cash limit (docs §32) is treated like an inactive one for
+// NEW routing until it settles with Hezalli.
+import { cashBlockedPointIds } from "@/lib/cod-guard";
 import { prisma } from "@/lib/prisma";
 
 // Parcels that occupy shelf space now or are on their way to it.
@@ -76,9 +79,13 @@ export async function listRoutablePoints(
       capacity: true,
     },
   });
-  const loads = await loadByPoint(points.map((p) => p.id));
+  const [loads, cashBlocked] = await Promise.all([
+    loadByPoint(points.map((p) => p.id)),
+    cashBlockedPointIds(points.map((p) => p.id)),
+  ]);
 
   return points
+    .filter((p) => !cashBlocked.has(p.id))
     .map((p) => ({ ...p, load: loads.get(p.id) ?? 0 }))
     .filter((p) => p.capacity == null || p.load < p.capacity)
     .sort((a, b) => {
@@ -102,6 +109,8 @@ export async function checkPointRoutable(
     select: { id: true, capacity: true },
   });
   if (!point) return "unavailable";
+  if ((await cashBlockedPointIds([point.id])).has(point.id))
+    return "unavailable";
   if (point.capacity == null) return "ok";
   const loads = await loadByPoint([point.id]);
   return (loads.get(point.id) ?? 0) < point.capacity ? "ok" : "full";

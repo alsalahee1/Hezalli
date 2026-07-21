@@ -43,6 +43,9 @@ export type SettingsInput = {
   point_transfer_fee: number;
   stale_parcel_days: number;
   pickup_window_days: number;
+  driver_cash_limit: number;
+  driver_cod_max_age_hours: number;
+  point_cash_limit: number;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -123,6 +126,19 @@ export async function savePlatformSettings(
   if (!Number.isFinite(deliveryFee) || deliveryFee < 0)
     return { error: "badDeliveryFee" };
 
+  // COD credit control limits: 0 turns a check off.
+  const driverCashLimit = money2(input.driver_cash_limit);
+  const pointCashLimit = money2(input.point_cash_limit);
+  if (
+    ![driverCashLimit, pointCashLimit].every(
+      (n) => Number.isFinite(n) && n >= 0,
+    )
+  )
+    return { error: "badCashLimit" };
+  const codMaxAge = int(input.driver_cod_max_age_hours);
+  if (!Number.isFinite(codMaxAge) || codMaxAge < 0 || codMaxAge > 720)
+    return { error: "badCashLimit" };
+
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
   // values are preserved.
@@ -164,6 +180,9 @@ export async function savePlatformSettings(
     point_transfer_fee: transferFee,
     stale_parcel_days: staleDays,
     pickup_window_days: pickupWindow,
+    driver_cash_limit: driverCashLimit,
+    driver_cod_max_age_hours: codMaxAge,
+    point_cash_limit: pointCashLimit,
   };
 
   await prisma.$transaction(

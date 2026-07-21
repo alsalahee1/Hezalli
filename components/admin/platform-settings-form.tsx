@@ -58,6 +58,9 @@ export function PlatformSettingsForm({
     point_transfer_fee: String(current.point_transfer_fee),
     stale_parcel_days: String(current.stale_parcel_days),
     pickup_window_days: String(current.pickup_window_days),
+    driver_cash_limit: String(current.driver_cash_limit),
+    driver_cod_max_age_hours: String(current.driver_cod_max_age_hours),
+    point_cash_limit: String(current.point_cash_limit),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -101,6 +104,9 @@ export function PlatformSettingsForm({
         point_transfer_fee: Number(f.point_transfer_fee),
         stale_parcel_days: Number(f.stale_parcel_days),
         pickup_window_days: Number(f.pickup_window_days),
+        driver_cash_limit: Number(f.driver_cash_limit),
+        driver_cod_max_age_hours: Number(f.driver_cod_max_age_hours),
+        point_cash_limit: Number(f.point_cash_limit),
       });
       if (res.error) setErr(res.error);
       else {
@@ -306,6 +312,30 @@ export function PlatformSettingsForm({
             type="number"
             value={f.pickup_window_days}
             onChange={(e) => set("pickup_window_days", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("driverCashLimit")} hint={t("driverCashLimitHint")}>
+          <Input
+            type="number"
+            value={f.driver_cash_limit}
+            onChange={(e) => set("driver_cash_limit", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("codMaxAge")} hint={t("codMaxAgeHint")}>
+          <Input
+            type="number"
+            value={f.driver_cod_max_age_hours}
+            onChange={(e) => set("driver_cod_max_age_hours", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("pointCashLimit")} hint={t("pointCashLimitHint")}>
+          <Input
+            type="number"
+            value={f.point_cash_limit}
+            onChange={(e) => set("point_cash_limit", e.target.value)}
             dir="ltr"
           />
         </Field>
