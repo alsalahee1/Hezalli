@@ -1,0 +1,158 @@
+"use server";
+
+// Self-service: a courier or a Hezalli Point operator sweeps their accrued
+// earnings into their HezalliPay wallet, so they get one balance across
+// earning and spending — mirroring the seller sweep in lib/actions/wallet-
+// transfer.ts. Each move bridges the two ledgers in one transaction: a negative
+// PAYOUT row on the courier/point ledger + an earnings credit on the wallet.
+// Neither ledger is refactored.
+import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
+
+import { requireCourierId, requireDeliveryPoint } from "@/lib/authz";
+import { prisma } from "@/lib/prisma";
+import {
+  creditWalletTx,
+  getWalletId,
+  recomputeWalletBalance,
+} from "@/lib/wallet";
+
+type Result = { ok?: boolean; error?: string; moved?: number };
+
+// Carries an i18n error code out of the reservation transaction so it rolls
+// back and maps to a typed result.
+class MoveError extends Error {}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// The signed courier-ledger rows that make up "earnings owed".
+const COURIER_EARNING_TYPES = ["EARNING", "PAYOUT"] as const;
+// The signed point-ledger rows that make up the point's earnings balance.
+const POINT_EARNING_TYPES = ["HANDLING_FEE", "PAYOUT", "ADJUSTMENT"] as const;
+
+/**
+ * Courier moves (part of) their outstanding delivery-fee earnings into their
+ * wallet. Writes a PAYOUT debit on the courier ledger + a COURIER_EARNINGS
+ * credit on the wallet, under a row lock so two concurrent "move all"
+ * submissions can't both pass the check and over-draw the earnings owed.
+ */
+export async function transferCourierEarningsToWallet(
+  amountUsd?: number,
+): Promise<Result> {
+  const courierId = await requireCourierId();
+  if (!courierId) return { error: "forbidden" };
+  const walletId = await getWalletId(courierId);
+
+  let moved = 0;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Serialize this courier's self-service moves.
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${courierId} FOR UPDATE`;
+      const agg = await tx.courierLedgerEntry.aggregate({
+        where: { courierId, type: { in: [...COURIER_EARNING_TYPES] } },
+        _sum: { amountUsd: true },
+      });
+      const free = round2(Number(agg._sum.amountUsd ?? 0));
+      if (free <= 0) throw new MoveError("nothingToMove");
+      const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
+      if (amount > free) throw new MoveError("insufficient");
+
+      // Debit the courier ledger (reduces earnings owed).
+      await tx.courierLedgerEntry.create({
+        data: {
+          courierId,
+          type: "PAYOUT",
+          amountUsd: -amount,
+          note: "Moved to HezalliPay wallet",
+        },
+      });
+      // Credit the wallet.
+      await creditWalletTx(tx, walletId, {
+        type: "COURIER_EARNINGS",
+        amountUsd: amount,
+        note: "Moved from delivery earnings",
+      });
+      moved = amount;
+    });
+  } catch (e) {
+    if (e instanceof MoveError) return { error: e.message };
+    throw e;
+  }
+  if (moved <= 0) return { error: "nothingToMove" };
+
+  await recomputeWalletBalance(courierId);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/driver/ledger`);
+  revalidatePath(`/${locale}/account/wallet`);
+  return { ok: true, moved };
+}
+
+/**
+ * Point operator moves (part of) their earnings balance into their wallet.
+ * Reserves against outstanding payout requests (same rule as requestPointPayout)
+ * so a wallet move racing a pending payout can't double-spend the balance.
+ */
+export async function transferPointEarningsToWallet(
+  amountUsd?: number,
+): Promise<Result> {
+  const gate = await requireDeliveryPoint();
+  if (!gate) return { error: "forbidden" };
+  const walletId = await getWalletId(gate.userId);
+
+  let moved = 0;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Serialize concurrent moves/requests for the same hub.
+      await tx.$queryRaw`SELECT "id" FROM "DeliveryPoint" WHERE "id" = ${gate.pointId} FOR UPDATE`;
+      const agg = await tx.deliveryPointLedgerEntry.aggregate({
+        where: {
+          pointId: gate.pointId,
+          type: { in: [...POINT_EARNING_TYPES] },
+        },
+        _sum: { amountUsd: true },
+      });
+      const balance = round2(Number(agg._sum.amountUsd ?? 0));
+      // Reserve against payout requests already claiming this balance.
+      const outstanding = await tx.pointPayoutRequest.aggregate({
+        where: {
+          pointId: gate.pointId,
+          status: { in: ["REQUESTED", "APPROVED"] },
+        },
+        _sum: { amountUsd: true },
+      });
+      const free = round2(balance - Number(outstanding._sum.amountUsd ?? 0));
+      if (free <= 0) throw new MoveError("nothingToMove");
+      const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
+      if (amount > free) throw new MoveError("insufficient");
+
+      // Debit the point ledger (reduces earnings owed).
+      await tx.deliveryPointLedgerEntry.create({
+        data: {
+          pointId: gate.pointId,
+          type: "PAYOUT",
+          amountUsd: -amount,
+          note: "Moved to HezalliPay wallet",
+        },
+      });
+      // Credit the wallet.
+      await creditWalletTx(tx, walletId, {
+        type: "POINT_EARNINGS",
+        amountUsd: amount,
+        note: "Moved from point earnings",
+      });
+      moved = amount;
+    });
+  } catch (e) {
+    if (e instanceof MoveError) return { error: e.message };
+    throw e;
+  }
+  if (moved <= 0) return { error: "nothingToMove" };
+
+  await recomputeWalletBalance(gate.userId);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/point/ledger`);
+  revalidatePath(`/${locale}/account/wallet`);
+  return { ok: true, moved };
+}

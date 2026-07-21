@@ -2009,7 +2009,9 @@
     "err_noChallenge": "That request expired. Please try again.",
     "err_badPasskey": "Couldn’t verify the passkey.",
     "err_failed": "Couldn’t complete that. Please try again.",
-    "err_noPasskey": "No passkey is registered."
+    "err_noPasskey": "No passkey is registered.",
+    "courierEarnings": "Delivery earnings",
+    "pointEarnings": "Point earnings"
   },
   "ShippingLabel": {
     "title": "Shipping label",
@@ -2143,7 +2145,12 @@
     "stmtClosing": "Closing",
     "stmtCsv": "Download CSV",
     "storefront": "Store",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "moveToWallet": "Move earnings to wallet",
+    "moved": "Moved to your wallet.",
+    "moveErr_nothingToMove": "No earnings available to move.",
+    "moveErr_insufficient": "That is more than your available earnings.",
+    "moveErr_forbidden": "Driver account required."
   },
   "Dispatch": {
     "title": "Dispatch",
@@ -2464,7 +2471,12 @@
     "stmtClosing": "Closing",
     "stmtCsv": "Download CSV",
     "storefront": "Store",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "moveToWallet": "Move earnings to wallet",
+    "moved": "Moved to your wallet.",
+    "moveErr_nothingToMove": "No earnings available to move.",
+    "moveErr_insufficient": "That is more than your available balance.",
+    "moveErr_forbidden": "Point operator account required."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
