@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
+  MapPinned,
   ShoppingBag,
   Store,
   Truck,
@@ -39,6 +40,7 @@ export function UserMenu({
   isAdmin = false,
   isSeller = false,
   isCourier = false,
+  isPointOperator = false,
   isFleetOwner = false,
   walletBalance = 0,
 }: {
@@ -46,6 +48,7 @@ export function UserMenu({
   isAdmin?: boolean;
   isSeller?: boolean;
   isCourier?: boolean;
+  isPointOperator?: boolean;
   isFleetOwner?: boolean;
   walletBalance?: number;
 }) {
@@ -61,6 +64,9 @@ export function UserMenu({
       : null,
     isSeller ? { href: "/seller", key: "sellerCenter", icon: Store } : null,
     isCourier ? { href: "/driver", key: "driverApp", icon: Bike } : null,
+    isPointOperator
+      ? { href: "/point", key: "pointPortal", icon: MapPinned }
+      : null,
     isFleetOwner ? { href: "/fleet", key: "fleetPortal", icon: Truck } : null,
   ].filter((l): l is { href: string; key: string; icon: typeof User } =>
     Boolean(l),

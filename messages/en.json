@@ -43,7 +43,8 @@
     "adminPanel": "Admin panel",
     "fleetPortal": "Fleet portal",
     "wallet": "Wallet",
-    "driverApp": "Driver app"
+    "driverApp": "Driver app",
+    "pointPortal": "Point portal"
   },
   "MobileNav": {
     "label": "Primary",
@@ -2460,7 +2461,8 @@
     "stmtOpening": "Opening",
     "stmtChange": "This month",
     "stmtClosing": "Closing",
-    "stmtCsv": "Download CSV"
+    "stmtCsv": "Download CSV",
+    "storefront": "Store"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
