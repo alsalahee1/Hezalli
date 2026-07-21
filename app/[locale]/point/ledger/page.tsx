@@ -1,5 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
-import { Wallet } from "lucide-react";
+import { FileText, Wallet } from "lucide-react";
+
+import { Link } from "@/i18n/navigation";
 
 import { requireDeliveryPoint } from "@/lib/authz";
 import { pointLedgerSummary } from "@/lib/point-ledger";
@@ -59,9 +61,17 @@ export default async function PointLedgerPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold">{t("ledgerTitle")}</h1>
-        <p className="text-muted-foreground text-sm">{t("ledgerSubtitle")}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold">{t("ledgerTitle")}</h1>
+          <p className="text-muted-foreground text-sm">{t("ledgerSubtitle")}</p>
+        </div>
+        <Link
+          href="/point/statement"
+          className="text-primary inline-flex shrink-0 items-center gap-1 text-sm font-medium hover:underline"
+        >
+          <FileText className="size-4" /> {t("stmtLink")}
+        </Link>
       </div>
 
       <div className="grid grid-cols-3 gap-3">

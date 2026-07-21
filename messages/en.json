@@ -2338,7 +2338,18 @@
     "manifestTitle": "{count, plural, one {# parcel for this driver} other {# parcels for this driver}}",
     "manifestEmpty": "No parcels assigned to this driver at your hub.",
     "manifestHandAll": "Hand over all ({count})",
-    "manifestDone": "{handed} handed over, {failed} failed"
+    "manifestDone": "{handed} handed over, {failed} failed",
+    "stmtTitle": "Monthly statement",
+    "stmtSubtitle": "Opening balance, the month's activity, and closing balance for both sides of your books.",
+    "stmtLink": "Statement",
+    "stmtPrev": "Previous month",
+    "stmtNext": "Next month",
+    "stmt_earnings": "Earnings (owed to you by Hezalli)",
+    "stmt_cash": "COD cash (held by you for Hezalli)",
+    "stmtOpening": "Opening",
+    "stmtChange": "This month",
+    "stmtClosing": "Closing",
+    "stmtCsv": "Download CSV"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

@@ -2338,7 +2338,18 @@
     "manifestTitle": "{count, plural, one {طرد واحد لهذا السائق} two {طردان لهذا السائق} few {# طرود لهذا السائق} many {# طردًا لهذا السائق} other {# طرد لهذا السائق}}",
     "manifestEmpty": "لا توجد طرود مسندة لهذا السائق في نقطتك.",
     "manifestHandAll": "تسليم الكل ({count})",
-    "manifestDone": "سُلِّم {handed}، وفشل {failed}"
+    "manifestDone": "سُلِّم {handed}، وفشل {failed}",
+    "stmtTitle": "كشف الحساب الشهري",
+    "stmtSubtitle": "الرصيد الافتتاحي وحركة الشهر والرصيد الختامي لجانبَي دفاترك.",
+    "stmtLink": "كشف الحساب",
+    "stmtPrev": "الشهر السابق",
+    "stmtNext": "الشهر التالي",
+    "stmt_earnings": "الأرباح (المستحقة لك لدى هزلي)",
+    "stmt_cash": "نقد الدفع عند الاستلام (بحوزتك لصالح هزلي)",
+    "stmtOpening": "افتتاحي",
+    "stmtChange": "هذا الشهر",
+    "stmtClosing": "ختامي",
+    "stmtCsv": "تنزيل CSV"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",

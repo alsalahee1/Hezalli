@@ -491,13 +491,13 @@ and immutable, both are pure SUMs — nothing stored, nothing to drift.
 
 ### Build checklist (v1.12)
 
-- [ ] `lib/point-statement.ts`: `pointStatement(pointId, from, to)` — opening/delta/closing per side + per-type totals + entries
-- [ ] `/point/statement` page: month nav, both summaries, entry list, CSV link
-- [ ] `/api/point/statement` CSV route (operator-gated)
-- [ ] Link from the point ledger page
-- [ ] i18n (en + ar)
-- [ ] Integration test: seeded two-month ledger → opening excludes the month, closing = opening + delta, both sides; CSV route gated
-- [ ] This file kept current
+- [x] `lib/point-statement.ts`: `pointStatement(pointId, from, to)` — opening/delta/closing per side + per-type totals + entries
+- [x] `/point/statement` page: month nav, both summaries, entry list, CSV link
+- [x] `/api/point/statement` CSV route (operator-gated)
+- [x] Link from the point ledger page
+- [x] i18n (en + ar)
+- [x] Integration test: seeded two-month ledger → opening excludes the month, closing = opening + delta, both sides; CSV route gated
+- [x] This file kept current
 
 ## 29. Out of scope
 
