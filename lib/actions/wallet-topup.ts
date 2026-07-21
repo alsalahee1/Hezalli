@@ -103,15 +103,20 @@ export async function confirmTopUp(topUpId: string): Promise<Result> {
   if (topUp.status !== "AWAITING_CONFIRMATION") return { error: "badState" };
 
   const amount = Number(topUp.amountUsd);
+  // Flip AWAITING_CONFIRMATION → CONFIRMED conditionally *inside* the transaction
+  // so a concurrent confirm (double-click, two tabs, retry) or a confirm racing a
+  // reject can only credit the wallet once.
+  let credited = false;
   await prisma.$transaction(async (tx) => {
-    await tx.walletTopUp.update({
-      where: { id: topUp.id },
+    const upd = await tx.walletTopUp.updateMany({
+      where: { id: topUp.id, status: "AWAITING_CONFIRMATION" },
       data: {
         status: "CONFIRMED",
         reviewedBy: adminId,
         confirmedAt: new Date(),
       },
     });
+    if (upd.count !== 1) return; // already confirmed/rejected concurrently
     await creditWalletTx(tx, topUp.walletId, {
       type: "TOP_UP",
       amountUsd: amount,
@@ -131,8 +136,10 @@ export async function confirmTopUp(topUpId: string): Promise<Result> {
         data: { link: `/account/wallet` },
       },
     });
+    credited = true;
   });
 
+  if (!credited) return { error: "badState" };
   await recomputeWalletBalance(topUp.wallet.userId);
 
   revalidatePath(`/${locale}/admin/payments`);

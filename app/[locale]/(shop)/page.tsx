@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { ArrowRight, Wallet } from "lucide-react";
 import {
   getFormatter,
@@ -37,6 +38,137 @@ const CARD_SELECT = {
   },
   store: { select: { name: true } },
 } as const;
+
+// The home strips are identical for every visitor (only Recently-Viewed and the
+// wallet card are personalised), so their data is cached across requests rather
+// than re-queried on every load. Best-sellers aggregates the whole completed-order
+// history, so it gets the longest window.
+const STRIP_TTL = 120; // seconds
+const BEST_SELLERS_TTL = 300; // seconds
+
+const featuredItems = unstable_cache(
+  async (locale: string) => {
+    const rows = await prisma.product.findMany({
+      where: { status: "ACTIVE", isFeatured: true },
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+      select: CARD_SELECT,
+    });
+    return rows.map((r) => toCardItem(r, locale));
+  },
+  ["home-featured"],
+  { revalidate: STRIP_TTL, tags: ["home-strips"] },
+);
+
+const dealsItems = unstable_cache(
+  async (locale: string) => {
+    const rows = await prisma.product.findMany({
+      where: {
+        status: "ACTIVE",
+        variants: { some: { isActive: true, compareAtPrice: { not: null } } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+      select: CARD_SELECT,
+    });
+    return rows.map((r) => toCardItem(r, locale));
+  },
+  ["home-deals"],
+  { revalidate: STRIP_TTL, tags: ["home-strips"] },
+);
+
+const newArrivalsItems = unstable_cache(
+  async (locale: string) => {
+    const rows = await prisma.product.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: CARD_SELECT,
+    });
+    return rows.map((r) => toCardItem(r, locale));
+  },
+  ["home-new-arrivals"],
+  { revalidate: STRIP_TTL, tags: ["home-strips"] },
+);
+
+const bestSellersItems = unstable_cache(
+  async (locale: string) => {
+    const TAKE = 10;
+    // Real sales first (completed orders), then fill with top-rated products.
+    const sold = await prisma.orderItem.groupBy({
+      by: ["variantId"],
+      where: { subOrder: { status: "COMPLETED" } },
+      _sum: { quantity: true },
+    });
+    const soldVariantIds = sold.map((s) => s.variantId);
+    const variantOwners = soldVariantIds.length
+      ? await prisma.productVariant.findMany({
+          where: { id: { in: soldVariantIds } },
+          select: { id: true, productId: true },
+        })
+      : [];
+    const ownerOf = new Map(variantOwners.map((v) => [v.id, v.productId]));
+    const soldByProduct = new Map<string, number>();
+    for (const s of sold) {
+      const pid = ownerOf.get(s.variantId);
+      if (pid)
+        soldByProduct.set(
+          pid,
+          (soldByProduct.get(pid) ?? 0) + (s._sum.quantity ?? 0),
+        );
+    }
+    const rankedIds = [...soldByProduct.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, TAKE)
+      .map(([id]) => id);
+
+    const fill = await prisma.product.findMany({
+      where: { status: "ACTIVE", id: { notIn: rankedIds } },
+      orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
+      take: TAKE,
+      select: CARD_SELECT,
+    });
+    const bestIds = [...rankedIds, ...fill.map((f) => f.id)].slice(0, TAKE);
+
+    const products = await prisma.product.findMany({
+      where: { id: { in: bestIds }, status: "ACTIVE" },
+      select: CARD_SELECT,
+    });
+    const order = new Map(bestIds.map((id, i) => [id, i]));
+    return products
+      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+      .map((p) => toCardItem(p, locale));
+  },
+  ["home-best-sellers"],
+  { revalidate: BEST_SELLERS_TTL, tags: ["home-strips"] },
+);
+
+const categoryStripsData = unstable_cache(
+  async (locale: string) => {
+    const cats = await prisma.category.findMany({
+      where: { parentId: null, isActive: true },
+      orderBy: { position: "asc" },
+      take: 3,
+      select: { slug: true, name: true },
+    });
+    return Promise.all(
+      cats.map(async (c) => ({
+        slug: c.slug,
+        name: localizedName(c.name, locale),
+        items: (
+          await prisma.product.findMany({
+            where: { status: "ACTIVE", category: { slug: c.slug } },
+            orderBy: { ratingAvg: "desc" },
+            take: 5,
+            select: CARD_SELECT,
+          })
+        ).map((r) => toCardItem(r, locale)),
+      })),
+    );
+  },
+  ["home-category-strips"],
+  { revalidate: STRIP_TTL, tags: ["home-strips"] },
+);
 
 export default async function HomePage({
   params,
@@ -198,36 +330,17 @@ async function FlashHomeSection() {
 
 async function FeaturedSection({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const rows = await prisma.product.findMany({
-    where: { status: "ACTIVE", isFeatured: true },
-    orderBy: { updatedAt: "desc" },
-    take: 10,
-    select: CARD_SELECT,
-  });
-  if (rows.length === 0) return null;
-  return (
-    <ProductStrip
-      title={t("featured")}
-      items={rows.map((r) => toCardItem(r, locale))}
-    />
-  );
+  const items = await featuredItems(locale);
+  if (items.length === 0) return null;
+  return <ProductStrip title={t("featured")} items={items} />;
 }
 
 async function DealsSection({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const rows = await prisma.product.findMany({
-    where: {
-      status: "ACTIVE",
-      variants: { some: { isActive: true, compareAtPrice: { not: null } } },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 10,
-    select: CARD_SELECT,
-  });
   return (
     <ProductStrip
       title={t("deals")}
-      items={rows.map((r) => toCardItem(r, locale))}
+      items={await dealsItems(locale)}
       seeAllHref="/deals"
       seeAllLabel={t("seeAll")}
     />
@@ -236,16 +349,10 @@ async function DealsSection({ locale }: { locale: string }) {
 
 async function NewArrivalsSection({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const rows = await prisma.product.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    select: CARD_SELECT,
-  });
   return (
     <ProductStrip
       title={t("newArrivals")}
-      items={rows.map((r) => toCardItem(r, locale))}
+      items={await newArrivalsItems(locale)}
       seeAllHref="/search?sort=newest"
       seeAllLabel={t("seeAll")}
     />
@@ -254,56 +361,10 @@ async function NewArrivalsSection({ locale }: { locale: string }) {
 
 async function BestSellersSection({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const TAKE = 10;
-
-  // Real sales first (completed orders), then fill with top-rated products.
-  const sold = await prisma.orderItem.groupBy({
-    by: ["variantId"],
-    where: { subOrder: { status: "COMPLETED" } },
-    _sum: { quantity: true },
-  });
-  const soldVariantIds = sold.map((s) => s.variantId);
-  const variantOwners = soldVariantIds.length
-    ? await prisma.productVariant.findMany({
-        where: { id: { in: soldVariantIds } },
-        select: { id: true, productId: true },
-      })
-    : [];
-  const ownerOf = new Map(variantOwners.map((v) => [v.id, v.productId]));
-  const soldByProduct = new Map<string, number>();
-  for (const s of sold) {
-    const pid = ownerOf.get(s.variantId);
-    if (pid)
-      soldByProduct.set(
-        pid,
-        (soldByProduct.get(pid) ?? 0) + (s._sum.quantity ?? 0),
-      );
-  }
-  const rankedIds = [...soldByProduct.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([id]) => id);
-
-  const fill = await prisma.product.findMany({
-    where: { status: "ACTIVE", id: { notIn: rankedIds } },
-    orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
-    take: TAKE,
-    select: CARD_SELECT,
-  });
-  const bestIds = [...rankedIds, ...fill.map((f) => f.id)].slice(0, TAKE);
-
-  const products = await prisma.product.findMany({
-    where: { id: { in: bestIds }, status: "ACTIVE" },
-    select: CARD_SELECT,
-  });
-  const order = new Map(bestIds.map((id, i) => [id, i]));
-  const items: ProductCardItem[] = products
-    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-    .map((p) => toCardItem(p, locale));
-
   return (
     <ProductStrip
       title={t("bestSellers")}
-      items={items}
+      items={await bestSellersItems(locale)}
       seeAllHref="/search?sort=best_selling"
       seeAllLabel={t("seeAll")}
     />
@@ -312,31 +373,14 @@ async function BestSellersSection({ locale }: { locale: string }) {
 
 async function CategoryStrips({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const cats = await prisma.category.findMany({
-    where: { parentId: null, isActive: true },
-    orderBy: { position: "asc" },
-    take: 3,
-    select: { slug: true, name: true },
-  });
-  const strips = await Promise.all(
-    cats.map(async (c) => ({
-      slug: c.slug,
-      name: localizedName(c.name, locale),
-      rows: await prisma.product.findMany({
-        where: { status: "ACTIVE", category: { slug: c.slug } },
-        orderBy: { ratingAvg: "desc" },
-        take: 5,
-        select: CARD_SELECT,
-      }),
-    })),
-  );
+  const strips = await categoryStripsData(locale);
   return (
     <>
       {strips.map((s) => (
         <ProductStrip
           key={s.slug}
           title={s.name}
-          items={s.rows.map((r) => toCardItem(r, locale))}
+          items={s.items}
           seeAllHref={`/c/${s.slug}`}
           seeAllLabel={t("seeAll")}
         />

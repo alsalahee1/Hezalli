@@ -251,6 +251,8 @@ model User {
   pushSubscriptions PushSubscription[]
   deliveryPoint    DeliveryPoint? @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
+
+  @@index([referredById])
 }
 
 // A browser/device Web Push subscription. One user may have several (phone,
@@ -414,6 +416,7 @@ model LoyaltyTransaction {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([subOrderId])
 }
 
 model Account {
@@ -764,6 +767,8 @@ model Order {
 
   @@index([buyerId])
   @@index([status])
+  @@index([couponId])
+  @@index([createdAt])
 }
 
 model SubOrder {
@@ -795,6 +800,7 @@ model SubOrder {
   @@index([orderId])
   @@index([storeId])
   @@index([status])
+  @@index([autoCompleteAt])
 }
 
 model OrderItem {
@@ -809,6 +815,7 @@ model OrderItem {
   subOrder      SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
 
   @@index([subOrderId])
+  @@index([variantId])
 }
 
 model OrderStatusHistory {
@@ -844,6 +851,8 @@ model Payment {
   updatedAt   DateTime      @updatedAt
   order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   refunds     Refund[]
+
+  @@index([status])
 }
 
 model Refund {
@@ -858,6 +867,7 @@ model Refund {
   payment     Payment?  @relation(fields: [paymentId], references: [id])
 
   @@index([paymentId])
+  @@index([subOrderId])
 }
 
 model SellerBalance {
@@ -881,6 +891,8 @@ model LedgerEntry {
   balance    SellerBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)
 
   @@index([balanceId])
+  @@index([subOrderId])
+  @@index([payoutId])
 }
 
 model Payout {
@@ -896,6 +908,7 @@ model Payout {
   seller      SellerProfile @relation(fields: [sellerId], references: [id])
 
   @@index([sellerId])
+  @@index([status])
 }
 
 // ---------------------------------------------------------------------------
@@ -1095,6 +1108,8 @@ model WalletEntry {
   wallet     Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([walletId])
+  @@index([orderId])
+  @@index([subOrderId])
 }
 
 // Biometric step-up via WebAuthn / passkeys (Step 21). A registered platform
@@ -1236,6 +1251,7 @@ model Shipment {
   attempts        DeliveryAttempt[]
 
   @@index([driverId])
+  @@index([carrierId])
   @@index([deliveryPointId])
   @@index([originPointId])
   @@index([atPointId])
@@ -1346,6 +1362,8 @@ model Dispute {
   updatedAt     DateTime         @updatedAt
   returnRequest ReturnRequest    @relation(fields: [returnId], references: [id], onDelete: Cascade)
   messages      DisputeMessage[]
+
+  @@index([status])
 }
 
 model DisputeMessage {
@@ -1466,6 +1484,7 @@ model FlashSaleItem {
   variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@index([flashSaleId])
+  @@index([variantId])
 }
 
 // ---------------------------------------------------------------------------

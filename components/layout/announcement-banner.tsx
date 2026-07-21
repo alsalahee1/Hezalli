@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 
 // Site-wide dismissible announcement bar. Dismissal is remembered per message
@@ -12,6 +13,7 @@ function hash(s: string): string {
 }
 
 export function AnnouncementBanner({ text }: { text: string }) {
+  const t = useTranslations("A11y");
   const key = `hz-ann-${hash(text)}`;
   const [show, setShow] = useState(false);
 
@@ -32,7 +34,7 @@ export function AnnouncementBanner({ text }: { text: string }) {
           localStorage.setItem(key, "1");
           setShow(false);
         }}
-        aria-label="Dismiss"
+        aria-label={t("dismiss")}
         className="absolute end-2 top-1/2 -translate-y-1/2 rounded p-1 hover:bg-black/10"
       >
         <X className="size-4" />

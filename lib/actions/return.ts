@@ -63,6 +63,7 @@ export async function requestReturn(input: {
       id: true,
       status: true,
       completedAt: true,
+      createdAt: true,
       orderId: true,
       items: { select: { id: true, quantity: true } },
       shipment: { select: { deliveredAt: true } },
@@ -83,8 +84,10 @@ export async function requestReturn(input: {
   if (sub.return) return { error: "alreadyRequested" };
 
   const windowDays = await settingDays("return_window_days", 7);
-  const base = sub.completedAt ?? sub.shipment?.deliveredAt ?? null;
-  if (base && Date.now() - base.getTime() > windowDays * 86_400_000) {
+  // Fail closed: if delivery timestamps are missing, fall back to the sub-order's
+  // creation date so the window still applies (never leaving it open forever).
+  const base = sub.completedAt ?? sub.shipment?.deliveredAt ?? sub.createdAt;
+  if (Date.now() - base.getTime() > windowDays * 86_400_000) {
     return { error: "windowClosed" };
   }
 

@@ -59,16 +59,23 @@ export async function verifyWalletPin(
     return { ok: true };
   }
 
-  const failed = wallet.pinFailedCount + 1;
-  const lock = failed >= MAX_ATTEMPTS;
-  await prisma.wallet.update({
+  // Increment atomically so parallel wrong-PIN attempts can't each read the same
+  // stale count and collectively slip past MAX_ATTEMPTS. The returned value is the
+  // authoritative post-increment count.
+  const { pinFailedCount: failed } = await prisma.wallet.update({
     where: { id: wallet.id },
-    data: {
-      pinFailedCount: lock ? 0 : failed,
-      pinLockedUntil: lock
-        ? new Date(now.getTime() + LOCK_MINUTES * 60_000)
-        : wallet.pinLockedUntil,
-    },
+    data: { pinFailedCount: { increment: 1 } },
+    select: { pinFailedCount: true },
   });
-  return { error: lock ? "locked" : "wrongPin" };
+  if (failed >= MAX_ATTEMPTS) {
+    await prisma.wallet.update({
+      where: { id: wallet.id },
+      data: {
+        pinFailedCount: 0,
+        pinLockedUntil: new Date(now.getTime() + LOCK_MINUTES * 60_000),
+      },
+    });
+    return { error: "locked" };
+  }
+  return { error: "wrongPin" };
 }

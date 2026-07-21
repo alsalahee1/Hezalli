@@ -74,19 +74,31 @@ export async function payPaymentRequest(
   );
   if (!velocity.ok) return { error: velocity.error };
 
+  // Claim the request atomically *before* moving any money. Two payers racing
+  // the same request would otherwise both pass the PENDING check above and both
+  // transfer — crediting the requester twice. The winner of this conditional
+  // flip is the only one that proceeds to transfer.
+  const claim = await prisma.walletPaymentRequest.updateMany({
+    where: { id: req.id, status: "PENDING" },
+    data: { status: "PAID", payerId: session.user.id, paidAt: new Date() },
+  });
+  if (claim.count !== 1) return { error: "alreadyHandled" };
+
   const res = await transferFunds(
     session.user.id,
     req.requesterId,
     Number(req.amountUsd),
     req.note ? `Request: ${req.note}` : "Money request",
   );
-  if (!res.ok) return res;
-
-  // Mark paid (only if still pending — guards a double-pay race).
-  await prisma.walletPaymentRequest.updateMany({
-    where: { id: req.id, status: "PENDING" },
-    data: { status: "PAID", payerId: session.user.id, paidAt: new Date() },
-  });
+  if (!res.ok) {
+    // The transfer failed (e.g. insufficient funds) — release the claim so the
+    // request stays payable.
+    await prisma.walletPaymentRequest.updateMany({
+      where: { id: req.id, status: "PAID", payerId: session.user.id },
+      data: { status: "PENDING", payerId: null, paidAt: null },
+    });
+    return res;
+  }
 
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };

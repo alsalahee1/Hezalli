@@ -5,6 +5,7 @@
 // Parity note: like loyalty EARN points, cashback is not clawed back if a
 // completed order is later refunded — the exposure is bounded by the (small)
 // rate and completion means the buyer already confirmed receipt.
+import { isUniqueViolation } from "@/lib/db-errors";
 import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
@@ -38,21 +39,28 @@ export async function creditPurchaseCashback(
 
   const walletId = await getWalletId(buyerId);
 
-  // Idempotency: never credit the same sub-order twice.
+  // Idempotency fast path: never credit the same sub-order twice. The partial
+  // unique index on WalletEntry (one CASHBACK per wallet+sub-order) is the real
+  // guard against a concurrent double-credit.
   const dupe = await prisma.walletEntry.findFirst({
     where: { walletId, subOrderId, type: "CASHBACK" },
     select: { id: true },
   });
   if (dupe) return;
 
-  await prisma.$transaction(async (tx) => {
-    await creditWalletTx(tx, walletId, {
-      type: "CASHBACK",
-      amountUsd: amount,
-      orderId,
-      subOrderId,
-      note: "Purchase cashback",
+  try {
+    await prisma.$transaction(async (tx) => {
+      await creditWalletTx(tx, walletId, {
+        type: "CASHBACK",
+        amountUsd: amount,
+        orderId,
+        subOrderId,
+        note: "Purchase cashback",
+      });
     });
-  });
+  } catch (e) {
+    if (isUniqueViolation(e)) return; // concurrent credit won the race
+    throw e;
+  }
   await recomputeWalletBalance(buyerId);
 }

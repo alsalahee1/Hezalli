@@ -15,20 +15,27 @@ export function ProductCard({
 }) {
   const t = useTranslations("Product");
   return (
-    <Link
-      href={`/product/${item.slug}`}
+    // Stretched-link pattern: the card is a plain container and the title holds
+    // the navigation link whose ::after overlay covers the whole card. The
+    // wishlist button is a SIBLING of that link (not nested inside it), so the
+    // markup is valid and the two interactive controls don't overlap semantically.
+    <div
       className={cn(
-        "group bg-card flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md",
+        "group bg-card relative flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md",
         className,
       )}
     >
       <div className="bg-muted relative aspect-square overflow-hidden">
         {item.cover ? (
+          // Raw <img> is deliberate: product images come from same-origin
+          // /api/files or a runtime-configured S3 host that next/image's static
+          // remotePatterns can't enumerate. The aspect-square wrapper prevents CLS.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={item.cover}
             alt={item.title}
             loading="lazy"
+            decoding="async"
             className={cn(
               "size-full object-cover transition-transform duration-300 group-hover:scale-105",
               item.outOfStock && "opacity-50",
@@ -48,7 +55,7 @@ export function ProductCard({
         <WishlistHeart
           productId={item.id}
           size={15}
-          className="absolute end-2 top-2 z-10"
+          className="absolute end-2 top-2 z-20"
         />
         {item.outOfStock ? (
           <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-xs font-medium text-white">
@@ -59,7 +66,12 @@ export function ProductCard({
 
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium">
-          {item.title}
+          <Link
+            href={`/product/${item.slug}`}
+            className="outline-none after:absolute after:inset-0 focus-visible:underline"
+          >
+            {item.title}
+          </Link>
         </h3>
 
         {item.ratingCount > 0 ? (
@@ -101,6 +113,6 @@ export function ProductCard({
           </span>
         ) : null}
       </div>
-    </Link>
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 // sum of a seller's ledger entries, and pendingUsd is the escrow held for
 // prepaid, paid-but-not-completed sub-orders. Balances are recomputed, never
 // edited in place. All amounts are USD (USDT treated 1:1).
+import { isUniqueViolation } from "@/lib/db-errors";
 import { awardPurchasePoints } from "@/lib/loyalty";
 import { prisma } from "@/lib/prisma";
 import { creditPurchaseCashback } from "@/lib/wallet-cashback";
@@ -76,12 +77,19 @@ export async function getBalanceId(sellerProfileId: string): Promise<string> {
 export async function recomputeBalance(sellerProfileId: string): Promise<void> {
   const balanceId = await getBalanceId(sellerProfileId);
 
-  const agg = await prisma.ledgerEntry.aggregate({
-    where: { balanceId },
-    _sum: { amountUsd: true },
-  });
-  const available = round2(Number(agg._sum.amountUsd ?? 0));
+  // availableUsd = Σ ledger, set in a single statement so a concurrent ledger
+  // write can never be lost to a read-then-write window (ledger amounts are
+  // stored at 2 decimal places, so the SUM is already exact).
+  await prisma.$executeRaw`
+    UPDATE "SellerBalance"
+    SET "availableUsd" = COALESCE(
+      (SELECT SUM("amountUsd") FROM "LedgerEntry" WHERE "balanceId" = ${balanceId}),
+      0
+    )
+    WHERE "id" = ${balanceId}`;
 
+  // pendingUsd is escrow held for prepaid, paid-but-not-completed sub-orders. It
+  // is display-only (never spent against), so a briefly-stale value is harmless.
   const escrow = await prisma.subOrder.findMany({
     where: {
       store: { sellerId: sellerProfileId },
@@ -113,7 +121,7 @@ export async function recomputeBalance(sellerProfileId: string): Promise<void> {
 
   await prisma.sellerBalance.update({
     where: { id: balanceId },
-    data: { availableUsd: available, pendingUsd: round2(pending) },
+    data: { pendingUsd: round2(pending) },
   });
 }
 
@@ -151,7 +159,7 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
   const already = await prisma.ledgerEntry.count({
     where: { subOrderId, type: { in: ["SALE", "COD_COMMISSION_DUE"] } },
   });
-  if (already > 0) return; // already settled
+  if (already > 0) return; // already settled (fast path)
 
   const itemsTotal = Number(sub.itemsTotal);
   const shipping = Number(sub.shippingTotal);
@@ -168,36 +176,47 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
   const sellerNet = eco.sellerNet;
   const balanceId = await getBalanceId(sub.store.sellerId);
 
-  if (sub.order.paymentMethod === "COD") {
-    await prisma.ledgerEntry.create({
-      data: {
-        balanceId,
-        type: "COD_COMMISSION_DUE",
-        amountUsd: eco.codLedger,
-        subOrderId,
-        note: "COD commission owed to platform",
-      },
+  // Write the settlement entry + sub-order economics atomically. The partial
+  // unique index on LedgerEntry (SALE / COD_COMMISSION_DUE per sub-order) is the
+  // real idempotency guard: if a concurrent settle already inserted the entry,
+  // this transaction fails with a unique violation and we treat it as a no-op.
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (sub.order.paymentMethod === "COD") {
+        await tx.ledgerEntry.create({
+          data: {
+            balanceId,
+            type: "COD_COMMISSION_DUE",
+            amountUsd: eco.codLedger,
+            subOrderId,
+            note: "COD commission owed to platform",
+          },
+        });
+      } else {
+        await tx.ledgerEntry.create({
+          data: {
+            balanceId,
+            type: "SALE",
+            amountUsd: sellerNet,
+            subOrderId,
+            note: "Sale settled (item + shipping − commission)",
+          },
+        });
+      }
+      await tx.subOrder.update({
+        where: { id: subOrderId },
+        data: {
+          commissionAmt: commission,
+          sellerNet,
+          completedAt: sub.completedAt ?? new Date(),
+        },
+      });
     });
-  } else {
-    await prisma.ledgerEntry.create({
-      data: {
-        balanceId,
-        type: "SALE",
-        amountUsd: sellerNet,
-        subOrderId,
-        note: "Sale settled (item + shipping − commission)",
-      },
-    });
+  } catch (e) {
+    // A concurrent settle won the race — fall through to the idempotent
+    // recompute + rewards below (they are guarded by their own unique indexes).
+    if (!isUniqueViolation(e)) throw e;
   }
-
-  await prisma.subOrder.update({
-    where: { id: subOrderId },
-    data: {
-      commissionAmt: commission,
-      sellerNet,
-      completedAt: sub.completedAt ?? new Date(),
-    },
-  });
   await recomputeBalance(sub.store.sellerId);
 
   // Loyalty: reward the buyer for this completed purchase (idempotent).

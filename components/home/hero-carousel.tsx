@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
@@ -14,7 +15,9 @@ export type HeroBanner = {
 };
 
 export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
+  const t = useTranslations("A11y");
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const count = banners.length;
 
   const go = useCallback(
@@ -23,15 +26,23 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
   );
 
   useEffect(() => {
-    if (count <= 1) return;
+    // Autoplay pauses on hover/focus so it doesn't move content out from under
+    // the user (WCAG 2.2.2).
+    if (count <= 1 || paused) return;
     const id = window.setInterval(() => go(index + 1), 5000);
     return () => window.clearInterval(id);
-  }, [index, count, go]);
+  }, [index, count, go, paused]);
 
   if (count === 0) return null;
 
   return (
-    <div className="group relative aspect-[16/6] w-full overflow-hidden rounded-xl border">
+    <div
+      className="group relative aspect-[16/6] w-full overflow-hidden rounded-xl border"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+    >
       {banners.map((b, i) => {
         const inner = (
           // eslint-disable-next-line @next/next/no-img-element
@@ -69,16 +80,16 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
           <button
             type="button"
             onClick={() => go(index - 1)}
-            aria-label="Previous"
-            className="absolute start-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 transition-opacity group-hover:opacity-100"
+            aria-label={t("previous")}
+            className="absolute start-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           >
             <ChevronLeft className="size-5 rtl:rotate-180" />
           </button>
           <button
             type="button"
             onClick={() => go(index + 1)}
-            aria-label="Next"
-            className="absolute end-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 transition-opacity group-hover:opacity-100"
+            aria-label={t("next")}
+            className="absolute end-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           >
             <ChevronRight className="size-5 rtl:rotate-180" />
           </button>
@@ -87,7 +98,7 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
               <button
                 key={b.id}
                 type="button"
-                aria-label={`Slide ${i + 1}`}
+                aria-label={t("slide", { n: i + 1 })}
                 onClick={() => setIndex(i)}
                 className={cn(
                   "h-1.5 rounded-full transition-all",

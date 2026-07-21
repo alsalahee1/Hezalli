@@ -1,4 +1,20 @@
 {
+  "A11y": {
+    "previous": "السابق",
+    "next": "التالي",
+    "slide": "الانتقال إلى الشريحة {n}",
+    "wishlist": "أضف إلى المفضلة",
+    "openMenu": "افتح القائمة",
+    "dismiss": "إغلاق"
+  },
+  "Errors": {
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundBody": "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها.",
+    "backHome": "العودة إلى الرئيسية",
+    "errorTitle": "حدث خطأ ما",
+    "errorBody": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "retry": "حاول مرة أخرى"
+  },
   "Common": {
     "appName": "هزلي",
     "tagline": "سوق اليمن متعدد البائعين",
@@ -903,6 +919,8 @@
     "hezalliBalance": "رصيد HezalliPay",
     "hezalliBalanceHint": "دفع فوري · الرصيد: {balance}",
     "err_insufficientBalance": "رصيد محفظتك لا يغطي هذا الطلب.",
+    "err_serverError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "coupon_serverError": "تعذّر التحقق من الكوبون. يرجى المحاولة مرة أخرى.",
     "pickupShipping": "الاستلام من نقطة هزلي",
     "pickupBadge": "استلام ذاتي",
     "pickupPointLabel": "من أين ستستلم طلبك؟",

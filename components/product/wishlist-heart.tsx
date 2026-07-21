@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Heart } from "lucide-react";
 
 import { toggleWishlist } from "@/lib/actions/wishlist";
@@ -20,6 +21,7 @@ export function WishlistHeart({
   className?: string;
   size?: number;
 }) {
+  const t = useTranslations("A11y");
   const router = useRouter();
   const [inList, setInList] = useState(initialInWishlist);
   const [pending, start] = useTransition();
@@ -45,7 +47,7 @@ export function WishlistHeart({
       onClick={onClick}
       disabled={pending}
       aria-pressed={inList}
-      aria-label="Wishlist"
+      aria-label={t("wishlist")}
       className={cn(
         "flex items-center justify-center rounded-full bg-white/85 shadow-sm transition-colors hover:bg-white",
         className,

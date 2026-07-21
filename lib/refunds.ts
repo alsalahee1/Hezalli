@@ -71,19 +71,9 @@ export async function applyRefund(
     Number(sub.discountTotal),
     sellerFunded,
   );
-  // Refund the amount actually paid (after any voucher discount).
+  // The amount actually paid for this sub-order (after any voucher discount) is
+  // the ceiling on cumulative refunds.
   const paid = eco.paid;
-  const amount =
-    opts.amountUsd && opts.amountUsd > 0 && opts.amountUsd <= paid
-      ? round2(opts.amountUsd)
-      : paid;
-  const ratio = paid > 0 ? amount / paid : 1;
-  const isFull = ratio >= 1;
-
-  const settled = await prisma.ledgerEntry.findFirst({
-    where: { subOrderId, type: { in: ["SALE", "COD_COMMISSION_DUE"] } },
-    select: { id: true },
-  });
   const balanceId = await getBalanceId(sub.store.sellerId);
   // Wallet-paid orders always refund back to the wallet (that is where the
   // money came from); other methods do so only when the caller asks. Ensure the
@@ -93,7 +83,39 @@ export async function applyRefund(
   const walletId = refundToWallet ? await getWalletId(sub.order.buyerId) : null;
 
   let refundId = "";
+  let amount = 0;
+  let overRefund = false;
   await prisma.$transaction(async (tx) => {
+    // Lock the sub-order row so concurrent refunds serialize: the cumulative cap
+    // below is computed and enforced without a check-then-write race that could
+    // let two partial (or full) refunds together exceed the paid amount.
+    await tx.$queryRaw`SELECT "id" FROM "SubOrder" WHERE "id" = ${subOrderId} FOR UPDATE`;
+
+    // Sum refunds already issued for this sub-order and cap the new one to what
+    // remains. If nothing remains, this refund is rejected.
+    const prior = await tx.refund.aggregate({
+      where: { subOrderId },
+      _sum: { amountUsd: true },
+    });
+    const priorRefunded = round2(Number(prior._sum.amountUsd ?? 0));
+    const remaining = round2(paid - priorRefunded);
+    if (remaining <= 0) {
+      overRefund = true;
+      return;
+    }
+    amount =
+      opts.amountUsd && opts.amountUsd > 0 && opts.amountUsd <= remaining
+        ? round2(opts.amountUsd)
+        : remaining;
+    const ratio = paid > 0 ? amount / paid : 1;
+    // Full once cumulative refunds reach the paid amount (allow a cent of slack).
+    const isFull = round2(priorRefunded + amount) >= round2(paid) - 0.001;
+
+    const settled = await tx.ledgerEntry.findFirst({
+      where: { subOrderId, type: { in: ["SALE", "COD_COMMISSION_DUE"] } },
+      select: { id: true },
+    });
+
     const refund = await tx.refund.create({
       data: {
         subOrderId,
@@ -223,6 +245,10 @@ export async function applyRefund(
       },
     });
   });
+
+  // The sub-order was already fully refunded (cumulative refunds reached the
+  // paid amount) — nothing was written.
+  if (overRefund) return { error: "badState" };
 
   await recomputeBalance(sub.store.sellerId);
   if (walletId) await recomputeWalletBalance(sub.order.buyerId);
