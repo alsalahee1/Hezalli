@@ -1210,6 +1210,13 @@ model Shipment {
   driverId        String?
   // Route via a partner hub (null = direct seller → courier).
   deliveryPointId String?
+  // Two-hop line-haul (docs §14): the point near the SELLER where the parcel
+  // enters the network before being carried to deliveryPointId. Plain id (no
+  // FK) — resolved manually to keep DeliveryPoint relations simple.
+  originPointId   String?
+  // Which point physically holds the parcel right now (null = not at a hub).
+  // Set on every receive scan, cleared on handover / delivery / RTS.
+  atPointId       String?
   // Short random code for the optional buyer-QR proof of delivery.
   deliveryCode    String?         @unique
   // Buyer's requested redelivery day + note after a failed attempt.
@@ -1230,6 +1237,8 @@ model Shipment {
 
   @@index([driverId])
   @@index([deliveryPointId])
+  @@index([originPointId])
+  @@index([atPointId])
 }
 
 // One doorstep delivery attempt. FAILED records why (unreachable, refused,

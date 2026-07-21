@@ -24,13 +24,17 @@ async function findParcel(pointId: string, tracking: string) {
     where: {
       trackingNumber: t,
       platformManaged: true,
-      deliveryPointId: pointId,
+      // Two-hop line-haul (docs §14): the scanning point may be the parcel's
+      // ORIGIN (entry hub near the seller) or its DESTINATION.
+      OR: [{ deliveryPointId: pointId }, { originPointId: pointId }],
     },
     select: {
       id: true,
       status: true,
       driverId: true,
       attemptCount: true,
+      deliveryPointId: true,
+      originPointId: true,
       deliveryPoint: { select: { name: true } },
       subOrder: {
         select: {
@@ -83,13 +87,60 @@ export async function receiveParcelAtPoint(
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
-  if (parcel.status !== "LABEL_CREATED") return { error: "badState" };
+  // Which hop is this? Origin receives the seller drop-off (LABEL_CREATED);
+  // the destination receives either the drop-off (single-hop) or the
+  // line-haul arrival (IN_TRANSIT with an origin leg).
+  const isOriginHop =
+    parcel.originPointId === pointId && parcel.deliveryPointId !== pointId;
+  const expectFrom = isOriginHop
+    ? ["LABEL_CREATED"]
+    : parcel.originPointId && parcel.originPointId !== pointId
+      ? ["IN_TRANSIT"]
+      : ["LABEL_CREATED"];
+  if (!expectFrom.includes(parcel.status)) return { error: "badState" };
 
   const claimed = await prisma.shipment.updateMany({
-    where: { id: parcel.id, status: "LABEL_CREATED" },
-    data: { status: "AT_POINT" },
+    where: { id: parcel.id, status: { in: expectFrom as never } },
+    data: {
+      status: "AT_POINT",
+      atPointId: pointId,
+      ...(isOriginHop ? {} : { driverId: null }),
+    },
   });
   if (claimed.count !== 1) return { error: "badState" };
+
+  if (isOriginHop) {
+    // Entry hub: log custody, tell the buyer it's moving; the last-mile
+    // machinery waits until the destination point receives it.
+    const originName =
+      (
+        await prisma.deliveryPoint.findUnique({
+          where: { id: pointId },
+          select: { name: true },
+        })
+      )?.name ?? "Hezalli Point";
+    await prisma.$transaction([
+      prisma.shipmentEvent.create({
+        data: {
+          shipmentId: parcel.id,
+          status: "AT_POINT",
+          location: originName,
+          note: `Entered the network at ${originName} — awaiting line-haul`,
+        },
+      }),
+      prisma.notification.create({
+        data: buyerNotice(
+          parcel,
+          { en: "Your parcel is on its way", ar: "طردك في الطريق" },
+          {
+            en: `Your order from ${parcel.subOrder.store.name} entered our delivery network and is being routed to your area.`,
+            ar: `دخل طلبك من ${parcel.subOrder.store.name} شبكة التوصيل لدينا وهو في طريقه إلى منطقتك.`,
+          },
+        ),
+      }),
+    ]);
+    return { ok: true };
+  }
 
   const pointName = parcel.deliveryPoint?.name ?? "Hezalli Point";
   // A PICKUP parcel's journey ends here: the buyer collects it from the
@@ -160,8 +211,12 @@ export async function handoverParcelToDriver(
   if (parcel.status !== "AT_POINT" && parcel.status !== "RETURNED_TO_POINT") {
     return { error: "badState" };
   }
-  // A PICKUP parcel is collected by the buyer at the counter — never a driver.
-  if (parcel.subOrder.shippingMethod === "PICKUP") {
+  // Origin hop: this handover starts the LINE-HAUL leg (origin → destination),
+  // not the last mile — allowed even for PICKUP orders.
+  const isOriginHop =
+    parcel.originPointId === pointId && parcel.deliveryPointId !== pointId;
+  // A PICKUP parcel at its DESTINATION is collected by the buyer — never a driver.
+  if (!isOriginHop && parcel.subOrder.shippingMethod === "PICKUP") {
     return { error: "pickupOnly" };
   }
 
@@ -191,9 +246,37 @@ export async function handoverParcelToDriver(
       id: parcel.id,
       status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
     },
-    data: { status: "OUT_FOR_DELIVERY", driverId: assignee },
+    data: {
+      status: isOriginHop ? "IN_TRANSIT" : "OUT_FOR_DELIVERY",
+      driverId: assignee,
+      atPointId: null,
+    },
   });
   if (claimed.count !== 1) return { error: "badState" };
+
+  if (isOriginHop) {
+    // Line-haul departure: custody moves to the transfer driver; the buyer
+    // hears again when the destination point receives it.
+    await prisma.$transaction([
+      prisma.shipmentEvent.create({
+        data: {
+          shipmentId: parcel.id,
+          status: "PICKED_UP",
+          note: "Collected for line-haul transfer",
+        },
+      }),
+      prisma.shipmentEvent.create({
+        data: { shipmentId: parcel.id, status: "IN_TRANSIT" },
+      }),
+    ]);
+    await sendPushToUser(assignee, {
+      title: "Transfer parcel collected",
+      body: "A line-haul parcel was scanned onto your run.",
+      url: "/driver",
+      tag: "handover",
+    }).catch(() => {});
+    return { ok: true };
+  }
 
   const pointName = parcel.deliveryPoint?.name ?? "Hezalli Point";
   await prisma.$transaction([
@@ -241,12 +324,14 @@ export async function receiveReturnAtPoint(
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
+  // Failed doorstep parcels return to the DESTINATION point only.
+  if (parcel.deliveryPointId !== pointId) return { error: "notFound" };
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
   if (parcel.status !== "FAILED") return { error: "badState" };
 
   const claimed = await prisma.shipment.updateMany({
     where: { id: parcel.id, status: "FAILED" },
-    data: { status: "RETURNED_TO_POINT" },
+    data: { status: "RETURNED_TO_POINT", atPointId: pointId },
   });
   if (claimed.count !== 1) return { error: "badState" };
 
@@ -290,6 +375,8 @@ export async function returnParcelToSeller(
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
+  // RTS is a destination-point decision (an origin hub just declines receipt).
+  if (parcel.deliveryPointId !== pointId) return { error: "notFound" };
   // Failed-delivery parcels RTS from RETURNED_TO_POINT; an uncollected PICKUP
   // parcel can be sent back straight from AT_POINT (operator judgment).
   const rtsFrom =
@@ -300,7 +387,7 @@ export async function returnParcelToSeller(
 
   const claimed = await prisma.shipment.updateMany({
     where: { id: parcel.id, status: { in: rtsFrom as never } },
-    data: { status: "RETURNED" },
+    data: { status: "RETURNED", atPointId: null },
   });
   if (claimed.count !== 1) return { error: "badState" };
 

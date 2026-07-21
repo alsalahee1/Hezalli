@@ -20,19 +20,42 @@ export type RoutablePoint = {
   capacity: number | null; // null = unlimited
 };
 
-/** Current load per point id (held + inbound parcels of in-flight orders). */
+/**
+ * Current load per point id: parcels physically held (atPointId) plus
+ * announced drop-offs heading to this counter first (LABEL_CREATED at the
+ * origin hub, or at the destination when there is no origin leg).
+ */
 async function loadByPoint(pointIds: string[]): Promise<Map<string, number>> {
   if (pointIds.length === 0) return new Map();
-  const grouped = await prisma.shipment.groupBy({
-    by: ["deliveryPointId"],
-    where: {
-      deliveryPointId: { in: pointIds },
-      status: { in: LOAD_STATUSES as unknown as never },
-      subOrder: { status: "SHIPPED" },
-    },
-    _count: { _all: true },
-  });
-  return new Map(grouped.map((g) => [g.deliveryPointId!, g._count._all]));
+  const [held, inbound] = await Promise.all([
+    prisma.shipment.groupBy({
+      by: ["atPointId"],
+      where: {
+        atPointId: { in: pointIds },
+        status: { in: LOAD_STATUSES as unknown as never },
+        subOrder: { status: "SHIPPED" },
+      },
+      _count: { _all: true },
+    }),
+    prisma.shipment.findMany({
+      where: {
+        status: "LABEL_CREATED",
+        subOrder: { status: "SHIPPED" },
+        OR: [
+          { originPointId: { in: pointIds } },
+          { originPointId: null, deliveryPointId: { in: pointIds } },
+        ],
+      },
+      select: { originPointId: true, deliveryPointId: true },
+    }),
+  ]);
+  const out = new Map<string, number>();
+  for (const g of held) out.set(g.atPointId!, g._count._all);
+  for (const s of inbound) {
+    const p = s.originPointId ?? s.deliveryPointId!;
+    out.set(p, (out.get(p) ?? 0) + 1);
+  }
+  return out;
 }
 
 /**

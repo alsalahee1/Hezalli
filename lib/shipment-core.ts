@@ -112,6 +112,7 @@ export async function markSubOrderDelivered(
           status: "DELIVERED",
           deliveredAt: new Date(),
           attemptCount: { increment: 1 },
+          atPointId: null,
         },
       });
       await tx.shipmentEvent.create({

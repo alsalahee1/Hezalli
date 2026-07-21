@@ -1280,7 +1280,11 @@
     "err_pointNotAllowed": "Point drop-off is only available with Hezalli Express.",
     "err_invalidPoint": "That delivery point isn't available.",
     "pickupChosen": "The buyer collects this order from {point} — ship it there via Hezalli Express.",
-    "err_pointFull": "That point is at capacity — choose another or ship direct."
+    "err_pointFull": "That point is at capacity — choose another or ship direct.",
+    "originPoint": "Line-haul entry point (optional)",
+    "originDirect": "No — I will reach the destination point myself",
+    "originHint": "Drop the parcel at a point near YOU; we carry it to the destination point.",
+    "err_sameOrigin": "Origin and destination points must differ."
   },
   "Reviews": {
     "title": "Ratings & reviews",
@@ -2261,7 +2265,8 @@
     "cashInDone": "Recorded — the driver was notified.",
     "err_badAmount": "Enter a valid amount.",
     "err_overRemit": "That's more than this driver is holding.",
-    "ledger_DRIVER_CASH_IN": "Driver cash-in"
+    "ledger_DRIVER_CASH_IN": "Driver cash-in",
+    "transferBadge": "Transfer"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

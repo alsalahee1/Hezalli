@@ -57,6 +57,7 @@ export function ShipOrderForm({
   const [tracking, setTracking] = useState(shipment?.trackingNumber ?? "");
   const [note, setNote] = useState("");
   const [pointId, setPointId] = useState("");
+  const [originId, setOriginId] = useState("");
 
   // Drop-off at a Hezalli Point is only meaningful for our own carrier.
   const platformCarrier = Boolean(
@@ -126,6 +127,28 @@ export function ShipOrderForm({
             />
           </label>
         </div>
+        {platformCarrier &&
+        points.length > 1 &&
+        (pointId || shippingMethod === "PICKUP") ? (
+          <label className="flex flex-col gap-1 text-xs font-medium">
+            {t("originPoint")}
+            <select
+              value={originId}
+              onChange={(e) => setOriginId(e.target.value)}
+              className="h-9 max-w-md rounded-md border bg-transparent px-3 text-sm"
+            >
+              <option value="">{t("originDirect")}</option>
+              {points.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-muted-foreground font-normal">
+              {t("originHint")}
+            </span>
+          </label>
+        ) : null}
         {platformCarrier && shippingMethod !== "PICKUP" && points.length > 0 ? (
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("dropOffPoint")}
@@ -167,6 +190,8 @@ export function ShipOrderForm({
                 note,
                 deliveryPointId:
                   platformCarrier && pointId ? pointId : undefined,
+                originPointId:
+                  platformCarrier && originId ? originId : undefined,
               }),
             )
           }

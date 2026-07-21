@@ -274,6 +274,40 @@ money between the two ledgers atomically:
 - [x] Tidy: unused `ownerId` lint warning in `point-capacity.test.ts`
 - [x] This file kept current
 
-## 13. Out of scope
+## 14. v1.5 — Inter-point line-haul (two-hop routing)
 
-- Inter-point line haul (multi-hop routing between cities)
+A seller in Sanaa serving a buyer in Aden no longer needs to reach the Aden
+point themselves: they drop the parcel at an **origin point** near them, a
+courier carries it city-to-city, and the **destination point** runs the last
+mile (driver delivery or buyer pickup) exactly as before. Reuses existing
+statuses — no enum churn:
+
+```
+Seller ships: origin point (near seller, optional) + destination point
+        ↓  LABEL_CREATED
+Origin receives [scan]        →  AT_POINT   (at origin; no last-mile assign)
+Origin hands to line-haul driver [scan]  →  IN_TRANSIT (custody: driver)
+Destination receives [scan]   →  AT_POINT  (at destination; normal flow resumes:
+                                  courier auto-assign, or ready-for-pickup)
+```
+
+Rules: the origin leg is only offered when origin ≠ destination; both scans
+use the same receive/handover modes — the scanning point's role (origin vs
+destination) decides the transition; the line-haul driver earns the normal
+delivery fee only on final delivery (transfer legs are salaried line-haul
+ops, no per-drop fee); both points earn their handling fee split? No — only
+the destination point earns `point_handling_fee` on delivery (v1 keeps one
+fee; origin compensation via `ADJUSTMENT` until a dedicated fee exists).
+
+### Build checklist (v1.5)
+
+- [x] `Shipment.originPointId` + migration; origin load counts toward the origin point's capacity
+- [x] `point-core`: origin receive (`AT_POINT`, no auto-assign), transfer handover (→ `IN_TRANSIT`), destination receive (`IN_TRANSIT` → `AT_POINT`, auto-assign/ready)
+- [x] Seller ship form: optional origin-point picker (sorted near the seller) when a destination point/pickup is set
+- [x] Point dashboard: transfer parcels visible at both ends (inbound / outbound)
+- [x] i18n (en + ar) + integration tests (two-hop happy path incl. pickup orders, wrong-point scans rejected, capacity counts origin leg)
+- [x] This file kept current
+
+## 15. Out of scope
+
+- Three-plus-hop routing / regional sort hubs
