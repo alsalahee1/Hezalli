@@ -19,8 +19,9 @@ export function AccountTabBar() {
   const c = useTranslations("Common");
   const pathname = usePathname();
 
-  // The wallet screen owns its bar; don't stack two.
-  if (pathname === "/account/wallet") return null;
+  // The wallet screens own their bar; don't stack two.
+  if (pathname === "/account/wallet" || pathname === "/account/wallet/history")
+    return null;
 
   const items: Record<string, CenterTab> = {
     profile: { href: "/account", label: t("profile"), icon: User, exact: true },

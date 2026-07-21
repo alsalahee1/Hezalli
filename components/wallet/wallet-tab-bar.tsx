@@ -29,7 +29,7 @@ type Item = {
   key: string;
   icon: LucideIcon;
   onClick?: () => void;
-  href?: string;
+  href?: React.ComponentProps<typeof Link>["href"];
   primary?: boolean;
 };
 
@@ -47,36 +47,52 @@ export function WalletTabBar({
   canScan = false,
   myQr,
   myPayUrl = "",
+  variant = "overview",
 }: {
   canTopUp?: boolean;
   canSend?: boolean;
   canScan?: boolean;
   myQr?: React.ReactNode;
   myPayUrl?: string;
+  // "overview" is the wallet home (buttons act on the page's own forms);
+  // "sub" is a deeper wallet screen (e.g. history) where the same bar stays
+  // visible but its actions navigate back to the wallet home instead.
+  variant?: "overview" | "sub";
 }) {
   const t = useTranslations("WalletNav");
   const [scanOpen, setScanOpen] = useState(false);
+  const onOverview = variant === "overview";
 
-  const overview: Item = {
-    key: "overview",
-    icon: Wallet,
-    onClick: scrollToTop,
-    primary: true,
-  };
-  const topUp: Item = {
-    key: "topUp",
-    icon: ArrowDownToLine,
-    onClick: () => window.dispatchEvent(new CustomEvent(WALLET_OPEN_TOPUP)),
-  };
-  const send: Item = {
-    key: "send",
-    icon: ArrowUpRight,
-    onClick: () => window.dispatchEvent(new CustomEvent(WALLET_OPEN_SEND)),
-  };
+  const overview: Item = onOverview
+    ? { key: "overview", icon: Wallet, onClick: scrollToTop, primary: true }
+    : { key: "overview", icon: Wallet, href: "/account/wallet" };
+  const topUp: Item = onOverview
+    ? {
+        key: "topUp",
+        icon: ArrowDownToLine,
+        onClick: () => window.dispatchEvent(new CustomEvent(WALLET_OPEN_TOPUP)),
+      }
+    : {
+        key: "topUp",
+        icon: ArrowDownToLine,
+        href: { pathname: "/account/wallet", query: { open: "topup" } },
+      };
+  const send: Item = onOverview
+    ? {
+        key: "send",
+        icon: ArrowUpRight,
+        onClick: () => window.dispatchEvent(new CustomEvent(WALLET_OPEN_SEND)),
+      }
+    : {
+        key: "send",
+        icon: ArrowUpRight,
+        href: { pathname: "/account/wallet", query: { open: "send" } },
+      };
   const history: Item = {
     key: "history",
     icon: ReceiptText,
     href: "/account/wallet/history",
+    primary: !onOverview,
   };
   const exit: Item = { key: "exit", icon: Store, href: "/" };
 

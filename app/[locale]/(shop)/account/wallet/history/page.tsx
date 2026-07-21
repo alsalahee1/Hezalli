@@ -4,7 +4,11 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { Link } from "@/i18n/navigation";
+import { abs } from "@/lib/seo";
+import { getSetting } from "@/lib/settings";
 import { getWalletView } from "@/lib/wallet";
+import { QrCode } from "@/components/orders/qr-code";
+import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -30,14 +34,20 @@ export default async function WalletHistoryPage() {
   if (!session?.user?.id) {
     redirect(`/${locale}/login?callbackUrl=/${locale}/account/wallet/history`);
   }
+  const userId = session.user.id;
   const t = await getTranslations("Wallet");
   const format = await getFormatter();
-  const { entries } = await getWalletView(session.user.id, 200);
+  const [{ balance, frozen, entries }, p2pEnabled] = await Promise.all([
+    getWalletView(userId, 200),
+    getSetting("wallet_p2p_enabled"),
+  ]);
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
+  const myPayUrl = abs(locale, `/pay/u/${userId}`);
+
   return (
-    <div className="mx-auto max-w-md space-y-5">
+    <div className="mx-auto max-w-md space-y-5 pb-24">
       {/* Native-app wallet treatment on phones: hides the storefront chrome so
           the history reads like a standalone wallet screen. */}
       <div data-native-wallet hidden />
@@ -92,6 +102,17 @@ export default async function WalletHistoryPage() {
           })}
         </ul>
       )}
+
+      {/* Same wallet bottom bar as the overview, so navigation stays consistent
+          when drilling into history. History is the active tab. */}
+      <WalletTabBar
+        variant="sub"
+        canTopUp={!frozen}
+        canSend={!frozen && p2pEnabled && balance > 0}
+        canScan={p2pEnabled && !frozen}
+        myPayUrl={myPayUrl}
+        myQr={<QrCode value={myPayUrl} size={220} />}
+      />
     </div>
   );
 }
