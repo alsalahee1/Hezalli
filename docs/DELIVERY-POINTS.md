@@ -519,13 +519,13 @@ month the way hubs now can.
 
 ### Build checklist (v1.13)
 
-- [ ] `lib/courier-statement.ts`: `courierStatement(courierId, from, to)` (reuses v1.12 helpers)
-- [ ] `/driver/ledger` page: tiles + recent entries
-- [ ] `/driver/statement` page + `/api/driver/statement` CSV route (courier-gated)
-- [ ] Links from the driver home
-- [ ] i18n (en + ar)
-- [ ] Integration test: seeded two-month courier ledger → opening/delta/closing both sides; out-of-range entries absent
-- [ ] This file kept current
+- [x] `lib/courier-statement.ts`: `courierStatement(courierId, from, to)` (reuses v1.12 helpers)
+- [x] `/driver/ledger` page: tiles + recent entries
+- [x] `/driver/statement` page + `/api/driver/statement` CSV route (courier-gated)
+- [x] Links from the driver home
+- [x] i18n (en + ar)
+- [x] Integration test: seeded two-month courier ledger → opening/delta/closing both sides; out-of-range entries absent
+- [x] This file kept current
 
 ## 31. Out of scope
 
