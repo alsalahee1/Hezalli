@@ -28,6 +28,12 @@ export function Modal({
 }) {
   const { mounted, shown } = useMountTransition(open);
   const panelRef = useRef<HTMLDivElement>(null);
+  // Keep the latest onClose without making it an effect dependency — callers
+  // pass an inline arrow, so depending on it would re-run the focus setup on
+  // every parent render (each keystroke), stealing focus out of inputs and
+  // dismissing the mobile keyboard.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!mounted) return;
@@ -45,7 +51,7 @@ export function Modal({
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       // Trap Tab within the panel.
@@ -79,7 +85,7 @@ export function Modal({
       // Restore focus to the trigger so keyboard users don't lose their place.
       previouslyFocused?.focus?.();
     };
-  }, [mounted, onClose]);
+  }, [mounted]);
 
   if (!mounted || typeof document === "undefined") return null;
 
