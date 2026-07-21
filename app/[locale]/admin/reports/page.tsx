@@ -2,6 +2,7 @@ import { Download } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { reportSummary } from "@/lib/admin-metrics";
+import { networkSummary } from "@/lib/point-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,10 @@ export default async function AdminReportsPage({
   const from = new Date(fromStr + "T00:00:00");
   const to = new Date(toStr + "T23:59:59");
 
-  const s = await reportSummary(from, to);
+  const [s, net] = await Promise.all([
+    reportSummary(from, to),
+    networkSummary(from, to),
+  ]);
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
@@ -91,6 +95,83 @@ export default async function AdminReportsPage({
           </div>
         ))}
       </div>
+
+      {/* Delivery network (Hezalli Express + Points) — docs/DELIVERY-POINTS.md §18 */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">{t("networkTitle")}</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {(
+            [
+              { label: t("netShipped"), value: String(net.shipped) },
+              { label: t("netDelivered"), value: String(net.delivered) },
+              {
+                label: t("netFailedAttempts"),
+                value: String(net.failedAttempts),
+              },
+              { label: t("netRts"), value: String(net.rts) },
+              {
+                label: t("netSuccessRate"),
+                value:
+                  net.successRatePct != null ? `${net.successRatePct}%` : "—",
+              },
+              {
+                label: t("netAvgHours"),
+                value:
+                  net.avgDeliveryHours != null
+                    ? `${net.avgDeliveryHours}h`
+                    : "—",
+              },
+              {
+                label: t("netPickupShare"),
+                value:
+                  net.pickupSharePct != null ? `${net.pickupSharePct}%` : "—",
+              },
+            ] as const
+          ).map((r) => (
+            <div key={r.label} className="bg-card rounded-lg border p-4">
+              <p className="text-muted-foreground text-sm">{r.label}</p>
+              <p className="mt-1 text-xl font-semibold" dir="ltr">
+                {r.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {net.perPoint.length > 0 ? (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-start font-medium">
+                    {t("netPoint")}
+                  </th>
+                  <th className="px-3 py-2 text-end font-medium">
+                    {t("netPointDelivered")}
+                  </th>
+                  <th className="px-3 py-2 text-end font-medium">
+                    {t("netPointFees")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {net.perPoint.map((p) => (
+                  <tr key={p.pointId}>
+                    <td className="px-3 py-2">{p.name}</td>
+                    <td className="px-3 py-2 text-end" dir="ltr">
+                      {p.delivered}
+                    </td>
+                    <td className="px-3 py-2 text-end" dir="ltr">
+                      {money(p.feesUsd)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">{t("netNoPoints")}</p>
+        )}
+      </section>
     </div>
   );
 }

@@ -331,6 +331,25 @@ Two finishing touches for a healthy network:
 - [x] i18n (en + ar) + integration test (two-hop delivery credits both ledgers; single-hop credits one)
 - [x] This file kept current
 
-## 17. Out of scope
+## 18. v1.7 — Delivery network analytics
+
+The admin Reports page (date-ranged) gains a **Delivery network** section so
+ops can see how the network performs, not just what it owes:
+
+- Headlines for the selected range: parcels shipped, delivered, failed
+  attempts, returned-to-seller, **success rate** (delivered vs RTS), average
+  ship→deliver time, and the pickup share of deliveries.
+- A per-hub table (top by volume): delivered parcels and fees earned in the
+  range — the same numbers a hub's operator sees on their own ledger.
+
+### Build checklist (v1.7)
+
+- [x] `lib/point-stats.ts`: `networkSummary(from, to)` — aggregates over shipments, attempts, events, and the point ledger
+- [x] Reports page: Delivery network section reusing the existing date range
+- [x] i18n (en + ar)
+- [x] Integration test: a delivered + an RTS parcel in range produce the expected headline numbers and per-hub rows
+- [x] This file kept current
+
+## 19. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
