@@ -11,7 +11,13 @@ const { auth } = NextAuth(authConfig);
 // Paths (after the locale prefix) that require an authenticated user. The
 // authoritative ROLE check happens server-side in the seller/admin layouts;
 // this is the optimistic authentication gate (ARCHITECTURE.md §3).
-const PROTECTED = ["/seller", "/admin", "/account"];
+const PROTECTED = [
+  "/seller",
+  "/admin",
+  "/account",
+  "/wallet-manager",
+  "/delivery-manager",
+];
 
 export default auth((req) => {
   const { nextUrl } = req;

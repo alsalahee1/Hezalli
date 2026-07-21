@@ -23,6 +23,8 @@ enum Role {
   ADMIN
   COURIER // Hezalli Express delivery driver
   DELIVERY_POINT // partner-operated parcel hub operator (Hezalli Point)
+  WALLET_MANAGER // staff: manages the HezalliPay wallet domain (/wallet-manager)
+  DELIVERY_MANAGER // staff: manages shipments, carriers, zones (/delivery-manager)
 }
 
 enum Currency {
