@@ -53,8 +53,31 @@ export async function authenticate(
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   const locale = await getLocale();
+
+  // Landing page after sign-in: an explicit callbackUrl wins; otherwise send
+  // staff and role-app users straight to their dashboard, everyone else to
+  // the storefront. Only the landing page changes — every role can still
+  // browse the storefront freely (see #100).
+  const dbUser = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+    select: { roles: true },
+  });
+  const roles = dbUser?.roles ?? [];
+  const roleLanding = roles.includes("ADMIN")
+    ? `/${locale}/admin`
+    : roles.includes("WALLET_MANAGER")
+      ? `/${locale}/wallet-manager`
+      : roles.includes("DELIVERY_MANAGER")
+        ? `/${locale}/delivery-manager`
+        : roles.includes("SELLER")
+          ? `/${locale}/seller`
+          : roles.includes("COURIER")
+            ? `/${locale}/driver`
+            : roles.includes("DELIVERY_POINT")
+              ? `/${locale}/point`
+              : `/${locale}`;
   const redirectTo =
-    safeCallbackUrl(formData.get("callbackUrl")) ?? `/${locale}`;
+    safeCallbackUrl(formData.get("callbackUrl")) ?? roleLanding;
 
   try {
     await signIn("credentials", {
