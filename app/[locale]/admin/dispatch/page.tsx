@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import {
   AlertTriangle,
+  BarChart3,
   Clock,
   MapPin,
   Package,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { requireAdminId } from "@/lib/authz";
+import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
@@ -106,9 +108,19 @@ export default async function DispatchPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Route className="size-5" />
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Route className="size-5" />
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("title")}
+          </h1>
+        </div>
+        <Link
+          href="/admin/dispatch/analytics"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm hover:underline"
+        >
+          <BarChart3 className="size-4" /> {t("performance")}
+        </Link>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
         <span className="text-muted-foreground">

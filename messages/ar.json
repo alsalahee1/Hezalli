@@ -2123,7 +2123,8 @@
     "bulkGovernorate": "المحافظة",
     "bulkPickDriver": "اختر سائقاً…",
     "bulkAssign": "إسناد المنطقة",
-    "bulkAssigned": "{count, plural, zero {تم إسناد # طرد} one {تم إسناد طرد واحد} two {تم إسناد طردين} few {تم إسناد # طرود} many {تم إسناد # طرداً} other {تم إسناد # طرد}}"
+    "bulkAssigned": "{count, plural, zero {تم إسناد # طرد} one {تم إسناد طرد واحد} two {تم إسناد طردين} few {تم إسناد # طرود} many {تم إسناد # طرداً} other {تم إسناد # طرد}}",
+    "performance": "الأداء"
   },
   "Drive": {
     "title": "وصّل مع هزلي",
@@ -2473,5 +2474,26 @@
     "empty": "لا توجد نقاط بعد — الشبكة تنمو. عد قريبًا.",
     "becomeHint": "تدير متجرًا لديه مساحة فارغة؟",
     "becomeLink": "كن نقطة هزلي"
+  },
+  "DeliveryAnalytics": {
+    "title": "أداء التوصيل",
+    "desc": "صحة الأسطول بلمحة.",
+    "backToDispatch": "العودة إلى التوزيع",
+    "win7": "٧ أيام",
+    "win30": "٣٠ يوماً",
+    "winAll": "كل الوقت",
+    "delivered": "تم التوصيل",
+    "onTime": "في الوقت",
+    "avgTime": "متوسط وقت التوصيل",
+    "returned": "مرتجع",
+    "failedAttempts": "محاولات فاشلة",
+    "avgAttempts": "متوسط المحاولات / توصيلة",
+    "codOutstanding": "نقد قيد التحصيل",
+    "leaderboard": "ترتيب المندوبين",
+    "noCouriers": "لا يوجد مندوبون بعد.",
+    "colDriver": "المندوب",
+    "colDeliveries": "التوصيلات",
+    "colRating": "التقييم",
+    "colCash": "النقد لديه"
   }
 }
