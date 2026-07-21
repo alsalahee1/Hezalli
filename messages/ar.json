@@ -2009,7 +2009,9 @@
     "err_noChallenge": "انتهت صلاحية الطلب. حاول مجدداً.",
     "err_badPasskey": "تعذّر التحقق من البصمة.",
     "err_failed": "تعذّر الإكمال. حاول مجدداً.",
-    "err_noPasskey": "لا توجد بصمة مُسجّلة."
+    "err_noPasskey": "لا توجد بصمة مُسجّلة.",
+    "courierEarnings": "أرباح التوصيل",
+    "pointEarnings": "أرباح النقطة"
   },
   "ShippingLabel": {
     "title": "بطاقة الشحن",
@@ -2143,7 +2145,12 @@
     "stmtClosing": "ختامي",
     "stmtCsv": "تنزيل CSV",
     "storefront": "المتجر",
-    "wallet": "المحفظة"
+    "wallet": "المحفظة",
+    "moveToWallet": "حوّل الأرباح إلى المحفظة",
+    "moved": "تم التحويل إلى محفظتك.",
+    "moveErr_nothingToMove": "لا توجد أرباح متاحة للتحويل.",
+    "moveErr_insufficient": "المبلغ أكبر من أرباحك المتاحة.",
+    "moveErr_forbidden": "يلزم حساب سائق."
   },
   "Dispatch": {
     "title": "التوزيع",
@@ -2464,7 +2471,12 @@
     "stmtClosing": "ختامي",
     "stmtCsv": "تنزيل CSV",
     "storefront": "المتجر",
-    "wallet": "المحفظة"
+    "wallet": "المحفظة",
+    "moveToWallet": "حوّل الأرباح إلى المحفظة",
+    "moved": "تم التحويل إلى محفظتك.",
+    "moveErr_nothingToMove": "لا توجد أرباح متاحة للتحويل.",
+    "moveErr_insufficient": "المبلغ أكبر من رصيدك المتاح.",
+    "moveErr_forbidden": "يلزم حساب مشغّل نقطة."
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
