@@ -2334,7 +2334,11 @@
     "payout_REJECTED": "Payout rejected",
     "err_alreadyOpen": "You already have a pending payout request.",
     "err_belowMin": "Amount is below the minimum payout.",
-    "err_insufficient": "Amount exceeds your free balance."
+    "err_insufficient": "Amount exceeds your free balance.",
+    "manifestTitle": "{count, plural, one {# parcel for this driver} other {# parcels for this driver}}",
+    "manifestEmpty": "No parcels assigned to this driver at your hub.",
+    "manifestHandAll": "Hand over all ({count})",
+    "manifestDone": "{handed} handed over, {failed} failed"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

@@ -486,3 +486,93 @@ export async function buyerPickupAtPoint(
   if (res.error) return res;
   return { ok: true, codDue };
 }
+
+// ---------------------------------------------------------------------------
+// Driver collection manifest (docs §26): everything at THIS hub assigned to a
+// driver, so the counter can hand a whole pickup list over in one go.
+// ---------------------------------------------------------------------------
+
+export type ManifestRow = {
+  shipmentId: string;
+  trackingNumber: string;
+  city: string | null;
+  isCod: boolean;
+};
+
+/**
+ * Parcels held at this hub and assigned to the driver — the driver's pickup
+ * list. Last-mile only: a PICKUP parcel at its destination belongs to the
+ * buyer's counter collection, never a driver manifest (same guard as
+ * handoverParcelToDriver).
+ */
+export async function driverManifestAtPoint(
+  pointId: string,
+  driverId: string,
+): Promise<ManifestRow[]> {
+  const rows = await prisma.shipment.findMany({
+    where: {
+      platformManaged: true,
+      driverId,
+      atPointId: pointId,
+      status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
+      subOrder: { status: "SHIPPED" },
+      trackingNumber: { not: null },
+    },
+    orderBy: { updatedAt: "asc" },
+    select: {
+      id: true,
+      trackingNumber: true,
+      deliveryPointId: true,
+      originPointId: true,
+      subOrder: {
+        select: {
+          shippingMethod: true,
+          order: {
+            select: {
+              paymentMethod: true,
+              address: { select: { city: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  return rows
+    .filter(
+      (r) =>
+        !(
+          r.subOrder.shippingMethod === "PICKUP" &&
+          !(r.originPointId === pointId && r.deliveryPointId !== pointId)
+        ),
+    )
+    .map((r) => ({
+      shipmentId: r.id,
+      trackingNumber: r.trackingNumber!,
+      city: r.subOrder.order.address?.city ?? null,
+      isCod: r.subOrder.order.paymentMethod === "COD",
+    }));
+}
+
+/**
+ * Hand the driver their whole manifest. Each parcel goes through the same
+ * race-guarded handoverParcelToDriver transition — a parcel claimed by a
+ * concurrent scan simply drops out and is reported as failed.
+ */
+export async function handoverManifestToDriver(
+  pointId: string,
+  driverId: string,
+): Promise<{ handed: number; failed: number }> {
+  const manifest = await driverManifestAtPoint(pointId, driverId);
+  let handed = 0;
+  let failed = 0;
+  for (const row of manifest) {
+    const res = await handoverParcelToDriver(
+      pointId,
+      row.trackingNumber,
+      driverId,
+    );
+    if (res.ok) handed++;
+    else failed++;
+  }
+  return { handed, failed };
+}

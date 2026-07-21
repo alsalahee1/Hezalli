@@ -460,12 +460,12 @@ scans every parcel label one by one. v1.11 adds the batch:
 
 ### Build checklist (v1.11)
 
-- [ ] `point-core`: `driverManifestAtPoint(pointId, driverId)` (held, assigned, last-mile only) + `handoverManifestToDriver` batch loop
-- [ ] Actions: `pointDriverManifest` / `pointHandoverManifest` (operator-gated)
-- [ ] Scan station: manifest panel when a driver is selected (list + "hand over all (N)"), per-parcel scan unchanged
-- [ ] i18n (en + ar)
-- [ ] Integration test: manifest lists only this hub's assigned last-mile parcels; batch hands all; concurrent claim drops out; pickup parcels never appear
-- [ ] This file kept current
+- [x] `point-core`: `driverManifestAtPoint(pointId, driverId)` (held, assigned, last-mile only) + `handoverManifestToDriver` batch loop
+- [x] Actions: `pointDriverManifest` / `pointHandoverManifest` (operator-gated)
+- [x] Scan station: manifest panel when a driver is selected (list + "hand over all (N)"), per-parcel scan unchanged
+- [x] i18n (en + ar)
+- [x] Integration test: manifest lists only this hub's assigned last-mile parcels; batch hands all; concurrent claim drops out; pickup parcels never appear
+- [x] This file kept current
 
 ## 27. Out of scope
 
