@@ -24,6 +24,10 @@ export type PlatformSettings = {
   std_eta_max_days: number;
   express_eta_min_days: number;
   express_eta_max_days: number;
+  // Scheduled delivery windows (Hezalli Express): how many days ahead a buyer
+  // may schedule a preferred delivery day at checkout. 0 turns scheduling off —
+  // no window picker is shown and any submitted window is ignored.
+  delivery_window_days: number;
   // Auto-hand a shipped Hezalli Express parcel to the least-loaded courier.
   express_auto_assign: boolean;
   // How auto-assignment chooses a courier: "balanced" (fewest active jobs) or
@@ -92,6 +96,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   std_eta_max_days: 7,
   express_eta_min_days: 1,
   express_eta_max_days: 2,
+  delivery_window_days: 7,
   express_auto_assign: true,
   courier_assign_strategy: "balanced",
   courier_delivery_fee: 1.5,

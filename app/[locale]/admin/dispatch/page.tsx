@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Forbidden } from "@/components/auth/forbidden";
 import { DispatchAssign } from "@/components/admin/dispatch-assign";
 import { DispatchBulkAssign } from "@/components/admin/dispatch-bulk-assign";
+import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 // Ops dispatch board: every in-flight Hezalli Express parcel, its assigned
 // courier, and its delivery-SLA state. Overdue parcels sort first so ops chase
@@ -45,6 +46,8 @@ export default async function DispatchPage() {
             order: {
               select: {
                 id: true,
+                deliveryDate: true,
+                deliverySlot: true,
                 address: { select: { city: true, governorate: true } },
               },
             },
@@ -187,6 +190,13 @@ export default async function DispatchPage() {
                       <RotateCcw className="size-3" />{" "}
                       {t("attempts", { count: s.attemptCount })}
                     </span>
+                  ) : null}
+                  {s.subOrder.order.deliveryDate &&
+                  s.subOrder.order.deliverySlot ? (
+                    <DeliveryWindowBadge
+                      date={s.subOrder.order.deliveryDate}
+                      slot={s.subOrder.order.deliverySlot}
+                    />
                   ) : null}
                 </p>
                 <p className="text-muted-foreground flex items-center gap-1">

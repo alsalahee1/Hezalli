@@ -11,6 +11,7 @@ import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { checkPointRoutable } from "@/lib/point-select";
+import { parseDeliveryWindow } from "@/lib/delivery-slots";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -40,6 +41,10 @@ export type PlaceOrderInput = {
   // The ONE Hezalli Point the buyer collects from, required when any store
   // group chose PICKUP (docs/DELIVERY-POINTS.md §6).
   pickupPointId?: string;
+  // Optional scheduled delivery window (Hezalli Express only): a preferred day
+  // (YYYY-MM-DD) and a time-of-day slot. Ignored unless a group is EXPRESS.
+  deliveryDate?: string;
+  deliverySlot?: string;
 };
 export type PlaceOrderResult = { orderId?: string; error?: string };
 
@@ -168,6 +173,22 @@ export async function placeOrder(
     if (routable === "full") return { error: "pointFull" };
     if (routable !== "ok") return { error: "pickupPointRequired" };
     pickupPointId = wanted;
+  }
+
+  // Optional scheduled delivery window — only meaningful when an Express group is
+  // in the order. The horizon (and on/off) comes from delivery_window_days.
+  const anyExpress = groupsBase.some((g) => g.shippingMethod === "EXPRESS");
+  let deliveryWindow: { date: Date; slot: string } | null = null;
+  if (input.deliveryDate?.trim() || input.deliverySlot?.trim()) {
+    if (!anyExpress) return { error: "deliveryWindowNotExpress" };
+    const windowDays = await getSetting("delivery_window_days");
+    const parsed = parseDeliveryWindow(
+      input.deliveryDate,
+      input.deliverySlot,
+      windowDays,
+    );
+    if (parsed === "invalid") return { error: "badDeliveryWindow" };
+    deliveryWindow = parsed;
   }
 
   // Optional voucher: validate + compute per-store discount.
@@ -321,6 +342,8 @@ export async function placeOrder(
           discountTotal,
           grandTotal,
           ...(couponId ? { coupon: { connect: { id: couponId } } } : {}),
+          deliveryDate: deliveryWindow?.date ?? null,
+          deliverySlot: deliveryWindow?.slot ?? null,
           displayCurrency: "USD",
           exchangeRate: 1,
           displayTotal: grandTotal,

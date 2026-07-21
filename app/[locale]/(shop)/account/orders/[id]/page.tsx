@@ -16,6 +16,7 @@ import { PaymentProofForm } from "@/components/orders/payment-proof-form";
 import { QrCode } from "@/components/orders/qr-code";
 import { RedeliveryForm } from "@/components/orders/redelivery-form";
 import { DeliveryRating } from "@/components/orders/delivery-rating";
+import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
 import {
   ReturnBlock,
@@ -148,6 +149,17 @@ export default async function OrderDetailPage({
           {t(`status_${order.status}`)}
         </span>
       </div>
+
+      {/* Scheduled Express delivery window the buyer requested at checkout. */}
+      {order.deliveryDate && order.deliverySlot ? (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">{t("scheduledFor")}</span>
+          <DeliveryWindowBadge
+            date={order.deliveryDate}
+            slot={order.deliverySlot}
+          />
+        </div>
+      ) : null}
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-2">

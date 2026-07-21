@@ -928,7 +928,20 @@
     "pickupPointHint": "سنخبرك عندما يصبح جاهزًا. أحضر رمز الاستلام (في صفحة الطلب) وادفع هناك إذا اخترت الدفع نقدًا.",
     "err_pickupPointRequired": "اختر نقطة هزلي التي ستستلم منها.",
     "err_pointFull": "نقطة هزلي هذه ممتلئة حاليًا — اختر نقطة أخرى.",
-    "pickupPointsDirectory": "عرض جميع النقاط"
+    "pickupPointsDirectory": "عرض جميع النقاط",
+    "scheduleLabel": "جدولة التوصيل (اختياري)",
+    "scheduleHint": "اختر اليوم والوقت المفضّلين لطرود هزلي إكسبريس، وسنبذل قصارى جهدنا للالتزام بهما.",
+    "scheduleDate": "اليوم المفضّل",
+    "scheduleSlot": "الوقت المفضّل",
+    "scheduleSlotAny": "أي وقت",
+    "scheduleClear": "مسح",
+    "err_badDeliveryWindow": "موعد التوصيل هذا غير متاح. من فضلك اختر يومًا أو وقتًا آخر.",
+    "err_deliveryWindowNotExpress": "الجدولة متاحة فقط لعناصر هزلي إكسبريس."
+  },
+  "DeliveryWindow": {
+    "slot_MORNING": "صباحًا (٩ ص–١٢ ظ)",
+    "slot_AFTERNOON": "ظهرًا (١٢–٥ م)",
+    "slot_EVENING": "مساءً (٥–٩ م)"
   },
   "Orders": {
     "title": "طلباتي",
@@ -941,6 +954,7 @@
     "empty": "لا توجد طلبات هنا بعد.",
     "total": "الإجمالي",
     "viewDetails": "عرض التفاصيل",
+    "scheduledFor": "مجدول لـ",
     "status_PENDING": "بانتظار الدفع",
     "status_CONFIRMED": "مؤكد",
     "status_PROCESSING": "قيد التجهيز",

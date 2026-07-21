@@ -1,12 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MapPin, Plus, Store as StoreIcon, Truck } from "lucide-react";
+import {
+  CalendarClock,
+  MapPin,
+  Plus,
+  Store as StoreIcon,
+  Truck,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { placeOrder, type PaymentMethodChoice } from "@/lib/actions/order";
 import { previewCoupon } from "@/lib/actions/coupon";
 import type { CartLine } from "@/lib/cart-types";
+import { DELIVERY_SLOTS, deliveryWindowBounds } from "@/lib/delivery-slots";
 import type { ShippingMethod, StoreShipOptions } from "@/lib/shipping";
 import { capRedemption, pointsToUsd } from "@/lib/loyalty-shared";
 import { formatUsd } from "@/lib/products";
@@ -38,6 +45,7 @@ export function CheckoutFlow({
   points = 0,
   walletBalance = 0,
   pickupPoints = [],
+  scheduleDays = 0,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
@@ -46,8 +54,11 @@ export function CheckoutFlow({
   points?: number;
   walletBalance?: number;
   pickupPoints?: PickupPointOption[];
+  // Days ahead a buyer may schedule an Express delivery window; 0 = off.
+  scheduleDays?: number;
 }) {
   const t = useTranslations("Checkout");
+  const tWin = useTranslations("DeliveryWindow");
   const locale = useLocale();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
   // Buyer's chosen delivery tier per store; unset stores default to STANDARD.
@@ -61,6 +72,9 @@ export function CheckoutFlow({
   const [error, setError] = useState<string | null>(null);
   // The ONE Hezalli Point the buyer collects from (when any group is PICKUP).
   const [pickupPointId, setPickupPointId] = useState("");
+  // Optional scheduled Express delivery window (preferred day + time slot).
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliverySlot, setDeliverySlot] = useState("");
 
   const [couponInput, setCouponInput] = useState("");
   const [appliedCode, setAppliedCode] = useState("");
@@ -200,6 +214,11 @@ export function CheckoutFlow({
   };
 
   const anyPickup = groups.some((g) => g.selectedMethod === "PICKUP");
+  // The scheduled-window picker is offered only when a group ships Express and
+  // scheduling is enabled (delivery_window_days > 0).
+  const anyExpress = groups.some((g) => g.selectedMethod === "EXPRESS");
+  const scheduleBounds = deliveryWindowBounds(scheduleDays);
+  const canSchedule = anyExpress && !!scheduleBounds;
 
   // Nearest points first for the selected delivery address (same-governorate
   // matches lead; the server already filtered out full points).
@@ -239,6 +258,15 @@ export function CheckoutFlow({
           groups.map((g) => [g.storeId, g.selectedMethod]),
         ),
         pickupPointId: anyPickup ? pickupPointId : undefined,
+        // Only send a window when scheduling applies and both halves are set.
+        deliveryDate:
+          canSchedule && deliveryDate && deliverySlot
+            ? deliveryDate
+            : undefined,
+        deliverySlot:
+          canSchedule && deliveryDate && deliverySlot
+            ? deliverySlot
+            : undefined,
       });
       if (res.error) {
         setError(res.error);
@@ -463,6 +491,54 @@ export function CheckoutFlow({
                     {t("pickupPointsDirectory")}
                   </Link>
                 </p>
+              </div>
+            ) : null}
+
+            {/* Optional scheduled delivery window (Express only). */}
+            {canSchedule ? (
+              <div className="space-y-2 rounded-md border border-violet-500/40 bg-violet-500/5 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-medium">
+                  <CalendarClock className="size-4" /> {t("scheduleLabel")}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {t("scheduleHint")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    type="date"
+                    aria-label={t("scheduleDate")}
+                    value={deliveryDate}
+                    min={scheduleBounds.min}
+                    max={scheduleBounds.max}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    className="h-9 rounded-md border bg-transparent px-3 text-sm"
+                  />
+                  <select
+                    aria-label={t("scheduleSlot")}
+                    value={deliverySlot}
+                    onChange={(e) => setDeliverySlot(e.target.value)}
+                    className="h-9 rounded-md border bg-transparent px-3 text-sm"
+                  >
+                    <option value="">{t("scheduleSlotAny")}</option>
+                    {DELIVERY_SLOTS.map((s) => (
+                      <option key={s} value={s}>
+                        {tWin(`slot_${s}`)}
+                      </option>
+                    ))}
+                  </select>
+                  {(deliveryDate || deliverySlot) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeliveryDate("");
+                        setDeliverySlot("");
+                      }}
+                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                    >
+                      {t("scheduleClear")}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
           </div>
