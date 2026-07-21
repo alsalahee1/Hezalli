@@ -5,9 +5,11 @@ import { Link } from "@/i18n/navigation";
 
 import { requireDeliveryPoint } from "@/lib/authz";
 import { pointLedgerSummary } from "@/lib/point-ledger";
+import { transferPointEarningsToWallet } from "@/lib/actions/earnings-wallet";
 import { prisma } from "@/lib/prisma";
 import { DriverCashInForm } from "@/components/point/driver-cash-in-form";
 import { PayoutRequestForm } from "@/components/point/payout-request-form";
+import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
 // The operator's earnings: handling fees accrued, payouts received, the
 // balance Hezalli still owes them — and a request-payout flow (docs §22).
@@ -131,7 +133,13 @@ export default async function PointLedgerPage() {
         </div>
       ) : null}
 
-      {/* Ask Hezalli to pay out the earnings balance (docs §22). */}
+      {/* Sweep the earnings balance straight into the HezalliPay wallet
+          (instant), or ask Hezalli to pay it out to a rail (docs §22). */}
+      <MoveEarningsToWallet
+        action={transferPointEarningsToWallet}
+        namespace="Point"
+        disabled={summary.balance <= 0}
+      />
       <PayoutRequestForm free={summary.balance} hasOpen={hasOpen} />
       {payoutRequests.length > 0 ? (
         <ul className="divide-y rounded-xl border">

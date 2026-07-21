@@ -12,7 +12,13 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
-const ALL_ROLES = ["BUYER", "SELLER", "ADMIN"];
+const ALL_ROLES = [
+  "BUYER",
+  "SELLER",
+  "ADMIN",
+  "WALLET_MANAGER",
+  "DELIVERY_MANAGER",
+];
 
 export function UserActions({
   userId,

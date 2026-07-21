@@ -3,8 +3,10 @@ import { FileText, Wallet } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { transferCourierEarningsToWallet } from "@/lib/actions/earnings-wallet";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
+import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
 // The driver's cash & earnings ledger (docs §30): the same headline figures
 // as the driver home, plus the entries behind them.
@@ -81,6 +83,13 @@ export default async function DriverLedgerPage() {
           </p>
         </div>
       </div>
+
+      {/* Sweep the earnings Hezalli owes into the HezalliPay wallet. */}
+      <MoveEarningsToWallet
+        action={transferCourierEarningsToWallet}
+        namespace="Driver"
+        disabled={cash.earnings <= 0}
+      />
 
       {entries.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-12 text-center text-sm">

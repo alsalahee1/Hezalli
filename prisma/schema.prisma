@@ -23,6 +23,8 @@ enum Role {
   ADMIN
   COURIER // Hezalli Express delivery driver
   DELIVERY_POINT // partner-operated parcel hub operator (Hezalli Point)
+  WALLET_MANAGER // staff: manages the HezalliPay wallet domain (/wallet-manager)
+  DELIVERY_MANAGER // staff: manages shipments, carriers, zones (/delivery-manager)
 }
 
 enum Currency {
@@ -978,6 +980,8 @@ enum WalletEntryType {
   CASHOUT // withdrawn to a rail (Step 19.4)
   ADJUSTMENT // admin correction (audited)
   SELLER_EARNINGS // swept in from the seller balance (Step 19.5+)
+  COURIER_EARNINGS // swept in from a courier's delivery-fee earnings
+  POINT_EARNINGS // swept in from a Hezalli Point's handling-fee earnings
   TRANSFER_OUT // sent to another user via P2P (Step 19.5+, licensed only)
   TRANSFER_IN // received from another user via P2P (Step 19.5+, licensed only)
   BILL_PAYMENT // paid a utility bill from the wallet (Step 19.7)

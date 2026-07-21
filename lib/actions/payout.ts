@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireAdminId } from "@/lib/authz";
+import { audit } from "@/lib/audit";
+import { requireWalletManagerId } from "@/lib/authz";
 import { getBalanceId, recomputeBalance, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { payoutMethodSchema } from "@/lib/validations/payout";
@@ -118,11 +119,12 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "SellerBalance" WHERE "id" = ${balanceId} FOR UPDATE`;
-      const availAgg = await tx.ledgerEntry.aggregate({
-        where: { balanceId },
-        _sum: { amountUsd: true },
-      });
-      const available = round2(Number(availAgg._sum.amountUsd ?? 0));
+      // Read outstanding requests BEFORE the ledger: markPayoutPaid flips a
+      // request to PAID and writes its ledger debit in one commit without
+      // taking this lock, and under READ COMMITTED each statement sees a fresh
+      // snapshot — in this order a flip landing between the reads is counted
+      // twice (still reserved AND already debited) so an over-request fails
+      // closed instead of slipping through to be paid.
       const outstanding = await tx.payout.aggregate({
         where: {
           sellerId: profile.id,
@@ -130,6 +132,11 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
         },
         _sum: { amountUsd: true },
       });
+      const availAgg = await tx.ledgerEntry.aggregate({
+        where: { balanceId },
+        _sum: { amountUsd: true },
+      });
+      const available = round2(Number(availAgg._sum.amountUsd ?? 0));
       const free = round2(available - Number(outstanding._sum.amountUsd ?? 0));
       const amount =
         amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(free);
@@ -157,12 +164,13 @@ export async function requestPayout(amountUsd?: number): Promise<Result> {
   return { ok: true };
 }
 
-// Admin marks a payout PAID (money sent outside the system) → ledger debit.
+// Wallet staff marks a payout PAID (money sent outside the system) → ledger
+// debit.
 export async function markPayoutPaid(
   payoutId: string,
   reference: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -218,18 +226,23 @@ export async function markPayoutPaid(
 
   if (!paid) return { error: "badState" };
   await recomputeBalance(payout.sellerId);
+  await audit(adminId, "payout.paid", "Payout", payout.id, {
+    amountUsd: Number(payout.amountUsd),
+    reference: reference?.trim() || null,
+  });
 
   revalidatePath(`/${locale}/admin/payouts`);
+  revalidatePath(`/${locale}/wallet-manager/payouts`);
   revalidatePath(`/${locale}/seller/finance`);
   return { ok: true };
 }
 
-// Admin rejects a payout request (no ledger effect).
+// Wallet staff rejects a payout request (no ledger effect).
 export async function rejectPayout(
   payoutId: string,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
   const payout = await prisma.payout.findUnique({
@@ -271,7 +284,11 @@ export async function rejectPayout(
   });
 
   if (!rejected) return { error: "badState" };
+  await audit(adminId, "payout.reject", "Payout", payoutId, {
+    reason: reason?.trim() || null,
+  });
   revalidatePath(`/${locale}/admin/payouts`);
+  revalidatePath(`/${locale}/wallet-manager/payouts`);
   revalidatePath(`/${locale}/seller/finance`);
   return { ok: true };
 }
