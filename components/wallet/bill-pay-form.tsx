@@ -32,6 +32,57 @@ const SERVICE: Record<string, { icon: LucideIcon; tile: string }> = {
 const FALLBACK = { icon: Receipt, tile: "bg-muted text-muted-foreground" };
 const serviceOf = (slug: string) => SERVICE[slug] ?? FALLBACK;
 
+// Real brand logos in /public/billers keyed by slug. Services without a logo
+// fall back to the themed icon above, so this map can grow as artwork arrives.
+const LOGO: Record<string, string> = {
+  "yemen-mobile": "/billers/yemen-mobile.jpg",
+  sabafon: "/billers/sabafon.jpg",
+  "mtn-yemen": "/billers/mtn-yemen.jpg",
+  "yemen-net": "/billers/yemen-net.png",
+  "you-yemen": "/billers/you-yemen.png",
+};
+
+// A service badge: the brand logo when we have one, else the themed icon. Falls
+// back to the icon if the image fails to load.
+function ServiceBadge({
+  slug,
+  size = "tile",
+}: {
+  slug: string;
+  size?: "tile" | "sm";
+}) {
+  const { icon: Icon, tile } = serviceOf(slug);
+  const src = LOGO[slug];
+  const [failed, setFailed] = useState(false);
+  const box = size === "tile" ? "size-14 rounded-2xl" : "size-11 rounded-xl";
+
+  if (src && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        onError={() => setFailed(true)}
+        className={cn(
+          "bg-card border object-cover transition-transform active:scale-95",
+          box,
+        )}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "flex items-center justify-center transition-transform active:scale-95",
+        box,
+        tile,
+      )}
+    >
+      <Icon className={size === "tile" ? "size-6" : "size-5"} aria-hidden />
+    </span>
+  );
+}
+
 export function BillPayForm({
   billers,
   balance,
@@ -83,34 +134,21 @@ export function BillPayForm({
 
   const Grid = ({ items }: { items: BillerOption[] }) => (
     <div className="grid grid-cols-4 gap-3">
-      {items.map((b) => {
-        const { icon: Icon, tile } = serviceOf(b.slug);
-        return (
-          <button
-            key={b.slug}
-            type="button"
-            onClick={() => setSelected(b)}
-            className="flex flex-col items-center gap-1.5 text-center"
-          >
-            <span
-              className={cn(
-                "flex size-14 items-center justify-center rounded-2xl transition-transform active:scale-95",
-                tile,
-              )}
-            >
-              <Icon className="size-6" aria-hidden />
-            </span>
-            <span className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">
-              {b.name}
-            </span>
-          </button>
-        );
-      })}
+      {items.map((b) => (
+        <button
+          key={b.slug}
+          type="button"
+          onClick={() => setSelected(b)}
+          className="flex flex-col items-center gap-1.5 text-center"
+        >
+          <ServiceBadge slug={b.slug} />
+          <span className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">
+            {b.name}
+          </span>
+        </button>
+      ))}
     </div>
   );
-
-  const active = selected ? serviceOf(selected.slug) : null;
-  const ActiveIcon = active?.icon;
 
   return (
     <section className="space-y-3">
@@ -133,17 +171,10 @@ export function BillPayForm({
       ) : null}
 
       <Modal open={!!selected} onClose={close} closeLabel={t("cancel")}>
-        {selected && ActiveIcon ? (
+        {selected ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "flex size-11 shrink-0 items-center justify-center rounded-xl",
-                  active.tile,
-                )}
-              >
-                <ActiveIcon className="size-5" aria-hidden />
-              </span>
+              <ServiceBadge slug={selected.slug} size="sm" />
               <div className="min-w-0">
                 <h3 className="font-medium">{selected.name}</h3>
                 <p className="text-muted-foreground text-sm">
