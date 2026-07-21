@@ -301,12 +301,12 @@ fee; origin compensation via `ADJUSTMENT` until a dedicated fee exists).
 
 ### Build checklist (v1.5)
 
-- [ ] `Shipment.originPointId` + migration; origin load counts toward the origin point's capacity
-- [ ] `point-core`: origin receive (`AT_POINT`, no auto-assign), transfer handover (→ `IN_TRANSIT`), destination receive (`IN_TRANSIT` → `AT_POINT`, auto-assign/ready)
-- [ ] Seller ship form: optional origin-point picker (sorted near the seller) when a destination point/pickup is set
-- [ ] Point dashboard: transfer parcels visible at both ends (inbound / outbound)
-- [ ] i18n (en + ar) + integration tests (two-hop happy path incl. pickup orders, wrong-point scans rejected, capacity counts origin leg)
-- [ ] This file kept current
+- [x] `Shipment.originPointId` + migration; origin load counts toward the origin point's capacity
+- [x] `point-core`: origin receive (`AT_POINT`, no auto-assign), transfer handover (→ `IN_TRANSIT`), destination receive (`IN_TRANSIT` → `AT_POINT`, auto-assign/ready)
+- [x] Seller ship form: optional origin-point picker (sorted near the seller) when a destination point/pickup is set
+- [x] Point dashboard: transfer parcels visible at both ends (inbound / outbound)
+- [x] i18n (en + ar) + integration tests (two-hop happy path incl. pickup orders, wrong-point scans rejected, capacity counts origin leg)
+- [x] This file kept current
 
 ## 15. Out of scope
 

@@ -23,6 +23,9 @@ export type ShipInput = {
   // Route the parcel through a Hezalli Point (platform carrier only): the
   // seller drops it there instead of handing it to a courier directly.
   deliveryPointId?: string;
+  // Two-hop line-haul (docs §14): the ENTRY hub near the seller. Only valid
+  // together with a destination point, and must differ from it.
+  originPointId?: string;
 };
 
 // Short unguessable code for the buyer's delivery QR (unique on Shipment).
@@ -111,6 +114,20 @@ export async function shipSubOrder(
     pointId = point.id;
     pointName = point.name;
   }
+
+  // Optional line-haul entry hub near the seller (docs §14). Needs a
+  // destination point, must differ from it, and must have room.
+  let originId: string | null = null;
+  if (input.originPointId?.trim()) {
+    if (!pointId) return { error: "invalidPoint" };
+    const wanted = input.originPointId.trim();
+    if (wanted !== pointId) {
+      const routable = await checkPointRoutable(wanted);
+      if (routable === "full") return { error: "pointFull" };
+      if (routable !== "ok") return { error: "invalidPoint" };
+      originId = wanted;
+    }
+  }
   const initialStatus = pointId ? "LABEL_CREATED" : "IN_TRANSIT";
 
   const trackUrl = buildTrackingUrl(carrier.trackingUrl, trackingNumber);
@@ -125,6 +142,7 @@ export async function shipSubOrder(
       status: initialStatus as "IN_TRANSIT" | "LABEL_CREATED",
       platformManaged: carrier.platformManaged,
       deliveryPointId: pointId,
+      originPointId: originId,
       shippedAt: new Date(),
     };
     const shipment = await tx.shipment.upsert({

@@ -22,12 +22,21 @@ export default async function PointDashboardPage() {
 
   const [parcels, maxAttempts, me] = await Promise.all([
     prisma.shipment.findMany({
-      where: { deliveryPointId: gate.pointId, subOrder: { status: "SHIPPED" } },
+      where: {
+        OR: [
+          { deliveryPointId: gate.pointId },
+          { originPointId: gate.pointId },
+        ],
+        subOrder: { status: "SHIPPED" },
+      },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
         status: true,
         trackingNumber: true,
+        originPointId: true,
+        deliveryPointId: true,
+        atPointId: true,
         attemptCount: true,
         redeliverAt: true,
         redeliverNote: true,
@@ -56,8 +65,13 @@ export default async function PointDashboardPage() {
   ]);
 
   // Load vs capacity (held + inbound), same definition as lib/point-select.ts.
-  const load = parcels.filter((p) =>
-    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(p.status),
+  const load = parcels.filter(
+    (p) =>
+      p.atPointId === gate.pointId ||
+      (p.status === "LABEL_CREATED" &&
+        (p.originPointId
+          ? p.originPointId === gate.pointId
+          : p.deliveryPointId === gate.pointId)),
   ).length;
   const capacity = me?.capacity ?? null;
 
@@ -72,14 +86,19 @@ export default async function PointDashboardPage() {
       key: "AT_POINT",
       title: t("atPoint"),
       icon: PackageCheck,
-      items: parcels.filter((p) => p.status === "AT_POINT"),
+      items: parcels.filter(
+        (p) => p.status === "AT_POINT" && p.atPointId === gate.pointId,
+      ),
     },
     {
       key: "OUT",
       title: t("outWithDrivers"),
       icon: Truck,
       items: parcels.filter(
-        (p) => p.status === "OUT_FOR_DELIVERY" || p.status === "FAILED",
+        (p) =>
+          p.status === "OUT_FOR_DELIVERY" ||
+          p.status === "FAILED" ||
+          (p.status === "IN_TRANSIT" && p.originPointId === gate.pointId),
       ),
     },
     {
@@ -137,6 +156,12 @@ export default async function PointDashboardPage() {
                       <span className="font-medium" dir="ltr">
                         {p.trackingNumber}
                       </span>
+                      {p.originPointId &&
+                      p.originPointId !== p.deliveryPointId ? (
+                        <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-600">
+                          {t("transferBadge")}
+                        </span>
+                      ) : null}
                       {p.subOrder.shippingMethod === "PICKUP" ? (
                         <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
                           {t("pickupBadge")}
