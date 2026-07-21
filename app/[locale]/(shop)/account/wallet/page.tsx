@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
@@ -13,6 +14,7 @@ import { WalletWithdrawForm } from "@/components/wallet/wallet-withdraw-form";
 import { WalletSendForm } from "@/components/wallet/wallet-send-form";
 import { WalletRequestForm } from "@/components/wallet/wallet-request-form";
 import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
+import { WalletDeepLink } from "@/components/wallet/wallet-deep-link";
 import { BillPayForm } from "@/components/wallet/bill-pay-form";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
@@ -317,6 +319,11 @@ export default async function WalletPage() {
         myPayUrl={abs(locale, `/pay/u/${userId}`)}
         myQr={<QrCode value={abs(locale, `/pay/u/${userId}`)} size={220} />}
       />
+
+      {/* Opens Top up / Send when arrived here via the sub-screen tabs. */}
+      <Suspense fallback={null}>
+        <WalletDeepLink />
+      </Suspense>
     </div>
   );
 }
