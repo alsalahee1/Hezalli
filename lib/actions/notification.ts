@@ -23,6 +23,7 @@ export async function saveNotificationPrefs(
   });
   const locale = await getLocale();
   revalidatePath(`/${locale}/account/settings/notifications`);
+  revalidatePath(`/${locale}/seller/settings/notifications`);
   return { ok: true };
 }
 

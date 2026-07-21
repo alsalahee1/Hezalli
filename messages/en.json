@@ -191,7 +191,10 @@
     "notSeller": "You don't have a store yet",
     "shippingTitle": "Shipping",
     "shippingDesc": "Set delivery fees per zone for your store.",
-    "shippingManage": "Manage shipping rates"
+    "shippingManage": "Manage shipping rates",
+    "notifTitle": "Notifications",
+    "notifDesc": "Choose how you're alerted about new orders and payments.",
+    "notifManage": "Manage notifications"
   },
   "SellerProducts": {
     "title": "Products",
@@ -2634,6 +2637,13 @@
     "colDeliveries": "Deliveries",
     "colRating": "Rating",
     "colCash": "Cash on hand"
+  },
+  "Push": {
+    "enableNotif": "Enable push notifications",
+    "notifOn": "Push notifications on",
+    "notifBlocked": "Notifications blocked in browser",
+    "notifTapOn": "Tap to enable",
+    "notifTapOff": "Tap to turn off"
   },
   "WalletManager": {
     "panel": "Wallet Manager",

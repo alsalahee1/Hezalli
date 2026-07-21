@@ -191,7 +191,10 @@
     "notSeller": "ليس لديك متجر بعد",
     "shippingTitle": "الشحن",
     "shippingDesc": "حدّد رسوم التوصيل لكل منطقة لمتجرك.",
-    "shippingManage": "إدارة أسعار الشحن"
+    "shippingManage": "إدارة أسعار الشحن",
+    "notifTitle": "الإشعارات",
+    "notifDesc": "اختر كيف تريد تنبيهك عند وصول طلبات ومدفوعات جديدة.",
+    "notifManage": "إدارة الإشعارات"
   },
   "SellerProducts": {
     "title": "المنتجات",
@@ -2634,6 +2637,13 @@
     "colDeliveries": "التوصيلات",
     "colRating": "التقييم",
     "colCash": "النقد لديه"
+  },
+  "Push": {
+    "enableNotif": "تفعيل إشعارات الدفع",
+    "notifOn": "إشعارات الدفع مفعّلة",
+    "notifBlocked": "الإشعارات محظورة في المتصفح",
+    "notifTapOn": "اضغط للتفعيل",
+    "notifTapOff": "اضغط للإيقاف"
   },
   "WalletManager": {
     "panel": "إدارة المحافظ",

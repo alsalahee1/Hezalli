@@ -1,4 +1,4 @@
-import { BadgeCheck, ExternalLink, Truck } from "lucide-react";
+import { BadgeCheck, Bell, ExternalLink, Truck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
@@ -91,6 +91,19 @@ export default async function SellerSettingsPage() {
           className="hover:border-muted-foreground/40 inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium"
         >
           <Truck className="size-4" /> {t("shippingManage")}
+        </Link>
+      </section>
+
+      <section className="space-y-3 border-t pt-8">
+        <div>
+          <h2 className="text-lg font-semibold">{t("notifTitle")}</h2>
+          <p className="text-muted-foreground text-sm">{t("notifDesc")}</p>
+        </div>
+        <Link
+          href="/seller/settings/notifications"
+          className="hover:border-muted-foreground/40 inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium"
+        >
+          <Bell className="size-4" /> {t("notifManage")}
         </Link>
       </section>
     </div>
