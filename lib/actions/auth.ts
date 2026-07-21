@@ -93,9 +93,11 @@ export async function devSignIn(formData: FormData): Promise<void> {
     ? `/${locale}/admin`
     : roles.includes("COURIER")
       ? `/${locale}/driver`
-      : roles.includes("SELLER")
-        ? `/${locale}/seller`
-        : `/${locale}`;
+      : roles.includes("DELIVERY_POINT")
+        ? `/${locale}/point`
+        : roles.includes("SELLER")
+          ? `/${locale}/seller`
+          : `/${locale}`;
 
   try {
     await signIn("credentials", {

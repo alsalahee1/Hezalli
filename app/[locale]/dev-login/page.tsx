@@ -30,6 +30,11 @@ const DEMO = [
     desc: "Hezalli Express driver app (/driver)",
   },
   {
+    email: "point@hezalli.com",
+    label: "Point Center",
+    desc: "Hezalli Point parcel-hub dashboard (/point)",
+  },
+  {
     email: "buyer1@example.com",
     label: "Buyer",
     desc: "Shopper — browse, checkout, track (Sana'a)",

@@ -4,6 +4,7 @@ import {
   FileClock,
   ShieldCheck,
   ShoppingBag,
+  Store,
   Truck,
   User,
   Users,
@@ -50,6 +51,15 @@ const ROLES = [
     tile: "bg-violet-500",
     title: "text-violet-700 dark:text-violet-400",
     card: "border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10",
+  },
+  {
+    email: "point@hezalli.com",
+    label: "Point Center",
+    desc: "Parcel hub",
+    icon: Store,
+    tile: "bg-rose-500",
+    title: "text-rose-700 dark:text-rose-400",
+    card: "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10",
   },
   {
     email: "buyer1@example.com",
