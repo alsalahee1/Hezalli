@@ -17,7 +17,13 @@ export function ConfirmReceivedButton({ orderId }: { orderId: string }) {
   const { confirm, dialog } = useConfirm();
 
   const onClick = async () => {
-    if (!(await confirm(t("confirmReceivedConfirm")))) return;
+    if (
+      !(await confirm(t("confirmReceivedConfirm"), {
+        title: t("confirmReceivedTitle"),
+        confirmLabel: t("confirmReceived"),
+      }))
+    )
+      return;
     start(async () => {
       setErr(null);
       const res = await confirmReceived(orderId);

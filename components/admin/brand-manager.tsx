@@ -106,6 +106,7 @@ function BrandForm({
 
 export function BrandManager({ brands }: { brands: AdminBrand[] }) {
   const t = useTranslations("AdminBrands");
+  const tc = useTranslations("Common");
   const [mode, setMode] = useState<"new" | string | null>(null);
   const { confirm, dialog } = useConfirm();
   const confirmedRef = useRef(false);
@@ -162,7 +163,9 @@ export function BrandManager({ brands }: { brands: AdminBrand[] }) {
                       }
                       e.preventDefault();
                       const form = e.currentTarget;
-                      void confirm(t("confirmDelete"), {
+                      void confirm(tc("cannotUndo"), {
+                        title: t("confirmDelete"),
+                        confirmLabel: t("delete"),
                         destructive: true,
                       }).then((ok) => {
                         if (!ok) return;
