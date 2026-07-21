@@ -2313,7 +2313,19 @@
     "err_overRemit": "المبلغ أكبر مما بحوزة هذا المندوب.",
     "ledger_DRIVER_CASH_IN": "تسليم نقدي من مندوب",
     "transferBadge": "نقل",
-    "staleBadge": "{days} ي"
+    "staleBadge": "{days} ي",
+    "payoutTitle": "طلب سحب الأرباح",
+    "payoutHint": "الرصيد المتاح: {free}$. اترك المبلغ فارغًا لطلب كامل الرصيد.",
+    "payoutSubmit": "طلب السحب",
+    "payoutDone": "أُرسل الطلب — ستعالجه هزلي قريبًا.",
+    "payoutOpen": "لديك طلب سحب قيد المعالجة — يمكنك تقديم طلب جديد بعد معالجته.",
+    "payout_REQUESTED": "طلب سحب",
+    "payout_APPROVED": "سحب مقبول",
+    "payout_PAID": "سحب مصروف",
+    "payout_REJECTED": "سحب مرفوض",
+    "err_alreadyOpen": "لديك طلب سحب قيد المعالجة بالفعل.",
+    "err_belowMin": "المبلغ أقل من الحد الأدنى للسحب.",
+    "err_insufficient": "المبلغ يتجاوز رصيدك المتاح."
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
@@ -2410,7 +2422,17 @@
     "capacityHint": "أقصى عدد للطرود المحتفظ بها أو القادمة في آن واحد. فارغ = غير محدودة. النقاط الممتلئة تتوقف عن استقبال توجيه جديد؛ ومسح المنضدة يعمل دائمًا.",
     "type_DRIVER_CASH_IN": "تسليم نقدي من مندوب",
     "staleTitle": "طرود محتجزة لم تتحرك منذ {days}+ يومًا",
-    "staleCount": "{count, plural, one {# راكد} two {# راكدان} few {# راكدة} many {# راكدًا} other {# راكد}}"
+    "staleCount": "{count, plural, one {# راكد} two {# راكدان} few {# راكدة} many {# راكدًا} other {# راكد}}",
+    "requestsHeading": "طلبات السحب",
+    "noRequests": "لا توجد طلبات سحب.",
+    "payRefPlaceholder": "المرجع / السبب",
+    "markPaid": "تأكيد الصرف",
+    "payout_REQUESTED": "مطلوب",
+    "payout_APPROVED": "مقبول",
+    "payout_PAID": "مصروف",
+    "payout_REJECTED": "مرفوض",
+    "err_badState": "عولج الطلب مسبقًا.",
+    "err_notFound": "الطلب غير موجود."
   },
   "DeliveryProof": {
     "title": "إثبات التسليم",

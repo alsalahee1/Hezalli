@@ -384,6 +384,37 @@ alongside the existing auto-complete/marketing crons.
 - [x] Integration test: backdated parcels trigger reminder → expiry → operator flag exactly once; second sweep is a no-op
 - [x] This file kept current
 
-## 21. Out of scope
+## 22. v1.9 — Point payout requests
+
+Completes the "both win" money loop. Hubs earn handling/transfer fees on
+their ledger, but getting paid is admin-initiated today — the operator has
+no way to ask. v1.9 mirrors the seller payout flow for point operators:
+
+1. **Operator requests.** On the hub's ledger page: request a payout of the
+   free earnings balance (or a chosen amount). Guards mirror sellers':
+   at least `min_payout_usd`, at most the free balance (earnings minus
+   outstanding requests), computed under a row lock on the point so racing
+   requests can't overdraw, and only one open request at a time.
+2. **Admin resolves.** The admin hub page lists requests; marking one PAID
+   flips it race-safely (conditional update) and writes the negative
+   `PAYOUT` ledger entry in the same transaction — the request and the
+   ledger can never disagree. Rejecting records a reason. Both notify the
+   operator (ar/en) and are audit-logged.
+
+Data: new `PointPayoutRequest` (pointId, amountUsd, status reusing
+`PayoutStatus`, note, processedBy/At). Cash-side COD remittance stays a
+manual admin entry (§12) — this flow only pays out the earnings side.
+
+### Build checklist (v1.9)
+
+- [x] `PointPayoutRequest` model + migration (status reuses `PayoutStatus`)
+- [x] `lib/actions/point-payout.ts`: `requestPointPayout` (locked free-balance check, one open request), `markPointPayoutPaid` (flip + PAYOUT ledger row in one tx), `rejectPointPayout`
+- [x] Point ledger page: free balance, request form, request history
+- [x] Admin hub page: pending requests with pay (reference) / reject (reason)
+- [x] i18n (en + ar) + notifications to the operator
+- [x] Integration test: below-min / over-balance / double request rejected; pay writes exactly one ledger row and can't double-pay; reject has no ledger effect
+- [x] This file kept current
+
+## 23. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

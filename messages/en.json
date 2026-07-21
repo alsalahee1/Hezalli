@@ -2313,7 +2313,19 @@
     "err_overRemit": "That's more than this driver is holding.",
     "ledger_DRIVER_CASH_IN": "Driver cash-in",
     "transferBadge": "Transfer",
-    "staleBadge": "{days}d"
+    "staleBadge": "{days}d",
+    "payoutTitle": "Request a payout",
+    "payoutHint": "Free balance: ${free}. Leave the amount empty to request all of it.",
+    "payoutSubmit": "Request payout",
+    "payoutDone": "Request sent — Hezalli will process it soon.",
+    "payoutOpen": "A payout request is pending — you can make a new one once it's processed.",
+    "payout_REQUESTED": "Payout requested",
+    "payout_APPROVED": "Payout approved",
+    "payout_PAID": "Payout paid",
+    "payout_REJECTED": "Payout rejected",
+    "err_alreadyOpen": "You already have a pending payout request.",
+    "err_belowMin": "Amount is below the minimum payout.",
+    "err_insufficient": "Amount exceeds your free balance."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2410,7 +2422,17 @@
     "capacityHint": "Max parcels held or inbound at once. Empty = unlimited. Full points stop receiving new routing; counter scans always work.",
     "type_DRIVER_CASH_IN": "Driver cash-in",
     "staleTitle": "Held parcels unmoved for {days}+ days",
-    "staleCount": "{count, plural, one {# stale} other {# stale}}"
+    "staleCount": "{count, plural, one {# stale} other {# stale}}",
+    "requestsHeading": "Payout requests",
+    "noRequests": "No payout requests.",
+    "payRefPlaceholder": "Reference / reason",
+    "markPaid": "Mark paid",
+    "payout_REQUESTED": "Requested",
+    "payout_APPROVED": "Approved",
+    "payout_PAID": "Paid",
+    "payout_REJECTED": "Rejected",
+    "err_badState": "Already processed.",
+    "err_notFound": "Request not found."
   },
   "DeliveryProof": {
     "title": "Proof of delivery",

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { PointPayoutForm } from "@/components/admin/point-payout-form";
+import { PointPayoutRequests } from "@/components/admin/point-payout-requests";
 
 // Per-point settlement: headline balance + fee/payout totals, a record-a-
 // payout form, and the raw ledger. The balance is what Hezalli owes the
@@ -46,7 +47,7 @@ export default async function AdminPointDetailPage({
     },
   });
 
-  const [summary, entries] = await Promise.all([
+  const [summary, entries, payoutRequests] = await Promise.all([
     pointLedgerSummary(pointId),
     prisma.deliveryPointLedgerEntry.findMany({
       where: { pointId },
@@ -58,6 +59,18 @@ export default async function AdminPointDetailPage({
         amountUsd: true,
         note: true,
         subOrderId: true,
+        createdAt: true,
+      },
+    }),
+    prisma.pointPayoutRequest.findMany({
+      where: { pointId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        amountUsd: true,
+        status: true,
+        note: true,
         createdAt: true,
       },
     }),
@@ -149,6 +162,23 @@ export default async function AdminPointDetailPage({
             {t("capacityHint")}
           </span>
         </form>
+      </section>
+
+      {/* Operator-initiated payout requests (docs §22). */}
+      <section className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold">{t("requestsHeading")}</h2>
+        <PointPayoutRequests
+          requests={payoutRequests.map((r) => ({
+            id: r.id,
+            amountUsd: Number(r.amountUsd),
+            status: r.status,
+            note: r.note,
+            createdAt: format.dateTime(r.createdAt, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }),
+          }))}
+        />
       </section>
 
       <section className="space-y-3 rounded-lg border p-4">
