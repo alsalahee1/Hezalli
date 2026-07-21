@@ -928,7 +928,20 @@
     "pickupPointHint": "We'll notify you when it's ready. Bring your delivery code (shown on the order page) and pay there if you chose cash.",
     "err_pickupPointRequired": "Choose the Hezalli Point you'll collect from.",
     "err_pointFull": "That Hezalli Point is full right now — please pick another.",
-    "pickupPointsDirectory": "See all points"
+    "pickupPointsDirectory": "See all points",
+    "scheduleLabel": "Schedule your delivery (optional)",
+    "scheduleHint": "Pick a preferred day and time for your Hezalli Express parcels. We’ll do our best to match it.",
+    "scheduleDate": "Preferred day",
+    "scheduleSlot": "Preferred time",
+    "scheduleSlotAny": "Any time",
+    "scheduleClear": "Clear",
+    "err_badDeliveryWindow": "That delivery window isn’t available. Please pick another day or time.",
+    "err_deliveryWindowNotExpress": "Scheduled windows are only available for Hezalli Express items."
+  },
+  "DeliveryWindow": {
+    "slot_MORNING": "Morning (9 AM–12 PM)",
+    "slot_AFTERNOON": "Afternoon (12–5 PM)",
+    "slot_EVENING": "Evening (5–9 PM)"
   },
   "Orders": {
     "title": "My orders",
@@ -941,6 +954,7 @@
     "empty": "No orders here yet.",
     "total": "Total",
     "viewDetails": "View details",
+    "scheduledFor": "Scheduled for",
     "status_PENDING": "Pending payment",
     "status_CONFIRMED": "Confirmed",
     "status_PROCESSING": "Processing",

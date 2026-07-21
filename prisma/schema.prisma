@@ -776,6 +776,11 @@ model Order {
   exchangeRate    Decimal              @default(1) @db.Decimal(18, 6)
   displayTotal    Decimal              @db.Decimal(14, 2)
   couponId        String?
+  // Buyer's optional scheduled delivery window for Hezalli Express parcels: a
+  // preferred day + a time-of-day slot (MORNING / AFTERNOON / EVENING). Both are
+  // set together or both null. A soft preference surfaced to dispatch + courier.
+  deliveryDate    DateTime?            @db.Date
+  deliverySlot    String?
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   buyer           User                 @relation(fields: [buyerId], references: [id])

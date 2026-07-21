@@ -93,6 +93,7 @@ export default async function CheckoutPage({
   }
 
   const codEnabled = await getSetting("cod_enabled");
+  const scheduleDays = await getSetting("delivery_window_days");
 
   // Points that can still take parcels (full ones are filtered out); the
   // client re-sorts nearest-first for whichever address is selected.
@@ -116,6 +117,7 @@ export default async function CheckoutPage({
         points={buyer?.loyaltyPoints ?? 0}
         walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
         pickupPoints={pickupPoints}
+        scheduleDays={scheduleDays}
       />
     </main>
   );

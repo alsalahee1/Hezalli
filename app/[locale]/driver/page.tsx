@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { LocationShare } from "@/components/driver/location-share";
 import { PushToggle } from "@/components/driver/push-toggle";
 import { QrCode } from "@/components/orders/qr-code";
+import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 export default async function DriverJobsPage() {
   const courierId = await requireCourierId();
@@ -43,6 +44,8 @@ export default async function DriverJobsPage() {
             order: {
               select: {
                 id: true,
+                deliveryDate: true,
+                deliverySlot: true,
                 address: {
                   select: {
                     fullName: true,
@@ -177,6 +180,15 @@ export default async function DriverJobsPage() {
                     {j.subOrder.order.address.city},{" "}
                     {j.subOrder.order.address.governorate}
                   </p>
+                  {j.subOrder.order.deliveryDate &&
+                  j.subOrder.order.deliverySlot ? (
+                    <div className="mt-1">
+                      <DeliveryWindowBadge
+                        date={j.subOrder.order.deliveryDate}
+                        slot={j.subOrder.order.deliverySlot}
+                      />
+                    </div>
+                  ) : null}
                 </div>
                 <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
               </Link>

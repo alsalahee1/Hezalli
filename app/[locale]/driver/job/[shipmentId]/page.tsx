@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { storage } from "@/lib/storage";
 import { Link } from "@/i18n/navigation";
 import { JobActions } from "@/components/driver/job-actions";
+import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 export default async function DriverJobPage({
   params,
@@ -51,6 +52,8 @@ export default async function DriverJobPage({
               id: true,
               paymentMethod: true,
               grandTotal: true,
+              deliveryDate: true,
+              deliverySlot: true,
               address: true,
             },
           },
@@ -169,6 +172,14 @@ export default async function DriverJobPage({
         <p className="text-muted-foreground flex items-center gap-1.5 pt-1 text-xs">
           <Store className="size-3.5" /> {sub.store.name}
         </p>
+        {sub.order.deliveryDate && sub.order.deliverySlot ? (
+          <div className="pt-1">
+            <DeliveryWindowBadge
+              date={sub.order.deliveryDate}
+              slot={sub.order.deliverySlot}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* Items */}
