@@ -75,8 +75,10 @@ export async function creditWalletTx(
     refType?: "transfer" | "bill" | "topup" | "withdrawal" | null;
     refId?: string | null;
   },
-): Promise<void> {
-  await tx.walletEntry.create({
+) {
+  // Returns the created entry so callers can reference its id (e.g. to mint a
+  // shareable receipt link right after a transfer).
+  return tx.walletEntry.create({
     data: {
       walletId,
       type: input.type,
