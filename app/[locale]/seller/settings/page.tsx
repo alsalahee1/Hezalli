@@ -1,4 +1,4 @@
-import { BadgeCheck, Bell, ExternalLink, Truck } from "lucide-react";
+import { Bell, ExternalLink, Truck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import type { StorePolicies } from "@/lib/validations/store";
 import { Link } from "@/i18n/navigation";
 import { PayoutForm, type PayoutData } from "@/components/seller/payout-form";
+import { KycSubmit } from "@/components/seller/kyc-submit";
 import { StoreSettingsForm } from "@/components/seller/store-settings-form";
 
 export default async function SellerSettingsPage() {
@@ -30,7 +31,6 @@ export default async function SellerSettingsPage() {
         details: (method.details ?? {}) as Record<string, string>,
       }
     : null;
-  const verified = profile.kycStatus === "VERIFIED";
 
   return (
     <div className="space-y-10">
@@ -68,16 +68,7 @@ export default async function SellerSettingsPage() {
           <h2 className="text-lg font-semibold">{p("title")}</h2>
           <p className="text-muted-foreground text-sm">{p("desc")}</p>
         </div>
-        <p
-          className={
-            verified
-              ? "inline-flex items-center gap-1.5 rounded-md bg-emerald-500/15 px-3 py-2 text-sm text-emerald-600"
-              : "bg-muted text-muted-foreground rounded-md px-3 py-2 text-sm"
-          }
-        >
-          {verified ? <BadgeCheck className="size-4" /> : null}
-          {verified ? p("kycVerified") : p("kycPending")}
-        </p>
+        <KycSubmit status={profile.kycStatus} />
         <PayoutForm current={payout} />
       </section>
 
