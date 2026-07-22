@@ -48,7 +48,7 @@ export async function transferFunds(
   const [fromWallet, toWallet] = await Promise.all([
     prisma.wallet.findUniqueOrThrow({
       where: { id: fromWalletId },
-      select: { availableUsd: true, frozen: true },
+      select: { availableUsd: true, frozen: true, codHoldUsd: true },
     }),
     prisma.wallet.findUniqueOrThrow({
       where: { id: toWalletId },
@@ -57,7 +57,9 @@ export async function transferFunds(
   ]);
   if (fromWallet.frozen) return { error: "frozen" };
   if (toWallet.frozen) return { error: "recipientUnavailable" };
-  if (amount > Number(fromWallet.availableUsd))
+  // A COD collateral hold (docs §36) is not spendable.
+  const hold = Number(fromWallet.codHoldUsd);
+  if (amount > Number(fromWallet.availableUsd) - hold)
     return { error: "insufficient" };
 
   const cleanNote = note?.trim() || null;
@@ -74,7 +76,7 @@ export async function transferFunds(
         where: {
           id: fromWalletId,
           frozen: false,
-          availableUsd: { gte: amount },
+          availableUsd: { gte: round2(amount + hold) },
         },
         data: { availableUsd: { decrement: amount } },
       });

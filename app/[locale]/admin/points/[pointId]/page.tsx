@@ -5,8 +5,10 @@ import { ArrowLeft } from "lucide-react";
 import { setPointCapacity } from "@/lib/actions/point-application";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
+import { DepositForm } from "@/components/admin/deposit-form";
 import { PointPayoutForm } from "@/components/admin/point-payout-form";
 import { PointPayoutRequests } from "@/components/admin/point-payout-requests";
 
@@ -33,6 +35,7 @@ export default async function AdminPointDetailPage({
       phone: true,
       status: true,
       capacity: true,
+      depositUsd: true,
       owner: { select: { name: true, email: true } },
     },
   });
@@ -47,8 +50,9 @@ export default async function AdminPointDetailPage({
     },
   });
 
-  const [summary, entries, payoutRequests] = await Promise.all([
+  const [summary, cashLimitBase, entries, payoutRequests] = await Promise.all([
     pointLedgerSummary(pointId),
+    getSetting("point_cash_limit"),
     prisma.deliveryPointLedgerEntry.findMany({
       where: { pointId },
       orderBy: { createdAt: "desc" },
@@ -162,6 +166,27 @@ export default async function AdminPointDetailPage({
             {t("capacityHint")}
           </span>
         </form>
+      </section>
+
+      {/* Security deposit & personal cash limit (docs §32). */}
+      <section className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold">{t("depositHeading")}</h2>
+        <p className="text-muted-foreground text-xs">
+          {cashLimitBase > 0
+            ? t("depositBreakdown", {
+                limit: money(cashLimitBase + Number(point.depositUsd)),
+                base: money(cashLimitBase),
+                deposit: money(Number(point.depositUsd)),
+              })
+            : t("depositLimitOff")}
+        </p>
+        <div className="max-w-sm">
+          <DepositForm
+            target="point"
+            targetId={point.id}
+            current={Number(point.depositUsd)}
+          />
+        </div>
       </section>
 
       {/* Operator-initiated payout requests (docs §22). */}

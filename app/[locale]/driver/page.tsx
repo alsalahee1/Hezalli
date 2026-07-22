@@ -149,6 +149,11 @@ export default async function DriverJobsPage() {
             <p className="mt-1 text-lg font-semibold" dir="ltr">
               {money(cash.cashOnHand)}
             </p>
+            {cod.cashLimit > 0 ? (
+              <p className="text-muted-foreground mt-0.5 text-[11px]">
+                {t("codLimitLine", { limit: money(cod.cashLimit) })}
+              </p>
+            ) : null}
           </div>
           <div className="rounded-xl border p-3">
             <p className="text-muted-foreground text-xs font-medium">

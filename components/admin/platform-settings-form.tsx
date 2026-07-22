@@ -61,6 +61,9 @@ export function PlatformSettingsForm({
     driver_cash_limit: String(current.driver_cash_limit),
     driver_cod_max_age_hours: String(current.driver_cod_max_age_hours),
     point_cash_limit: String(current.point_cash_limit),
+    trust_step_deliveries: String(current.trust_step_deliveries),
+    trust_step_bonus_usd: String(current.trust_step_bonus_usd),
+    trust_bonus_cap_usd: String(current.trust_bonus_cap_usd),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -107,6 +110,9 @@ export function PlatformSettingsForm({
         driver_cash_limit: Number(f.driver_cash_limit),
         driver_cod_max_age_hours: Number(f.driver_cod_max_age_hours),
         point_cash_limit: Number(f.point_cash_limit),
+        trust_step_deliveries: Number(f.trust_step_deliveries),
+        trust_step_bonus_usd: Number(f.trust_step_bonus_usd),
+        trust_bonus_cap_usd: Number(f.trust_bonus_cap_usd),
       });
       if (res.error) setErr(res.error);
       else {
@@ -336,6 +342,30 @@ export function PlatformSettingsForm({
             type="number"
             value={f.point_cash_limit}
             onChange={(e) => set("point_cash_limit", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("trustStep")} hint={t("trustStepHint")}>
+          <Input
+            type="number"
+            value={f.trust_step_deliveries}
+            onChange={(e) => set("trust_step_deliveries", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("trustBonus")} hint={t("trustBonusHint")}>
+          <Input
+            type="number"
+            value={f.trust_step_bonus_usd}
+            onChange={(e) => set("trust_step_bonus_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("trustCap")} hint={t("trustCapHint")}>
+          <Input
+            type="number"
+            value={f.trust_bonus_cap_usd}
+            onChange={(e) => set("trust_bonus_cap_usd", e.target.value)}
             dir="ltr"
           />
         </Field>

@@ -87,6 +87,14 @@ export type PlatformSettings = {
   driver_cash_limit: number;
   driver_cod_max_age_hours: number;
   point_cash_limit: number;
+  // Trust bonus (docs §32): a driver's cash limit grows with clean history —
+  // every `trust_step_deliveries` completed deliveries add
+  // `trust_step_bonus_usd` on top of the base limit, capped at
+  // `trust_bonus_cap_usd`. Security deposits (admin-recorded) add 1:1 with no
+  // cap. Set step or bonus to 0 to turn the history bonus off.
+  trust_step_deliveries: number;
+  trust_step_bonus_usd: number;
+  trust_bonus_cap_usd: number;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -130,6 +138,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   driver_cash_limit: 50,
   driver_cod_max_age_hours: 24,
   point_cash_limit: 200,
+  trust_step_deliveries: 20,
+  trust_step_bonus_usd: 10,
+  trust_bonus_cap_usd: 100,
 };
 
 export const SETTING_KEYS = Object.keys(

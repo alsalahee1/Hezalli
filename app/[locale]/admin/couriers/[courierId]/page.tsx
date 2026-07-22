@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { CourierRemittanceForm } from "@/components/admin/courier-remittance-form";
 import { CourierPayoutForm } from "@/components/admin/courier-payout-form";
 import { CourierOffsetForm } from "@/components/admin/courier-offset-form";
+import { DepositForm } from "@/components/admin/deposit-form";
 
 // Per-courier COD reconciliation: headline cash-on-hand + earnings, a record-a-
 // remittance form, and the raw ledger. Cash-on-hand is what the driver still
@@ -159,6 +160,30 @@ export default async function AdminCourierDetailPage({
               />
             </div>
           ) : null}
+        </section>
+
+        {/* Security deposit & personal COD credit limit (docs §32) */}
+        <section className="rounded-xl border p-4 md:col-span-2">
+          <h2 className="mb-1 text-sm font-semibold">{t("depositTitle")}</h2>
+          <p className="text-muted-foreground mb-3 text-xs">
+            {cod.baseLimit > 0
+              ? t("limitBreakdown", {
+                  limit: money(cod.cashLimit),
+                  base: money(cod.baseLimit),
+                  deposit: money(cod.deposit),
+                  hold: money(cod.walletHold),
+                  trust: money(cod.trustBonus),
+                  deliveries: cod.deliveries,
+                })
+              : t("limitOff")}
+          </p>
+          <div className="max-w-sm">
+            <DepositForm
+              target="courier"
+              targetId={courier.id}
+              current={cod.deposit}
+            />
+          </div>
         </section>
       </div>
 

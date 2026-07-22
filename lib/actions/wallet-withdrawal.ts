@@ -55,13 +55,15 @@ export async function requestWithdrawal(
   await recomputeWalletBalance(userId);
   const wallet = await prisma.wallet.findUniqueOrThrow({
     where: { id: walletId },
-    select: { availableUsd: true, frozen: true },
+    select: { availableUsd: true, frozen: true, codHoldUsd: true },
   });
   if (wallet.frozen) return { error: "frozen" };
 
   // availableUsd already nets prior reservations (each pending withdrawal wrote
-  // a CASHOUT entry), so it is the authoritative free balance.
-  const available = Number(wallet.availableUsd);
+  // a CASHOUT entry), so it is the authoritative free balance — minus any COD
+  // collateral hold (docs §36), which must stay in the wallet.
+  const hold = Number(wallet.codHoldUsd);
+  const available = round2(Number(wallet.availableUsd) - hold);
   const min = await getSetting("min_payout_usd");
   const amount =
     amountUsd && amountUsd > 0 ? round2(amountUsd) : round2(available);
@@ -75,7 +77,11 @@ export async function requestWithdrawal(
     await prisma.$transaction(async (tx) => {
       // Atomically reserve the funds (guards concurrent over-withdrawal).
       const upd = await tx.wallet.updateMany({
-        where: { id: walletId, frozen: false, availableUsd: { gte: amount } },
+        where: {
+          id: walletId,
+          frozen: false,
+          availableUsd: { gte: round2(amount + hold) },
+        },
         data: { availableUsd: { decrement: amount } },
       });
       if (upd.count !== 1) throw new ReserveError();

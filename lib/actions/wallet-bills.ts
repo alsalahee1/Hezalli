@@ -63,10 +63,13 @@ export async function payBill(input: {
   const walletId = await getWalletId(userId);
   const wallet = await prisma.wallet.findUniqueOrThrow({
     where: { id: walletId },
-    select: { availableUsd: true, frozen: true },
+    select: { availableUsd: true, frozen: true, codHoldUsd: true },
   });
   if (wallet.frozen) return { error: "frozen" };
-  if (amount > Number(wallet.availableUsd)) return { error: "insufficient" };
+  // A COD collateral hold (docs §36) is not spendable.
+  const hold = Number(wallet.codHoldUsd);
+  if (amount > Number(wallet.availableUsd) - hold)
+    return { error: "insufficient" };
 
   // Velocity cap only matters once we know the funds exist.
   const velocity = await checkOutflowLimit(userId, amount);
@@ -80,7 +83,11 @@ export async function payBill(input: {
     await prisma.$transaction(async (tx) => {
       // Atomic debit — only succeeds if the balance still covers it.
       const upd = await tx.wallet.updateMany({
-        where: { id: walletId, frozen: false, availableUsd: { gte: amount } },
+        where: {
+          id: walletId,
+          frozen: false,
+          availableUsd: { gte: round2(amount + hold) },
+        },
         data: { availableUsd: { decrement: amount } },
       });
       if (upd.count !== 1) throw new BillError();

@@ -1662,6 +1662,12 @@
     "codMaxAgeHint": "A driver holding any COD cash longer than this stops receiving new assignments. 0 = off.",
     "pointCashLimit": "Point cash limit (USD)",
     "pointCashLimitHint": "A point holding more unremitted cash than this stops receiving new parcels and driver cash-ins. 0 = off.",
+    "trustStep": "Trust bonus: deliveries per step",
+    "trustStepHint": "Every this many completed deliveries raise a driver's cash limit by the step bonus. 0 = off.",
+    "trustBonus": "Trust bonus per step (USD)",
+    "trustBonusHint": "USD added to the driver's cash limit per completed step.",
+    "trustCap": "Trust bonus cap (USD)",
+    "trustCapHint": "Maximum total limit increase a driver can earn from history.",
     "err_badCashLimit": "Enter valid COD credit-control limits."
   },
   "Vouchers": {
@@ -2143,6 +2149,15 @@
     "codBlockedOverLimit": "You are holding {amount} of COD cash — over the {limit} limit.",
     "codBlockedHow": "Hand the cash in at any Hezalli Point or the office and new deliveries resume right away.",
     "codNearLimit": "You are holding {amount} of the {limit} COD cash allowed — hand it in soon to keep receiving deliveries.",
+    "codLimitLine": "Your cash limit: {limit} — it grows with every delivery.",
+    "holdTitle": "Wallet pledge — raise your cash limit",
+    "holdHint": "Wallet balance: {balance} · pledged: {hold} · your COD limit: {limit}. Pledged money stays yours but can't be spent or withdrawn, and it raises your COD limit by the same amount. To lower the pledge, hand in your COD cash first.",
+    "holdSave": "Update pledge",
+    "err_hold_forbidden": "You're not signed in as a driver.",
+    "err_hold_badInput": "Enter a valid amount (0 or more).",
+    "err_hold_insufficient": "Your wallet balance doesn't cover that pledge.",
+    "err_hold_cashHeld": "Hand in your COD cash first, then lower the pledge.",
+    "err_hold_frozen": "Your wallet is frozen — contact support.",
     "collectFromPoint": "Collect from",
     "pickupPoint": "Pickup point",
     "redeliverOn": "Buyer asked for redelivery on {date}",
@@ -2178,7 +2193,8 @@
     "moved": "Moved to your wallet.",
     "moveErr_nothingToMove": "No earnings available to move.",
     "moveErr_insufficient": "That is more than your available earnings.",
-    "moveErr_forbidden": "Driver account required."
+    "moveErr_forbidden": "Driver account required.",
+    "moveErr_cashOutstanding": "You still hold COD cash — hand it in first; that amount of your earnings is held as security."
   },
   "Dispatch": {
     "title": "Dispatch",
@@ -2376,7 +2392,22 @@
     "offsetHint": "Driver still holds COD cash. You can settle {amount} of it from their earnings instead of waiting for a hand-in.",
     "offsetBtn": "Settle COD from earnings",
     "err_cashOutstanding": "This driver still holds COD cash — settle it (hand-in or offset) before paying out earnings.",
-    "err_nothingToOffset": "Nothing to offset — the driver holds no cash or has no earnings."
+    "err_nothingToOffset": "Nothing to offset — the driver holds no cash or has no earnings.",
+    "depositTitle": "Security deposit & cash limit",
+    "limitBreakdown": "Personal COD cash limit: {limit} = base {base} + deposit {deposit} + wallet pledge {hold} + trust bonus {trust} ({deliveries} deliveries).",
+    "limitOff": "The COD cash-limit check is turned off in platform settings."
+  },
+  "AdminDeposits": {
+    "amount": "Deposit held (USD)",
+    "note": "Note",
+    "notePlaceholder": "Receipt no. / where the cash is kept (optional)",
+    "save": "Save deposit",
+    "saving": "Saving…",
+    "saved": "Deposit updated.",
+    "err_forbidden": "Not allowed.",
+    "err_badInput": "Enter a valid amount (0 or more).",
+    "err_notCourier": "That user isn't a courier.",
+    "err_notPoint": "That delivery point doesn't exist."
   },
   "AdminWalletAudit": {
     "title": "Wallet audit & reconciliation",
@@ -2512,7 +2543,8 @@
     "moved": "Moved to your wallet.",
     "moveErr_nothingToMove": "No earnings available to move.",
     "moveErr_insufficient": "That is more than your available balance.",
-    "moveErr_forbidden": "Point operator account required."
+    "moveErr_forbidden": "Point operator account required.",
+    "moveErr_cashOutstanding": "Cash you hold for Hezalli is withheld from your earnings — hand it in to free them."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2607,6 +2639,9 @@
     "capacityUnlimited": "Unlimited",
     "capacitySave": "Save",
     "capacityHint": "Max parcels held or inbound at once. Empty = unlimited. Full points stop receiving new routing; counter scans always work.",
+    "depositHeading": "Security deposit & cash limit",
+    "depositBreakdown": "Cash holding limit: {limit} = base {base} + deposit {deposit}. Over the limit, the point stops receiving new parcels and driver cash-ins.",
+    "depositLimitOff": "The point cash-limit check is turned off in platform settings.",
     "type_DRIVER_CASH_IN": "Driver cash-in",
     "staleTitle": "Held parcels unmoved for {days}+ days",
     "staleCount": "{count, plural, one {# stale} other {# stale}}",

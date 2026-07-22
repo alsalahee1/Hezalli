@@ -48,16 +48,31 @@ export async function transferCourierEarningsToWallet(
     await prisma.$transaction(async (tx) => {
       // Serialize this courier's self-service moves.
       await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${courierId} FOR UPDATE`;
-      const agg = await tx.courierLedgerEntry.aggregate({
-        where: { courierId, type: { in: [...COURIER_EARNING_TYPES] } },
-        _sum: { amountUsd: true },
-      });
-      const free = round2(Number(agg._sum.amountUsd ?? 0));
-      if (free <= 0) throw new MoveError("nothingToMove");
+      // Earnings are collateral for COD cash (docs §32): unremitted cash is
+      // withheld here exactly as it is from admin payouts, so the sweep can't
+      // be used to slip earnings out from under a cash debt.
+      const [agg, cashAgg] = await Promise.all([
+        tx.courierLedgerEntry.aggregate({
+          where: { courierId, type: { in: [...COURIER_EARNING_TYPES] } },
+          _sum: { amountUsd: true },
+        }),
+        tx.courierLedgerEntry.aggregate({
+          where: {
+            courierId,
+            type: { in: ["COD_COLLECTED", "REMITTANCE", "ADJUSTMENT"] },
+          },
+          _sum: { amountUsd: true },
+        }),
+      ]);
+      const cashHeld = Math.max(0, round2(Number(cashAgg._sum.amountUsd ?? 0)));
+      const free = round2(Number(agg._sum.amountUsd ?? 0) - cashHeld);
+      if (free <= 0)
+        throw new MoveError(cashHeld > 0 ? "cashOutstanding" : "nothingToMove");
       const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
       // amount can round to 0 (e.g. 0.004) — refuse rather than write 0-rows.
       if (amount <= 0) throw new MoveError("nothingToMove");
-      if (amount > free) throw new MoveError("insufficient");
+      if (amount > free)
+        throw new MoveError(cashHeld > 0 ? "cashOutstanding" : "insufficient");
 
       // Debit the courier ledger (reduces earnings owed).
       await tx.courierLedgerEntry.create({
@@ -120,20 +135,36 @@ export async function transferPointEarningsToWallet(
         },
         _sum: { amountUsd: true },
       });
-      const agg = await tx.deliveryPointLedgerEntry.aggregate({
-        where: {
-          pointId: gate.pointId,
-          type: { in: [...POINT_EARNING_TYPES] },
-        },
-        _sum: { amountUsd: true },
-      });
+      // Held COD cash is withheld too (docs §32) — same net-settlement rule
+      // as requestPointPayout, so the sweep can't bypass it.
+      const [agg, cashAgg] = await Promise.all([
+        tx.deliveryPointLedgerEntry.aggregate({
+          where: {
+            pointId: gate.pointId,
+            type: { in: [...POINT_EARNING_TYPES] },
+          },
+          _sum: { amountUsd: true },
+        }),
+        tx.deliveryPointLedgerEntry.aggregate({
+          where: {
+            pointId: gate.pointId,
+            type: { in: ["COD_COLLECTED", "DRIVER_CASH_IN", "COD_REMITTANCE"] },
+          },
+          _sum: { amountUsd: true },
+        }),
+      ]);
+      const cashHeld = Math.max(0, round2(Number(cashAgg._sum.amountUsd ?? 0)));
       const balance = round2(Number(agg._sum.amountUsd ?? 0));
-      const free = round2(balance - Number(outstanding._sum.amountUsd ?? 0));
-      if (free <= 0) throw new MoveError("nothingToMove");
+      const free = round2(
+        balance - Number(outstanding._sum.amountUsd ?? 0) - cashHeld,
+      );
+      if (free <= 0)
+        throw new MoveError(cashHeld > 0 ? "cashOutstanding" : "nothingToMove");
       const amount = amountUsd && amountUsd > 0 ? round2(amountUsd) : free;
       // amount can round to 0 (e.g. 0.004) — refuse rather than write 0-rows.
       if (amount <= 0) throw new MoveError("nothingToMove");
-      if (amount > free) throw new MoveError("insufficient");
+      if (amount > free)
+        throw new MoveError(cashHeld > 0 ? "cashOutstanding" : "insufficient");
 
       // Debit the point ledger (reduces earnings owed).
       await tx.deliveryPointLedgerEntry.create({

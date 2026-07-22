@@ -286,8 +286,19 @@ export async function placeOrder(
   );
 
   // HezalliPay: ensure the buyer's wallet row exists so we can debit it
-  // atomically inside the order transaction.
+  // atomically inside the order transaction. A COD collateral hold (docs §36)
+  // is not spendable, so the debit guard must clear grandTotal + hold.
   const walletId = wallet ? await getWalletId(userId) : null;
+  const walletHold = walletId
+    ? Number(
+        (
+          await prisma.wallet.findUniqueOrThrow({
+            where: { id: walletId },
+            select: { codHoldUsd: true },
+          })
+        ).codHoldUsd,
+      )
+    : 0;
 
   try {
     const orderId = await prisma.$transaction(async (tx) => {
@@ -324,7 +335,9 @@ export async function placeOrder(
           where: {
             id: walletId,
             frozen: false,
-            availableUsd: { gte: grandTotal },
+            availableUsd: {
+              gte: Math.round((grandTotal + walletHold) * 100) / 100,
+            },
           },
           data: { availableUsd: { decrement: grandTotal } },
         });
