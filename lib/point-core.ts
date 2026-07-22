@@ -6,6 +6,7 @@
 // Callers (lib/actions/point.ts) are responsible for authorization; pointId
 // here is always the *authenticated* operator's point.
 import { autoAssignShipment } from "@/lib/courier-assign";
+import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { settleReturnedSubOrder } from "@/lib/return-core";
 import { sendPushToUser } from "@/lib/push";
@@ -466,7 +467,7 @@ export async function buyerPickupAtPoint(
           order: {
             select: {
               paymentMethod: true,
-              payment: { select: { status: true } },
+              payment: { select: { status: true, confirmedBy: true } },
             },
           },
         },
@@ -477,10 +478,11 @@ export async function buyerPickupAtPoint(
 
   const sub = shipment.subOrder;
   // Zero when the buyer already settled the COD payment from their wallet
-  // (docs §39) — the counter hands the parcel over and takes nothing.
+  // (docs §39) — the counter hands the parcel over and takes nothing. A
+  // payment confirmed by a sibling sub-order's cash capture does NOT count:
+  // this sub still owes its own cash.
   const codDue =
-    sub.order.paymentMethod === "COD" &&
-    sub.order.payment?.status !== "CONFIRMED"
+    sub.order.paymentMethod === "COD" && !codSettledDigitally(sub.order)
       ? Math.round(
           (Number(sub.itemsTotal) +
             Number(sub.shippingTotal) -

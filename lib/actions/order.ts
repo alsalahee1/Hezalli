@@ -5,11 +5,12 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
-import { getFlashPricesFor } from "@/lib/flash";
+import { getFlashPricesFor, releaseFlashClaims } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { checkPointRoutable } from "@/lib/point-select";
 import { parseDeliveryWindow } from "@/lib/delivery-slots";
 import { notify } from "@/lib/notify";
@@ -115,6 +116,7 @@ export async function placeOrder(
     title: string;
     price: number;
     qty: number;
+    flashItemId: string | null;
   };
   const byStore = new Map<string, Line[]>();
   for (const it of items) {
@@ -123,13 +125,16 @@ export async function placeOrder(
       return { error: "unavailable" };
     }
     if (v.stock < it.quantity) return { error: "outOfStock" };
+    const flash = flashMap.get(v.id);
     const line: Line = {
       variantId: v.id,
       sku: v.sku,
       title: localizedName(v.product.title, locale),
       // Flash price wins; otherwise the scheduled (or normal) price applies.
-      price: flashMap.get(v.id)?.salePrice ?? effectivePrice(v).price,
+      price: flash?.salePrice ?? effectivePrice(v).price,
       qty: it.quantity,
+      // Remember which flash item this line claimed so a cancel can release it.
+      flashItemId: flash?.itemId ?? null,
     };
     const arr = byStore.get(v.product.storeId) ?? [];
     arr.push(line);
@@ -382,6 +387,7 @@ export async function placeOrder(
                   unitPrice: l.price,
                   quantity: l.qty,
                   lineTotal: round2(l.price * l.qty),
+                  flashItemId: l.flashItemId,
                 })),
               },
             })),
@@ -575,7 +581,7 @@ export async function cancelOrder(
       buyerId: true,
       paymentMethod: true,
       couponId: true,
-      payment: { select: { id: true, status: true } },
+      payment: { select: { id: true, status: true, confirmedBy: true } },
       subOrders: {
         select: {
           id: true,
@@ -593,7 +599,9 @@ export async function cancelOrder(
               },
             },
           },
-          items: { select: { variantId: true, quantity: true } },
+          items: {
+            select: { variantId: true, quantity: true, flashItemId: true },
+          },
         },
       },
     },
@@ -618,11 +626,12 @@ export async function cancelOrder(
       Number(s.itemsTotal) + Number(s.shippingTotal) - Number(s.discountTotal),
     );
 
-  // A wallet-paid order is CONFIRMED (and thus cancellable) with the money
-  // already taken in-system — cancelling must return it to the wallet.
-  const refundWallet =
-    order.paymentMethod === "HEZALLI_BALANCE" &&
-    order.payment?.status === "CONFIRMED";
+  // Any order whose money was already captured in-system — wallet at
+  // placement, bank/USDT/local wallet after admin confirmation, or a COD
+  // order the buyer settled digitally (docs §39) — is still cancellable while
+  // unshipped, so cancelling must return the money to the buyer's wallet
+  // (mirrors the seller-cancel path, which refunds via applyRefund).
+  const refundWallet = paymentCapturedInSystem(order);
   const walletId = refundWallet ? await getWalletId(order.buyerId) : null;
 
   const cancelledSubIds: string[] = [];
@@ -645,6 +654,7 @@ export async function cancelOrder(
           data: { stock: { increment: it.quantity } },
         });
       }
+      await releaseFlashClaims(tx, sub.items);
     }
     if (cancelledSubIds.length === 0) return; // lost every sub to a race
 

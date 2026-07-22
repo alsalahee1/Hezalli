@@ -3,6 +3,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { CheckCircle2, MapPin, Phone, Store } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
+import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { storage } from "@/lib/storage";
 import { Link } from "@/i18n/navigation";
@@ -45,6 +46,9 @@ export default async function DriverJobPage({
       subOrder: {
         select: {
           status: true,
+          itemsTotal: true,
+          shippingTotal: true,
+          discountTotal: true,
           store: { select: { name: true } },
           items: { select: { id: true, titleSnapshot: true, quantity: true } },
           order: {
@@ -55,7 +59,7 @@ export default async function DriverJobPage({
               deliveryDate: true,
               deliverySlot: true,
               address: true,
-              payment: { select: { status: true } },
+              payment: { select: { status: true, confirmedBy: true } },
             },
           },
         },
@@ -68,8 +72,9 @@ export default async function DriverJobPage({
   const a = sub.order.address;
   const done = sub.status !== "SHIPPED";
   // A COD order the buyer already paid from their wallet (docs §39) is
-  // handled like prepaid: hand over the parcel, collect NOTHING.
-  const codPaid = sub.order.payment?.status === "CONFIRMED";
+  // handled like prepaid: hand over the parcel, collect NOTHING. A payment
+  // confirmed by a sibling sub-order's cash capture does not count as paid.
+  const codPaid = codSettledDigitally(sub.order);
   const isCod = sub.order.paymentMethod === "COD" && !codPaid;
   const proof = shipment.attempts[0] ?? null;
   // A point-routed parcel the hub still holds: the driver collects it with a
@@ -135,15 +140,18 @@ export default async function DriverJobPage({
         </div>
       ) : null}
 
-      {/* COD collection callout — the driver collects cash on delivery. */}
+      {/* COD collection callout — the driver collects THIS sub-order's cash
+          (a multi-seller order's other parcels collect their own shares). */}
       {isCod ? (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
           <p className="font-medium text-amber-700 dark:text-amber-500">
             {t("collectCod", {
-              amount: format.number(Number(sub.order.grandTotal), {
-                style: "currency",
-                currency: "USD",
-              }),
+              amount: format.number(
+                Number(sub.itemsTotal) +
+                  Number(sub.shippingTotal) -
+                  Number(sub.discountTotal),
+                { style: "currency", currency: "USD" },
+              ),
             })}
           </p>
         </div>

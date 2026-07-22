@@ -5,7 +5,9 @@
 // then return the goods to sellable stock. Kept in one place so both callers
 // (lib/point-core.ts returnParcelToSeller and lib/actions/courier.ts
 // courierFailDelivery) share identical, money-safe behavior.
+import { releaseFlashClaims } from "@/lib/flash";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { applyRefund } from "@/lib/refunds";
 
@@ -22,13 +24,15 @@ export async function settleReturnedSubOrder(
       status: true,
       orderId: true,
       store: { select: { name: true } },
-      items: { select: { variantId: true, quantity: true } },
+      items: {
+        select: { variantId: true, quantity: true, flashItemId: true },
+      },
       order: {
         select: {
           buyerId: true,
           paymentMethod: true,
           buyer: { select: { locale: true } },
-          payment: { select: { status: true } },
+          payment: { select: { status: true, confirmedBy: true } },
         },
       },
     },
@@ -36,9 +40,10 @@ export async function settleReturnedSubOrder(
   if (!sub || sub.status !== "SHIPPED") return;
 
   const storeName = sub.store.name;
-  const captured =
-    sub.order.paymentMethod !== "COD" &&
-    sub.order.payment?.status === "CONFIRMED";
+  // Captured = the buyer's money is in-system: any confirmed prepaid payment,
+  // or a COD order settled digitally before handover (docs §39). Only a
+  // cash-basis COD parcel has truly "charged nothing" when it comes back.
+  const captured = paymentCapturedInSystem(sub.order);
 
   if (captured) {
     // Money came in and we failed to deliver → full refund to the buyer's
@@ -93,13 +98,14 @@ export async function settleReturnedSubOrder(
   }
 
   // The goods are back with the seller — return them to sellable stock (same as
-  // the cancel and accepted-return flows).
-  await prisma.$transaction(
-    sub.items.map((it) =>
-      prisma.productVariant.update({
+  // the cancel and accepted-return flows), releasing any flash-stock claim.
+  await prisma.$transaction(async (tx) => {
+    for (const it of sub.items) {
+      await tx.productVariant.update({
         where: { id: it.variantId },
         data: { stock: { increment: it.quantity } },
-      }),
-    ),
-  );
+      });
+    }
+    await releaseFlashClaims(tx, sub.items);
+  });
 }

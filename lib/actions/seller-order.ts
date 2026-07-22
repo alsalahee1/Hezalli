@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
+import { releaseFlashClaims } from "@/lib/flash";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { applyRefund } from "@/lib/refunds";
 
@@ -43,7 +45,9 @@ async function transition(
       orderId: true,
       status: true,
       store: { select: { name: true } },
-      items: { select: { variantId: true, quantity: true } },
+      items: {
+        select: { variantId: true, quantity: true, flashItemId: true },
+      },
       order: { select: { buyerId: true, buyer: { select: { locale: true } } } },
     },
   });
@@ -60,6 +64,7 @@ async function transition(
           data: { stock: { increment: it.quantity } },
         });
       }
+      await releaseFlashClaims(tx, sub.items);
     }
 
     const subs = await tx.subOrder.findMany({
@@ -125,11 +130,13 @@ export async function cancelSubOrder(
     select: {
       id: true,
       status: true,
-      items: { select: { variantId: true, quantity: true } },
+      items: {
+        select: { variantId: true, quantity: true, flashItemId: true },
+      },
       order: {
         select: {
           paymentMethod: true,
-          payment: { select: { status: true } },
+          payment: { select: { status: true, confirmedBy: true } },
         },
       },
     },
@@ -140,13 +147,12 @@ export async function cancelSubOrder(
   }
 
   // Has the buyer's money been taken in-system? Prepaid orders whose payment is
-  // CONFIRMED (wallet at placement, bank/USDT after admin confirmation) MUST be
-  // refunded when the seller cancels — otherwise the buyer silently loses the
-  // money and the amount is stranded off the ledger. COD and not-yet-paid orders
-  // have nothing to return, so a plain cancel is correct.
-  const paid =
-    sub.order.paymentMethod !== "COD" &&
-    sub.order.payment?.status === "CONFIRMED";
+  // CONFIRMED (wallet at placement, bank/USDT after admin confirmation) — and
+  // COD orders the buyer settled digitally from their wallet (docs §39) — MUST
+  // be refunded when the seller cancels, otherwise the buyer silently loses the
+  // money and the amount is stranded off the ledger. Cash-basis COD and
+  // not-yet-paid orders have nothing to return, so a plain cancel is correct.
+  const paid = paymentCapturedInSystem(sub.order);
 
   if (!paid) {
     return transition(subOrderId, ["CONFIRMED", "PROCESSING"], "CANCELLED", {
@@ -175,6 +181,7 @@ export async function cancelSubOrder(
         data: { stock: { increment: it.quantity } },
       });
     }
+    await releaseFlashClaims(tx, sub.items);
   });
 
   revalidatePath(`/${locale}/seller/orders`);

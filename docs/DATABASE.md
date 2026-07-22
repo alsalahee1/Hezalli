@@ -685,8 +685,14 @@ stateDiagram-v2
 
 - **Escrow release** (prepaid) happens on **COMPLETED**: seller credited
   `itemsTotal − 10% commission`.
-- **COD**: on **COMPLETED**, a `COD_COMMISSION_DUE` ledger entry debits the
-  seller's balance by the 10% commission (seller already holds the cash).
+- **COD**: on **COMPLETED**, settlement depends on who holds the cash:
+  - Collected by the **seller's own carrier**: a `COD_COMMISSION_DUE` ledger
+    entry debits the seller's balance by the commission (the seller already
+    holds the cash).
+  - Collected by **Hezalli Express** (a courier/point `COD_COLLECTED` ledger
+    entry exists) or **settled digitally from the buyer's wallet** (docs §39):
+    the platform holds the money, so the seller is credited a `SALE` like a
+    prepaid order.
 - The top-level `Order.status` is a **rollup** of its `SubOrder` statuses
   (e.g. all COMPLETED → order COMPLETED; any active → the least-advanced state).
 
