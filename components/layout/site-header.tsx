@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { NavCategory } from "@/lib/categories";
 import { formatUsd } from "@/lib/products";
+import type { ThemeId } from "@/lib/theme-constants";
 import { CartButton } from "@/components/cart/cart-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -17,6 +18,7 @@ import { CategoryNav } from "./category-nav";
 import { LanguageSwitcher } from "./language-switcher";
 import { Logo } from "./logo";
 import { SearchBar } from "./search-bar";
+import { ThemeSwitcher } from "./theme-switcher";
 
 type HeaderUser = {
   name?: string | null;
@@ -33,6 +35,7 @@ export function SiteHeader({
   isFleetOwner = false,
   walletBalance = 0,
   categories = [],
+  theme = "default",
 }: {
   user?: HeaderUser | null;
   isSeller?: boolean;
@@ -42,14 +45,17 @@ export function SiteHeader({
   isFleetOwner?: boolean;
   walletBalance?: number;
   categories?: NavCategory[];
+  theme?: ThemeId;
 }) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
+  const th = useTranslations("Theme");
   const locale = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
+      <div className="yemeni-trim yemeni:block hidden" aria-hidden />
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <button
           type="button"
@@ -69,7 +75,8 @@ export function SiteHeader({
 
         <div className="ms-auto flex items-center gap-1">
           {/* Desktop only — hidden on mobile to keep the header uncluttered. */}
-          <div className="hidden md:flex">
+          <div className="hidden items-center gap-2 md:flex">
+            <ThemeSwitcher initialTheme={theme} />
             <LanguageSwitcher />
           </div>
           <Button
@@ -124,14 +131,22 @@ export function SiteHeader({
         <SearchBar className="relative" />
       </div>
 
-      {/* Mobile menu: language switcher lives here (hidden from the header row
-          on mobile), so mobile users can still switch language. */}
+      {/* Mobile menu: language and theme switchers live here (hidden from the
+          header row on mobile), so mobile users can still reach them. */}
       {menuOpen ? (
-        <div className="flex items-center justify-between border-t px-4 py-3 md:hidden">
-          <span className="text-muted-foreground text-sm font-medium">
-            {c("language")}
-          </span>
-          <LanguageSwitcher />
+        <div className="space-y-3 border-t px-4 py-3 md:hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm font-medium">
+              {c("language")}
+            </span>
+            <LanguageSwitcher />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm font-medium">
+              {th("label")}
+            </span>
+            <ThemeSwitcher initialTheme={theme} />
+          </div>
         </div>
       ) : null}
 

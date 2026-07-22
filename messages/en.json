@@ -47,6 +47,11 @@
     "driverApp": "Driver app",
     "pointPortal": "Point portal"
   },
+  "Theme": {
+    "label": "Theme",
+    "default": "Classic",
+    "yemeni": "Yemeni"
+  },
   "MobileNav": {
     "label": "Primary",
     "home": "Home",
