@@ -14,6 +14,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 import {
   creditWalletTx,
   getWalletId,
@@ -34,6 +35,11 @@ export async function payCodWithWallet(orderId: string): Promise<Result> {
   const session = await auth();
   if (!session?.user?.id) return { error: "forbidden" };
   const buyerId = session.user.id;
+
+  // Admin kill switch (Admin → Settings). Same gate pattern as wallet bills.
+  if (!(await getSetting("cod_wallet_pay_enabled"))) {
+    return { error: "disabled" };
+  }
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, buyerId },

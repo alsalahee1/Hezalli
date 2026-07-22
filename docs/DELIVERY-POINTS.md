@@ -721,6 +721,9 @@ Rules (`lib/actions/pay-cod.ts`):
   double-tap racing a doorstep delivery can never charge twice.
 - Buyer order page: a "Pay now — skip the cash" card with the wallet
   balance; disabled with a top-up hint when the balance can't cover it.
+- **Admin kill switch**: `cod_wallet_pay_enabled` (Admin → Settings, on by
+  default) hides the pay card and blocks the action platform-wide; orders
+  already paid stay paid.
 
 ### Build checklist (v1.19)
 

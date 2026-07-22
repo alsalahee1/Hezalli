@@ -95,6 +95,11 @@ export type PlatformSettings = {
   trust_step_deliveries: number;
   trust_step_bonus_usd: number;
   trust_bonus_cap_usd: number;
+  // Doorstep wallet payment for COD orders (docs §39): when on, a buyer can
+  // settle a COD order from their HezalliPay balance before handover, so the
+  // driver/counter collects nothing. Off hides the pay button and blocks the
+  // action; orders already paid stay paid.
+  cod_wallet_pay_enabled: boolean;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -141,6 +146,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   trust_step_deliveries: 20,
   trust_step_bonus_usd: 10,
   trust_bonus_cap_usd: 100,
+  cod_wallet_pay_enabled: true,
 };
 
 export const SETTING_KEYS = Object.keys(

@@ -696,3 +696,26 @@ describe("doorstep wallet payment for COD", () => {
     expect(await payCodWithWallet(orderId)).toEqual({ error: "notFound" });
   });
 });
+
+describe("cod wallet pay kill switch", () => {
+  it("admin can turn doorstep wallet payment off", async () => {
+    await prisma.platformSetting.upsert({
+      where: { key: "cod_wallet_pay_enabled" },
+      create: { key: "cod_wallet_pay_enabled", value: false as never },
+      update: { value: false as never },
+    });
+    try {
+      const { orderId } = await fx.createSubOrder({
+        paymentMethod: "COD",
+        status: "SHIPPED",
+      });
+      as(fx.buyerId);
+      expect(await payCodWithWallet(orderId)).toEqual({ error: "disabled" });
+    } finally {
+      // Removing the row restores the default (on).
+      await prisma.platformSetting.delete({
+        where: { key: "cod_wallet_pay_enabled" },
+      });
+    }
+  });
+});
