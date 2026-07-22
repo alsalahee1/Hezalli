@@ -1008,6 +1008,7 @@
     "err_paycod_alreadyPaid": "This order is already paid.",
     "err_paycod_insufficient": "Your wallet balance doesn't cover this order.",
     "err_paycod_frozen": "Your wallet is frozen — contact support.",
+    "err_paycod_disabled": "Online COD payment is currently turned off — settle in cash at delivery.",
     "method_LOCAL_WALLET": "Local wallet",
     "method_BANK_TRANSFER": "Bank transfer",
     "method_USDT": "USDT",
@@ -1680,6 +1681,8 @@
     "trustBonusHint": "USD added to the driver's cash limit per completed step.",
     "trustCap": "Trust bonus cap (USD)",
     "trustCapHint": "Maximum total limit increase a driver can earn from history.",
+    "codWalletPay": "Doorstep wallet payment for COD",
+    "codWalletPayHint": "Buyers can settle a COD order from their HezalliPay balance before handover — the driver collects nothing.",
     "err_badCashLimit": "Enter valid COD credit-control limits."
   },
   "Vouchers": {

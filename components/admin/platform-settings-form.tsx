@@ -64,6 +64,7 @@ export function PlatformSettingsForm({
     trust_step_deliveries: String(current.trust_step_deliveries),
     trust_step_bonus_usd: String(current.trust_step_bonus_usd),
     trust_bonus_cap_usd: String(current.trust_bonus_cap_usd),
+    cod_wallet_pay_enabled: current.cod_wallet_pay_enabled,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -113,6 +114,7 @@ export function PlatformSettingsForm({
         trust_step_deliveries: Number(f.trust_step_deliveries),
         trust_step_bonus_usd: Number(f.trust_step_bonus_usd),
         trust_bonus_cap_usd: Number(f.trust_bonus_cap_usd),
+        cod_wallet_pay_enabled: f.cod_wallet_pay_enabled,
       });
       if (res.error) setErr(res.error);
       else {
@@ -398,6 +400,18 @@ export function PlatformSettingsForm({
             onChange={(e) => set("cod_enabled", e.target.checked)}
           />
           {t("codEnabled")}
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.cod_wallet_pay_enabled}
+            onChange={(e) => set("cod_wallet_pay_enabled", e.target.checked)}
+          />
+          {t("codWalletPay")}
+          <span className="text-muted-foreground text-xs">
+            {t("codWalletPayHint")}
+          </span>
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input

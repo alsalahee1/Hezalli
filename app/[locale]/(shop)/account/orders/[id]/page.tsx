@@ -116,6 +116,7 @@ export default async function OrderDetailPage({
   // no sub-order has gone past SHIPPED (no cash exchanged, nothing cancelled)
   // and the payment is still unconfirmed. Balance shown net of any COD hold.
   const codPayable =
+    settings.cod_wallet_pay_enabled &&
     order.paymentMethod === "COD" &&
     order.payment?.status !== "CONFIRMED" &&
     order.subOrders.length > 0 &&

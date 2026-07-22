@@ -49,6 +49,7 @@ export type SettingsInput = {
   trust_step_deliveries: number;
   trust_step_bonus_usd: number;
   trust_bonus_cap_usd: number;
+  cod_wallet_pay_enabled: boolean;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -196,6 +197,7 @@ export async function savePlatformSettings(
     trust_step_deliveries: trustStep,
     trust_step_bonus_usd: trustBonus,
     trust_bonus_cap_usd: trustCap,
+    cod_wallet_pay_enabled: Boolean(input.cod_wallet_pay_enabled),
   };
 
   await prisma.$transaction(
