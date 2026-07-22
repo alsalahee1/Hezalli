@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { ConfirmReceivedButton } from "@/components/orders/confirm-received-button";
+import { PayCodButton } from "@/components/orders/pay-cod-button";
 import { PaymentProofForm } from "@/components/orders/payment-proof-form";
 import { QrCode } from "@/components/orders/qr-code";
 import { RedeliveryForm } from "@/components/orders/redelivery-form";
@@ -111,6 +112,28 @@ export default async function OrderDetailPage({
   const money = (n: unknown) =>
     format.number(Number(n), { style: "currency", currency: "USD" });
 
+  // Doorstep digital payment (docs §39): a COD order is wallet-payable while
+  // no sub-order has gone past SHIPPED (no cash exchanged, nothing cancelled)
+  // and the payment is still unconfirmed. Balance shown net of any COD hold.
+  const codPayable =
+    order.paymentMethod === "COD" &&
+    order.payment?.status !== "CONFIRMED" &&
+    order.subOrders.length > 0 &&
+    order.subOrders.every((s) =>
+      ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED"].includes(s.status),
+    );
+  let walletBalance = 0;
+  if (codPayable) {
+    const w = await prisma.wallet.findUnique({
+      where: { userId: session.user.id },
+      select: { availableUsd: true, codHoldUsd: true },
+    });
+    walletBalance = Math.max(
+      0,
+      Number(w?.availableUsd ?? 0) - Number(w?.codHoldUsd ?? 0),
+    );
+  }
+
   const futureBtn = (label: string, hint: string) => (
     <span title={hint}>
       <Button size="sm" variant="outline" disabled>
@@ -197,6 +220,24 @@ export default async function OrderDetailPage({
           }
           paymentStatus={order.payment.status}
         />
+      ) : null}
+
+      {/* Doorstep digital payment (docs §39): settle COD from the wallet so
+          no cash is needed at delivery. Only while fully payable. */}
+      {codPayable ? (
+        <PayCodButton
+          orderId={order.id}
+          amount={money(Number(order.grandTotal))}
+          balance={money(walletBalance)}
+          canCover={walletBalance >= Number(order.grandTotal)}
+        />
+      ) : null}
+      {order.paymentMethod === "COD" &&
+      order.payment?.status === "CONFIRMED" &&
+      !["COMPLETED", "CANCELLED", "REFUNDED"].includes(order.status) ? (
+        <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-500">
+          {t("payCodDone")}
+        </p>
       ) : null}
 
       {/* Timeline */}

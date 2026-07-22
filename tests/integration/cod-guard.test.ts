@@ -38,10 +38,12 @@ import {
   submitCourierRemitClaim,
   submitPointRemitClaim,
 } from "@/lib/actions/remit-claim";
+import { payCodWithWallet } from "@/lib/actions/pay-cod";
 import { setWalletCodHold } from "@/lib/actions/wallet-hold";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { checkPointRoutable } from "@/lib/point-select";
+import { markSubOrderDelivered } from "@/lib/shipment-core";
 import { prisma } from "@/lib/prisma";
 import { transferFunds } from "@/lib/wallet-transfers";
 import { makeFixture } from "./factory";
@@ -603,5 +605,94 @@ describe("digital remittance claims", () => {
     as(adminId);
     expect(await approveRemitClaim(claim.id)).toEqual({ ok: true });
     expect((await pointLedgerSummary(pointId)).cashOnHand).toBe(0);
+  });
+});
+
+describe("doorstep wallet payment for COD", () => {
+  it("buyer pays from wallet → payment CONFIRMED, driver collects nothing", async () => {
+    // Buyer wallet holding $150, backed by a real ledger entry.
+    const wallet = await prisma.wallet.upsert({
+      where: { userId: fx.buyerId },
+      create: { userId: fx.buyerId, availableUsd: 150 },
+      update: { availableUsd: 150 },
+      select: { id: true },
+    });
+    await prisma.walletEntry.create({
+      data: { walletId: wallet.id, type: "TOP_UP", amountUsd: 150 },
+    });
+
+    const { orderId, subOrderId } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "SHIPPED",
+    });
+    const driver = await makeCourier("door");
+    await prisma.shipment.create({
+      data: {
+        subOrderId,
+        status: "OUT_FOR_DELIVERY",
+        platformManaged: true,
+        shippedAt: new Date(),
+        driverId: driver,
+      },
+    });
+
+    as(fx.buyerId);
+    expect(await payCodWithWallet(orderId)).toEqual({ ok: true });
+    // $150 − $100 order, balance recomputed from the ledger.
+    const after = await prisma.wallet.findUniqueOrThrow({
+      where: { id: wallet.id },
+      select: { availableUsd: true },
+    });
+    expect(Number(after.availableUsd)).toBe(50);
+    const payment = await prisma.payment.findUniqueOrThrow({
+      where: { orderId },
+      select: { status: true, confirmedBy: true },
+    });
+    expect(payment.status).toBe("CONFIRMED");
+    expect(payment.confirmedBy).toBe("buyer:wallet");
+    // The assigned driver is told to collect nothing.
+    expect(
+      await prisma.notification.findFirst({
+        where: { userId: driver, title: { contains: "paid digitally" } },
+      }),
+    ).toBeTruthy();
+
+    // Double-pay refused.
+    expect(await payCodWithWallet(orderId)).toEqual({ error: "alreadyPaid" });
+
+    // Delivery: the driver earns their fee but takes NO cash accountability.
+    expect(
+      await markSubOrderDelivered(subOrderId, "courier", "en", {
+        courierId: driver,
+      }),
+    ).toEqual({ ok: true });
+    const cash = await courierCashSummary(driver);
+    expect(cash.cashOnHand).toBe(0);
+    expect(cash.totalCollected).toBe(0);
+    expect(cash.earnings).toBeGreaterThan(0);
+  });
+
+  it("refuses when the balance can't cover it or money already moved", async () => {
+    // Balance is $50 after the previous test; a fresh $100 COD order won't fit.
+    const { orderId } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "SHIPPED",
+    });
+    as(fx.buyerId);
+    expect(await payCodWithWallet(orderId)).toEqual({ error: "insufficient" });
+
+    // A sub-order already DELIVERED means cash may have changed hands.
+    const delivered = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "DELIVERED",
+    });
+    expect(await payCodWithWallet(delivered.orderId)).toEqual({
+      error: "badState",
+    });
+
+    // Someone else's order is invisible.
+    const stranger = await makeCourier("nosy");
+    as(stranger);
+    expect(await payCodWithWallet(orderId)).toEqual({ error: "notFound" });
   });
 });
