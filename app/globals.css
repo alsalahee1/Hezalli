@@ -168,7 +168,7 @@
    embroidery and majlis textile edges. Used as a thin framing accent when
    the Yemeni theme is active (see .yemeni:block usages). */
 .yemeni-trim {
-  height: 6px;
+  height: 16px;
   background-image:
     linear-gradient(135deg, var(--primary) 25%, transparent 25.5%),
     linear-gradient(225deg, var(--primary) 25%, transparent 25.5%),
@@ -176,11 +176,24 @@
     linear-gradient(315deg, var(--accent) 25%, transparent 25.5%);
   background-position:
     0 0,
-    5px 0,
-    5px -5px,
-    0 5px;
-  background-size: 10px 10px;
+    8px 0,
+    8px -8px,
+    0 8px;
+  background-size: 16px 16px;
   background-color: var(--secondary);
+}
+
+/* Footer takes a solid block of the deep secondary color under the Yemeni
+   theme — the dark ground behind the embroidery, rather than the default
+   theme's translucent muted wash. Re-pointing the muted/foreground/border
+   tokens locally lets the footer's existing text-muted-foreground,
+   text-foreground and border utilities repaint for the dark ground without
+   touching every element inside it (site-footer.tsx, newsletter-signup.tsx). */
+.theme-yemeni footer {
+  --foreground: var(--secondary-foreground);
+  --muted: oklch(0.28 0.03 35);
+  --muted-foreground: oklch(0.75 0.02 40);
+  --border: oklch(1 0 0 / 12%);
 }
 
 /* Native-app wallet on phones.
