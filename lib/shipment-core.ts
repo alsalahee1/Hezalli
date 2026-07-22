@@ -18,6 +18,7 @@ import {
 } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
+import { notifyBot } from "@/lib/integrations/bot-notify";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -261,5 +262,13 @@ export async function markSubOrderDelivered(
   revalidatePath(`/${locale}/seller/orders/${subOrderId}`);
   revalidatePath(`/${locale}/account/orders`);
   revalidatePath(`/${locale}/account/orders/${sub.orderId}`);
+
+  // Courtesy ping over the buyer's linked messaging bots (Telegram/WhatsApp).
+  await notifyBot(
+    sub.order.buyerId,
+    ar
+      ? `✅ تم توصيل طلبك من ${sub.store.name}. أكِّد الاستلام لإتمام الطلب.`
+      : `✅ Your order from ${sub.store.name} was delivered. Confirm receipt to complete it.`,
+  );
   return { ok: true };
 }

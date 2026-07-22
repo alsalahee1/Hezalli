@@ -196,3 +196,68 @@ export async function editShipmentTracking(
   revalidatePath(`/${locale}/account/orders/${shipment.subOrder.orderId}`);
   return { ok: true };
 }
+
+// Look up a shipment for the delivery-manager scan console by its printed
+// tracking number or its Hezalli Express delivery code. Returns a compact
+// summary the console shows before/after applying a status.
+export async function lookupShipmentForScan(code: string): Promise<
+  | {
+      ok: true;
+      shipment: {
+        id: string;
+        status: string;
+        code: string;
+        store: string;
+        buyer: string;
+        governorate: string;
+        courier: string | null;
+      };
+    }
+  | { ok?: false; error: string }
+> {
+  const staffId = await requireDeliveryManagerId();
+  if (!staffId) return { error: "forbidden" };
+  const raw = (code ?? "").trim();
+  if (raw.length < 3) return { error: "badCode" };
+
+  const shipment = await prisma.shipment.findFirst({
+    where: {
+      OR: [
+        { trackingNumber: { equals: raw, mode: "insensitive" } },
+        { deliveryCode: { equals: raw, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      status: true,
+      driver: { select: { name: true } },
+      subOrder: {
+        select: {
+          id: true,
+          store: { select: { name: true } },
+          order: {
+            select: {
+              buyer: { select: { name: true } },
+              address: { select: { governorate: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!shipment) return { error: "notFound" };
+
+  return {
+    ok: true,
+    shipment: {
+      id: shipment.id,
+      status: shipment.status,
+      code: `#${shipment.subOrder.id.slice(-8).toUpperCase()}`,
+      store: shipment.subOrder.store.name,
+      buyer: shipment.subOrder.order.buyer.name ?? "—",
+      governorate: shipment.subOrder.order.address.governorate,
+      courier: shipment.driver?.name ?? null,
+    },
+  };
+}

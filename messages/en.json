@@ -2938,7 +2938,13 @@
     "bulkApply": "Apply to selected",
     "bulkClear": "Clear",
     "bulkResult": "Updated {changed}; skipped {skipped}.",
-    "error_failed": "Something went wrong for one or more shipments."
+    "error_failed": "Something went wrong for one or more shipments.",
+    "scan": "Scan",
+    "scanDesc": "Pick a status, then scan waybills or the buyer QR to apply it.",
+    "scanModeHint": "Every parcel you scan gets the selected status.",
+    "scanNoCamera": "Camera scanning isn't available on this device — type the tracking code below.",
+    "scanManual": "Scan or type a tracking code",
+    "error_badCode": "Enter a valid code."
   },
   "How": {
     "b_title": "How shopping on Hezalli works",
@@ -3138,5 +3144,25 @@
     "s_g5d": "A clear window, a response timer, and a dispute path — so problems end with a decision, not a fight.",
     "s_g6t": "Promotions",
     "s_g6d": "Coupons, flash sales, and store vouchers to push your best products."
+  },
+  "Kyc": {
+    "intro": "Upload a clear photo of your government ID and a selfie holding it. Verification unlocks wallet withdrawals.",
+    "idFront": "ID — front",
+    "idFrontHint": "Photo of the front",
+    "idBack": "ID — back (optional)",
+    "idBackHint": "Photo of the back",
+    "selfie": "Selfie with ID",
+    "selfieHint": "You holding your ID",
+    "replace": "Replace",
+    "submit": "Submit for verification",
+    "verified": "Identity verified",
+    "pending": "Under review — we'll notify you.",
+    "rejected": "Your last submission was rejected. Please resubmit clear documents.",
+    "privacy": "Documents are used only for identity verification and are visible only to our compliance staff.",
+    "error_unauthorized": "Please sign in.",
+    "error_docsRequired": "An ID photo and a selfie are required.",
+    "error_notSeller": "Only seller accounts can submit KYC.",
+    "error_alreadyPending": "A submission is already under review.",
+    "error_alreadyVerified": "You're already verified."
   }
 }
