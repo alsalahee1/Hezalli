@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { getWalletId } from "@/lib/wallet";
 import { Link } from "@/i18n/navigation";
 import { WalletHoldForm } from "@/components/driver/wallet-hold-form";
+import { RemitClaimForm } from "@/components/ops/remit-claim-form";
 import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
 // The driver's cash & earnings ledger (docs §30): the same headline figures
@@ -22,12 +23,16 @@ export default async function DriverLedgerPage() {
     format.number(n, { style: "currency", currency: "USD" });
 
   const walletId = await getWalletId(courierId);
-  const [cash, cod, wallet, entries] = await Promise.all([
+  const [cash, cod, wallet, pendingClaim, entries] = await Promise.all([
     courierCashSummary(courierId),
     courierCodStatus(courierId),
     prisma.wallet.findUniqueOrThrow({
       where: { id: walletId },
       select: { availableUsd: true, codHoldUsd: true },
+    }),
+    prisma.remitClaim.findFirst({
+      where: { courierId, status: "PENDING" },
+      select: { amountUsd: true, method: true, reference: true },
     }),
     prisma.courierLedgerEntry.findMany({
       where: { courierId },
@@ -99,6 +104,30 @@ export default async function DriverLedgerPage() {
         namespace="Driver"
         disabled={cash.earnings <= 0}
       />
+
+      {/* Digital remittance (docs §38): transfer the cash over a rail and
+          file the reference — staff confirm and the ledger settles. */}
+      <section className="space-y-2 rounded-xl border p-4">
+        <h2 className="text-sm font-semibold">{t("remitTitle")}</h2>
+        {pendingClaim ? (
+          <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-500">
+            {t("remitPending", {
+              amount: money(Number(pendingClaim.amountUsd)),
+              method: t(`remitMethod_${pendingClaim.method}`),
+              reference: pendingClaim.reference,
+            })}
+          </p>
+        ) : (
+          <>
+            <p className="text-muted-foreground text-xs">{t("remitHint")}</p>
+            <RemitClaimForm
+              who="courier"
+              namespace="Driver"
+              max={cash.cashOnHand}
+            />
+          </>
+        )}
+      </section>
 
       {/* COD collateral pledge (docs §36): lock wallet balance → higher limit. */}
       <section className="space-y-2 rounded-xl border p-4">

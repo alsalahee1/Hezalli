@@ -9,6 +9,7 @@ import { transferPointEarningsToWallet } from "@/lib/actions/earnings-wallet";
 import { prisma } from "@/lib/prisma";
 import { DriverCashInForm } from "@/components/point/driver-cash-in-form";
 import { PayoutRequestForm } from "@/components/point/payout-request-form";
+import { RemitClaimForm } from "@/components/ops/remit-claim-form";
 import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
 // The operator's earnings: handling fees accrued, payouts received, the
@@ -21,38 +22,47 @@ export default async function PointLedgerPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [summary, entries, couriers, payoutRequests] = await Promise.all([
-    pointLedgerSummary(gate.pointId),
-    prisma.deliveryPointLedgerEntry.findMany({
-      where: { pointId: gate.pointId },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      select: {
-        id: true,
-        type: true,
-        amountUsd: true,
-        note: true,
-        createdAt: true,
-      },
-    }),
-    prisma.user.findMany({
-      where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true },
-    }),
-    prisma.pointPayoutRequest.findMany({
-      where: { pointId: gate.pointId },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        amountUsd: true,
-        status: true,
-        note: true,
-        createdAt: true,
-      },
-    }),
-  ]);
+  const [summary, entries, couriers, payoutRequests, pendingClaim] =
+    await Promise.all([
+      pointLedgerSummary(gate.pointId),
+      prisma.deliveryPointLedgerEntry.findMany({
+        where: { pointId: gate.pointId },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          type: true,
+          amountUsd: true,
+          note: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.findMany({
+        where: {
+          roles: { has: "COURIER" },
+          isSuspended: false,
+          deletedAt: null,
+        },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true },
+      }),
+      prisma.pointPayoutRequest.findMany({
+        where: { pointId: gate.pointId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          amountUsd: true,
+          status: true,
+          note: true,
+          createdAt: true,
+        },
+      }),
+      prisma.remitClaim.findFirst({
+        where: { pointId: gate.pointId, status: "PENDING" },
+        select: { amountUsd: true, method: true, reference: true },
+      }),
+    ]);
   const hasOpen = payoutRequests.some(
     (r) => r.status === "REQUESTED" || r.status === "APPROVED",
   );
@@ -131,6 +141,32 @@ export default async function PointLedgerPage() {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {/* Digital remittance (docs §38): transfer the held cash over a rail
+          and file the reference — staff confirm and the cash side settles. */}
+      {summary.cashOnHand > 0 || pendingClaim ? (
+        <section className="space-y-2 rounded-xl border p-4">
+          <h2 className="text-sm font-semibold">{t("remitTitle")}</h2>
+          {pendingClaim ? (
+            <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-500">
+              {t("remitPending", {
+                amount: money(Number(pendingClaim.amountUsd)),
+                method: t(`remitMethod_${pendingClaim.method}`),
+                reference: pendingClaim.reference,
+              })}
+            </p>
+          ) : (
+            <>
+              <p className="text-muted-foreground text-xs">{t("remitHint")}</p>
+              <RemitClaimForm
+                who="point"
+                namespace="Point"
+                max={summary.cashOnHand}
+              />
+            </>
+          )}
+        </section>
       ) : null}
 
       {/* Sweep the earnings balance straight into the HezalliPay wallet
