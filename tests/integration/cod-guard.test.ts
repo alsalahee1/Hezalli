@@ -776,3 +776,39 @@ describe("codExposureReport", () => {
     expect(r.blockedDrivers).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("hardening: rate limits on self-service money actions", () => {
+  it("throttles remit-claim submissions per courier", async () => {
+    const c = await makeCourier("rl");
+    as(c);
+    // No cash → every attempt fails overRemit, but each consumes the window
+    // (limit 6 per 10 minutes). The 7th hits the limiter.
+    for (let i = 0; i < 6; i++) {
+      expect(
+        await submitCourierRemitClaim(
+          form({ amount: "5", method: "JAWALI", reference: `RL-${i}` }),
+        ),
+      ).toEqual({ error: "overRemit" });
+    }
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "5", method: "JAWALI", reference: "RL-x" }),
+      ),
+    ).toEqual({ error: "tooMany" });
+  });
+
+  it("throttles wallet-pledge changes per courier", async () => {
+    const c = await makeCourier("rl2");
+    as(c);
+    // Invalid amount fails AFTER the limiter, so each call consumes it
+    // (limit 10 per minute); the 11th is throttled.
+    for (let i = 0; i < 10; i++) {
+      expect(await setWalletCodHold(form({ amount: "-1" }))).toEqual({
+        error: "badInput",
+      });
+    }
+    expect(await setWalletCodHold(form({ amount: "-1" }))).toEqual({
+      error: "tooMany",
+    });
+  });
+});

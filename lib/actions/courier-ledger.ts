@@ -143,12 +143,26 @@ export async function offsetEarningsAgainstCod(
   });
   if (!courier?.roles.includes("COURIER")) return { error: "notCourier" };
 
-  const cash = await courierCashSummary(courierId);
-  const amount = round2(Math.min(cash.cashOnHand, cash.earnings));
-  if (amount <= 0) return { error: "nothingToOffset" };
+  // Compute the offset INSIDE the transaction under a courier row lock, so a
+  // hand-in (or another offset) landing concurrently can't make this one
+  // overdraw the cash the driver actually still holds.
+  let amount = 0;
+  await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${courierId} FOR UPDATE`;
+    const grouped = await tx.courierLedgerEntry.groupBy({
+      by: ["type"],
+      where: { courierId },
+      _sum: { amountUsd: true },
+    });
+    const sum = (t: string) =>
+      Number(grouped.find((g) => g.type === t)?._sum.amountUsd ?? 0);
+    const cashOnHand =
+      sum("COD_COLLECTED") + sum("REMITTANCE") + sum("ADJUSTMENT");
+    const earnings = sum("EARNING") + sum("PAYOUT");
+    amount = round2(Math.min(cashOnHand, earnings));
+    if (amount <= 0) return;
 
-  await prisma.$transaction([
-    prisma.courierLedgerEntry.create({
+    await tx.courierLedgerEntry.create({
       data: {
         courierId,
         type: "REMITTANCE",
@@ -156,8 +170,8 @@ export async function offsetEarningsAgainstCod(
         note: "Settled from earnings (offset)",
         createdById: adminId,
       },
-    }),
-    prisma.courierLedgerEntry.create({
+    });
+    await tx.courierLedgerEntry.create({
       data: {
         courierId,
         type: "PAYOUT",
@@ -165,8 +179,8 @@ export async function offsetEarningsAgainstCod(
         note: "Applied to COD cash (offset)",
         createdById: adminId,
       },
-    }),
-    prisma.auditLog.create({
+    });
+    await tx.auditLog.create({
       data: {
         actorId: adminId,
         action: "courier.codOffset",
@@ -174,8 +188,8 @@ export async function offsetEarningsAgainstCod(
         entityId: courierId,
         meta: { amountUsd: amount },
       },
-    }),
-    prisma.notification.create({
+    });
+    await tx.notification.create({
       data: {
         userId: courierId,
         type: "PAYMENT",
@@ -183,8 +197,9 @@ export async function offsetEarningsAgainstCod(
         body: `${amount.toFixed(2)} USD of your earnings was used to settle COD cash you were holding.`,
         data: { link: "/driver/ledger" },
       },
-    }),
-  ]);
+    });
+  });
+  if (amount <= 0) return { error: "nothingToOffset" };
 
   const locale = await getLocale();
   revalidatePath(`/${locale}/admin/couriers/${courierId}`);
