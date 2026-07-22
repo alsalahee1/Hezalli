@@ -75,7 +75,12 @@ export async function markSubOrderDelivered(
       discountTotal: true,
       store: { select: { name: true } },
       shipment: {
-        select: { id: true, deliveryPointId: true, originPointId: true },
+        select: {
+          id: true,
+          platformManaged: true,
+          deliveryPointId: true,
+          originPointId: true,
+        },
       },
       order: {
         select: {
@@ -121,6 +126,22 @@ export async function markSubOrderDelivered(
         Number(sub.shippingTotal) -
         Number(sub.discountTotal)
       : 0;
+
+  // Money safety net: for a Hezalli Express (platform-managed) parcel with COD
+  // cash still to collect, the caller MUST name who took the cash — a courier
+  // (recordDeliveryLedger) or a pickup point (recordPointCounterCod). Without
+  // one, the cash would be captured onto no ledger and no one would be
+  // accountable to remit it (the class of bug behind the seller/staff/buyer
+  // "mark delivered" custody bypasses). Third-party carriers are exempt: their
+  // COD is the seller's own cash (settled as COD_COMMISSION_DUE), off-platform.
+  if (
+    codAmount > 0 &&
+    sub.shipment?.platformManaged &&
+    !proof?.courierId &&
+    !proof?.pickupPointId
+  ) {
+    return { error: "noCashHandler" };
+  }
 
   await prisma.$transaction(async (tx) => {
     if (sub.shipment) {

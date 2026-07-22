@@ -27,7 +27,8 @@ export async function confirmReceived(orderId: string): Promise<Result> {
         select: {
           id: true,
           status: true,
-          shipment: { select: { driverId: true } },
+          shippingMethod: true,
+          shipment: { select: { driverId: true, platformManaged: true } },
           store: {
             select: {
               seller: {
@@ -42,17 +43,21 @@ export async function confirmReceived(orderId: string): Promise<Result> {
   if (!order) return { error: "notFound" };
   if (order.subOrders.length === 0) return { error: "badState" };
 
-  // A sub-order the buyer confirms while still SHIPPED must pass through the
-  // shared delivery core first — jumping straight to COMPLETED would skip the
-  // COD cash capture, the courier's cash/earnings ledger, and the shipment's
-  // DELIVERED state (leaving the driver's own "delivered" scan rejected).
-  // The assigned courier is credited: receipt of a COD parcel means the cash
-  // was handed to whoever delivered it.
+  // A buyer may only DRIVE a delivery for a third-party carrier — there is no
+  // in-system scan chain there, so the buyer's confirmation IS the delivery
+  // signal (COD is the seller's own cash, off-platform). For Hezalli Express
+  // (platform-managed) and PICKUP parcels the platform's custody chain records
+  // delivery — the driver's scan against the buyer's QR, or the point counter.
+  // Letting the buyer confirm those while still SHIPPED would book COD onto a
+  // driver/point that never collected it and credit fees for no handover. Those
+  // sub-orders are simply left for their proper actor; the buyer confirms them
+  // only once they already read DELIVERED.
   for (const s of order.subOrders) {
     if (s.status !== "SHIPPED") continue;
-    await markSubOrderDelivered(s.id, "buyer", locale, {
-      courierId: s.shipment?.driverId ?? undefined,
-    });
+    const platformCustody =
+      s.shipment?.platformManaged || s.shippingMethod === "PICKUP";
+    if (platformCustody) continue;
+    await markSubOrderDelivered(s.id, "buyer", locale);
   }
 
   let completed = 0;

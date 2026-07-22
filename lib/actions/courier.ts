@@ -219,11 +219,18 @@ export async function courierAdvance(
   const sub = shipment.subOrder;
   // Only an in-flight (SHIPPED) sub-order can be advanced by a driver.
   if (sub.status !== "SHIPPED") return { error: "badState" };
-  // A point-routed parcel the point still holds moves ONLY via point scans
-  // (docs/DELIVERY-POINTS.md) — the driver can't advance it from their phone.
+  // A point-routed parcel moves through its hub, never the driver's phone,
+  // while the point holds it (LABEL_CREATED/AT_POINT/RETURNED_TO_POINT) OR
+  // while it is IN_TRANSIT on the line-haul leg — there the assigned driver is
+  // the TRANSFER driver carrying it between hubs, whose custody ends at the
+  // destination point's receive scan. Only the last-mile driver, after that
+  // scan (status OUT_FOR_DELIVERY), delivers. Direct parcels have no delivery
+  // point, so this never blocks them.
   if (
     shipment.deliveryPointId &&
-    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT", "IN_TRANSIT"].includes(
+      shipment.status,
+    )
   ) {
     return { error: "badState" };
   }
@@ -334,11 +341,15 @@ export async function courierFailDelivery(
   if (!shipment || !shipment.subOrder) return { error: "notFound" };
   const sub = shipment.subOrder;
   if (sub.status !== "SHIPPED") return { error: "badState" };
-  // A parcel the point still holds can't fail a doorstep attempt — it hasn't
-  // left the hub. (Same guard as courierAdvance.)
+  // A parcel the point holds — or one in line-haul between hubs (IN_TRANSIT
+  // with a delivery point, carried by the transfer driver) — hasn't reached a
+  // doorstep, so it can't fail a doorstep attempt. (Same guard as
+  // courierAdvance.) Direct parcels have no delivery point and are unaffected.
   if (
     shipment.deliveryPointId &&
-    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT", "IN_TRANSIT"].includes(
+      shipment.status,
+    )
   ) {
     return { error: "badState" };
   }

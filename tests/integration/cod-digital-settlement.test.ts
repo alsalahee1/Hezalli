@@ -22,6 +22,7 @@ vi.mock("next-intl/server", async (orig) => ({
 }));
 
 import { confirmReceived } from "@/lib/actions/completion";
+import { courierAdvance } from "@/lib/actions/courier";
 import { cancelOrder } from "@/lib/actions/order";
 import { payCodWithWallet } from "@/lib/actions/pay-cod";
 import { cancelSubOrder } from "@/lib/actions/seller-order";
@@ -267,8 +268,8 @@ describe("multi-seller COD collects cash per sub-order", () => {
   });
 });
 
-describe("confirmReceived routes still-SHIPPED parcels through delivery", () => {
-  it("captures COD, credits the courier, then completes", async () => {
+describe("confirmReceived cannot force-deliver an Express parcel in custody", () => {
+  it("refuses a still-SHIPPED Express parcel — the driver delivers it first", async () => {
     const driver = await makeCourier("cr");
     const { orderId, subOrderId } = await fx.createSubOrder({
       paymentMethod: "COD",
@@ -285,39 +286,57 @@ describe("confirmReceived routes still-SHIPPED parcels through delivery", () => 
       select: { id: true },
     });
 
+    // Buyer clicks "Confirm received" while the parcel is still out with the
+    // driver: it must NOT fabricate a delivery — the driver holds the cash and
+    // the parcel, and only their scan (against the buyer's QR) records it. So
+    // there is nothing completable yet.
+    as(fx.buyerId);
+    expect(await confirmReceived(orderId)).toEqual({ error: "badState" });
+    expect(
+      (
+        await prisma.subOrder.findUniqueOrThrow({
+          where: { id: subOrderId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe("SHIPPED");
+    // No COD captured, no ledger written, no cash on the driver — nothing moved.
+    expect(
+      (
+        await prisma.payment.findUniqueOrThrow({
+          where: { orderId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe("PENDING");
+    expect((await courierCashSummary(driver)).cashOnHand).toBe(0);
+    expect(await prisma.ledgerEntry.count({ where: { subOrderId } })).toBe(0);
+
+    // The driver delivers against the buyer's QR — cash lands on their ledger.
+    as(driver);
+    expect(await courierAdvance(shipment.id, "DELIVERED")).toEqual({
+      ok: true,
+    });
+    expect((await courierCashSummary(driver)).cashOnHand).toBe(100);
+
+    // NOW the buyer's confirmation completes the order and settles the seller.
     as(fx.buyerId);
     expect(await confirmReceived(orderId)).toEqual({ ok: true });
-
-    const sub = await prisma.subOrder.findUniqueOrThrow({
-      where: { id: subOrderId },
-      select: { status: true },
-    });
-    expect(sub.status).toBe("COMPLETED");
-    const ship = await prisma.shipment.findUniqueOrThrow({
-      where: { id: shipment.id },
-      select: { status: true },
-    });
-    expect(ship.status).toBe("DELIVERED");
-    // The COD cash was captured and lands on the delivering courier's ledger.
-    const payment = await prisma.payment.findUniqueOrThrow({
-      where: { orderId },
-      select: { status: true, confirmedBy: true },
-    });
-    expect(payment.status).toBe("CONFIRMED");
-    expect(payment.confirmedBy).toBe(COD_DELIVERY_CONFIRMED_BY);
-    expect((await courierCashSummary(driver)).cashOnHand).toBe(100);
-    // Hezalli Express collected the cash, so the platform holds it and the
-    // seller is credited a SALE like a prepaid order.
+    expect(
+      (
+        await prisma.subOrder.findUniqueOrThrow({
+          where: { id: subOrderId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe("COMPLETED");
     const entries = await prisma.ledgerEntry.findMany({
       where: { subOrderId },
       select: { type: true, amountUsd: true },
     });
     expect(entries).toHaveLength(1);
-    expect(entries[0].type).toBe("SALE");
+    expect(entries[0].type).toBe("SALE"); // Express collected → platform holds
     expect(Number(entries[0].amountUsd)).toBe(90);
-
-    // Nothing left to confirm.
-    expect(await confirmReceived(orderId)).toEqual({ error: "badState" });
   });
 });
 

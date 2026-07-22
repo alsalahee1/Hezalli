@@ -304,7 +304,7 @@ export async function editTracking(
   const locale = await getLocale();
 
   const carrierId = input.carrierId;
-  let trackingNumber = (input.trackingNumber ?? "").trim();
+  const trackingNumber = (input.trackingNumber ?? "").trim();
   if (!carrierId) return { error: "carrierRequired" };
 
   const sub = await prisma.subOrder.findFirst({
@@ -314,24 +314,35 @@ export async function editTracking(
       orderId: true,
       status: true,
       shipment: {
-        select: { id: true, carrierId: true, trackingNumber: true },
+        select: {
+          id: true,
+          carrierId: true,
+          trackingNumber: true,
+          platformManaged: true,
+        },
       },
       order: { select: { buyerId: true, buyer: { select: { locale: true } } } },
     },
   });
   if (!sub || !sub.shipment) return { error: "notFound" };
   if (sub.status !== "SHIPPED") return { error: "badState" };
+  // Editing is for correcting a THIRD-PARTY carrier's typed tracking number.
+  // A Hezalli Express (platform-managed) parcel is already inside the platform
+  // custody chain — its waybill is system-owned and every point/driver scan
+  // resolves the parcel by it. A seller must not (a) re-point it, nor (b) flip
+  // it to/from platform-managed: flipping an Express parcel to a third-party
+  // carrier would strip platformManaged and re-open the seller "Mark delivered"
+  // path on a parcel a courier is physically carrying (COD onto no ledger),
+  // and re-minting its number mid-transit orphans it from every scan lookup.
+  // Ops can still correct a platform waybill via the delivery-manager console.
+  if (sub.shipment.platformManaged) return { error: "expressManaged" };
 
   const carrier = await prisma.carrier.findUnique({
     where: { id: carrierId },
     select: { id: true, name: true, platformManaged: true },
   });
   if (!carrier) return { error: "carrierRequired" };
-  // Same rule as shipping: a blank number on the platform carrier mints a
-  // fresh waybill (e.g. switching a mis-shipped parcel over to Express).
-  if (!trackingNumber && carrier.platformManaged) {
-    trackingNumber = await mintTrackingNumber();
-  }
+  if (carrier.platformManaged) return { error: "expressManaged" };
   if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   await prisma.$transaction([

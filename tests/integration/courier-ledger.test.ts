@@ -120,10 +120,12 @@ describe("delivery accrues the courier ledger", () => {
       paymentMethod: "COD",
       status: "SHIPPED",
     });
+    // A seller only ever delivers a THIRD-PARTY parcel (platform-managed ones
+    // are blocked upstream and refused by the money safety net). Its COD is the
+    // seller's own cash, off-platform — so no courier ledger row is written.
     await prisma.shipment.create({
-      data: { subOrderId, status: "OUT_FOR_DELIVERY", platformManaged: true },
+      data: { subOrderId, status: "OUT_FOR_DELIVERY", platformManaged: false },
     });
-    // Seller path: no courierId proof → no ledger rows.
     expect(await markSubOrderDelivered(subOrderId, "seller", "en")).toEqual({
       ok: true,
     });
