@@ -65,6 +65,7 @@ export function PlatformSettingsForm({
     trust_step_bonus_usd: String(current.trust_step_bonus_usd),
     trust_bonus_cap_usd: String(current.trust_bonus_cap_usd),
     cod_wallet_pay_enabled: current.cod_wallet_pay_enabled,
+    platform_wallet_email: current.platform_wallet_email,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -115,6 +116,7 @@ export function PlatformSettingsForm({
         trust_step_bonus_usd: Number(f.trust_step_bonus_usd),
         trust_bonus_cap_usd: Number(f.trust_bonus_cap_usd),
         cod_wallet_pay_enabled: f.cod_wallet_pay_enabled,
+        platform_wallet_email: f.platform_wallet_email,
       });
       if (res.error) setErr(res.error);
       else {
@@ -483,6 +485,21 @@ export function PlatformSettingsForm({
             {t("walletBillsHint")}
           </span>
         </label>
+      </div>
+
+      <div className="border-t pt-4">
+        <Field
+          label={t("platformWalletEmail")}
+          hint={t("platformWalletEmailHint")}
+        >
+          <Input
+            type="email"
+            dir="ltr"
+            value={f.platform_wallet_email}
+            onChange={(e) => set("platform_wallet_email", e.target.value)}
+            placeholder="admin@hezalli.com"
+          />
+        </Field>
       </div>
 
       <div className="flex items-center gap-3">

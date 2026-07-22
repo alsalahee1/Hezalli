@@ -100,6 +100,11 @@ export type PlatformSettings = {
   // driver/counter collects nothing. Off hides the pay button and blocks the
   // action; orders already paid stay paid.
   cod_wallet_pay_enabled: boolean;
+  // The account whose HezalliPay wallet acts as "the Hezalli wallet" — the
+  // destination when a courier settles collected COD cash digitally in-app
+  // (lib/actions/cod-wallet-remit.ts). Identified by email so admins can point
+  // it at whichever account should hold platform cash. Must be an active ADMIN.
+  platform_wallet_email: string;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -147,6 +152,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   trust_step_bonus_usd: 10,
   trust_bonus_cap_usd: 100,
   cod_wallet_pay_enabled: true,
+  platform_wallet_email: "admin@hezalli.com",
 };
 
 export const SETTING_KEYS = Object.keys(

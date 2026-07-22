@@ -5,8 +5,10 @@ import { requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { Link, redirect } from "@/i18n/navigation";
 
-// Resolves a scanned tracking number to one of the courier's own jobs and
-// forwards to it. Guards against scanning a parcel that isn't assigned to them.
+// Resolves a scanned code to one of the courier's own jobs and forwards to it.
+// Accepts either the parcel's tracking number (label QR) or the buyer's delivery
+// code (their doorstep QR) — both map to the driver's assigned shipment. Guards
+// against scanning a parcel that isn't assigned to them.
 export default async function DriverResolvePage({
   params,
 }: {
@@ -20,7 +22,13 @@ export default async function DriverResolvePage({
 
   const shipment = tn
     ? await prisma.shipment.findFirst({
-        where: { trackingNumber: tn, driverId: courierId },
+        where: {
+          driverId: courierId,
+          OR: [
+            { trackingNumber: tn },
+            { deliveryCode: { equals: tn, mode: "insensitive" } },
+          ],
+        },
         select: { id: true },
       })
     : null;
