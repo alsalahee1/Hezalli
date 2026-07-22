@@ -105,11 +105,16 @@ export async function markSubOrderDelivered(
     sub.shipment.originPointId !== sub.shipment.deliveryPointId,
   );
   const transferFee = isTwoHop ? await getSetting("point_transfer_fee") : 0;
-  const codAmount = isCod
-    ? Number(sub.itemsTotal) +
-      Number(sub.shippingTotal) -
-      Number(sub.discountTotal)
-    : 0;
+  // Cash is due only while the payment is unconfirmed — a COD order the
+  // buyer already settled from their wallet (docs §39) delivers like a
+  // prepaid one: the courier/counter collects nothing.
+  const codPaid = sub.order.payment?.status === "CONFIRMED";
+  const codAmount =
+    isCod && !codPaid
+      ? Number(sub.itemsTotal) +
+        Number(sub.shippingTotal) -
+        Number(sub.discountTotal)
+      : 0;
 
   await prisma.$transaction(async (tx) => {
     if (sub.shipment) {

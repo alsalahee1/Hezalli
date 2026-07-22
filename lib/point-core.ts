@@ -463,7 +463,12 @@ export async function buyerPickupAtPoint(
           itemsTotal: true,
           shippingTotal: true,
           discountTotal: true,
-          order: { select: { paymentMethod: true } },
+          order: {
+            select: {
+              paymentMethod: true,
+              payment: { select: { status: true } },
+            },
+          },
         },
       },
     },
@@ -471,8 +476,11 @@ export async function buyerPickupAtPoint(
   if (!shipment?.subOrder) return { error: "notFound" };
 
   const sub = shipment.subOrder;
+  // Zero when the buyer already settled the COD payment from their wallet
+  // (docs §39) — the counter hands the parcel over and takes nothing.
   const codDue =
-    sub.order.paymentMethod === "COD"
+    sub.order.paymentMethod === "COD" &&
+    sub.order.payment?.status !== "CONFIRMED"
       ? Math.round(
           (Number(sub.itemsTotal) +
             Number(sub.shippingTotal) -

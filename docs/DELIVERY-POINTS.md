@@ -690,6 +690,47 @@ Rules:
 - [x] i18n (en + ar) + integration tests (full courier flow incl. double-approve guard, stale-claim re-check, point flow)
 - [x] This file kept current
 
-## 39. Out of scope
+## 39. v1.19 — Doorstep wallet payment for COD
+
+The endgame of COD risk control (Amazon "COD by UPI", Shopee/Lazada
+wallet-at-door): the buyer settles a cash-on-delivery order from their
+HezalliPay balance BEFORE handover, so the driver or pickup counter
+collects nothing — no cash ever exists to steal, lose, or remit.
+
+The order keeps `paymentMethod: COD`; what flips is the Payment row →
+CONFIRMED (`confirmedBy: "buyer:wallet"`). Every downstream money path
+already keys off that, so a paid order delivers exactly like a prepaid one:
+
+- `markSubOrderDelivered` charges `codAmount` only while the payment is
+  unconfirmed → no `COD_COLLECTED` lands on the courier (delivery fee still
+  accrues), no counter COD on a pickup point.
+- `buyerPickupAtPoint` returns `codDue: 0` → the counter shows nothing to
+  collect.
+- The driver job page swaps the amber "collect cash" callout for a green
+  "PAID digitally — collect NO cash", and every assigned driver still on
+  the road is notified the moment the buyer pays.
+
+Rules (`lib/actions/pay-cod.ts`):
+
+- Payable only while EVERY sub-order is still PENDING/CONFIRMED/
+  PROCESSING/SHIPPED — once anything is delivered (cash may have changed
+  hands), cancelled, or returned, the remaining amount is ambiguous and the
+  order settles in cash as usual.
+- Atomic wallet debit with the standard guards (frozen, COD hold not
+  spendable, conditional decrement) + a conditional Payment flip so a
+  double-tap racing a doorstep delivery can never charge twice.
+- Buyer order page: a "Pay now — skip the cash" card with the wallet
+  balance; disabled with a top-up hint when the balance can't cover it.
+
+### Build checklist (v1.19)
+
+- [x] `payCodWithWallet`: guards + atomic debit + conditional Payment flip + history + driver notifications
+- [x] `shipment-core` / `point-core`: cash due only while the payment is unconfirmed
+- [x] Driver job page: green "paid digitally" callout replaces the collect-cash banner
+- [x] Buyer order page: pay-from-wallet card (balance-aware) + paid notice
+- [x] i18n (en + ar) + integration tests (pay → deliver with zero cash accountability, double-pay guard, insufficient, delivered/foreign order refused)
+- [x] This file kept current
+
+## 40. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

@@ -55,6 +55,7 @@ export default async function DriverJobPage({
               deliveryDate: true,
               deliverySlot: true,
               address: true,
+              payment: { select: { status: true } },
             },
           },
         },
@@ -66,7 +67,10 @@ export default async function DriverJobPage({
   const sub = shipment.subOrder;
   const a = sub.order.address;
   const done = sub.status !== "SHIPPED";
-  const isCod = sub.order.paymentMethod === "COD";
+  // A COD order the buyer already paid from their wallet (docs §39) is
+  // handled like prepaid: hand over the parcel, collect NOTHING.
+  const codPaid = sub.order.payment?.status === "CONFIRMED";
+  const isCod = sub.order.paymentMethod === "COD" && !codPaid;
   const proof = shipment.attempts[0] ?? null;
   // A point-routed parcel the hub still holds: the driver collects it with a
   // scan at the counter — no phone-side actions until then.
@@ -141,6 +145,12 @@ export default async function DriverJobPage({
                 currency: "USD",
               }),
             })}
+          </p>
+        </div>
+      ) : sub.order.paymentMethod === "COD" && codPaid ? (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
+          <p className="font-medium text-emerald-700 dark:text-emerald-500">
+            {t("codPaidDigitally")}
           </p>
         </div>
       ) : null}
