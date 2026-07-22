@@ -2772,7 +2772,13 @@
     "payoutsDesc": "اصرف أو ارفض طلبات سحب أرباح البائعين.",
     "pendingPayouts": "مدفوعات بائعين معلّقة",
     "error_reasonRequired": "السبب إلزامي.",
-    "error_wouldGoNegative": "رصيد المحفظة لا يكفي لهذا الخصم."
+    "error_wouldGoNegative": "رصيد المحفظة لا يكفي لهذا الخصم.",
+    "paymentsDesk": "المدفوعات",
+    "audit": "تدقيق المحافظ",
+    "exportCsv": "تصدير CSV",
+    "prevPage": "السابق",
+    "nextPage": "التالي",
+    "pageLabel": "صفحة {page}"
   },
   "DeliveryManager": {
     "panel": "إدارة التوصيل",

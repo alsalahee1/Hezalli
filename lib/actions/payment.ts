@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireAdminId } from "@/lib/authz";
+import { requireWalletManagerId } from "@/lib/authz";
 import { recomputeBalance } from "@/lib/finance";
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
@@ -74,7 +74,7 @@ export async function submitPaymentProof(input: {
 
 // Admin confirms a prepaid payment → order CONFIRMED, escrow held.
 export async function confirmPayment(paymentId: string): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -192,7 +192,7 @@ export async function rejectPayment(
   paymentId: string,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 

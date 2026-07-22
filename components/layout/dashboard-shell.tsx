@@ -105,7 +105,7 @@ const ADMIN_NAV: NavItem[] = [
 
 const WALLET_MANAGER_NAV: NavItem[] = [
   { href: "/wallet-manager", key: "dashboard", icon: LayoutDashboard },
-  { href: "/wallet-manager/topups", key: "topups", icon: Banknote },
+  { href: "/wallet-manager/payments", key: "paymentsDesk", icon: Banknote },
   {
     href: "/wallet-manager/withdrawals",
     key: "withdrawals",
@@ -113,12 +113,13 @@ const WALLET_MANAGER_NAV: NavItem[] = [
   },
   { href: "/wallet-manager/payouts", key: "payouts", icon: Store },
   { href: "/wallet-manager/wallets", key: "wallets", icon: Wallet },
+  { href: "/wallet-manager/audit", key: "audit", icon: ScaleIcon },
   { href: "/wallet-manager/transfers", key: "transfers", icon: Users },
   { href: "/wallet-manager/history", key: "history", icon: History },
 ];
 const WALLET_MANAGER_PRIMARY = [
   "/wallet-manager",
-  "/wallet-manager/topups",
+  "/wallet-manager/payments",
   "/wallet-manager/withdrawals",
   "/wallet-manager/wallets",
 ];

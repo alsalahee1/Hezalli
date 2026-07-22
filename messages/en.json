@@ -2772,7 +2772,13 @@
     "payoutsDesc": "Pay out or reject requested seller payouts.",
     "pendingPayouts": "Pending seller payouts",
     "error_reasonRequired": "A reason is required.",
-    "error_wouldGoNegative": "The wallet balance is too low for this debit."
+    "error_wouldGoNegative": "The wallet balance is too low for this debit.",
+    "paymentsDesk": "Payments",
+    "audit": "Wallet audit",
+    "exportCsv": "Export CSV",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "pageLabel": "Page {page}"
   },
   "DeliveryManager": {
     "panel": "Delivery Manager",

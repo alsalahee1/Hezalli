@@ -6,18 +6,21 @@ import { Link } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 50;
+
 export default async function WalletManagerWalletsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; frozen?: string }>;
+  searchParams: Promise<{ q?: string; frozen?: string; page?: string }>;
 }) {
   const t = await getTranslations("WalletManager");
   const format = await getFormatter();
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const { q, frozen } = await searchParams;
+  const { q, frozen, page } = await searchParams;
   const query = q?.trim() || "";
+  const pageNum = Math.max(1, Number(page) || 1);
 
   const wallets = await prisma.wallet.findMany({
     where: {
@@ -34,7 +37,8 @@ export default async function WalletManagerWalletsPage({
         : {}),
     },
     orderBy: { availableUsd: "desc" },
-    take: 100,
+    take: PAGE_SIZE + 1, // one extra row = "there is a next page"
+    skip: (pageNum - 1) * PAGE_SIZE,
     select: {
       id: true,
       availableUsd: true,
@@ -43,6 +47,17 @@ export default async function WalletManagerWalletsPage({
       user: { select: { name: true, email: true } },
     },
   });
+
+  const hasNext = wallets.length > PAGE_SIZE;
+  const rows = wallets.slice(0, PAGE_SIZE);
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    if (query) sp.set("q", query);
+    if (frozen === "1") sp.set("frozen", "1");
+    if (p > 1) sp.set("page", String(p));
+    const qs = sp.toString();
+    return `/wallet-manager/wallets${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div className="space-y-5">
@@ -69,13 +84,13 @@ export default async function WalletManagerWalletsPage({
         </button>
       </form>
 
-      {wallets.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed py-10 text-center text-sm">
           {t("walletsEmpty")}
         </div>
       ) : (
         <ul className="divide-y rounded-lg border">
-          {wallets.map((w) => (
+          {rows.map((w) => (
             <li key={w.id}>
               <Link
                 href={`/wallet-manager/wallets/${w.id}`}
@@ -100,6 +115,34 @@ export default async function WalletManagerWalletsPage({
           ))}
         </ul>
       )}
+
+      {pageNum > 1 || hasNext ? (
+        <div className="flex items-center justify-between text-sm">
+          {pageNum > 1 ? (
+            <Link
+              href={pageHref(pageNum - 1)}
+              className="text-primary font-medium hover:underline"
+            >
+              ← {t("prevPage")}
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-muted-foreground text-xs">
+            {t("pageLabel", { page: pageNum })}
+          </span>
+          {hasNext ? (
+            <Link
+              href={pageHref(pageNum + 1)}
+              className="text-primary font-medium hover:underline"
+            >
+              {t("nextPage")} →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
