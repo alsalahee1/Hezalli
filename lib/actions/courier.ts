@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
+import { notifyBot } from "@/lib/integrations/bot-notify";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { settleReturnedSubOrder } from "@/lib/return-core";
@@ -270,6 +271,16 @@ export async function courierAdvance(
       });
     }
   });
+
+  if (action === "OUT_FOR_DELIVERY") {
+    const ar = sub.order.buyer.locale === "ar";
+    await notifyBot(
+      sub.order.buyerId,
+      ar
+        ? `🛵 طلبك من ${sub.store.name} في الطريق إليك الآن.`
+        : `🛵 Your order from ${sub.store.name} is out for delivery now.`,
+    );
+  }
 
   revalidatePath(`/${locale}/driver`);
   revalidatePath(`/${locale}/driver/job/${shipmentId}`);

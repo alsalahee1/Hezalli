@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 
 import { revalidatePath } from "next/cache";
+import { notifyBot } from "@/lib/integrations/bot-notify";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
@@ -229,6 +230,14 @@ export async function shipSubOrder(
       }
     }
   }
+
+  // Courtesy ping over the buyer's linked messaging bots.
+  await notifyBot(
+    sub.order.buyerId,
+    ar
+      ? `📦 شحنت ${sub.store.name} طلبك عبر ${carrier.name}. رقم التتبع: ${trackingNumber}`
+      : `📦 ${sub.store.name} shipped your order via ${carrier.name}. Tracking: ${trackingNumber}`,
+  );
 
   revalidatePath(`/${locale}/seller/orders`);
   revalidatePath(`/${locale}/seller/orders/${subOrderId}`);
