@@ -125,7 +125,9 @@ export async function setSellerCommission(
   return { ok: true };
 }
 
-// Admin force-changes an order's status (audit-logged). Does not touch money.
+// Admin force-changes an order's status (audit-logged). Forcing COMPLETED also
+// settles each sub-order so sellers aren't left unpaid; other statuses are a
+// plain status write (refund/cancel money is handled by the dedicated tools).
 export async function forceOrderStatus(
   orderId: string,
   status: string,
@@ -195,7 +197,10 @@ export async function forceOrderStatus(
     for (const s of order.subOrders) {
       if (["COMPLETED", "CANCELLED", "REFUNDED"].includes(s.status)) continue;
       const upd = await prisma.subOrder.updateMany({
-        where: { id: s.id, status: { notIn: ["COMPLETED", "CANCELLED", "REFUNDED"] } },
+        where: {
+          id: s.id,
+          status: { notIn: ["COMPLETED", "CANCELLED", "REFUNDED"] },
+        },
         data: { status: "COMPLETED" },
       });
       if (upd.count === 1) await settleSubOrder(s.id);

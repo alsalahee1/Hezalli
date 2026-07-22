@@ -72,10 +72,15 @@ export async function overrideShipmentStatus(
     // parcel with no assigned courier is refused by the cascade's money safety
     // net (noCashHandler) — ops must assign a driver (or use the counter/pickup
     // flow) rather than strand the cash.
-    const res = await markSubOrderDelivered(shipment.subOrder.id, "admin", locale, {
-      courierId: shipment.driverId ?? undefined,
-      ...(note ? { note } : {}),
-    });
+    const res = await markSubOrderDelivered(
+      shipment.subOrder.id,
+      "admin",
+      locale,
+      {
+        courierId: shipment.driverId ?? undefined,
+        ...(note ? { note } : {}),
+      },
+    );
     if (res.error) return res;
   } else if (status === "RETURNED") {
     // A real return settles money: refund a captured order (or cancel a COD
