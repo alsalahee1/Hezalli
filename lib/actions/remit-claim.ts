@@ -18,6 +18,7 @@ import {
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { REMIT_METHODS } from "@/lib/remit-methods";
 
 type Result = { ok?: boolean; error?: string };
@@ -46,6 +47,11 @@ export async function submitCourierRemitClaim(
 ): Promise<Result> {
   const courierId = await requireCourierId();
   if (!courierId) return { error: "forbidden" };
+  // One open claim is already enforced; this throttles churn through
+  // submit→reject cycles that would flood the review queue.
+  if (!rateLimit(`remit:${courierId}`, 6, 10 * 60_000).ok) {
+    return { error: "tooMany" };
+  }
   const claim = parseClaim(formData);
   if (!claim) return { error: "badInput" };
 
@@ -78,6 +84,9 @@ export async function submitPointRemitClaim(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
+  if (!rateLimit(`remit:${gate.pointId}`, 6, 10 * 60_000).ok) {
+    return { error: "tooMany" };
+  }
   const claim = parseClaim(formData);
   if (!claim) return { error: "badInput" };
 
@@ -133,23 +142,47 @@ export async function approveRemitClaim(claimId: string): Promise<Result> {
   });
   if (!claim) return { error: "notFound" };
   if (claim.status !== "PENDING") return { error: "badState" };
+  if (!claim.courierId && !claim.pointId) return { error: "badState" };
   const amount = Number(claim.amountUsd);
-
-  // Cash may have been settled another way since the claim was filed — the
-  // ledger row must never overdraw what the sender still holds.
-  if (claim.courierId) {
-    const cash = await courierCashSummary(claim.courierId);
-    if (amount > cash.cashOnHand + 0.005) return { error: "overRemit" };
-  } else if (claim.pointId) {
-    const summary = await pointLedgerSummary(claim.pointId);
-    if (amount > summary.cashOnHand + 0.005) return { error: "overRemit" };
-  } else {
-    return { error: "badState" };
-  }
 
   const note = `Digital remittance — ${claim.method} ${claim.reference}`;
   let approved = false;
+  let overRemit = false;
   await prisma.$transaction(async (tx) => {
+    // Cash may have been settled another way since the claim was filed — the
+    // ledger row must never overdraw what the sender still holds. Checked
+    // INSIDE the transaction under a row lock so a concurrent hand-in or
+    // offset can't slip between the check and the write.
+    if (claim.courierId) {
+      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${claim.courierId} FOR UPDATE`;
+      const agg = await tx.courierLedgerEntry.aggregate({
+        where: {
+          courierId: claim.courierId,
+          type: { in: ["COD_COLLECTED", "REMITTANCE", "ADJUSTMENT"] },
+        },
+        _sum: { amountUsd: true },
+      });
+      if (amount > Number(agg._sum.amountUsd ?? 0) + 0.005) {
+        overRemit = true;
+        return;
+      }
+    } else {
+      await tx.$queryRaw`SELECT "id" FROM "DeliveryPoint" WHERE "id" = ${claim.pointId} FOR UPDATE`;
+      const agg = await tx.deliveryPointLedgerEntry.aggregate({
+        where: {
+          pointId: claim.pointId!,
+          type: {
+            in: ["COD_COLLECTED", "DRIVER_CASH_IN", "COD_REMITTANCE"],
+          },
+        },
+        _sum: { amountUsd: true },
+      });
+      if (amount > Number(agg._sum.amountUsd ?? 0) + 0.005) {
+        overRemit = true;
+        return;
+      }
+    }
+
     // The conditional flip is the double-settle guard.
     const upd = await tx.remitClaim.updateMany({
       where: { id: claim.id, status: "PENDING" },
@@ -207,6 +240,7 @@ export async function approveRemitClaim(claimId: string): Promise<Result> {
     });
     approved = true;
   });
+  if (overRemit) return { error: "overRemit" };
   if (!approved) return { error: "badState" };
 
   await revalidateQueue(locale);

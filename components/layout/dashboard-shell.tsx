@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  HandCoins,
   BookOpen,
   BadgeCheck,
   Banknote,
@@ -87,6 +88,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/payments", key: "payments", icon: Wallet },
   { href: "/admin/wallet-audit", key: "walletAudit", icon: ScaleIcon },
   { href: "/admin/payouts", key: "payouts", icon: Banknote },
+  { href: "/admin/cash", key: "cash", icon: HandCoins },
   { href: "/wallet-manager", key: "walletManager", icon: Wallet },
   { href: "/admin/shipping-zones", key: "shippingZones", icon: MapPin },
   { href: "/admin/carriers", key: "carriers", icon: Truck },
@@ -138,6 +140,7 @@ const DELIVERY_MANAGER_NAV: NavItem[] = [
   { href: "/delivery-manager/shipments", key: "shipments", icon: Package },
   { href: "/delivery-manager/couriers", key: "couriers", icon: Bike },
   { href: "/delivery-manager/points", key: "points", icon: MapPinned },
+  { href: "/delivery-manager/cash", key: "cash", icon: HandCoins },
   { href: "/delivery-manager/remittances", key: "remittances", icon: Banknote },
   { href: "/delivery-manager/fleets", key: "fleets", icon: Users },
   { href: "/delivery-manager/carriers", key: "carriers", icon: Truck },

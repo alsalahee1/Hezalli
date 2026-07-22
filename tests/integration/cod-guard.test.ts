@@ -719,3 +719,96 @@ describe("cod wallet pay kill switch", () => {
     }
   });
 });
+
+describe("codExposureReport", () => {
+  it("aggregates outstanding cash, aging, collateral, and blocked flags", async () => {
+    const { codExposureReport } = await import("@/lib/cod-guard");
+
+    // A driver with $70 total: $30 collected 3 days ago, $40 fresh; $20 deposit.
+    const d = await makeCourier("exp");
+    await prisma.user.update({
+      where: { id: d },
+      data: { courierDepositUsd: 20 },
+    });
+    await prisma.courierLedgerEntry.create({
+      data: {
+        courierId: d,
+        type: "COD_COLLECTED",
+        amountUsd: 30,
+        createdAt: new Date(Date.now() - 72 * HOURS),
+      },
+    });
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: d, type: "COD_COLLECTED", amountUsd: 40 },
+    });
+
+    // A point holding $60 collected yesterday-and-a-half (36h): in the 24–48h band.
+    const { pointId } = await makePoint("exp");
+    await prisma.deliveryPointLedgerEntry.create({
+      data: {
+        pointId,
+        type: "COD_COLLECTED",
+        amountUsd: 60,
+        createdAt: new Date(Date.now() - 36 * HOURS),
+      },
+    });
+
+    const r = await codExposureReport(100);
+    const drv = r.topDrivers.find((h) => h.id === d)!;
+    expect(drv.cashOnHand).toBe(70);
+    expect(drv.collateral).toBe(20);
+    expect(drv.overdue24).toBe(30); // the 3-day-old $30, FIFO
+    expect(drv.overdue48).toBe(30);
+    expect(drv.blocked).toBe(true); // 70 > 50 base + 20 deposit? no — equals; but 30 is overdue past 24h
+    expect(drv.limit).toBe(70);
+
+    const pt = r.topPoints.find((h) => h.id === pointId)!;
+    expect(pt.cashOnHand).toBe(60);
+    expect(pt.overdue24).toBe(60);
+    expect(pt.overdue48).toBe(0);
+    expect(pt.blocked).toBe(false); // 60 < 200 point limit
+
+    // Totals include at least these two holders.
+    expect(r.totalOutstanding).toBeGreaterThanOrEqual(130);
+    expect(r.aging48).toBeGreaterThanOrEqual(30);
+    expect(r.aging24).toBeGreaterThanOrEqual(60);
+    expect(r.totalCollateral).toBeGreaterThanOrEqual(20);
+    expect(r.blockedDrivers).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("hardening: rate limits on self-service money actions", () => {
+  it("throttles remit-claim submissions per courier", async () => {
+    const c = await makeCourier("rl");
+    as(c);
+    // No cash → every attempt fails overRemit, but each consumes the window
+    // (limit 6 per 10 minutes). The 7th hits the limiter.
+    for (let i = 0; i < 6; i++) {
+      expect(
+        await submitCourierRemitClaim(
+          form({ amount: "5", method: "JAWALI", reference: `RL-${i}` }),
+        ),
+      ).toEqual({ error: "overRemit" });
+    }
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "5", method: "JAWALI", reference: "RL-x" }),
+      ),
+    ).toEqual({ error: "tooMany" });
+  });
+
+  it("throttles wallet-pledge changes per courier", async () => {
+    const c = await makeCourier("rl2");
+    as(c);
+    // Invalid amount fails AFTER the limiter, so each call consumes it
+    // (limit 10 per minute); the 11th is throttled.
+    for (let i = 0; i < 10; i++) {
+      expect(await setWalletCodHold(form({ amount: "-1" }))).toEqual({
+        error: "badInput",
+      });
+    }
+    expect(await setWalletCodHold(form({ amount: "-1" }))).toEqual({
+      error: "tooMany",
+    });
+  });
+});

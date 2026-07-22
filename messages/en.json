@@ -586,6 +586,7 @@
     "colConversion": "Conversion"
   },
   "Admin": {
+    "cash": "Cash exposure",
     "how": "How it works",
     "panel": "Admin Panel",
     "dashboard": "Dashboard",
@@ -1012,6 +1013,7 @@
     "err_paycod_insufficient": "Your wallet balance doesn't cover this order.",
     "err_paycod_frozen": "Your wallet is frozen — contact support.",
     "err_paycod_disabled": "Online COD payment is currently turned off — settle in cash at delivery.",
+    "err_paycod_tooMany": "Too many attempts — wait a minute and try again.",
     "method_LOCAL_WALLET": "Local wallet",
     "method_BANK_TRANSFER": "Bank transfer",
     "method_USDT": "USDT",
@@ -2187,6 +2189,7 @@
     "err_remit_badInput": "Enter a valid amount, rail, and reference (3+ characters).",
     "err_remit_alreadyOpen": "You already have a claim waiting for confirmation.",
     "err_remit_overRemit": "That is more than the cash you are holding.",
+    "err_remit_tooMany": "Too many claims — wait a few minutes and try again.",
     "holdTitle": "Wallet pledge — raise your cash limit",
     "holdHint": "Wallet balance: {balance} · pledged: {hold} · your COD limit: {limit}. Pledged money stays yours but can't be spent or withdrawn, and it raises your COD limit by the same amount. To lower the pledge, hand in your COD cash first.",
     "holdSave": "Update pledge",
@@ -2195,6 +2198,7 @@
     "err_hold_insufficient": "Your wallet balance doesn't cover that pledge.",
     "err_hold_cashHeld": "Hand in your COD cash first, then lower the pledge.",
     "err_hold_frozen": "Your wallet is frozen — contact support.",
+    "err_hold_tooMany": "Too many changes — wait a minute and try again.",
     "collectFromPoint": "Collect from",
     "pickupPoint": "Pickup point",
     "redeliverOn": "Buyer asked for redelivery on {date}",
@@ -2596,7 +2600,8 @@
     "err_remit_forbidden": "Not allowed.",
     "err_remit_badInput": "Enter a valid amount, rail, and reference (3+ characters).",
     "err_remit_alreadyOpen": "You already have a claim waiting for confirmation.",
-    "err_remit_overRemit": "That is more than the cash you are holding."
+    "err_remit_overRemit": "That is more than the cash you are holding.",
+    "err_remit_tooMany": "Too many claims — wait a few minutes and try again."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2846,6 +2851,7 @@
     "error_badVerdict": "Unknown verdict."
   },
   "DeliveryManager": {
+    "cash": "Cash exposure",
     "how": "How it works",
     "panel": "Delivery Manager",
     "dashboard": "Dashboard",
@@ -3170,5 +3176,35 @@
     "error_notSeller": "Only seller accounts can submit KYC.",
     "error_alreadyPending": "A submission is already under review.",
     "error_alreadyVerified": "You're already verified."
+  },
+  "Exposure": {
+    "title": "Cash exposure",
+    "subtitle": "How much of Hezalli's money is in other people's pockets right now — and how old it is.",
+    "total": "Total outstanding",
+    "totalHint": "{count, plural, =0 {nobody holds cash} one {held by # person} other {held by # people}}",
+    "drivers": "With drivers",
+    "driversHint": "{blocked, plural, =0 {none blocked} one {# blocked} other {# blocked}}",
+    "points": "With points",
+    "pointsHint": "{blocked, plural, =0 {none over limit} one {# over limit} other {# over limit}}",
+    "coverage": "Collateral coverage",
+    "coverageHint": "{amount} in deposits & pledges backs the cash out there.",
+    "agingTitle": "How old is the cash?",
+    "agingHint": "Remittances settle the oldest cash first (FIFO) — anything red has been out more than two days and deserves a phone call.",
+    "fresh": "Under 24h",
+    "aging24": "24–48h",
+    "aging48": "Over 48h",
+    "topDrivers": "Top driver holders",
+    "topPoints": "Top point holders",
+    "colWho": "Who",
+    "colCash": "Cash held",
+    "colLimit": "Limit",
+    "colCollateral": "Collateral",
+    "colOver24": "> 24h",
+    "colOver48": "> 48h",
+    "colStatus": "Status",
+    "statusBlocked": "Blocked",
+    "statusWatch": "Chase today",
+    "statusOk": "OK",
+    "allClear": "All clear — every dollar of COD cash has been handed in."
   }
 }

@@ -192,7 +192,33 @@ the pickup scan requires the buyer's code — it is the proof of handover.
 - [x] Integration tests: pickup quote/choice, forced routing, ready-notify without auto-assign, code-gated pickup + COD cash + fee ledgers, handover/fail blocked
 - [x] This file kept current
 
-## 7. Out of scope
+## 7. v1.22 — Hardening pass
+
+Security review + throttling of the self-service money actions:
+
+- **Rate limits** (in-memory limiter, per authenticated identity — not IP):
+  `payCodWithWallet` 10/min per buyer, `setWalletCodHold` 10/min per
+  courier, remit-claim submissions 6/10min per courier/point (the one-open-
+  claim rule already exists; this stops submit→reject churn flooding the
+  review queue). Staff actions stay unthrottled — they're role-gated and
+  audited.
+- **Race fixes**: `offsetEarningsAgainstCod` and `approveRemitClaim` now
+  compute/check the courier or point cash INSIDE the transaction under a
+  `SELECT … FOR UPDATE` row lock, so a concurrent hand-in or second offset
+  can never overdraw what the holder actually still owes.
+- Audit sweep of the v1.14–v1.21 surface confirmed: every action is
+  role-gated against the DB (never the JWT), all money writes are
+  conditional flips or guarded decrements, buyer-facing reads are scoped by
+  ownership, and free-text inputs are length-capped and rendered escaped.
+
+### Build checklist (v1.22)
+
+- [x] Rate limits on pay-cod / wallet-hold / remit-claim submissions + `tooMany` i18n (en + ar)
+- [x] Row-locked in-transaction cash re-checks in offset + claim approval
+- [x] Integration tests: limiter wiring on both throttled self-service paths
+- [x] This file kept current
+
+## 8. Out of scope
 
 ## 8. v1.2 — Point capacity & smart selection
 
@@ -734,6 +760,29 @@ Rules (`lib/actions/pay-cod.ts`):
 - [x] i18n (en + ar) + integration tests (pay → deliver with zero cash accountability, double-pay guard, insufficient, delivered/foreign order refused)
 - [x] This file kept current
 
-## 40. Out of scope
+## 40. v1.21 — Cash exposure dashboard
+
+One screen for the owner's daily question: **"how much of Hezalli's money
+is in other people's pockets right now?"** `codExposureReport()` in
+`lib/cod-guard.ts` (a handful of grouped queries, FIFO aging identical to
+the block rule) powers `/admin/cash` and `/delivery-manager/cash`:
+
+- Headline tiles: total outstanding, drivers vs points split, blocked
+  counts, and collateral coverage (deposits + effective wallet pledges vs
+  cash out there).
+- An aging bar: green under 24h, amber 24–48h, red over 48h — red means
+  pick up the phone.
+- Top-holder tables (drivers and points) with cash, personal limit,
+  collateral, overdue amounts, and a status chip, each row linking to the
+  courier/point console.
+
+### Build checklist (v1.21)
+
+- [x] `codExposureReport()` — totals, FIFO aging buckets, collateral coverage, top holders, blocked flags
+- [x] Shared `CashExposureView` + routes under /admin and /delivery-manager; nav items
+- [x] i18n (en + ar) + integration test (aging bands, collateral, blocked flags, totals)
+- [x] This file kept current
+
+## 41. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
