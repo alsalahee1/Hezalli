@@ -122,4 +122,38 @@ describe("applyRefund", () => {
       await fx.cleanup();
     }
   });
+
+  it("refuses to refund a CANCELLED sub-order (buyer-cancel double-refund guard)", async () => {
+    // The buyer-cancel path already refunds a wallet order and marks the
+    // sub-order CANCELLED without writing a Refund row, so an admin refund on
+    // top would double-pay. CANCELLED must be treated as terminal.
+    const fx = await makeFixture();
+    try {
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "HEZALLI_BALANCE",
+        status: "CANCELLED",
+      });
+      const res = await applyRefund(subOrderId, { reason: "t", actor: "admin" });
+      expect(res.error).toBe("badState");
+    } finally {
+      await fx.cleanup();
+    }
+  });
+
+  it("refuses to refund when the order payment is already REFUNDED", async () => {
+    const fx = await makeFixture();
+    try {
+      const { subOrderId, orderId } = await fx.createSubOrder({
+        paymentMethod: "BANK_TRANSFER",
+      });
+      await prisma.payment.updateMany({
+        where: { orderId },
+        data: { status: "REFUNDED" },
+      });
+      const res = await applyRefund(subOrderId, { reason: "t", actor: "admin" });
+      expect(res.error).toBe("badState");
+    } finally {
+      await fx.cleanup();
+    }
+  });
 });

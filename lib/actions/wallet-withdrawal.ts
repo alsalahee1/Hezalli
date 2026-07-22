@@ -10,7 +10,12 @@ import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { verifyWalletAuth } from "@/lib/wallet-step-auth";
-import { checkOutflowLimit } from "@/lib/wallet-velocity";
+import {
+  assertOutflowWithinLimitTx,
+  checkOutflowLimit,
+  outflowCaps,
+  VelocityError,
+} from "@/lib/wallet-velocity";
 import {
   creditWalletTx,
   getWalletId,
@@ -70,12 +75,17 @@ export async function requestWithdrawal(
   if (amount < min) return { error: "belowMin" };
   if (amount > available) return { error: "insufficient" };
 
+  // Pre-flight velocity check for a fast, friendly rejection; the authoritative
+  // guard runs inside the transaction below (this one can be raced).
   const velocity = await checkOutflowLimit(userId, amount);
   if (!velocity.ok) return { error: velocity.error };
+  const caps = await outflowCaps(userId);
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Atomically reserve the funds (guards concurrent over-withdrawal).
+      // Atomically reserve the funds (guards concurrent over-withdrawal). The
+      // conditional decrement takes a write lock on the wallet row, so the
+      // velocity assert below serializes with any concurrent outflow.
       const upd = await tx.wallet.updateMany({
         where: {
           id: walletId,
@@ -85,6 +95,11 @@ export async function requestWithdrawal(
         data: { availableUsd: { decrement: amount } },
       });
       if (upd.count !== 1) throw new ReserveError();
+
+      // Authoritative AML/velocity cap — race-proof under the row lock. Runs
+      // before this outflow's own CASHOUT entry is written, so it isn't
+      // double-counted. Throws VelocityError on breach → rolls back the reserve.
+      await assertOutflowWithinLimitTx(tx, walletId, caps, amount);
 
       const withdrawal = await tx.walletWithdrawal.create({
         data: {
@@ -106,6 +121,7 @@ export async function requestWithdrawal(
     });
   } catch (e) {
     if (e instanceof ReserveError) return { error: "insufficient" };
+    if (e instanceof VelocityError) return { error: e.reason };
     throw e;
   }
 
