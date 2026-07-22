@@ -1,11 +1,13 @@
 import {
   ArrowRight,
   BadgeCheck,
+  PackageSearch,
   ShieldCheck,
   ShoppingBag,
   Store,
   Truck,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import { devSignIn } from "@/lib/actions/auth";
@@ -23,7 +25,8 @@ const ADMIN = {
 };
 
 // One account per role beside Admin. Order matters — the 2-column grid pairs
-// row 1: Seller + Buyer, row 2: Courier + Point Center.
+// row 1: Seller + Buyer, row 2: Courier + Point Center, row 3: the staff
+// manager desks (Wallet Manager + Delivery Manager).
 const ROLES = [
   {
     email: "seller1@hezalli.com",
@@ -60,6 +63,24 @@ const ROLES = [
     tile: "bg-rose-500",
     title: "text-rose-700 dark:text-rose-400",
     card: "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10",
+  },
+  {
+    email: "wallet@hezalli.com",
+    label: "Wallet Manager",
+    desc: "Money desk",
+    icon: Wallet,
+    tile: "bg-teal-500",
+    title: "text-teal-700 dark:text-teal-400",
+    card: "border-teal-500/30 bg-teal-500/5 hover:bg-teal-500/10",
+  },
+  {
+    email: "delivery@hezalli.com",
+    label: "Delivery Manager",
+    desc: "Shipments desk",
+    icon: PackageSearch,
+    tile: "bg-indigo-500",
+    title: "text-indigo-700 dark:text-indigo-400",
+    card: "border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10",
   },
 ];
 
