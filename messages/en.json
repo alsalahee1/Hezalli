@@ -2848,6 +2848,12 @@
     "codeVerified": "code verified",
     "prevPage": "Newer",
     "nextPage": "Older",
-    "pageLabel": "Page {page}"
+    "pageLabel": "Page {page}",
+    "exportCsv": "Export CSV",
+    "bulkSelected": "{count} selected",
+    "bulkApply": "Apply to selected",
+    "bulkClear": "Clear",
+    "bulkResult": "Updated {changed}; skipped {skipped}.",
+    "error_failed": "Something went wrong for one or more shipments."
   }
 }

@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/auto-complete",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/shipments",
+      "schedule": "30 */6 * * *"
     }
   ]
 }

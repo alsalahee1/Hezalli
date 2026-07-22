@@ -1308,6 +1308,10 @@ model Shipment {
   // reminded to collect, and when the hold was flagged (window expiry / stuck).
   pickupRemindedAt DateTime?
   staleFlaggedAt   DateTime?
+  // One-shot guard for the stuck-shipment sweep: when delivery staff were
+  // alerted that this parcel sat un-moved past the threshold. Cleared on any
+  // staff status override so a re-stuck parcel alerts again.
+  stuckFlaggedAt   DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   // How many doorstep attempts the courier has made (failed + the final one).

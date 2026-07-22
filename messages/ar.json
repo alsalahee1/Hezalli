@@ -2848,6 +2848,12 @@
     "codeVerified": "تم التحقق من الرمز",
     "prevPage": "الأحدث",
     "nextPage": "الأقدم",
-    "pageLabel": "صفحة {page}"
+    "pageLabel": "صفحة {page}",
+    "exportCsv": "تصدير CSV",
+    "bulkSelected": "{count} محددة",
+    "bulkApply": "تطبيق على المحدد",
+    "bulkClear": "إلغاء التحديد",
+    "bulkResult": "تم تحديث {changed}؛ تم تخطي {skipped}.",
+    "error_failed": "حدث خطأ في شحنة واحدة أو أكثر."
   }
 }
