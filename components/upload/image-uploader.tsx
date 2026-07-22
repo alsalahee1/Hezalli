@@ -32,7 +32,7 @@ export function ImageUploader({
   label,
   className,
 }: {
-  folder: "avatars" | "stores" | "products" | "banners";
+  folder: "avatars" | "stores" | "products" | "banners" | "proof" | "kyc";
   onUploaded: (url: string) => void;
   label?: string;
   className?: string;
