@@ -68,6 +68,7 @@ export async function overrideShipmentStatus(
         where: { id: shipment.id },
         data: {
           status,
+          stuckFlaggedAt: null, // moved — allow a future stuck alert again
           ...(status === "IN_TRANSIT" && !shipment.shippedAt
             ? { shippedAt: new Date() }
             : {}),
@@ -91,6 +92,32 @@ export async function overrideShipmentStatus(
   revalidatePath(`/${locale}/delivery-manager`);
   revalidatePath(`/${locale}/account/orders/${shipment.subOrder.orderId}`);
   return { ok: true };
+}
+
+// Bulk form of overrideShipmentStatus: apply one status to many shipments.
+// Each shipment goes through the same per-shipment path (DELIVERED cascade
+// included) and gets its own audit row; failures don't stop the rest.
+export async function bulkOverrideShipmentStatus(
+  shipmentIds: string[],
+  status: OverrideStatus,
+  note?: string,
+): Promise<{ ok?: boolean; error?: string; changed: number; skipped: number }> {
+  const staffId = await requireDeliveryManagerId();
+  if (!staffId) return { error: "forbidden", changed: 0, skipped: 0 };
+  if (!STATUSES.includes(status))
+    return { error: "badStatus", changed: 0, skipped: 0 };
+
+  const ids = [...new Set(shipmentIds)].slice(0, 100);
+  let changed = 0;
+  let skipped = 0;
+  for (const id of ids) {
+    const res = await overrideShipmentStatus(id, status, { note }).catch(
+      () => ({ error: "failed" }),
+    );
+    if (res.error) skipped += 1;
+    else changed += 1;
+  }
+  return { ok: true, changed, skipped };
 }
 
 // Delivery staff corrects a shipment's carrier / tracking number, for any

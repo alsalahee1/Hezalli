@@ -3,6 +3,10 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import {
+  ShipmentBulkList,
+  type ShipmentRow,
+} from "@/components/delivery-manager/shipment-bulk-list";
 
 export const dynamic = "force-dynamic";
 
@@ -18,16 +22,6 @@ const STATUSES = [
   "RETURNED_TO_POINT",
   "RETURNED",
 ] as const;
-
-const STATUS_TONE: Record<string, string> = {
-  DELIVERED: "bg-emerald-500/10 text-emerald-600",
-  FAILED: "bg-destructive/10 text-destructive",
-  RETURNED: "bg-destructive/10 text-destructive",
-  IN_TRANSIT: "bg-sky-500/10 text-sky-600",
-  AT_POINT: "bg-violet-500/10 text-violet-600",
-  OUT_FOR_DELIVERY: "bg-sky-500/10 text-sky-600",
-  RETURNED_TO_POINT: "bg-destructive/10 text-destructive",
-};
 
 const STUCK_DAYS = 7;
 const PAGE_SIZE = 50;
@@ -107,7 +101,26 @@ export default async function DeliveryManagerShipmentsPage({
   });
 
   const hasNext = shipments.length > PAGE_SIZE;
-  const rows = shipments.slice(0, PAGE_SIZE);
+  const rows: ShipmentRow[] = shipments.slice(0, PAGE_SIZE).map((s) => ({
+    id: s.id,
+    code: `#${s.subOrder.id.slice(-8).toUpperCase()}`,
+    storeName: s.subOrder.store.name,
+    platformManaged: s.platformManaged,
+    metaLine: [
+      s.subOrder.order.buyer.name ?? "—",
+      s.subOrder.order.address.governorate,
+      s.carrier?.name,
+      s.driver ? `🛵 ${s.driver.name ?? ""}` : null,
+      s.trackingNumber,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    status: s.status,
+    updatedLabel: format.dateTime(s.updatedAt, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }),
+  }));
   const pageHref = (p: number) => {
     const sp = new URLSearchParams();
     if (activeStatus) sp.set("status", activeStatus);
@@ -178,56 +191,24 @@ export default async function DeliveryManagerShipmentsPage({
         </button>
       </form>
 
+      <a
+        href={`/api/delivery-manager/export?${new URLSearchParams({
+          ...(activeStatus ? { status: activeStatus } : {}),
+          ...(stuck === "1" ? { stuck: "1" } : {}),
+          ...(query ? { q: query } : {}),
+        }).toString()}`}
+        className="text-primary inline-block text-sm font-medium hover:underline"
+        download
+      >
+        {t("exportCsv")}
+      </a>
+
       {rows.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed py-10 text-center text-sm">
           {t("shipmentsEmpty")}
         </div>
       ) : (
-        <ul className="divide-y rounded-lg border">
-          {rows.map((s) => (
-            <li key={s.id}>
-              <Link
-                href={`/delivery-manager/shipments/${s.id}`}
-                className="hover:bg-muted/50 flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm transition-colors"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    #{s.subOrder.id.slice(-8).toUpperCase()} ·{" "}
-                    {s.subOrder.store.name}
-                    {s.platformManaged ? (
-                      <span className="bg-primary/10 text-primary ms-2 rounded-full px-2 py-0.5 text-xs font-medium">
-                        {t("platformManaged")}
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-muted-foreground truncate text-xs">
-                    {s.subOrder.order.buyer.name ?? "—"} ·{" "}
-                    {s.subOrder.order.address.governorate}
-                    {s.carrier ? ` · ${s.carrier.name}` : ""}
-                    {s.driver ? ` · 🛵 ${s.driver.name ?? ""}` : ""}
-                    {s.trackingNumber ? ` · ${s.trackingNumber}` : ""}
-                  </p>
-                </div>
-                <div className="text-end">
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
-                      STATUS_TONE[s.status] ?? "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {t(`shipStatus_${s.status}`)}
-                  </span>
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {format.dateTime(s.updatedAt, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <ShipmentBulkList rows={rows} />
       )}
 
       {pageNum > 1 || hasNext ? (
