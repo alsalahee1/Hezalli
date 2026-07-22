@@ -32,6 +32,23 @@ export type ShipInput = {
 // Short unguessable code for the buyer's delivery QR (unique on Shipment).
 const mintDeliveryCode = () => randomBytes(5).toString("hex").toUpperCase();
 
+// Hezalli Express waybill numbers are minted by the platform — the seller has
+// no external carrier to get one from, so asking them to type one only
+// produces made-up values that collide and break the scan flows (driver scan,
+// hub console, public tracking all resolve parcels by this number). Digits
+// after the prefix keep the printed Code 39 barcode compact and scannable.
+async function mintTrackingNumber(): Promise<string> {
+  for (;;) {
+    const digits = Array.from(randomBytes(10), (b) => b % 10).join("");
+    const candidate = `HZE${digits}`;
+    const clash = await prisma.shipment.findFirst({
+      where: { trackingNumber: candidate },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
+  }
+}
+
 // Seller ships a sub-order: records the carrier + tracking number, moves the
 // sub-order to SHIPPED, and notifies the buyer with a tracking link.
 export async function shipSubOrder(
@@ -43,9 +60,8 @@ export async function shipSubOrder(
   const locale = await getLocale();
 
   const carrierId = input.carrierId;
-  const trackingNumber = (input.trackingNumber ?? "").trim();
+  let trackingNumber = (input.trackingNumber ?? "").trim();
   if (!carrierId) return { error: "carrierRequired" };
-  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   const [sub, carrier] = await Promise.all([
     prisma.subOrder.findFirst({
@@ -75,6 +91,13 @@ export async function shipSubOrder(
   if (!sub) return { error: "notFound" };
   if (!carrier) return { error: "carrierRequired" };
   if (sub.status !== "PROCESSING") return { error: "badState" };
+
+  // Hezalli Express: the platform mints the waybill number when none is
+  // provided. Third-party carriers issue their own — the seller must type it.
+  if (!trackingNumber && carrier.platformManaged) {
+    trackingNumber = await mintTrackingNumber();
+  }
+  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   // Optional routing via a Hezalli Point (platform carrier only): the parcel
   // starts LABEL_CREATED (awaiting drop-off) instead of IN_TRANSIT, and
@@ -274,9 +297,8 @@ export async function editTracking(
   const locale = await getLocale();
 
   const carrierId = input.carrierId;
-  const trackingNumber = (input.trackingNumber ?? "").trim();
+  let trackingNumber = (input.trackingNumber ?? "").trim();
   if (!carrierId) return { error: "carrierRequired" };
-  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   const sub = await prisma.subOrder.findFirst({
     where: { id: subOrderId, storeId: gate.storeId },
@@ -298,6 +320,12 @@ export async function editTracking(
     select: { id: true, name: true, platformManaged: true },
   });
   if (!carrier) return { error: "carrierRequired" };
+  // Same rule as shipping: a blank number on the platform carrier mints a
+  // fresh waybill (e.g. switching a mis-shipped parcel over to Express).
+  if (!trackingNumber && carrier.platformManaged) {
+    trackingNumber = await mintTrackingNumber();
+  }
+  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   await prisma.$transaction([
     prisma.shipment.update({

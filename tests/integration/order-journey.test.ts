@@ -142,18 +142,23 @@ describe("full order journey: checkout → delivery → receipt (COD Express)", 
       ).status,
     ).toBe("PROCESSING");
 
-    // ── 3. Seller ships via Hezalli Express ──────────────────────────────
+    // ── 3. Seller ships via Hezalli Express — no tracking number typed:
+    //      the platform mints the waybill itself. ─────────────────────────
     expect(
-      await shipSubOrder(subId, {
-        carrierId,
-        trackingNumber: "JT-JOURNEY-1",
-      }),
+      await shipSubOrder(subId, { carrierId, trackingNumber: "" }),
     ).toEqual({ ok: true });
     const shipped = await prisma.shipment.findUniqueOrThrow({
       where: { subOrderId: subId },
-      select: { id: true, status: true, deliveryCode: true, shippedAt: true },
+      select: {
+        id: true,
+        status: true,
+        trackingNumber: true,
+        deliveryCode: true,
+        shippedAt: true,
+      },
     });
     expect(shipped.status).toBe("IN_TRANSIT");
+    expect(shipped.trackingNumber).toMatch(/^HZE\d{10}$/); // minted waybill
     expect(shipped.deliveryCode).toBeTruthy(); // buyer's proof-of-delivery QR
     expect(shipped.shippedAt).toBeTruthy();
     expect(

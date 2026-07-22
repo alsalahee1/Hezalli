@@ -116,17 +116,24 @@ export function ShipOrderForm({
             {t("carrier")}
             {carrierSelect}
           </label>
-          <label className="flex flex-col gap-1 text-xs font-medium">
-            {t("trackingNumber")}
-            <Input
-              value={tracking}
-              onChange={(e) => setTracking(e.target.value)}
-              placeholder="YE123456789"
-              className="h-9 w-48"
-              dir="ltr"
-            />
-          </label>
+          {/* Hezalli Express waybills are minted by the platform — only a
+              third-party carrier's number must be typed in. */}
+          {!platformCarrier ? (
+            <label className="flex flex-col gap-1 text-xs font-medium">
+              {t("trackingNumber")}
+              <Input
+                value={tracking}
+                onChange={(e) => setTracking(e.target.value)}
+                placeholder="YE123456789"
+                className="h-9 w-48"
+                dir="ltr"
+              />
+            </label>
+          ) : null}
         </div>
+        {platformCarrier ? (
+          <p className="text-muted-foreground text-xs">{t("autoTracking")}</p>
+        ) : null}
         {platformCarrier &&
         points.length > 1 &&
         (pointId || shippingMethod === "PICKUP") ? (
@@ -186,7 +193,8 @@ export function ShipOrderForm({
             submit(() =>
               shipSubOrder(subOrderId, {
                 carrierId,
-                trackingNumber: tracking,
+                // Express: leave blank so the server mints the waybill.
+                trackingNumber: platformCarrier ? "" : tracking,
                 note,
                 deliveryPointId:
                   platformCarrier && pointId ? pointId : undefined,
@@ -259,16 +267,21 @@ export function ShipOrderForm({
               {t("carrier")}
               {carrierSelect}
             </label>
-            <label className="flex flex-col gap-1 text-xs font-medium">
-              {t("trackingNumber")}
-              <Input
-                value={tracking}
-                onChange={(e) => setTracking(e.target.value)}
-                className="h-9 w-48"
-                dir="ltr"
-              />
-            </label>
+            {!platformCarrier ? (
+              <label className="flex flex-col gap-1 text-xs font-medium">
+                {t("trackingNumber")}
+                <Input
+                  value={tracking}
+                  onChange={(e) => setTracking(e.target.value)}
+                  className="h-9 w-48"
+                  dir="ltr"
+                />
+              </label>
+            ) : null}
           </div>
+          {platformCarrier ? (
+            <p className="text-muted-foreground text-xs">{t("autoTracking")}</p>
+          ) : null}
           {errLine}
           <div className="flex gap-2">
             <Button
@@ -278,7 +291,7 @@ export function ShipOrderForm({
                 submit(() =>
                   editTracking(subOrderId, {
                     carrierId,
-                    trackingNumber: tracking,
+                    trackingNumber: platformCarrier ? "" : tracking,
                   }),
                 )
               }
