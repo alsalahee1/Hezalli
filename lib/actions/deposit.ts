@@ -2,13 +2,14 @@
 
 // Security deposits (docs §32): money Hezalli physically holds from a courier
 // or point operator, recorded here so the COD credit limit can follow it 1:1.
-// Optional — zero is a valid deposit. Admin-set only; every change is audited
+// Optional — zero is a valid deposit. Staff-set only (delivery manager or
+// admin); every change is audited
 // and the holder is notified. The cash itself moves outside the system
 // (office safe / bank), exactly like payout references.
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireDeliveryManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -19,7 +20,7 @@ const parseAmount = (raw: unknown): number | null => {
 };
 
 export async function setCourierDeposit(formData: FormData): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
 
   const courierId = String(formData.get("courierId") ?? "");
@@ -64,11 +65,13 @@ export async function setCourierDeposit(formData: FormData): Promise<Result> {
   const locale = await getLocale();
   revalidatePath(`/${locale}/admin/couriers/${courierId}`);
   revalidatePath(`/${locale}/admin/couriers`);
+  revalidatePath(`/${locale}/delivery-manager/couriers/${courierId}`);
+  revalidatePath(`/${locale}/delivery-manager/couriers`);
   return { ok: true };
 }
 
 export async function setPointDeposit(formData: FormData): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
 
   const pointId = String(formData.get("pointId") ?? "");
@@ -113,5 +116,7 @@ export async function setPointDeposit(formData: FormData): Promise<Result> {
   const locale = await getLocale();
   revalidatePath(`/${locale}/admin/points/${pointId}`);
   revalidatePath(`/${locale}/admin/points`);
+  revalidatePath(`/${locale}/delivery-manager/points/${pointId}`);
+  revalidatePath(`/${locale}/delivery-manager/points`);
   return { ok: true };
 }

@@ -27,6 +27,7 @@ import { autoAssignShipment } from "@/lib/courier-assign";
 import {
   offsetEarningsAgainstCod,
   recordEarningsPayout,
+  recordRemittance,
 } from "@/lib/actions/courier-ledger";
 import { setCourierDeposit, setPointDeposit } from "@/lib/actions/deposit";
 import { pointDriverCashIn } from "@/lib/actions/point";
@@ -461,5 +462,36 @@ describe("wallet COD hold (pledged collateral)", () => {
       ok: true,
     });
     expect((await courierCodStatus(c)).walletHold).toBe(0);
+  });
+});
+
+describe("delivery-manager staff access", () => {
+  it("a DELIVERY_MANAGER can run the COD money ops (not admin-only)", async () => {
+    const dm = await prisma.user.create({
+      data: {
+        email: `cg-dm-${Date.now().toString(36)}@t.local`,
+        roles: ["DELIVERY_MANAGER"],
+        locale: "en",
+      },
+    });
+    userIds.push(dm.id);
+    const c = await makeCourier("dmops");
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 12 },
+    });
+
+    as(dm.id);
+    expect(
+      await setCourierDeposit(form({ courierId: c, amount: "10" })),
+    ).toEqual({ ok: true });
+    expect(
+      await recordRemittance(form({ courierId: c, amount: "12" })),
+    ).toEqual({ ok: true });
+    expect((await courierCashSummary(c)).cashOnHand).toBe(0);
+
+    const { pointId } = await makePoint("dmpt");
+    expect(await setPointDeposit(form({ pointId, amount: "50" }))).toEqual({
+      ok: true,
+    });
   });
 });
