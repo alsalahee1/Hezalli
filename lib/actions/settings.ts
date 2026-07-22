@@ -50,6 +50,7 @@ export type SettingsInput = {
   trust_step_bonus_usd: number;
   trust_bonus_cap_usd: number;
   cod_wallet_pay_enabled: boolean;
+  platform_wallet_email: string;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -130,6 +131,19 @@ export async function savePlatformSettings(
   if (!Number.isFinite(deliveryFee) || deliveryFee < 0)
     return { error: "badDeliveryFee" };
 
+  // The Hezalli wallet destination for in-app COD remittance. Empty disables
+  // the feature; otherwise it must look like an email (the resolver additionally
+  // requires it to be an active ADMIN before any money moves).
+  const platformWalletEmail = (input.platform_wallet_email || "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 200);
+  if (
+    platformWalletEmail &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(platformWalletEmail)
+  )
+    return { error: "badWalletEmail" };
+
   // COD credit control limits: 0 turns a check off.
   const driverCashLimit = money2(input.driver_cash_limit);
   const pointCashLimit = money2(input.point_cash_limit);
@@ -198,6 +212,7 @@ export async function savePlatformSettings(
     trust_step_bonus_usd: trustBonus,
     trust_bonus_cap_usd: trustCap,
     cod_wallet_pay_enabled: Boolean(input.cod_wallet_pay_enabled),
+    platform_wallet_email: platformWalletEmail,
   };
 
   await prisma.$transaction(

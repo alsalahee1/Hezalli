@@ -7,8 +7,10 @@ import { courierCashSummary } from "@/lib/courier-ledger";
 import { transferCourierEarningsToWallet } from "@/lib/actions/earnings-wallet";
 import { prisma } from "@/lib/prisma";
 import { getWalletId } from "@/lib/wallet";
+import { walletHasPin } from "@/lib/wallet-pin";
 import { Link } from "@/i18n/navigation";
 import { WalletHoldForm } from "@/components/driver/wallet-hold-form";
+import { RemitToWalletForm } from "@/components/driver/remit-to-wallet-form";
 import { RemitClaimForm } from "@/components/ops/remit-claim-form";
 import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
@@ -23,30 +25,40 @@ export default async function DriverLedgerPage() {
     format.number(n, { style: "currency", currency: "USD" });
 
   const walletId = await getWalletId(courierId);
-  const [cash, cod, wallet, pendingClaim, entries] = await Promise.all([
-    courierCashSummary(courierId),
-    courierCodStatus(courierId),
-    prisma.wallet.findUniqueOrThrow({
-      where: { id: walletId },
-      select: { availableUsd: true, codHoldUsd: true },
-    }),
-    prisma.remitClaim.findFirst({
-      where: { courierId, status: "PENDING" },
-      select: { amountUsd: true, method: true, reference: true },
-    }),
-    prisma.courierLedgerEntry.findMany({
-      where: { courierId },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      select: {
-        id: true,
-        type: true,
-        amountUsd: true,
-        note: true,
-        createdAt: true,
-      },
-    }),
-  ]);
+  const [cash, cod, wallet, pendingClaim, entries, hasPin, passkeys] =
+    await Promise.all([
+      courierCashSummary(courierId),
+      courierCodStatus(courierId),
+      prisma.wallet.findUniqueOrThrow({
+        where: { id: walletId },
+        select: { availableUsd: true, codHoldUsd: true },
+      }),
+      prisma.remitClaim.findFirst({
+        where: { courierId, status: "PENDING" },
+        select: { amountUsd: true, method: true, reference: true },
+      }),
+      prisma.courierLedgerEntry.findMany({
+        where: { courierId },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          type: true,
+          amountUsd: true,
+          note: true,
+          createdAt: true,
+        },
+      }),
+      walletHasPin(courierId),
+      prisma.walletCredential.count({ where: { userId: courierId } }),
+    ]);
+
+  // Spendable HezalliPay balance = available minus any COD collateral pledge,
+  // which isn't spendable. This funds an in-app remittance to the Hezalli wallet.
+  const spendable = Math.max(
+    0,
+    Number(wallet.availableUsd) - Number(wallet.codHoldUsd),
+  );
 
   return (
     <div className="space-y-4">
@@ -104,6 +116,18 @@ export default async function DriverLedgerPage() {
         namespace="Driver"
         disabled={cash.earnings <= 0}
       />
+
+      {/* Instant in-app remittance: settle held COD cash straight into the
+          Hezalli wallet from the driver's HezalliPay balance. No staff step —
+          the money moves inside HezalliPay. */}
+      {cash.cashOnHand > 0 ? (
+        <RemitToWalletForm
+          cash={cash.cashOnHand}
+          balance={spendable}
+          hasPin={hasPin}
+          hasPasskey={passkeys > 0}
+        />
+      ) : null}
 
       {/* Digital remittance (docs §38): transfer the cash over a rail and
           file the reference — staff confirm and the ledger settles. */}

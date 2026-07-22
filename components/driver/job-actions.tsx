@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions/courier";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { CodeScanButton } from "@/components/driver/code-scan-button";
 
 const FAIL_REASONS = [
   "unreachable",
@@ -181,7 +182,8 @@ export function JobActions({
             />
           </label>
 
-          {/* Optional strongest proof: the code under the buyer's delivery QR. */}
+          {/* Optional strongest proof: the code under the buyer's delivery QR.
+              The driver can scan the buyer's QR (fills this) or type it. */}
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("deliveryCode")}</span>
             <input
@@ -193,6 +195,12 @@ export function JobActions({
               className="border-input focus-visible:border-primary w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm uppercase outline-none"
             />
           </label>
+          <CodeScanButton
+            onScan={(code) => {
+              setErr(null);
+              setDeliveryCode(code);
+            }}
+          />
 
           <input
             ref={fileRef}
