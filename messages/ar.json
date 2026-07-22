@@ -2819,7 +2819,19 @@
     "exportCsv": "تصدير CSV",
     "prevPage": "السابق",
     "nextPage": "التالي",
-    "pageLabel": "صفحة {page}"
+    "pageLabel": "صفحة {page}",
+    "kyc": "مراجعة الهوية",
+    "kycDesc": "التحقق من الهويات — «موثّق» يفتح سحوبات المحفظة والتحويلات.",
+    "kycEmpty": "لا توجد طلبات تحقق معلّقة.",
+    "kycApprove": "توثيق",
+    "kycReject": "رفض",
+    "kycRejectReason": "السبب (يُرسل للمستخدم)",
+    "kycConfirmReject": "تأكيد الرفض",
+    "kycRecent": "روجعت مؤخرًا",
+    "kycNoDocs": "لا توجد مستندات مرفقة.",
+    "kyc_VERIFIED": "موثّق",
+    "kyc_REJECTED": "مرفوض",
+    "error_badVerdict": "قرار غير معروف."
   },
   "DeliveryManager": {
     "panel": "إدارة التوصيل",

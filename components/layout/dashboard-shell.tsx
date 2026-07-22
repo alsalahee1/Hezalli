@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  BadgeCheck,
   Banknote,
   BarChart3,
   Bike,
@@ -113,6 +114,7 @@ const WALLET_MANAGER_NAV: NavItem[] = [
   },
   { href: "/wallet-manager/payouts", key: "payouts", icon: Store },
   { href: "/wallet-manager/wallets", key: "wallets", icon: Wallet },
+  { href: "/wallet-manager/kyc", key: "kyc", icon: BadgeCheck },
   { href: "/wallet-manager/audit", key: "audit", icon: ScaleIcon },
   { href: "/wallet-manager/transfers", key: "transfers", icon: Users },
   { href: "/wallet-manager/history", key: "history", icon: History },

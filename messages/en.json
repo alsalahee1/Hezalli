@@ -2819,7 +2819,19 @@
     "exportCsv": "Export CSV",
     "prevPage": "Previous",
     "nextPage": "Next",
-    "pageLabel": "Page {page}"
+    "pageLabel": "Page {page}",
+    "kyc": "KYC review",
+    "kycDesc": "Verify identities — VERIFIED unlocks wallet cash-outs and transfers.",
+    "kycEmpty": "No pending verifications.",
+    "kycApprove": "Verify",
+    "kycReject": "Reject",
+    "kycRejectReason": "Reason (sent to the user)",
+    "kycConfirmReject": "Confirm rejection",
+    "kycRecent": "Recently reviewed",
+    "kycNoDocs": "No documents attached.",
+    "kyc_VERIFIED": "Verified",
+    "kyc_REJECTED": "Rejected",
+    "error_badVerdict": "Unknown verdict."
   },
   "DeliveryManager": {
     "panel": "Delivery Manager",

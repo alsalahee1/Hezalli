@@ -162,7 +162,16 @@ export default async function WalletManagerWalletDetailPage({
       </div>
 
       <section className="space-y-3">
-        <h2 className="font-medium">{t("ledger")}</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-medium">{t("ledger")}</h2>
+          <a
+            href={`/api/wallet-manager/export?wallet=${wallet.id}`}
+            className="text-primary text-sm font-medium hover:underline"
+            download
+          >
+            {t("exportCsv")}
+          </a>
+        </div>
         {wallet.entries.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("none")}</p>
         ) : (
