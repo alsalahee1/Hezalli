@@ -192,7 +192,9 @@ export function WalletScanSheet({
                   muted
                   playsInline
                 />
-                <div className="pointer-events-none absolute inset-10 rounded-xl border-2 border-white/80" />
+                <div className="pointer-events-none absolute inset-10 overflow-hidden rounded-xl border-2 border-white/80">
+                  {scanning ? <span className="qr-scanline" /> : null}
+                </div>
                 {!scanning ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm text-white">
                     <Camera className="me-2 size-5" /> {t("starting")}

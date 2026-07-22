@@ -216,3 +216,39 @@
     padding-bottom: 0;
   }
 }
+
+/* QR scanner laser line — a bright sweep that travels down the scan frame and
+   back, so the camera view reads like a real barcode/QR scanner. Drop a
+   <span class="qr-scanline"/> inside the (overflow-hidden) scan frame; `top` is
+   a percentage of the frame, so it adapts to any frame size. */
+@keyframes qr-scan {
+  0%,
+  100% {
+    top: 6%;
+    opacity: 0.35;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  50% {
+    top: 94%;
+    opacity: 1;
+  }
+}
+.qr-scanline {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  box-shadow: 0 0 12px 2px color-mix(in oklch, var(--primary) 75%, transparent);
+  animation: qr-scan 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qr-scanline {
+    animation: none;
+    top: 50%;
+  }
+}
