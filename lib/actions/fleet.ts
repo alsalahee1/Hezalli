@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireDeliveryManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string; fleetId?: string };
@@ -26,7 +26,7 @@ export async function createFleet(input: {
   contactPhone?: string;
   contactEmail?: string;
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const name = clean(input.name, 80);
   if (!name) return { error: "nameRequired" };
@@ -50,7 +50,7 @@ export async function updateFleet(input: {
   contactEmail?: string;
   isActive: boolean;
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const name = clean(input.name, 80);
   if (!name) return { error: "nameRequired" };
@@ -78,7 +78,7 @@ export async function assignCourierToFleet(input: {
   fleetId: string;
   courierId: string;
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const [fleet, courier] = await Promise.all([
     prisma.fleet.findUnique({
@@ -106,7 +106,7 @@ export async function assignCourierToFleet(input: {
 export async function removeCourierFromFleet(input: {
   courierId: string;
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const courier = await prisma.user.findUnique({
     where: { id: input.courierId },
@@ -137,7 +137,7 @@ export async function setFleetOwner(input: {
   fleetId: string;
   courierId: string | null;
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const fleet = await prisma.fleet.findUnique({
     where: { id: input.fleetId },
