@@ -106,9 +106,22 @@ beforeAll(async () => {
   });
   adminId = admin.id;
   userIds.push(admin.id);
+  // Pin dispatch to 24/7 so auto-assignment runs at any wall-clock time.
+  for (const key of ["dispatch_hours_start", "dispatch_hours_end"]) {
+    await prisma.platformSetting.upsert({
+      where: { key },
+      create: { key, value: 0 },
+      update: { value: 0 },
+    });
+  }
 });
 
 afterAll(async () => {
+  await prisma.platformSetting
+    .deleteMany({
+      where: { key: { in: ["dispatch_hours_start", "dispatch_hours_end"] } },
+    })
+    .catch(() => {});
   await prisma.auditLog
     .deleteMany({ where: { actorId: { in: userIds } } })
     .catch(() => {});

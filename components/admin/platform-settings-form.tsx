@@ -51,6 +51,10 @@ export function PlatformSettingsForm({
     express_enabled: current.express_enabled,
     express_auto_assign: current.express_auto_assign,
     courier_assign_strategy: current.courier_assign_strategy,
+    courier_offer_timeout_minutes: String(current.courier_offer_timeout_minutes),
+    courier_offer_max_rounds: String(current.courier_offer_max_rounds),
+    dispatch_hours_start: String(current.dispatch_hours_start),
+    dispatch_hours_end: String(current.dispatch_hours_end),
     points_enabled: current.points_enabled,
     point_handling_fee: String(current.point_handling_fee),
     max_delivery_attempts: String(current.max_delivery_attempts),
@@ -102,6 +106,10 @@ export function PlatformSettingsForm({
         express_enabled: f.express_enabled,
         express_auto_assign: f.express_auto_assign,
         courier_assign_strategy: f.courier_assign_strategy,
+        courier_offer_timeout_minutes: Number(f.courier_offer_timeout_minutes),
+        courier_offer_max_rounds: Number(f.courier_offer_max_rounds),
+        dispatch_hours_start: Number(f.dispatch_hours_start),
+        dispatch_hours_end: Number(f.dispatch_hours_end),
         points_enabled: f.points_enabled,
         point_handling_fee: Number(f.point_handling_fee),
         max_delivery_attempts: Number(f.max_delivery_attempts),
@@ -390,6 +398,38 @@ export function PlatformSettingsForm({
             <option value="balanced">{t("strategyBalanced")}</option>
             <option value="nearest">{t("strategyNearest")}</option>
           </select>
+        </Field>
+        <Field label={t("offerTimeout")} hint={t("offerTimeoutHint")}>
+          <Input
+            type="number"
+            value={f.courier_offer_timeout_minutes}
+            onChange={(e) => set("courier_offer_timeout_minutes", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("offerRounds")} hint={t("offerRoundsHint")}>
+          <Input
+            type="number"
+            value={f.courier_offer_max_rounds}
+            onChange={(e) => set("courier_offer_max_rounds", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("dispatchHoursStart")} hint={t("dispatchHoursHint")}>
+          <Input
+            type="number"
+            value={f.dispatch_hours_start}
+            onChange={(e) => set("dispatch_hours_start", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("dispatchHoursEnd")} hint={t("dispatchHoursHint")}>
+          <Input
+            type="number"
+            value={f.dispatch_hours_end}
+            onChange={(e) => set("dispatch_hours_end", e.target.value)}
+            dir="ltr"
+          />
         </Field>
       </div>
 

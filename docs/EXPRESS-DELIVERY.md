@@ -66,6 +66,9 @@ All keys live in `PlatformSetting` (see `lib/settings.ts` for defaults).
 | `express_eta_min_days` / `express_eta_max_days` | `1` / `2` | Express delivery-time estimate. |
 | `express_auto_assign` | `true` | Auto-hand shipped Express parcels to a courier. |
 | `courier_assign_strategy` | `balanced` | `balanced` (fewest active jobs) or `nearest` (destination governorate, then fewest jobs). |
+| `courier_offer_timeout_minutes` | `60` | Minutes a driver has to accept an offered parcel before it cascades to the next driver. `0` = classic forced assignment, no accept step. |
+| `courier_offer_max_rounds` | `3` | How many drivers to try before alerting dispatch to assign manually. |
+| `dispatch_hours_start` / `dispatch_hours_end` | `8` / `21` | Dispatch window, Yemen local hours (0–23). Outside it parcels queue and offer clocks pause; equal values = 24/7. |
 
 Rules worth knowing:
 
@@ -91,6 +94,36 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
   3. **Balanced** — otherwise global least-loaded.
 
 Ops can always reassign from the dispatch board.
+
+## 4a. Job offers — consent, clocks, cascade
+
+Auto-assignment **offers** the parcel to the chosen driver instead of forcing
+it (`ShipmentOffer`; driver UI on `/driver`). The full lifecycle:
+
+1. **Offer** — the picked driver gets a notification + push and
+   `courier_offer_timeout_minutes` to answer. Accepting is a tap — or
+   implicit: the first scan (pickup, point collection, any advance) settles
+   the offer as `ACCEPTED`. Manual dispatch assignment bypasses offers
+   entirely (ops decisions are authoritative) and voids any open offer.
+2. **Decline** — the driver picks a reason (`too_far`, `off_duty`,
+   `too_many_jobs`, `other`); the parcel is released and immediately
+   re-offered to the next-best courier, **excluding everyone who already got
+   an offer** for it. Declining is only possible before the first scan — after
+   that, problems go through `courierFailDelivery` or dispatch.
+3. **Expire** — unanswered offers lapse via the hourly sweep
+   (`lib/offer-sweep.ts`, wired into `/api/cron/auto-complete`) and cascade
+   the same way. A driver who already advanced the parcel is treated as
+   having accepted; nothing is taken away mid-job.
+4. **Escalate** — after `courier_offer_max_rounds` drivers (or when nobody
+   eligible is left during dispatch hours) the parcel is flagged
+   (`Shipment.assignmentEscalatedAt`, one-shot) and DELIVERY_MANAGER + ADMIN
+   are told to assign manually. A manual assignment clears the flag.
+
+**Dispatch hours** (`lib/dispatch-hours.ts`, Asia/Aden wall clock): outside
+`dispatch_hours_start–end` nothing is offered — night orders queue, offer
+clocks pause, and the first sweep after opening runs the **morning wave**,
+offering out everything that accumulated overnight. Nobody is pinged at 3 AM,
+and no offer silently expires while the fleet sleeps.
 
 ## 5. Operating it — by role
 

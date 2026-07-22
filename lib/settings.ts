@@ -33,6 +33,18 @@ export type PlatformSettings = {
   // How auto-assignment chooses a courier: "balanced" (fewest active jobs) or
   // "nearest" (a driver in the destination governorate, then fewest jobs).
   courier_assign_strategy: "balanced" | "nearest";
+  // Driver job offers (docs/EXPRESS-DELIVERY.md). Auto-assignment OFFERS a
+  // parcel to the chosen courier instead of forcing it: minutes they have to
+  // accept before it cascades to the next driver (0 = classic forced
+  // assignment, no consent step), and how many drivers to try before
+  // dispatch staff are alerted instead.
+  courier_offer_timeout_minutes: number;
+  courier_offer_max_rounds: number;
+  // Dispatch working hours, platform local time (Asia/Aden, UTC+3). Outside
+  // the window nothing is auto-offered and offer clocks pause; parcels queued
+  // overnight go out in the first sweep after opening. start == end = 24/7.
+  dispatch_hours_start: number;
+  dispatch_hours_end: number;
   // Flat fee (USD) Hezalli pays a courier for each completed Hezalli Express
   // delivery — accrued to the driver's earnings ledger on delivery.
   courier_delivery_fee: number;
@@ -126,6 +138,10 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   delivery_window_days: 7,
   express_auto_assign: true,
   courier_assign_strategy: "balanced",
+  courier_offer_timeout_minutes: 60,
+  courier_offer_max_rounds: 3,
+  dispatch_hours_start: 8,
+  dispatch_hours_end: 21,
   courier_delivery_fee: 1.5,
   points_enabled: true,
   point_handling_fee: 0.5,

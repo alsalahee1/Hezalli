@@ -35,6 +35,10 @@ export type SettingsInput = {
   express_eta_max_days: number;
   express_auto_assign: boolean;
   courier_assign_strategy: "balanced" | "nearest";
+  courier_offer_timeout_minutes: number;
+  courier_offer_max_rounds: number;
+  dispatch_hours_start: number;
+  dispatch_hours_end: number;
   courier_delivery_fee: number;
   points_enabled: boolean;
   point_handling_fee: number;
@@ -131,6 +135,23 @@ export async function savePlatformSettings(
   if (!Number.isFinite(deliveryFee) || deliveryFee < 0)
     return { error: "badDeliveryFee" };
 
+  // Driver offer window (0 = classic forced assignment) + cascade depth, and
+  // the dispatch working hours (whole hours, 0–23; start == end = 24/7).
+  const offerTimeout = int(input.courier_offer_timeout_minutes);
+  if (!Number.isFinite(offerTimeout) || offerTimeout < 0 || offerTimeout > 1440)
+    return { error: "badOfferTimeout" };
+  const offerRounds = int(input.courier_offer_max_rounds);
+  if (!Number.isFinite(offerRounds) || offerRounds < 1 || offerRounds > 20)
+    return { error: "badOfferRounds" };
+  const dispatchStart = int(input.dispatch_hours_start);
+  const dispatchEnd = int(input.dispatch_hours_end);
+  if (
+    ![dispatchStart, dispatchEnd].every(
+      (h) => Number.isFinite(h) && h >= 0 && h <= 23,
+    )
+  )
+    return { error: "badDispatchHours" };
+
   // The Hezalli wallet destination for in-app COD remittance. Empty disables
   // the feature; otherwise it must look like an email (the resolver additionally
   // requires it to be an active ADMIN before any money moves).
@@ -197,6 +218,10 @@ export async function savePlatformSettings(
     express_auto_assign: Boolean(input.express_auto_assign),
     courier_assign_strategy:
       input.courier_assign_strategy === "nearest" ? "nearest" : "balanced",
+    courier_offer_timeout_minutes: offerTimeout,
+    courier_offer_max_rounds: offerRounds,
+    dispatch_hours_start: dispatchStart,
+    dispatch_hours_end: dispatchEnd,
     courier_delivery_fee: deliveryFee,
     points_enabled: Boolean(input.points_enabled),
     point_handling_fee: pointFee,
