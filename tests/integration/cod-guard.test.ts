@@ -31,9 +31,11 @@ import {
 import { setCourierDeposit, setPointDeposit } from "@/lib/actions/deposit";
 import { pointDriverCashIn } from "@/lib/actions/point";
 import { requestPointPayout } from "@/lib/actions/point-payout";
+import { setWalletCodHold } from "@/lib/actions/wallet-hold";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
+import { transferFunds } from "@/lib/wallet-transfers";
 import { makeFixture } from "./factory";
 
 const as = (id: string | null) =>
@@ -374,5 +376,90 @@ describe("deposits & trust bonus raise the personal limit", () => {
       orderBy: { createdAt: "desc" },
     });
     expect(audit).toBeTruthy();
+  });
+});
+
+describe("wallet COD hold (pledged collateral)", () => {
+  async function courierWithWallet(tag: string, balance: number) {
+    const c = await makeCourier(tag);
+    const wallet = await prisma.wallet.create({
+      data: { userId: c, availableUsd: balance },
+      select: { id: true },
+    });
+    // Back the balance with a real ledger entry so recomputes stay truthful.
+    await prisma.walletEntry.create({
+      data: { walletId: wallet.id, type: "TOP_UP", amountUsd: balance },
+    });
+    return { courierId: c, walletId: wallet.id };
+  }
+
+  it("a pledge raises the limit; an unbacked pledge counts for nothing", async () => {
+    const { courierId: c } = await courierWithWallet("hold", 100);
+    as(c);
+    expect(await setWalletCodHold(form({ amount: "40" }))).toEqual({
+      ok: true,
+    });
+
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 80 },
+    });
+    // Limit = 50 base + 40 pledge = 90 ≥ 80 → not blocked.
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(false);
+    const status = await courierCodStatus(c);
+    expect(status.walletHold).toBe(40);
+    expect(status.cashLimit).toBe(90);
+
+    // $95 held is over even the pledged limit.
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 15 },
+    });
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(true);
+  });
+
+  it("rejects a pledge the balance doesn't cover", async () => {
+    const { courierId: c } = await courierWithWallet("thin", 30);
+    as(c);
+    expect(await setWalletCodHold(form({ amount: "50" }))).toEqual({
+      error: "insufficient",
+    });
+  });
+
+  it("pledged money cannot leave the wallet", async () => {
+    const { courierId: c } = await courierWithWallet("lock", 100);
+    const other = await makeCourier("rcpt");
+    as(c);
+    expect(await setWalletCodHold(form({ amount: "40" }))).toEqual({
+      ok: true,
+    });
+
+    // 50 + 40 hold = 90 ≤ 100 → allowed; balance recomputes to 50.
+    expect((await transferFunds(c, other, 50)).ok).toBe(true);
+    // 20 + 40 hold = 60 > 50 → the pledge blocks it.
+    expect(await transferFunds(c, other, 20)).toEqual({
+      error: "insufficient",
+    });
+  });
+
+  it("releasing the pledge requires empty pockets", async () => {
+    const { courierId: c } = await courierWithWallet("rel", 60);
+    as(c);
+    expect(await setWalletCodHold(form({ amount: "60" }))).toEqual({
+      ok: true,
+    });
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 25 },
+    });
+    expect(await setWalletCodHold(form({ amount: "0" }))).toEqual({
+      error: "cashHeld",
+    });
+
+    // Hand the cash in → release is allowed again.
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "REMITTANCE", amountUsd: -25 },
+    });
+    expect(await setWalletCodHold(form({ amount: "0" }))).toEqual({
+      ok: true,
+    });
+    expect((await courierCodStatus(c)).walletHold).toBe(0);
   });
 });

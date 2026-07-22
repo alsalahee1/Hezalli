@@ -2130,6 +2130,14 @@
     "codBlockedHow": "Hand the cash in at any Hezalli Point or the office and new deliveries resume right away.",
     "codNearLimit": "You are holding {amount} of the {limit} COD cash allowed — hand it in soon to keep receiving deliveries.",
     "codLimitLine": "Your cash limit: {limit} — it grows with every delivery.",
+    "holdTitle": "Wallet pledge — raise your cash limit",
+    "holdHint": "Wallet balance: {balance} · pledged: {hold} · your COD limit: {limit}. Pledged money stays yours but can't be spent or withdrawn, and it raises your COD limit by the same amount. To lower the pledge, hand in your COD cash first.",
+    "holdSave": "Update pledge",
+    "err_hold_forbidden": "You're not signed in as a driver.",
+    "err_hold_badInput": "Enter a valid amount (0 or more).",
+    "err_hold_insufficient": "Your wallet balance doesn't cover that pledge.",
+    "err_hold_cashHeld": "Hand in your COD cash first, then lower the pledge.",
+    "err_hold_frozen": "Your wallet is frozen — contact support.",
     "collectFromPoint": "Collect from",
     "pickupPoint": "Pickup point",
     "redeliverOn": "Buyer asked for redelivery on {date}",
@@ -2358,7 +2366,7 @@
     "err_cashOutstanding": "This driver still holds COD cash — settle it (hand-in or offset) before paying out earnings.",
     "err_nothingToOffset": "Nothing to offset — the driver holds no cash or has no earnings.",
     "depositTitle": "Security deposit & cash limit",
-    "limitBreakdown": "Personal COD cash limit: {limit} = base {base} + deposit {deposit} + trust bonus {trust} ({deliveries} deliveries).",
+    "limitBreakdown": "Personal COD cash limit: {limit} = base {base} + deposit {deposit} + wallet pledge {hold} + trust bonus {trust} ({deliveries} deliveries).",
     "limitOff": "The COD cash-limit check is turned off in platform settings."
   },
   "AdminDeposits": {

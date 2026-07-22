@@ -2,9 +2,12 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { FileText, Wallet } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
+import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
+import { getWalletId } from "@/lib/wallet";
 import { Link } from "@/i18n/navigation";
+import { WalletHoldForm } from "@/components/driver/wallet-hold-form";
 
 // The driver's cash & earnings ledger (docs §30): the same headline figures
 // as the driver home, plus the entries behind them.
@@ -16,8 +19,14 @@ export default async function DriverLedgerPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [cash, entries] = await Promise.all([
+  const walletId = await getWalletId(courierId);
+  const [cash, cod, wallet, entries] = await Promise.all([
     courierCashSummary(courierId),
+    courierCodStatus(courierId),
+    prisma.wallet.findUniqueOrThrow({
+      where: { id: walletId },
+      select: { availableUsd: true, codHoldUsd: true },
+    }),
     prisma.courierLedgerEntry.findMany({
       where: { courierId },
       orderBy: { createdAt: "desc" },
@@ -81,6 +90,19 @@ export default async function DriverLedgerPage() {
           </p>
         </div>
       </div>
+
+      {/* COD collateral pledge (docs §36): lock wallet balance → higher limit. */}
+      <section className="space-y-2 rounded-xl border p-4">
+        <h2 className="text-sm font-semibold">{t("holdTitle")}</h2>
+        <p className="text-muted-foreground text-xs">
+          {t("holdHint", {
+            balance: money(Number(wallet.availableUsd)),
+            hold: money(Number(wallet.codHoldUsd)),
+            limit: money(cod.cashLimit),
+          })}
+        </p>
+        <WalletHoldForm current={Number(wallet.codHoldUsd)} />
+      </section>
 
       {entries.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-12 text-center text-sm">

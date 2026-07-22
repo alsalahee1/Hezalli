@@ -1002,6 +1002,11 @@ model Wallet {
   userId       String             @unique
   availableUsd Decimal            @default(0) @db.Decimal(12, 2)
   frozen       Boolean            @default(false) // AML / dispute hold
+  // COD collateral pledge (docs §36): the owner voluntarily locks this much of
+  // their balance as security for COD cash they carry — outflows must keep
+  // availableUsd ≥ codHoldUsd, and the effective collateral counted toward the
+  // courier's cash limit is min(codHoldUsd, availableUsd).
+  codHoldUsd   Decimal            @default(0) @db.Decimal(12, 2)
   // Wallet PIN (Step 19.9): scrypt hash (same format as passwordHash). Required
   // to authorize every outflow. Lockout backs off brute force: after too many
   // wrong tries `pinLockedUntil` blocks attempts for a cool-off window.

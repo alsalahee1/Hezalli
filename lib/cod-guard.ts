@@ -9,6 +9,9 @@
 // The cash limit is per-holder credit, not one flat number:
 //   driver limit = driver_cash_limit (base)
 //                + security deposit (admin-recorded, 1:1)
+//                + wallet COD hold (self-pledged HezalliPay balance, counted
+//                  as min(codHoldUsd, availableUsd) so an unbacked hold is
+//                  worth nothing — see docs §36)
 //                + trust bonus (every trust_step_deliveries completed
 //                  deliveries add trust_step_bonus_usd, capped at
 //                  trust_bonus_cap_usd)
@@ -26,9 +29,11 @@ export type CourierCodStatus = {
   blocked: boolean;
   reason: "over_limit" | "overdue" | null;
   cashOnHand: number;
-  cashLimit: number; // EFFECTIVE limit (base + deposit + trust); 0 = check off
+  // EFFECTIVE limit (base + deposit + wallet hold + trust); 0 = check off
+  cashLimit: number;
   baseLimit: number;
   deposit: number;
+  walletHold: number; // effective pledged collateral, min(hold, balance)
   trustBonus: number;
   deliveries: number; // completed deliveries backing the trust bonus
   maxAgeHours: number; // 0 = check off
@@ -80,15 +85,36 @@ function trustBonus(deliveries: number, s: PlatformSettings): number {
   return round2(Math.min(earned, Math.max(0, s.trust_bonus_cap_usd)));
 }
 
-async function depositByCourier(
+type Collateral = { deposit: number; walletHold: number };
+
+async function collateralByCourier(
   courierIds: string[],
-): Promise<Map<string, number>> {
+): Promise<Map<string, Collateral>> {
   if (courierIds.length === 0) return new Map();
   const rows = await prisma.user.findMany({
     where: { id: { in: courierIds } },
-    select: { id: true, courierDepositUsd: true },
+    select: {
+      id: true,
+      courierDepositUsd: true,
+      wallet: { select: { availableUsd: true, codHoldUsd: true } },
+    },
   });
-  return new Map(rows.map((r) => [r.id, Number(r.courierDepositUsd)]));
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      {
+        deposit: Number(r.courierDepositUsd),
+        // A pledge only counts while the money is actually in the wallet.
+        walletHold: Math.max(
+          0,
+          Math.min(
+            Number(r.wallet?.codHoldUsd ?? 0),
+            Number(r.wallet?.availableUsd ?? 0),
+          ),
+        ),
+      },
+    ]),
+  );
 }
 
 /**
@@ -113,11 +139,15 @@ export async function codBlockedCourierIds(
   );
 
   if (limit > 0 && holders.length > 0) {
-    const deposits = await depositByCourier(holders);
+    const collateral = await collateralByCourier(holders);
     for (const id of holders) {
       const c = cash.get(id)!;
+      const col = collateral.get(id) ?? { deposit: 0, walletHold: 0 };
       const personal =
-        limit + (deposits.get(id) ?? 0) + trustBonus(c.deliveries, settings);
+        limit +
+        col.deposit +
+        col.walletHold +
+        trustBonus(c.deliveries, settings);
       if (c.cashOnHand > personal + EPS) blocked.add(id);
     }
   }
@@ -158,23 +188,27 @@ export async function courierCodStatus(
   const baseLimit = settings.driver_cash_limit;
   const maxAgeHours = settings.driver_cod_max_age_hours;
 
-  const [cashMap, deposits] = await Promise.all([
+  const [cashMap, collateralMap] = await Promise.all([
     cashByCourier([courierId]),
-    depositByCourier([courierId]),
+    collateralByCourier([courierId]),
   ]);
   const cash = cashMap.get(courierId) ?? {
     cashOnHand: 0,
     collected: 0,
     deliveries: 0,
   };
-  const deposit = round2(deposits.get(courierId) ?? 0);
+  const col = collateralMap.get(courierId) ?? { deposit: 0, walletHold: 0 };
+  const deposit = round2(col.deposit);
+  const walletHold = round2(col.walletHold);
   const bonus = trustBonus(cash.deliveries, settings);
-  const cashLimit = baseLimit > 0 ? round2(baseLimit + deposit + bonus) : 0;
+  const cashLimit =
+    baseLimit > 0 ? round2(baseLimit + deposit + walletHold + bonus) : 0;
   const base = {
     cashOnHand: round2(cash.cashOnHand),
     cashLimit,
     baseLimit,
     deposit,
+    walletHold,
     trustBonus: bonus,
     deliveries: cash.deliveries,
     maxAgeHours,

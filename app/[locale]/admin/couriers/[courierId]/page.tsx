@@ -171,6 +171,7 @@ export default async function AdminCourierDetailPage({
                   limit: money(cod.cashLimit),
                   base: money(cod.baseLimit),
                   deposit: money(cod.deposit),
+                  hold: money(cod.walletHold),
                   trust: money(cod.trustBonus),
                   deliveries: cod.deliveries,
                 })

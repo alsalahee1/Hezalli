@@ -616,6 +616,42 @@ every delivery" so the incentive is visible.
 - [x] i18n (en + ar) + integration tests (deposit unblocks, trust steps, point deposit, guards)
 - [x] This file kept current
 
-## 35. Out of scope
+## 36. v1.16 — Wallet COD hold (pledged collateral)
+
+The third leg of the credit limit: a courier voluntarily locks part of
+their HezalliPay balance as collateral (`Wallet.codHoldUsd`) — no money
+moves, it just stops being spendable, and the limit rises by
+`min(codHoldUsd, availableUsd)` (an unbacked pledge is worth nothing, which
+also makes any race between a pledge and a concurrent spend harmless).
+
+```
+driver limit = base + deposit + wallet hold + trust bonus
+```
+
+Rules:
+
+- **Pledge is self-service** (`lib/actions/wallet-hold.ts`, driver ledger
+  page): raising it only needs the balance to cover the new hold (guarded
+  conditional update). **Releasing it requires empty pockets** — while the
+  driver holds any COD cash the pledge is locked, so the collateral can't
+  vanish exactly when it matters. Audited (`courier.walletHold`).
+- **Held money can't leave.** All four wallet outflow paths (withdrawal,
+  P2P/pay-user transfer, bill/airtime, pay-order-with-balance) now require
+  `availableUsd ≥ amount + codHoldUsd` in both the pre-check and the atomic
+  debit guard.
+- The admin courier page breakdown and the driver ledger card show the
+  pledge; the driver sees balance / pledged / resulting limit in one line.
+
+### Build checklist (v1.16)
+
+- [x] Schema + migration: `Wallet.codHoldUsd` (Decimal, default 0)
+- [x] Outflow guards respect the hold: withdrawal, transfers, bills, order pay-with-balance
+- [x] `lib/cod-guard.ts`: effective collateral = min(hold, balance) added to the driver limit
+- [x] `lib/actions/wallet-hold.ts`: self-service pledge (raise = balance-guarded; release = only with no COD cash)
+- [x] Driver ledger: pledge card; admin courier page: hold in the limit breakdown
+- [x] i18n (en + ar) + integration tests (pledge raises limit, unfunded pledge rejected, pledged money can't transfer out, release requires empty pockets)
+- [x] This file kept current
+
+## 37. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
