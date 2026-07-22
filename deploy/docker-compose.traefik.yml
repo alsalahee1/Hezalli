@@ -82,6 +82,9 @@ services:
       # .env. NEVER enable on a real production site — it lets anyone sign in
       # as a seed account (admin included) with one tap.
       DEV_LOGIN_ENABLED: ${DEV_LOGIN_ENABLED:-}
+      # Shared secret for the /api/cron/* endpoints; the cron sidecar below
+      # sends it as a bearer token. Generated into .env by vps-deploy.sh.
+      CRON_SECRET: ${CRON_SECRET:-}
       PORT: "3000"
     networks:
       - hezalli-internal
@@ -105,6 +108,32 @@ services:
       - "traefik.http.routers.hezalli-http.entrypoints=${TRAEFIK_ENTRYPOINT_HTTP:-web}"
       - "traefik.http.routers.hezalli-http.middlewares=hezalli-redirect"
       - "traefik.http.middlewares.hezalli-redirect.redirectscheme.scheme=https"
+
+  # Scheduler sidecar: replaces Vercel Cron on the VPS. Once an hour it calls
+  # every /api/cron/* endpoint with the shared secret. All endpoints are
+  # idempotent (one-shot guards), so the fixed hourly cadence is safe; a
+  # failing call is logged and retried next hour.
+  cron:
+    container_name: hezalli-cron
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-}
+    command: >
+      sh -c "while true; do
+      for job in auto-complete shipments points marketing; do
+      curl -fsS -m 60 -H \"Authorization: Bearer $$CRON_SECRET\"
+      \"http://app:3000/api/cron/$$job\"
+      && echo \" cron $$job ok\"
+      || echo \"cron $$job failed\";
+      done;
+      sleep 3600;
+      done"
+    networks:
+      - hezalli-internal
+    depends_on:
+      app:
+        condition: service_started
 
 networks:
   hezalli-internal:

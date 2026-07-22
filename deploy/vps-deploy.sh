@@ -75,6 +75,19 @@ if ! grep -qE '^AUTH_SECRET=.+' .env 2>/dev/null; then
   log "Generated AUTH_SECRET into .env"
 fi
 
+# --- 2c. CRON_SECRET (scheduled jobs; see app/api/cron/*) --------------------
+# The cron sidecar authenticates to the /api/cron/* endpoints with this shared
+# secret. Generate once and persist so older .env files are healed on deploy.
+if ! grep -qE '^CRON_SECRET=.+' .env 2>/dev/null; then
+  CRON_SECRET_VAL="$(openssl rand -hex 32)"
+  if grep -q '^CRON_SECRET=' .env 2>/dev/null; then
+    sed -i "s|^CRON_SECRET=.*|CRON_SECRET=${CRON_SECRET_VAL}|" .env
+  else
+    echo "CRON_SECRET=${CRON_SECRET_VAL}" >> .env
+  fi
+  log "Generated CRON_SECRET into .env"
+fi
+
 # --- 3. Detect the existing web-facing setup --------------------------------
 port_owner() { (ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep -E "[:.]$1 " || true; }
 
