@@ -7,6 +7,7 @@ import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
+import { getTheme } from "@/lib/theme";
 import type { Locale } from "@/i18n/routing";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 import { CartProvider } from "@/components/cart/cart-provider";
@@ -39,6 +40,7 @@ export default async function ShopLayout({
             roles: true,
             wallet: { select: { availableUsd: true } },
             ownedFleet: { select: { isActive: true } },
+            deliveryPoint: { select: { status: true } },
           },
         })
       : Promise.resolve(null),
@@ -65,6 +67,7 @@ export default async function ShopLayout({
 
   const categories = toNavCategories(catRows, locale as Locale);
   const announcement = await getAnnouncement();
+  const theme = await getTheme();
 
   // Maintenance mode: the storefront is closed to everyone except admins, who
   // keep full access so they can verify the site before reopening it.
@@ -94,9 +97,16 @@ export default async function ShopLayout({
           }
           isSeller={user?.roles.includes("SELLER") ?? false}
           isAdmin={isAdmin}
+          isCourier={user?.roles.includes("COURIER") ?? false}
+          isPointOperator={
+            (user?.roles.includes("DELIVERY_POINT") &&
+              user?.deliveryPoint?.status === "ACTIVE") ??
+            false
+          }
           isFleetOwner={user?.ownedFleet?.isActive ?? false}
           walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
           categories={categories}
+          theme={theme}
         />
         <div className="flex-1">{children}</div>
         <SiteFooter />

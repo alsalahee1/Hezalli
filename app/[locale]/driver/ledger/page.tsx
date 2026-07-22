@@ -4,10 +4,12 @@ import { FileText, Wallet } from "lucide-react";
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { transferCourierEarningsToWallet } from "@/lib/actions/earnings-wallet";
 import { prisma } from "@/lib/prisma";
 import { getWalletId } from "@/lib/wallet";
 import { Link } from "@/i18n/navigation";
 import { WalletHoldForm } from "@/components/driver/wallet-hold-form";
+import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
 // The driver's cash & earnings ledger (docs §30): the same headline figures
 // as the driver home, plus the entries behind them.
@@ -90,6 +92,13 @@ export default async function DriverLedgerPage() {
           </p>
         </div>
       </div>
+
+      {/* Sweep the earnings Hezalli owes into the HezalliPay wallet. */}
+      <MoveEarningsToWallet
+        action={transferCourierEarningsToWallet}
+        namespace="Driver"
+        disabled={cash.earnings <= 0}
+      />
 
       {/* COD collateral pledge (docs §36): lock wallet balance → higher limit. */}
       <section className="space-y-2 rounded-xl border p-4">

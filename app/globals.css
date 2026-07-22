@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant yemeni (&:is(.theme-yemeni *));
 
 :root {
   /* Match native controls (select popups, date pickers, scrollbars) to the
@@ -77,6 +78,44 @@
   --sidebar-ring: oklch(0.72 0.14 195);
 }
 
+/* Yemeni heritage theme — deep crimson, black and antique gold drawn from
+   tribal thawb embroidery and majlis textiles, on a warm ivory ground. An
+   alternate identity users can opt into; the default theme is untouched. */
+.theme-yemeni {
+  color-scheme: light;
+  --background: oklch(0.97 0.014 70);
+  --foreground: oklch(0.2 0.02 30);
+  --card: oklch(0.99 0.006 70);
+  --card-foreground: oklch(0.2 0.02 30);
+  --popover: oklch(0.99 0.006 70);
+  --popover-foreground: oklch(0.2 0.02 30);
+  --primary: oklch(0.48 0.19 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.22 0.025 35);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.93 0.02 50);
+  --muted-foreground: oklch(0.46 0.03 40);
+  --accent: oklch(0.78 0.15 80);
+  --accent-foreground: oklch(0.26 0.05 70);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.85 0.035 45);
+  --input: oklch(0.85 0.035 45);
+  --ring: oklch(0.48 0.19 25);
+  --chart-1: oklch(0.48 0.19 25);
+  --chart-2: oklch(0.78 0.15 80);
+  --chart-3: oklch(0.22 0.025 35);
+  --chart-4: oklch(0.65 0.2 30);
+  --chart-5: oklch(0.6 0.05 50);
+  --sidebar: oklch(0.99 0.006 70);
+  --sidebar-foreground: oklch(0.2 0.02 30);
+  --sidebar-primary: oklch(0.48 0.19 25);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.93 0.02 50);
+  --sidebar-accent-foreground: oklch(0.48 0.19 25);
+  --sidebar-border: oklch(0.85 0.035 45);
+  --sidebar-ring: oklch(0.48 0.19 25);
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -123,6 +162,25 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Diamond trim — the repeating rhombus border seen on tribal thawb
+   embroidery and majlis textile edges. Used as a thin framing accent when
+   the Yemeni theme is active (see .yemeni:block usages). */
+.yemeni-trim {
+  height: 6px;
+  background-image:
+    linear-gradient(135deg, var(--primary) 25%, transparent 25.5%),
+    linear-gradient(225deg, var(--primary) 25%, transparent 25.5%),
+    linear-gradient(45deg, var(--accent) 25%, transparent 25.5%),
+    linear-gradient(315deg, var(--accent) 25%, transparent 25.5%);
+  background-position:
+    0 0,
+    5px 0,
+    5px -5px,
+    0 5px;
+  background-size: 10px 10px;
+  background-color: var(--secondary);
 }
 
 /* Native-app wallet on phones.

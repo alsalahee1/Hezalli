@@ -9,6 +9,7 @@ import {
   markNotificationRead,
 } from "@/lib/actions/notification";
 import { notificationHref, type NotifVariant } from "@/lib/notifications";
+import { playNotifySound } from "@/lib/notify-sound";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Popover } from "@/components/ui/popover";
@@ -35,12 +36,19 @@ export function NotificationBell({
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<Item[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevUnread = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications", { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as { unread: number; items: Item[] };
+      // Skip the initial mount so we don't ping for notifications that were
+      // already unread before the page loaded.
+      if (prevUnread.current !== null && data.unread > prevUnread.current) {
+        playNotifySound();
+      }
+      prevUnread.current = data.unread;
       setUnread(data.unread);
       setItems(data.items);
     } catch {

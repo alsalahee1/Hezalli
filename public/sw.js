@@ -1,5 +1,7 @@
-// Hezalli service worker — Web Push for the driver app.
-// Shows an incoming push and focuses (or opens) the app on click.
+// Hezalli service worker — Web Push for buyers, sellers, and drivers.
+// Shows an incoming push (with a buzz on devices that support it — the
+// notification's sound itself is the OS/browser default) and focuses (or
+// opens) the app on click.
 
 self.addEventListener("push", (event) => {
   let data = {};
@@ -11,17 +13,17 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Hezalli";
   const options = {
     body: data.body || "",
-    icon: "/driver-icon.svg",
+    icon: data.icon || "/icon.svg",
     tag: data.tag || undefined,
-    data: { url: data.url || "/driver" },
+    vibrate: [200, 100, 200],
+    data: { url: data.url || "/" },
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url =
-    (event.notification.data && event.notification.data.url) || "/driver";
+  const url = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })

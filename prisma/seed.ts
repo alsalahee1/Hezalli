@@ -8,8 +8,13 @@
  *   - 1 admin, 2 sellers (+ stores + balances), 3 buyers (+ addresses)
  *   - ~60 products across all categories: variants (colour/size/storage),
  *     sale prices, used goods, drafts, and one moderated (hidden) listing
- *   - a few orders (COD / USDT / wallet) with sub-orders, payments, ledger
- *   - CMS pages, a banner, and a platform coupon
+ *   - orders (COD / USDT / wallet) with sub-orders, payments, ledger — some
+ *     completed & delivered so returns/disputes have something to attach to
+ *   - carts (incl. saved-for-later), wishlists, recently viewed, store follows
+ *   - buyer↔store chat threads and a spread of notifications per user
+ *   - loyalty points + a referral link, a return request, and an open dispute
+ *   - extra coupons (seller / fixed / free-shipping / expired), an active
+ *     flash sale, seller payout methods + a payout request, and banners
  *
  * Dev login password for every seeded user: "hezalli123".
  * Run with: npm run db:seed
@@ -1282,7 +1287,7 @@ async function main() {
   });
 
   // Order 2 — USDT, processing (Aden Fashion House)
-  await createOrder({
+  const order2 = await createOrder({
     buyerId: buyer2.id,
     addressId: buyer2.addresses[0].id,
     storeId: seller2.storeId,
@@ -1311,7 +1316,7 @@ async function main() {
   });
 
   // Order 3 — wallet, shipped (Sana'a Electronics)
-  await createOrder({
+  const order3 = await createOrder({
     buyerId: buyer3.id,
     addressId: buyer3.addresses[0].id,
     storeId: seller1.storeId,
@@ -1354,6 +1359,465 @@ async function main() {
     },
   });
 
+  // =========================================================================
+  // Extended mock data — broader test coverage.
+  //
+  // Everything below fills the feature areas the core seed left empty so every
+  // screen in the app has something to render while building: carts &
+  // wishlists, recently viewed, store follows, chat threads, a spread of
+  // notifications, loyalty points + referrals, returns & a dispute, extra
+  // coupons, an active flash sale, seller payout methods + a payout request,
+  // and product view counts.
+  // =========================================================================
+
+  // --- Two more completed & delivered orders to hang returns/disputes on ----
+  // Order 4 — COD, completed & delivered (Sana'a Electronics → buyer2)
+  const order4 = await createOrder({
+    buyerId: buyer2.id,
+    addressId: buyer2.addresses[0].id,
+    storeId: seller1.storeId,
+    balanceId: seller1.balanceId,
+    paymentMethod: "COD",
+    orderStatus: "COMPLETED",
+    subStatus: "COMPLETED",
+    shipmentStatus: "DELIVERED",
+    shippingUsd: 3,
+    lines: [
+      {
+        variantId: products[9].variants[0].id,
+        sku: products[9].variants[0].sku,
+        title: products[9].titleEn,
+        price: products[9].variants[0].price,
+        qty: 2,
+      },
+    ],
+  });
+
+  // Order 5 — USDT, completed & delivered (Aden Fashion House → buyer3)
+  const order5 = await createOrder({
+    buyerId: buyer3.id,
+    addressId: buyer3.addresses[0].id,
+    storeId: seller2.storeId,
+    balanceId: seller2.balanceId,
+    paymentMethod: "USDT",
+    orderStatus: "COMPLETED",
+    subStatus: "COMPLETED",
+    shipmentStatus: "DELIVERED",
+    shippingUsd: 5,
+    lines: [
+      {
+        variantId: products[14].variants[0].id,
+        sku: products[14].variants[0].sku,
+        title: products[14].titleEn,
+        price: products[14].variants[0].price,
+        qty: 1,
+      },
+    ],
+  });
+
+  // --- Return request (REQUESTED) on order 4 --------------------------------
+  const sub4 = await prisma.subOrder.findFirstOrThrow({
+    where: { orderId: order4.id },
+    include: { items: true },
+  });
+  await prisma.returnRequest.create({
+    data: {
+      subOrderId: sub4.id,
+      buyerId: buyer2.id,
+      status: "REQUESTED",
+      reason: "وصل المنتج بلون مختلف عن الصورة المعروضة.",
+      items: { create: [{ orderItemId: sub4.items[0].id, quantity: 1 }] },
+    },
+  });
+
+  // --- Return (APPROVED) + open dispute on order 5 --------------------------
+  const sub5 = await prisma.subOrder.findFirstOrThrow({
+    where: { orderId: order5.id },
+    include: { items: true },
+  });
+  const return5 = await prisma.returnRequest.create({
+    data: {
+      subOrderId: sub5.id,
+      buyerId: buyer3.id,
+      status: "APPROVED",
+      reason: "المقاس غير مطابق للوصف.",
+      resolution: "بانتظار إرجاع المنتج إلى البائع.",
+      items: { create: [{ orderItemId: sub5.items[0].id, quantity: 1 }] },
+    },
+  });
+  const dispute5 = await prisma.dispute.create({
+    data: {
+      returnId: return5.id,
+      status: "UNDER_REVIEW",
+      openedBy: buyer3.id,
+      assignedTo: admin.id,
+      messages: {
+        create: [
+          {
+            senderId: buyer3.id,
+            body: "البائع لم يرد على طلب الإرجاع، أرجو المساعدة.",
+          },
+          {
+            senderId: admin.id,
+            body: "شكراً لتواصلك، نقوم بمراجعة الطلب الآن.",
+          },
+        ],
+      },
+    },
+  });
+
+  // --- Carts (active items + one saved-for-later) ---------------------------
+  const cart2 = await prisma.cart.create({ data: { userId: buyer2.id } });
+  await prisma.cartItem.createMany({
+    data: [
+      {
+        cartId: cart2.id,
+        variantId: products[0].variants[0].id,
+        storeId: products[0].storeId,
+        quantity: 1,
+      },
+      {
+        cartId: cart2.id,
+        variantId: products[5].variants[0].id,
+        storeId: products[5].storeId,
+        quantity: 2,
+      },
+      {
+        cartId: cart2.id,
+        variantId: products[21].variants[0].id,
+        storeId: products[21].storeId,
+        quantity: 1,
+        savedForLater: true,
+      },
+    ],
+  });
+  const cart3 = await prisma.cart.create({ data: { userId: buyer3.id } });
+  await prisma.cartItem.create({
+    data: {
+      cartId: cart3.id,
+      variantId: products[1].variants[0].id,
+      storeId: products[1].storeId,
+      quantity: 1,
+    },
+  });
+
+  // --- Wishlists ------------------------------------------------------------
+  const wl1 = await prisma.wishlist.create({ data: { userId: buyer1.id } });
+  await prisma.wishlistItem.createMany({
+    data: [
+      { wishlistId: wl1.id, productId: products[0].id },
+      { wishlistId: wl1.id, productId: products[20].id },
+      { wishlistId: wl1.id, productId: products[28].id },
+    ],
+  });
+  const wl2 = await prisma.wishlist.create({ data: { userId: buyer2.id } });
+  await prisma.wishlistItem.createMany({
+    data: [
+      { wishlistId: wl2.id, productId: products[41].id },
+      { wishlistId: wl2.id, productId: products[13].id },
+    ],
+  });
+
+  // --- Recently viewed ------------------------------------------------------
+  await prisma.recentlyViewed.createMany({
+    data: [
+      { userId: buyer1.id, productId: products[1].id },
+      { userId: buyer1.id, productId: products[3].id },
+      { userId: buyer1.id, productId: products[20].id },
+      { userId: buyer2.id, productId: products[42].id },
+      { userId: buyer3.id, productId: products[6].id },
+    ],
+  });
+
+  // --- Store follows --------------------------------------------------------
+  await prisma.storeFollow.createMany({
+    data: [
+      { userId: buyer1.id, storeId: seller1.storeId },
+      { userId: buyer2.id, storeId: seller1.storeId },
+      { userId: buyer2.id, storeId: seller2.storeId },
+      { userId: buyer3.id, storeId: seller2.storeId },
+    ],
+  });
+
+  // --- Chat threads (buyer ↔ store) -----------------------------------------
+  const conv1 = await prisma.conversation.create({
+    data: {
+      buyerId: buyer1.id,
+      storeId: seller1.storeId,
+      subOrderId: order1Full.subOrders[0].id,
+    },
+  });
+  await prisma.message.createMany({
+    data: [
+      {
+        conversationId: conv1.id,
+        senderId: buyer1.id,
+        body: "هل المنتج متوفر بلون آخر؟",
+        readAt: new Date(),
+      },
+      {
+        conversationId: conv1.id,
+        senderId: seller1.user.id,
+        body: "نعم، متوفر بالأسود والفضي.",
+        readAt: new Date(),
+      },
+      {
+        conversationId: conv1.id,
+        senderId: buyer1.id,
+        body: "ممتاز، شكراً لك!",
+      },
+    ],
+  });
+  const conv2 = await prisma.conversation.create({
+    data: { buyerId: buyer2.id, storeId: seller2.storeId },
+  });
+  await prisma.message.create({
+    data: {
+      conversationId: conv2.id,
+      senderId: buyer2.id,
+      body: "متى يصل الطلب إلى عدن؟",
+    },
+  });
+
+  // --- Notifications (a spread of types per user) ---------------------------
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: buyer1.id,
+        type: "ORDER",
+        title: "تم تأكيد طلبك",
+        body: "طلبك قيد التجهيز الآن.",
+        data: { orderId: order1.id },
+        readAt: new Date(),
+      },
+      {
+        userId: buyer1.id,
+        type: "SHIPMENT",
+        title: "تم شحن طلبك",
+        body: "الطلب في الطريق إليك.",
+        data: { orderId: order3.id },
+      },
+      {
+        userId: buyer1.id,
+        type: "PROMO",
+        title: "خصم 10% بكود WELCOME10",
+        body: "استخدم الكود عند الدفع.",
+      },
+      {
+        userId: buyer2.id,
+        type: "RETURN",
+        title: "تم استلام طلب الإرجاع",
+        body: "سيتم مراجعة طلبك خلال 48 ساعة.",
+        data: { orderId: order4.id },
+      },
+      {
+        userId: buyer3.id,
+        type: "DISPUTE",
+        title: "تم فتح نزاع",
+        body: "فريق الدعم يراجع حالتك.",
+        data: { disputeId: dispute5.id },
+      },
+      {
+        userId: seller1.user.id,
+        type: "ORDER",
+        title: "طلب جديد",
+        body: "لديك طلب جديد بانتظار التجهيز.",
+        data: { orderId: order1.id },
+      },
+      {
+        userId: seller2.user.id,
+        type: "ORDER",
+        title: "طلب جديد",
+        body: "لديك طلب جديد بانتظار التجهيز.",
+        data: { orderId: order2.id },
+      },
+    ],
+  });
+
+  // --- Loyalty points + referral graph --------------------------------------
+  // buyer1 earned points on order 1 and referred buyer3.
+  await prisma.user.update({
+    where: { id: buyer1.id },
+    data: { referralCode: "HZALI0001", loyaltyPoints: 264 },
+  });
+  await prisma.user.update({
+    where: { id: buyer2.id },
+    data: { referralCode: "HZMONA002", loyaltyPoints: 40 },
+  });
+  await prisma.user.update({
+    where: { id: buyer3.id },
+    data: {
+      referralCode: "HZOMAR003",
+      referredById: buyer1.id,
+      // Promotions email opt-out, to exercise notification preferences.
+      notificationPrefs: {
+        orders: true,
+        shipping: true,
+        payments: true,
+        returns: true,
+        chat: true,
+        promotions: false,
+      },
+    },
+  });
+  await prisma.loyaltyTransaction.createMany({
+    data: [
+      {
+        userId: buyer1.id,
+        points: 64,
+        type: "EARN",
+        orderId: order1.id,
+        note: "نقاط شراء الطلب",
+      },
+      {
+        userId: buyer1.id,
+        points: 200,
+        type: "REFERRAL",
+        note: "مكافأة دعوة صديق",
+      },
+      {
+        userId: buyer2.id,
+        points: 40,
+        type: "EARN",
+        orderId: order2.id,
+        note: "نقاط شراء الطلب",
+      },
+    ],
+  });
+
+  // --- Extra coupons (seller-scoped, fixed, free-shipping, expired) ---------
+  await prisma.coupon.createMany({
+    data: [
+      {
+        code: "SANAA5",
+        scope: "SELLER",
+        storeId: seller1.storeId,
+        discountType: "FIXED",
+        value: 5,
+        minSpendUsd: 30,
+        maxUses: 200,
+        perUserLimit: 1,
+        isActive: true,
+      },
+      {
+        code: "FREESHIP",
+        scope: "PLATFORM",
+        discountType: "FREE_SHIPPING",
+        value: 0,
+        minSpendUsd: 40,
+        maxUses: 500,
+        isActive: true,
+      },
+      {
+        code: "EID25",
+        scope: "PLATFORM",
+        discountType: "PERCENT",
+        value: 25,
+        maxDiscountUsd: 20,
+        minSpendUsd: 50,
+        maxUses: 100,
+        isActive: false,
+        endsAt: new Date("2026-01-01"),
+      },
+    ],
+  });
+
+  // --- Active flash sale ----------------------------------------------------
+  const flashNow = new Date();
+  await prisma.flashSale.create({
+    data: {
+      name: { ar: "عروض اليوم", en: "Deals of the Day" },
+      startsAt: new Date(flashNow.getTime() - 60 * 60 * 1000),
+      endsAt: new Date(flashNow.getTime() + 6 * 60 * 60 * 1000),
+      isActive: true,
+      items: {
+        create: [
+          {
+            variantId: products[3].variants[0].id,
+            salePrice:
+              Math.round(products[3].variants[0].price * 0.8 * 100) / 100,
+            stockLimit: 20,
+            soldCount: 5,
+          },
+          {
+            variantId: products[28].variants[0].id,
+            salePrice:
+              Math.round(products[28].variants[0].price * 0.85 * 100) / 100,
+            stockLimit: 15,
+            soldCount: 3,
+          },
+        ],
+      },
+    },
+  });
+
+  // --- Seller payout methods, ledger, balance, and a payout request ---------
+  await prisma.payoutMethod.create({
+    data: {
+      sellerId: seller1.profile.id,
+      kind: "bank",
+      isDefault: true,
+      details: {
+        bankName: "بنك التضامن الإسلامي",
+        accountName: "Ahmed Al-Sanani",
+        accountNumber: "1234567890",
+      },
+    },
+  });
+  await prisma.payoutMethod.create({
+    data: {
+      sellerId: seller2.profile.id,
+      kind: "wallet",
+      isDefault: true,
+      details: {
+        provider: "Jawali",
+        accountName: "Fatima Al-Adani",
+        walletNumber: "770123456",
+      },
+    },
+  });
+  // Give seller1 some settled earnings so the payout flow has funds to draw on.
+  await prisma.ledgerEntry.createMany({
+    data: [
+      {
+        balanceId: seller1.balanceId,
+        type: "SALE",
+        amountUsd: 88,
+        note: "Settled sale (seed)",
+      },
+      {
+        balanceId: seller1.balanceId,
+        type: "COMMISSION",
+        amountUsd: -8.8,
+        note: "Platform commission (seed)",
+      },
+    ],
+  });
+  await prisma.sellerBalance.update({
+    where: { id: seller1.balanceId },
+    data: { availableUsd: { increment: 79.2 } },
+  });
+  await prisma.payout.create({
+    data: {
+      sellerId: seller1.profile.id,
+      amountUsd: 50,
+      method: "bank",
+      destination: {
+        bankName: "بنك التضامن الإسلامي",
+        accountNumber: "1234567890",
+      },
+      status: "REQUESTED",
+    },
+  });
+
+  // --- Product view counts (organic-looking popularity) ---------------------
+  for (let i = 0; i < products.length; i++) {
+    await prisma.product.update({
+      where: { id: products[i].id },
+      data: { views: ((i * 37 + 11) % 900) + 20 },
+    });
+  }
+
   // --- CMS pages, banner, coupon (light extras for later phases) ---
   // Real draft legal/content pages (About, Terms, Privacy, Returns, FAQ,
   // Contact) — see lib/cms-content.ts. Admins can edit them at /admin/pages.
@@ -1371,7 +1835,30 @@ async function main() {
       title: { ar: "مرحباً بك في هزلي", en: "Welcome to Hezalli" },
       position: "home_hero",
       isActive: true,
+      sortOrder: 0,
     },
+  });
+  await prisma.banner.createMany({
+    data: [
+      {
+        image: "https://picsum.photos/seed/hezalli-electronics/1200/400",
+        title: { ar: "تخفيضات الإلكترونيات", en: "Electronics Sale" },
+        linkUrl: "/c/electronics",
+        position: "home_hero",
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        image: "https://picsum.photos/seed/hezalli-strip/1200/200",
+        title: {
+          ar: "شحن مجاني للطلبات فوق 40$",
+          en: "Free shipping over $40",
+        },
+        position: "home_strip",
+        isActive: true,
+        sortOrder: 0,
+      },
+    ],
   });
   await prisma.coupon.create({
     data: {
@@ -1398,6 +1885,19 @@ async function main() {
     subOrders: await prisma.subOrder.count(),
     payments: await prisma.payment.count(),
     reviews: await prisma.review.count(),
+    cartItems: await prisma.cartItem.count(),
+    wishlistItems: await prisma.wishlistItem.count(),
+    storeFollows: await prisma.storeFollow.count(),
+    conversations: await prisma.conversation.count(),
+    messages: await prisma.message.count(),
+    notifications: await prisma.notification.count(),
+    returns: await prisma.returnRequest.count(),
+    disputes: await prisma.dispute.count(),
+    coupons: await prisma.coupon.count(),
+    flashSales: await prisma.flashSale.count(),
+    loyaltyTxns: await prisma.loyaltyTransaction.count(),
+    payouts: await prisma.payout.count(),
+    banners: await prisma.banner.count(),
   };
   console.log("✅ Seed complete:", counts);
 }

@@ -83,8 +83,10 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/payments", key: "payments", icon: Wallet },
   { href: "/admin/wallet-audit", key: "walletAudit", icon: ScaleIcon },
   { href: "/admin/payouts", key: "payouts", icon: Banknote },
+  { href: "/wallet-manager", key: "walletManager", icon: Wallet },
   { href: "/admin/shipping-zones", key: "shippingZones", icon: MapPin },
   { href: "/admin/carriers", key: "carriers", icon: Truck },
+  { href: "/delivery-manager", key: "deliveryManager", icon: Truck },
   { href: "/admin/dispatch", key: "dispatch", icon: Route },
   { href: "/admin/couriers", key: "couriers", icon: Bike },
   { href: "/admin/fleets", key: "fleets", icon: Truck },
@@ -101,16 +103,93 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/settings", key: "settings", icon: Settings },
 ];
 
+const WALLET_MANAGER_NAV: NavItem[] = [
+  { href: "/wallet-manager", key: "dashboard", icon: LayoutDashboard },
+  { href: "/wallet-manager/topups", key: "topups", icon: Banknote },
+  {
+    href: "/wallet-manager/withdrawals",
+    key: "withdrawals",
+    icon: ArrowLeftRight,
+  },
+  { href: "/wallet-manager/payouts", key: "payouts", icon: Store },
+  { href: "/wallet-manager/wallets", key: "wallets", icon: Wallet },
+  { href: "/wallet-manager/transfers", key: "transfers", icon: Users },
+  { href: "/wallet-manager/history", key: "history", icon: History },
+];
+const WALLET_MANAGER_PRIMARY = [
+  "/wallet-manager",
+  "/wallet-manager/topups",
+  "/wallet-manager/withdrawals",
+  "/wallet-manager/wallets",
+];
+
+const DELIVERY_MANAGER_NAV: NavItem[] = [
+  { href: "/delivery-manager", key: "dashboard", icon: LayoutDashboard },
+  { href: "/delivery-manager/shipments", key: "shipments", icon: Package },
+  { href: "/delivery-manager/carriers", key: "carriers", icon: Truck },
+  {
+    href: "/delivery-manager/shipping-zones",
+    key: "shippingZones",
+    icon: MapPin,
+  },
+];
+const DELIVERY_MANAGER_PRIMARY = [
+  "/delivery-manager",
+  "/delivery-manager/shipments",
+  "/delivery-manager/carriers",
+  "/delivery-manager/shipping-zones",
+];
+
+type Variant = "seller" | "admin" | "walletManager" | "deliveryManager";
+
+const VARIANTS: Record<
+  Variant,
+  {
+    nav: NavItem[];
+    primary: string[];
+    ns: string;
+    titleKey: string;
+    base: string;
+  }
+> = {
+  seller: {
+    nav: SELLER_NAV,
+    primary: SELLER_PRIMARY,
+    ns: "Seller",
+    titleKey: "center",
+    base: "/seller",
+  },
+  admin: {
+    nav: ADMIN_NAV,
+    primary: ADMIN_PRIMARY,
+    ns: "Admin",
+    titleKey: "panel",
+    base: "/admin",
+  },
+  walletManager: {
+    nav: WALLET_MANAGER_NAV,
+    primary: WALLET_MANAGER_PRIMARY,
+    ns: "WalletManager",
+    titleKey: "panel",
+    base: "/wallet-manager",
+  },
+  deliveryManager: {
+    nav: DELIVERY_MANAGER_NAV,
+    primary: DELIVERY_MANAGER_PRIMARY,
+    ns: "DeliveryManager",
+    titleKey: "panel",
+    base: "/delivery-manager",
+  },
+};
+
 export function DashboardShell({
   variant,
   children,
 }: {
-  variant: "seller" | "admin";
+  variant: Variant;
   children: React.ReactNode;
 }) {
-  const nav = variant === "seller" ? SELLER_NAV : ADMIN_NAV;
-  const ns = variant === "seller" ? "Seller" : "Admin";
-  const titleKey = variant === "seller" ? "center" : "panel";
+  const { nav, primary, ns, titleKey, base } = VARIANTS[variant];
   const t = useTranslations(ns);
   const c = useTranslations("Common");
   const a11y = useTranslations("A11y");
@@ -120,21 +199,20 @@ export function DashboardShell({
 
   // Build the phone bottom bar from the same nav list: four primary tabs plus
   // everything (in sidebar order) behind "More".
-  const primaryHrefs = variant === "seller" ? SELLER_PRIMARY : ADMIN_PRIMARY;
   const toTab = (item: NavItem) => ({
     href: item.href,
     label: t(item.key),
     icon: item.icon,
-    exact: item.href === `/${variant}`,
+    exact: item.href === base,
   });
-  const primaryTabs = primaryHrefs
+  const primaryTabs = primary
     .map((href) => nav.find((n) => n.href === href))
     .filter((n): n is NavItem => Boolean(n))
     .map(toTab);
   const moreTabs = nav.map(toTab);
 
   const isActive = (href: string) =>
-    href === `/${variant}` ? pathname === href : pathname.startsWith(href);
+    href === base ? pathname === href : pathname.startsWith(href);
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -210,7 +288,9 @@ export function DashboardShell({
           <span className="font-semibold md:hidden">{t(titleKey)}</span>
           <div className="ms-auto flex items-center gap-1">
             {variant === "seller" ? <ChatIcon variant="seller" /> : null}
-            <NotificationBell variant={variant} />
+            <NotificationBell
+              variant={variant === "seller" ? "seller" : "admin"}
+            />
             <Link
               href="/"
               className="text-muted-foreground hover:text-foreground text-sm hover:underline"

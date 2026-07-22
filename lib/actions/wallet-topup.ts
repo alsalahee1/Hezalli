@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireAdminId } from "@/lib/authz";
+import { audit } from "@/lib/audit";
+import { requireWalletManagerId } from "@/lib/authz";
 import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import {
@@ -83,9 +84,10 @@ export async function requestTopUp(input: {
   return { ok: true };
 }
 
-// Admin confirms a top-up → credit the wallet with a TOP_UP entry (idempotent).
+// Wallet staff confirms a top-up → credit the wallet with a TOP_UP entry
+// (idempotent).
 export async function confirmTopUp(topUpId: string): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -141,18 +143,23 @@ export async function confirmTopUp(topUpId: string): Promise<Result> {
 
   if (!credited) return { error: "badState" };
   await recomputeWalletBalance(topUp.wallet.userId);
+  await audit(adminId, "wallet.topup.confirm", "WalletTopUp", topUp.id, {
+    amountUsd: amount,
+  });
 
   revalidatePath(`/${locale}/admin/payments`);
+  revalidatePath(`/${locale}/wallet-manager`);
+  revalidatePath(`/${locale}/wallet-manager/topups`);
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };
 }
 
-// Admin rejects a top-up → nothing credited; buyer notified.
+// Wallet staff rejects a top-up → nothing credited; buyer notified.
 export async function rejectTopUp(
   topUpId: string,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -193,7 +200,13 @@ export async function rejectTopUp(
     }),
   ]);
 
+  await audit(adminId, "wallet.topup.reject", "WalletTopUp", topUp.id, {
+    reason: reason?.trim() || null,
+  });
+
   revalidatePath(`/${locale}/admin/payments`);
+  revalidatePath(`/${locale}/wallet-manager`);
+  revalidatePath(`/${locale}/wallet-manager/topups`);
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };
 }

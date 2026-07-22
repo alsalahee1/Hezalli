@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireAdminId } from "@/lib/authz";
+import { audit } from "@/lib/audit";
+import { requireWalletManagerId } from "@/lib/authz";
 import { round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
@@ -114,13 +115,14 @@ export async function requestWithdrawal(
   return { ok: true };
 }
 
-// Admin marks a withdrawal PAID (money sent outside the system). The wallet was
-// already debited at request time, so this only flips status + notifies.
+// Wallet staff marks a withdrawal PAID (money sent outside the system). The
+// wallet was already debited at request time, so this only flips status +
+// notifies.
 export async function markWithdrawalPaid(
   withdrawalId: string,
   reference: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -168,17 +170,23 @@ export async function markWithdrawalPaid(
   });
 
   if (!paid) return { error: "badState" };
+  await audit(adminId, "wallet.withdrawal.paid", "WalletWithdrawal", w.id, {
+    amountUsd: Number(w.amountUsd),
+    reference: reference?.trim() || null,
+  });
   revalidatePath(`/${locale}/admin/payouts`);
+  revalidatePath(`/${locale}/wallet-manager`);
+  revalidatePath(`/${locale}/wallet-manager/withdrawals`);
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };
 }
 
-// Admin rejects a withdrawal → return the reserved funds to the wallet.
+// Wallet staff rejects a withdrawal → return the reserved funds to the wallet.
 export async function rejectWithdrawal(
   withdrawalId: string,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -236,7 +244,13 @@ export async function rejectWithdrawal(
 
   if (!rejected) return { error: "badState" };
   await recomputeWalletBalance(w.wallet.userId);
+  await audit(adminId, "wallet.withdrawal.reject", "WalletWithdrawal", w.id, {
+    amountUsd: Number(w.amountUsd),
+    reason: reason?.trim() || null,
+  });
   revalidatePath(`/${locale}/admin/payouts`);
+  revalidatePath(`/${locale}/wallet-manager`);
+  revalidatePath(`/${locale}/wallet-manager/withdrawals`);
   revalidatePath(`/${locale}/account/wallet`);
   return { ok: true };
 }

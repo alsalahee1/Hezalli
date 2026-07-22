@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireDeliveryManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -16,7 +16,7 @@ export async function saveCarrier(input: {
   trackingUrl?: string;
   platformManaged?: boolean;
 }): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -37,12 +37,13 @@ export async function saveCarrier(input: {
   }
 
   revalidatePath(`/${locale}/admin/carriers`);
+  revalidatePath(`/${locale}/delivery-manager/carriers`);
   return { ok: true };
 }
 
 // Delete a carrier; detach it from any existing shipments first.
 export async function deleteCarrier(id: string): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -55,5 +56,6 @@ export async function deleteCarrier(id: string): Promise<Result> {
   ]);
 
   revalidatePath(`/${locale}/admin/carriers`);
+  revalidatePath(`/${locale}/delivery-manager/carriers`);
   return { ok: true };
 }

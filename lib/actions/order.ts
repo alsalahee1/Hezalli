@@ -12,6 +12,7 @@ import { capRedemption } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { checkPointRoutable } from "@/lib/point-select";
 import { parseDeliveryWindow } from "@/lib/delivery-slots";
+import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -765,18 +766,16 @@ export async function cancelOrder(
       ),
     ];
     for (const pid of sellerProfileIds) await recomputeBalance(pid);
-    await prisma.notification.create({
-      data: {
-        userId: order.buyerId,
-        type: "PAYMENT",
-        title:
-          locale === "ar" ? "تم رد المبلغ إلى محفظتك" : "Refunded to wallet",
-        body:
-          locale === "ar"
-            ? `تمت إعادة ${refundAmount.toFixed(2)}$ إلى محفظتك.`
-            : `$${refundAmount.toFixed(2)} was returned to your wallet.`,
-        data: { orderId: order.id, link: `/account/orders/${order.id}` },
-      },
+    await notify({
+      userId: order.buyerId,
+      type: "PAYMENT",
+      title: locale === "ar" ? "تم رد المبلغ إلى محفظتك" : "Refunded to wallet",
+      body:
+        locale === "ar"
+          ? `تمت إعادة ${refundAmount.toFixed(2)}$ إلى محفظتك.`
+          : `$${refundAmount.toFixed(2)} was returned to your wallet.`,
+      data: { orderId: order.id },
+      link: `/account/orders/${order.id}`,
     });
   }
 

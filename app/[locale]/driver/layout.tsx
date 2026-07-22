@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { QrCode as QrIcon, Truck } from "lucide-react";
+import { QrCode as QrIcon, Store, Truck, Wallet } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -55,12 +55,36 @@ export default async function DriverLayout({
         <Link href="/driver" className="flex items-center gap-2 font-semibold">
           <Truck className="text-primary size-5" /> {t("appName")}
         </Link>
-        <Link
-          href="/driver/scan"
-          className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-        >
-          <QrIcon className="size-4" /> {t("scan")}
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Escape hatch back to the storefront — the driver app is a
+              standalone shell, so without this a courier who opens it has no
+              way back to the shop (the seller/admin shells link out the same
+              way). */}
+          <Link
+            href="/"
+            aria-label={t("storefront")}
+            title={t("storefront")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <Store className="size-5" />
+          </Link>
+          {/* Quick hop to the marketplace wallet (USD balance), separate from
+              the courier cash ledger in the bottom bar. */}
+          <Link
+            href="/account/wallet"
+            aria-label={t("wallet")}
+            title={t("wallet")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <Wallet className="size-5" />
+          </Link>
+          <Link
+            href="/driver/scan"
+            className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
+          >
+            <QrIcon className="size-4" /> {t("scan")}
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-4 pb-20">{children}</main>

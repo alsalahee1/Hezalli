@@ -12,7 +12,13 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
-const ALL_ROLES = ["BUYER", "SELLER", "ADMIN"];
+const ALL_ROLES = [
+  "BUYER",
+  "SELLER",
+  "ADMIN",
+  "WALLET_MANAGER",
+  "DELIVERY_MANAGER",
+];
 
 export function UserActions({
   userId,
@@ -71,7 +77,13 @@ export function UserActions({
           className="text-destructive"
           disabled={pending}
           onClick={async () => {
-            if (await confirm(t("deleteConfirm"), { destructive: true }))
+            if (
+              await confirm(t("deleteConfirm"), {
+                title: t("deleteConfirmTitle"),
+                confirmLabel: t("delete"),
+                destructive: true,
+              })
+            )
               run(() => softDeleteUser(userId));
           }}
         >

@@ -273,6 +273,7 @@ export async function handoverParcelToDriver(
       body: "A line-haul parcel was scanned onto your run.",
       url: "/driver",
       tag: "handover",
+      icon: "/driver-icon.svg",
     }).catch(() => {});
     return { ok: true };
   }
@@ -309,6 +310,7 @@ export async function handoverParcelToDriver(
     body: "A parcel was scanned onto your delivery run.",
     url: "/driver",
     tag: "handover",
+    icon: "/driver-icon.svg",
   }).catch(() => {});
   return { ok: true };
 }

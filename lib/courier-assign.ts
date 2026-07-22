@@ -164,6 +164,7 @@ export async function autoAssignShipment(
     body: "A Hezalli Express delivery was auto-assigned to you.",
     url: "/driver",
     tag: "assignment",
+    icon: "/driver-icon.svg",
   }).catch(() => {});
   return driverId;
 }
