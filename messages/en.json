@@ -2938,7 +2938,13 @@
     "bulkApply": "Apply to selected",
     "bulkClear": "Clear",
     "bulkResult": "Updated {changed}; skipped {skipped}.",
-    "error_failed": "Something went wrong for one or more shipments."
+    "error_failed": "Something went wrong for one or more shipments.",
+    "scan": "Scan",
+    "scanDesc": "Pick a status, then scan waybills or the buyer QR to apply it.",
+    "scanModeHint": "Every parcel you scan gets the selected status.",
+    "scanNoCamera": "Camera scanning isn't available on this device — type the tracking code below.",
+    "scanManual": "Scan or type a tracking code",
+    "error_badCode": "Enter a valid code."
   },
   "How": {
     "b_title": "How shopping on Hezalli works",

@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Package,
   Route,
+  ScanLine,
   Scale as ScaleIcon,
   ScrollText,
   Settings,
@@ -133,6 +134,7 @@ const WALLET_MANAGER_PRIMARY = [
 const DELIVERY_MANAGER_NAV: NavItem[] = [
   { href: "/delivery-manager", key: "dashboard", icon: LayoutDashboard },
   { href: "/delivery-manager/dispatch", key: "dispatch", icon: Route },
+  { href: "/delivery-manager/scan", key: "scan", icon: ScanLine },
   { href: "/delivery-manager/shipments", key: "shipments", icon: Package },
   { href: "/delivery-manager/couriers", key: "couriers", icon: Bike },
   { href: "/delivery-manager/points", key: "points", icon: MapPinned },
