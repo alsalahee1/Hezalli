@@ -884,6 +884,9 @@ model OrderItem {
   unitPrice     Decimal  @db.Decimal(12, 2)
   quantity      Int
   lineTotal     Decimal  @db.Decimal(12, 2)
+  // The FlashSaleItem whose stock this line claimed at checkout, so a cancel
+  // can release it (plain id, no FK — flash sales are deletable).
+  flashItemId   String?
   subOrder      SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
 
   @@index([subOrderId])

@@ -5,7 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
-import { getFlashPricesFor } from "@/lib/flash";
+import { getFlashPricesFor, releaseFlashClaims } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
@@ -116,6 +116,7 @@ export async function placeOrder(
     title: string;
     price: number;
     qty: number;
+    flashItemId: string | null;
   };
   const byStore = new Map<string, Line[]>();
   for (const it of items) {
@@ -124,13 +125,16 @@ export async function placeOrder(
       return { error: "unavailable" };
     }
     if (v.stock < it.quantity) return { error: "outOfStock" };
+    const flash = flashMap.get(v.id);
     const line: Line = {
       variantId: v.id,
       sku: v.sku,
       title: localizedName(v.product.title, locale),
       // Flash price wins; otherwise the scheduled (or normal) price applies.
-      price: flashMap.get(v.id)?.salePrice ?? effectivePrice(v).price,
+      price: flash?.salePrice ?? effectivePrice(v).price,
       qty: it.quantity,
+      // Remember which flash item this line claimed so a cancel can release it.
+      flashItemId: flash?.itemId ?? null,
     };
     const arr = byStore.get(v.product.storeId) ?? [];
     arr.push(line);
@@ -383,6 +387,7 @@ export async function placeOrder(
                   unitPrice: l.price,
                   quantity: l.qty,
                   lineTotal: round2(l.price * l.qty),
+                  flashItemId: l.flashItemId,
                 })),
               },
             })),
@@ -594,7 +599,9 @@ export async function cancelOrder(
               },
             },
           },
-          items: { select: { variantId: true, quantity: true } },
+          items: {
+            select: { variantId: true, quantity: true, flashItemId: true },
+          },
         },
       },
     },
@@ -647,6 +654,7 @@ export async function cancelOrder(
           data: { stock: { increment: it.quantity } },
         });
       }
+      await releaseFlashClaims(tx, sub.items);
     }
     if (cancelledSubIds.length === 0) return; // lost every sub to a race
 

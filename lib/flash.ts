@@ -1,7 +1,24 @@
 // Flash-sale pricing. A variant sells at its flash price only while the sale is
 // live and flash stock remains; otherwise the normal price applies. Flash stock
 // is tracked on FlashSaleItem.soldCount and decremented atomically at checkout.
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+
+// Release the flash stock a cancelled/expired order claimed at checkout, so a
+// live sale doesn't show sold-out while the units are back in real stock.
+// Conditional decrement (never below 0); a deleted flash item is a no-op.
+export async function releaseFlashClaims(
+  tx: Prisma.TransactionClient,
+  items: { flashItemId: string | null; quantity: number }[],
+): Promise<void> {
+  for (const it of items) {
+    if (!it.flashItemId || it.quantity <= 0) continue;
+    await tx.flashSaleItem.updateMany({
+      where: { id: it.flashItemId, soldCount: { gte: it.quantity } },
+      data: { soldCount: { decrement: it.quantity } },
+    });
+  }
+}
 
 export type FlashInfo = {
   itemId: string;

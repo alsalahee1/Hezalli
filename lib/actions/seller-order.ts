@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
+import { releaseFlashClaims } from "@/lib/flash";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -44,7 +45,9 @@ async function transition(
       orderId: true,
       status: true,
       store: { select: { name: true } },
-      items: { select: { variantId: true, quantity: true } },
+      items: {
+        select: { variantId: true, quantity: true, flashItemId: true },
+      },
       order: { select: { buyerId: true, buyer: { select: { locale: true } } } },
     },
   });
@@ -61,6 +64,7 @@ async function transition(
           data: { stock: { increment: it.quantity } },
         });
       }
+      await releaseFlashClaims(tx, sub.items);
     }
 
     const subs = await tx.subOrder.findMany({
@@ -126,7 +130,9 @@ export async function cancelSubOrder(
     select: {
       id: true,
       status: true,
-      items: { select: { variantId: true, quantity: true } },
+      items: {
+        select: { variantId: true, quantity: true, flashItemId: true },
+      },
       order: {
         select: {
           paymentMethod: true,
@@ -175,6 +181,7 @@ export async function cancelSubOrder(
         data: { stock: { increment: it.quantity } },
       });
     }
+    await releaseFlashClaims(tx, sub.items);
   });
 
   revalidatePath(`/${locale}/seller/orders`);

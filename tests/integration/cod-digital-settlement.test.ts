@@ -306,16 +306,46 @@ describe("confirmReceived routes still-SHIPPED parcels through delivery", () => 
     expect(payment.status).toBe("CONFIRMED");
     expect(payment.confirmedBy).toBe(COD_DELIVERY_CONFIRMED_BY);
     expect((await courierCashSummary(driver)).cashOnHand).toBe(100);
-    // Cash-basis settlement: commission charged, no SALE credit.
+    // Hezalli Express collected the cash, so the platform holds it and the
+    // seller is credited a SALE like a prepaid order.
     const entries = await prisma.ledgerEntry.findMany({
       where: { subOrderId },
-      select: { type: true },
+      select: { type: true, amountUsd: true },
     });
-    expect(entries.map((e) => e.type)).toContain("COD_COMMISSION_DUE");
-    expect(entries.map((e) => e.type)).not.toContain("SALE");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].type).toBe("SALE");
+    expect(Number(entries[0].amountUsd)).toBe(90);
 
     // Nothing left to confirm.
     expect(await confirmReceived(orderId)).toEqual({ error: "badState" });
+  });
+});
+
+describe("settlement of cash COD collected by Hezalli Express", () => {
+  it("credits the seller a SALE — the platform holds the cash", async () => {
+    const driver = await makeCourier("st");
+    const { subOrderId } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "DELIVERED",
+    });
+    // The delivery recorded the driver's cash accountability.
+    await prisma.courierLedgerEntry.create({
+      data: {
+        courierId: driver,
+        type: "COD_COLLECTED",
+        amountUsd: 100,
+        subOrderId,
+      },
+    });
+
+    await settleSubOrder(subOrderId);
+    const entries = await prisma.ledgerEntry.findMany({
+      where: { subOrderId },
+      select: { type: true, amountUsd: true },
+    });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].type).toBe("SALE");
+    expect(Number(entries[0].amountUsd)).toBe(90); // 100 − 10% commission
   });
 });
 

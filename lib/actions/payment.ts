@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { auth } from "@/auth";
 import { requireWalletManagerId } from "@/lib/authz";
 import { recomputeBalance } from "@/lib/finance";
+import { releaseFlashClaims } from "@/lib/flash";
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 
@@ -268,7 +269,11 @@ export async function expireStaleOrders(): Promise<number> {
       id: true,
       buyerId: true,
       subOrders: {
-        select: { items: { select: { variantId: true, quantity: true } } },
+        select: {
+          items: {
+            select: { variantId: true, quantity: true, flashItemId: true },
+          },
+        },
       },
     },
   });
@@ -289,6 +294,7 @@ export async function expireStaleOrders(): Promise<number> {
             data: { stock: { increment: it.quantity } },
           });
         }
+        await releaseFlashClaims(tx, sub.items);
       }
       await tx.subOrder.updateMany({
         where: { orderId: order.id, status: "PENDING" },

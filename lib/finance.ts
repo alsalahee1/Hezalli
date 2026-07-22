@@ -139,6 +139,65 @@ export async function recomputeBalance(sellerProfileId: string): Promise<void> {
     ).sellerNet;
   }
 
+  // Cash COD that Hezalli Express already collected (COD_COLLECTED on a
+  // courier's or point's ledger) but hasn't settled to the seller yet: the
+  // platform holds that money for the seller, so it is escrow too. Cash still
+  // with the seller's own carrier never is. Digitally-paid COD is already in
+  // the query above (its payment is CONFIRMED with a digital stamp).
+  const codDelivered = await prisma.subOrder.findMany({
+    where: {
+      store: { sellerId: sellerProfileId },
+      status: "DELIVERED",
+      order: {
+        paymentMethod: "COD",
+        payment: {
+          isNot: {
+            AND: [
+              { status: "CONFIRMED" },
+              { confirmedBy: { not: null } },
+              { confirmedBy: { not: COD_DELIVERY_CONFIRMED_BY } },
+            ],
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      itemsTotal: true,
+      shippingTotal: true,
+      discountTotal: true,
+      commissionRate: true,
+      order: { select: { coupon: { select: { scope: true } } } },
+    },
+  });
+  if (codDelivered.length > 0) {
+    const ids = codDelivered.map((s) => s.id);
+    const [byCourier, byPoint] = await Promise.all([
+      prisma.courierLedgerEntry.findMany({
+        where: { subOrderId: { in: ids }, type: "COD_COLLECTED" },
+        select: { subOrderId: true },
+      }),
+      prisma.deliveryPointLedgerEntry.findMany({
+        where: { subOrderId: { in: ids }, type: "COD_COLLECTED" },
+        select: { subOrderId: true },
+      }),
+    ]);
+    const collected = new Set(
+      [...byCourier, ...byPoint].map((e) => e.subOrderId),
+    );
+    for (const s of codDelivered) {
+      if (!collected.has(s.id)) continue;
+      const sellerFunded = s.order.coupon?.scope === "SELLER";
+      pending += subEconomics(
+        Number(s.itemsTotal),
+        Number(s.shippingTotal),
+        Number(s.commissionRate),
+        Number(s.discountTotal),
+        sellerFunded,
+      ).sellerNet;
+    }
+  }
+
   await prisma.sellerBalance.update({
     where: { id: balanceId },
     data: { pendingUsd: round2(pending) },
@@ -150,9 +209,12 @@ export async function recomputeBalance(sellerProfileId: string): Promise<void> {
  * recompute the seller's balance. Idempotent — a second call is a no-op.
  * - Prepaid: SALE credit of (items + shipping − commission) moves from escrow
  *   to available.
- * - Cash-basis COD: the seller/courier side already holds the cash, so only
- *   the commission is charged (COD_COMMISSION_DUE, negative) — the balance may
- *   go negative.
+ * - Cash-basis COD collected by the SELLER'S own carrier: the seller already
+ *   holds the cash, so only the commission is charged (COD_COMMISSION_DUE,
+ *   negative) — the balance may go negative.
+ * - Cash-basis COD collected by Hezalli Express (a courier's or point's
+ *   COD_COLLECTED ledger entry exists for the sub-order): the platform holds
+ *   the cash and owes the seller their net — SALE credit, like prepaid.
  * - COD settled digitally before handover (docs §39): the platform holds the
  *   buyer's money, so it settles exactly like a prepaid order (SALE credit).
  */
@@ -207,9 +269,26 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
   const codCashBasis =
     sub.order.paymentMethod === "COD" && !codSettledDigitally(sub.order);
 
+  // Who ended up holding the cash? A COD_COLLECTED entry on a courier's or
+  // point's ledger means Hezalli Express collected it (and remits it to the
+  // platform), so the seller never touched the money. No entry means the
+  // seller's own carrier collected — the classic seller-holds-cash model.
+  let platformCollected = false;
+  if (codCashBasis) {
+    const [byCourier, byPoint] = await Promise.all([
+      prisma.courierLedgerEntry.count({
+        where: { subOrderId, type: "COD_COLLECTED" },
+      }),
+      prisma.deliveryPointLedgerEntry.count({
+        where: { subOrderId, type: "COD_COLLECTED" },
+      }),
+    ]);
+    platformCollected = byCourier + byPoint > 0;
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
-      if (codCashBasis) {
+      if (codCashBasis && !platformCollected) {
         await tx.ledgerEntry.create({
           data: {
             balanceId,
@@ -226,7 +305,9 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
             type: "SALE",
             amountUsd: sellerNet,
             subOrderId,
-            note: "Sale settled (item + shipping − commission)",
+            note: codCashBasis
+              ? "Sale settled (COD collected by Hezalli Express)"
+              : "Sale settled (item + shipping − commission)",
           },
         });
       }
