@@ -74,9 +74,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fx.cleanup();
-  await prisma.flashSale
-    .delete({ where: { id: flashSaleId } })
-    .catch(() => {});
+  await prisma.flashSale.delete({ where: { id: flashSaleId } }).catch(() => {});
 });
 
 describe("flash claims are released when the claim dies", () => {
