@@ -52,9 +52,13 @@ services:
     command: >
       sh -c "npx prisma migrate deploy
       && { npx tsx prisma/seed-if-empty.ts || echo 'WARN: seed-if-empty failed (non-fatal), continuing'; }
-      && { npx tsx prisma/ensure-categories.ts || echo 'WARN: ensure-categories failed (non-fatal), continuing'; }"
+      && { npx tsx prisma/ensure-categories.ts || echo 'WARN: ensure-categories failed (non-fatal), continuing'; }
+      && { if [ \"$$DEV_LOGIN_ENABLED\" = 'true' ]; then npx tsx prisma/ensure-demo-logins.ts || echo 'WARN: ensure-demo-logins failed (non-fatal), continuing'; else echo 'demo logins skipped (DEV_LOGIN_ENABLED unset)'; fi; }"
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      # Test-mode only: keeps the one-tap demo accounts (driver, point, wallet
+      # manager, delivery manager) present on servers that use /dev-login.
+      DEV_LOGIN_ENABLED: ${DEV_LOGIN_ENABLED:-}
     networks:
       - hezalli-internal
     depends_on:
