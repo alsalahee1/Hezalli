@@ -13,6 +13,7 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   const links = [
+    { href: "/how", key: "how" },
     { href: "/p/about", key: "about" },
     { href: "/sell", key: "sellOnHezalli" },
     { href: "/drive", key: "deliverWithHezalli" },
