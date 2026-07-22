@@ -114,13 +114,17 @@ export async function devSignIn(formData: FormData): Promise<void> {
   const roles = user?.roles ?? [];
   const dest = roles.includes("ADMIN")
     ? `/${locale}/admin`
-    : roles.includes("COURIER")
-      ? `/${locale}/driver`
-      : roles.includes("DELIVERY_POINT")
-        ? `/${locale}/point`
-        : roles.includes("SELLER")
-          ? `/${locale}/seller`
-          : `/${locale}`;
+    : roles.includes("WALLET_MANAGER")
+      ? `/${locale}/wallet-manager`
+      : roles.includes("DELIVERY_MANAGER")
+        ? `/${locale}/delivery-manager`
+        : roles.includes("COURIER")
+          ? `/${locale}/driver`
+          : roles.includes("DELIVERY_POINT")
+            ? `/${locale}/point`
+            : roles.includes("SELLER")
+              ? `/${locale}/seller`
+              : `/${locale}`;
 
   try {
     await signIn("credentials", {

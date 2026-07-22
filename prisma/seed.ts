@@ -777,6 +777,33 @@ async function main() {
     },
   });
 
+  // Staff managers: scoped money + delivery desks, so /wallet-manager and
+  // /delivery-manager can be signed into and tested.
+  await prisma.user.create({
+    data: {
+      name: "Wallet Manager",
+      email: "wallet@hezalli.com",
+      emailVerified: new Date(),
+      phone: "+967700000011",
+      phoneVerified: new Date(),
+      passwordHash: PASSWORD,
+      roles: ["WALLET_MANAGER"],
+      locale: "ar",
+    },
+  });
+  await prisma.user.create({
+    data: {
+      name: "Delivery Manager",
+      email: "delivery@hezalli.com",
+      emailVerified: new Date(),
+      phone: "+967700000012",
+      phoneVerified: new Date(),
+      passwordHash: PASSWORD,
+      roles: ["DELIVERY_MANAGER"],
+      locale: "ar",
+    },
+  });
+
   // A Hezalli Express courier, so the dispatch board has someone to assign to
   // and the /driver app can be signed into.
   await prisma.user.create({
