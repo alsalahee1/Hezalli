@@ -17,7 +17,11 @@ vi.mock("next-intl/server", async (orig) => ({
   getLocale: vi.fn().mockResolvedValue("en"),
 }));
 
-import { courierAdvance, courierFailDelivery } from "@/lib/actions/courier";
+import {
+  assignCourier,
+  courierAdvance,
+  courierFailDelivery,
+} from "@/lib/actions/courier";
 import { editTracking, shipSubOrder } from "@/lib/actions/shipment";
 import { overrideShipmentStatus } from "@/lib/actions/shipment-admin";
 import { courierCashSummary } from "@/lib/courier-ledger";
@@ -267,6 +271,34 @@ describe("staff override: DELIVERED routes COD cash to a ledger or is refused", 
     expect(await overrideShipmentStatus(shipment.id, "IN_TRANSIT")).toEqual({
       error: "orderClosed",
     });
+  });
+});
+
+describe("dispatch: a Hezalli courier can only be assigned to an Express parcel", () => {
+  it("refuses assigning a courier to an external-carrier shipment", async () => {
+    const driver = await makeCourier("as");
+    const { subOrderId } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "SHIPPED",
+    });
+    const external = await prisma.shipment.create({
+      data: { subOrderId, status: "IN_TRANSIT", platformManaged: false },
+      select: { id: true },
+    });
+    as(managerId);
+    expect(await assignCourier(external.id, driver)).toEqual({
+      error: "notPlatformManaged",
+    });
+    // A platform parcel assigns fine.
+    const { subOrderId: sub2 } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "SHIPPED",
+    });
+    const platform = await prisma.shipment.create({
+      data: { subOrderId: sub2, status: "IN_TRANSIT", platformManaged: true },
+      select: { id: true },
+    });
+    expect(await assignCourier(platform.id, driver)).toEqual({ ok: true });
   });
 });
 

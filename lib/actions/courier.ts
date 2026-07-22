@@ -53,12 +53,21 @@ export async function assignCourier(
 
   const shipment = await prisma.shipment.findUnique({
     where: { id: shipmentId },
-    select: { id: true, subOrder: { select: { orderId: true } } },
+    select: {
+      id: true,
+      platformManaged: true,
+      subOrder: { select: { orderId: true } },
+    },
   });
   if (!shipment) return { error: "notFound" };
 
   const id = driverId.trim();
   if (id) {
+    // A Hezalli courier only carries Hezalli Express parcels. Attaching one to
+    // an external-carrier shipment would let them "deliver" it (and capture its
+    // COD onto their ledger) for a parcel Hezalli doesn't run — same guard the
+    // bulk assign already enforces.
+    if (!shipment.platformManaged) return { error: "notPlatformManaged" };
     const driver = await prisma.user.findUnique({
       where: { id },
       select: { roles: true, isSuspended: true, deletedAt: true },
