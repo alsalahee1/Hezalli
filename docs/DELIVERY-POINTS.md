@@ -734,6 +734,29 @@ Rules (`lib/actions/pay-cod.ts`):
 - [x] i18n (en + ar) + integration tests (pay → deliver with zero cash accountability, double-pay guard, insufficient, delivered/foreign order refused)
 - [x] This file kept current
 
-## 40. Out of scope
+## 40. v1.21 — Cash exposure dashboard
+
+One screen for the owner's daily question: **"how much of Hezalli's money
+is in other people's pockets right now?"** `codExposureReport()` in
+`lib/cod-guard.ts` (a handful of grouped queries, FIFO aging identical to
+the block rule) powers `/admin/cash` and `/delivery-manager/cash`:
+
+- Headline tiles: total outstanding, drivers vs points split, blocked
+  counts, and collateral coverage (deposits + effective wallet pledges vs
+  cash out there).
+- An aging bar: green under 24h, amber 24–48h, red over 48h — red means
+  pick up the phone.
+- Top-holder tables (drivers and points) with cash, personal limit,
+  collateral, overdue amounts, and a status chip, each row linking to the
+  courier/point console.
+
+### Build checklist (v1.21)
+
+- [x] `codExposureReport()` — totals, FIFO aging buckets, collateral coverage, top holders, blocked flags
+- [x] Shared `CashExposureView` + routes under /admin and /delivery-manager; nav items
+- [x] i18n (en + ar) + integration test (aging bands, collateral, blocked flags, totals)
+- [x] This file kept current
+
+## 41. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
