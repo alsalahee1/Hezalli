@@ -652,6 +652,44 @@ Rules:
 - [x] i18n (en + ar) + integration tests (pledge raises limit, unfunded pledge rejected, pledged money can't transfer out, release requires empty pockets)
 - [x] This file kept current
 
-## 37. Out of scope
+## 38. v1.18 — Digital COD remittance
+
+The Yemeni version of "deposit at the bank machine and upload the slip":
+instead of traveling to hand cash in, a courier or point transfers it over a
+rail (Jawali / Jaib / Floosak / Kuraimi / bank) and files a claim with the
+transfer reference. Mirrors the wallet top-up manual-confirm flow.
+
+```
+Driver/Point: sends money over a rail (outside the system)
+      ↓  files claim: amount + rail + reference     (RemitClaim PENDING)
+Delivery manager: sees it in /delivery-manager/remittances,
+checks the rail account, money arrived?
+   ├─ Approve → courier REMITTANCE / point COD_REMITTANCE written in the
+   │            same transaction; claimant notified; ledger settles
+   └─ Reject (reason) → nothing moves; claimant still owes the cash
+```
+
+Rules:
+
+- **Nothing moves before verification.** A PENDING claim reserves nothing —
+  the sender still holds the cash on their ledger (and stays blocked if
+  over a limit) until staff confirm the money actually arrived.
+- **One open claim per sender**; amount capped by cash on hand at filing
+  AND re-checked at approval (the cash may have been settled another way
+  in between — an over-claim is refused, reject and re-file).
+- The approve flip is conditional (PENDING → APPROVED once), so a
+  double-click can't settle twice. Audited both ways; the claimant is
+  notified with the decision.
+
+### Build checklist (v1.18)
+
+- [x] `RemitClaim` model + `RemitClaimStatus` enum + migration
+- [x] `lib/actions/remit-claim.ts`: submit (courier/point, guarded) + approve/reject (delivery manager; approve writes the ledger row atomically)
+- [x] Driver ledger + point ledger: "remit by transfer" card with rail picker + reference; pending claim shown while it waits
+- [x] `/delivery-manager/remittances`: pending queue (approve/reject with reason) + recent decisions; nav item
+- [x] i18n (en + ar) + integration tests (full courier flow incl. double-approve guard, stale-claim re-check, point flow)
+- [x] This file kept current
+
+## 39. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

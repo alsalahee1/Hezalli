@@ -146,6 +146,16 @@ enum CourierLedgerType {
   ADJUSTMENT // ± manual correction by an admin
 }
 
+// A digital COD remittance claim (docs §38): a courier or point says they
+// transferred the cash they hold to Hezalli over a rail (Jawali/Jaib/Kuraimi/
+// bank) instead of handing it in physically. Nothing moves on the ledger
+// until staff verify the transfer and approve.
+enum RemitClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ReturnStatus {
   REQUESTED
   APPROVED
@@ -251,6 +261,7 @@ model User {
   courierLocation  CourierLocation?
   courierApplication CourierApplication?
   courierLedger    CourierLedgerEntry[] @relation("CourierLedger")
+  remitClaims      RemitClaim[] @relation("CourierRemitClaims")
   pushSubscriptions PushSubscription[]
   deliveryPoint    DeliveryPoint? @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
@@ -355,6 +366,7 @@ model DeliveryPoint {
   shipments   Shipment[]
   ledger      DeliveryPointLedgerEntry[]
   payoutRequests PointPayoutRequest[]
+  remitClaims RemitClaim[]
 
   @@index([governorate, status])
 }
@@ -1153,6 +1165,31 @@ model WalletTopUp {
 
   @@index([walletId])
   @@index([status])
+}
+
+// Digital COD remittance claim (docs §38). Exactly one of courierId/pointId
+// is set. PENDING claims reserve nothing — the sender still holds the cash on
+// their ledger until staff verify the rail transfer; the APPROVED flip writes
+// the REMITTANCE / COD_REMITTANCE ledger row in the same transaction.
+model RemitClaim {
+  id          String           @id @default(cuid())
+  courierId   String?
+  pointId     String?
+  amountUsd   Decimal          @db.Decimal(12, 2)
+  method      String // rail used (Jawali / Jaib / Floosak / Kuraimi / bank)
+  reference   String // transfer reference / receipt number
+  status      RemitClaimStatus @default(PENDING)
+  reviewNote  String?
+  reviewedBy  String?
+  processedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  courier     User?          @relation("CourierRemitClaims", fields: [courierId], references: [id], onDelete: Cascade)
+  point       DeliveryPoint? @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([courierId])
+  @@index([pointId])
 }
 
 // Immutable. availableUsd MUST equal the sum of entries — never edit directly.

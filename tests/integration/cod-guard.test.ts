@@ -32,8 +32,15 @@ import {
 import { setCourierDeposit, setPointDeposit } from "@/lib/actions/deposit";
 import { pointDriverCashIn } from "@/lib/actions/point";
 import { requestPointPayout } from "@/lib/actions/point-payout";
+import {
+  approveRemitClaim,
+  rejectRemitClaim,
+  submitCourierRemitClaim,
+  submitPointRemitClaim,
+} from "@/lib/actions/remit-claim";
 import { setWalletCodHold } from "@/lib/actions/wallet-hold";
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { pointLedgerSummary } from "@/lib/point-ledger";
 import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { transferFunds } from "@/lib/wallet-transfers";
@@ -111,6 +118,16 @@ afterAll(async () => {
     .catch(() => {});
   await prisma.pointPayoutRequest
     .deleteMany({ where: { point: { ownerId: { in: userIds } } } })
+    .catch(() => {});
+  await prisma.remitClaim
+    .deleteMany({
+      where: {
+        OR: [
+          { courierId: { in: userIds } },
+          { point: { ownerId: { in: userIds } } },
+        ],
+      },
+    })
     .catch(() => {});
   await prisma.deliveryPointLedgerEntry
     .deleteMany({ where: { point: { ownerId: { in: userIds } } } })
@@ -493,5 +510,98 @@ describe("delivery-manager staff access", () => {
     expect(await setPointDeposit(form({ pointId, amount: "50" }))).toEqual({
       ok: true,
     });
+  });
+});
+
+describe("digital remittance claims", () => {
+  it("courier claim: submit → staff approve settles the ledger", async () => {
+    const c = await makeCourier("remit");
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 45 },
+    });
+
+    as(c);
+    // Guard rails first: over-claim and bad reference are refused.
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "46", method: "JAWALI", reference: "TX-1" }),
+      ),
+    ).toEqual({ error: "overRemit" });
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "45", method: "JAWALI", reference: "x" }),
+      ),
+    ).toEqual({ error: "badInput" });
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "45", method: "JAWALI", reference: "TX-100" }),
+      ),
+    ).toEqual({ ok: true });
+    // One open claim at a time.
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "1", method: "JAIB", reference: "TX-101" }),
+      ),
+    ).toEqual({ error: "alreadyOpen" });
+
+    const claim = await prisma.remitClaim.findFirstOrThrow({
+      where: { courierId: c, status: "PENDING" },
+    });
+    as(c); // a courier cannot approve their own claim
+    expect(await approveRemitClaim(claim.id)).toEqual({ error: "forbidden" });
+
+    as(adminId);
+    expect(await approveRemitClaim(claim.id)).toEqual({ ok: true });
+    expect((await courierCashSummary(c)).cashOnHand).toBe(0);
+    // Idempotent: a second approve cannot double-settle.
+    expect(await approveRemitClaim(claim.id)).toEqual({ error: "badState" });
+  });
+
+  it("approve re-checks cash at decision time", async () => {
+    const c = await makeCourier("stale");
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 30 },
+    });
+    as(c);
+    expect(
+      await submitCourierRemitClaim(
+        form({ amount: "30", method: "KURAIMI", reference: "TX-200" }),
+      ),
+    ).toEqual({ ok: true });
+
+    // The cash was settled another way (office hand-in) before review.
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "REMITTANCE", amountUsd: -25 },
+    });
+    const claim = await prisma.remitClaim.findFirstOrThrow({
+      where: { courierId: c, status: "PENDING" },
+    });
+    as(adminId);
+    expect(await approveRemitClaim(claim.id)).toEqual({ error: "overRemit" });
+    // Rejecting keeps the ledger untouched and notes the reason.
+    expect(await rejectRemitClaim(claim.id, "already handed in")).toEqual({
+      ok: true,
+    });
+    expect((await courierCashSummary(c)).cashOnHand).toBe(5);
+  });
+
+  it("point claim settles the hub's cash side", async () => {
+    const { ownerId, pointId } = await makePoint("remit");
+    await prisma.deliveryPointLedgerEntry.create({
+      data: { pointId, type: "COD_COLLECTED", amountUsd: 80 },
+    });
+    as(ownerId);
+    expect(
+      await submitPointRemitClaim(
+        form({ amount: "80", method: "BANK", reference: "TX-300" }),
+      ),
+    ).toEqual({ ok: true });
+
+    const claim = await prisma.remitClaim.findFirstOrThrow({
+      where: { pointId, status: "PENDING" },
+    });
+    as(adminId);
+    expect(await approveRemitClaim(claim.id)).toEqual({ ok: true });
+    expect((await pointLedgerSummary(pointId)).cashOnHand).toBe(0);
   });
 });
