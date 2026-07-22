@@ -10,7 +10,14 @@ export const runtime = "nodejs";
 
 // Authenticated image upload. Bytes are proxied through the server (simple,
 // no bucket CORS needed) and stored via the active storage driver.
-const FOLDERS = new Set(["avatars", "stores", "products", "banners", "proof"]);
+const FOLDERS = new Set([
+  "avatars",
+  "stores",
+  "products",
+  "banners",
+  "proof",
+  "kyc",
+]);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB (images are compressed client-side)
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
