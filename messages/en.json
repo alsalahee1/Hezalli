@@ -586,6 +586,7 @@
     "colConversion": "Conversion"
   },
   "Admin": {
+    "cash": "Cash exposure",
     "how": "How it works",
     "panel": "Admin Panel",
     "dashboard": "Dashboard",
@@ -2842,6 +2843,7 @@
     "error_badVerdict": "Unknown verdict."
   },
   "DeliveryManager": {
+    "cash": "Cash exposure",
     "how": "How it works",
     "panel": "Delivery Manager",
     "dashboard": "Dashboard",
@@ -3164,5 +3166,35 @@
     "error_notSeller": "Only seller accounts can submit KYC.",
     "error_alreadyPending": "A submission is already under review.",
     "error_alreadyVerified": "You're already verified."
+  },
+  "Exposure": {
+    "title": "Cash exposure",
+    "subtitle": "How much of Hezalli's money is in other people's pockets right now — and how old it is.",
+    "total": "Total outstanding",
+    "totalHint": "{count, plural, =0 {nobody holds cash} one {held by # person} other {held by # people}}",
+    "drivers": "With drivers",
+    "driversHint": "{blocked, plural, =0 {none blocked} one {# blocked} other {# blocked}}",
+    "points": "With points",
+    "pointsHint": "{blocked, plural, =0 {none over limit} one {# over limit} other {# over limit}}",
+    "coverage": "Collateral coverage",
+    "coverageHint": "{amount} in deposits & pledges backs the cash out there.",
+    "agingTitle": "How old is the cash?",
+    "agingHint": "Remittances settle the oldest cash first (FIFO) — anything red has been out more than two days and deserves a phone call.",
+    "fresh": "Under 24h",
+    "aging24": "24–48h",
+    "aging48": "Over 48h",
+    "topDrivers": "Top driver holders",
+    "topPoints": "Top point holders",
+    "colWho": "Who",
+    "colCash": "Cash held",
+    "colLimit": "Limit",
+    "colCollateral": "Collateral",
+    "colOver24": "> 24h",
+    "colOver48": "> 48h",
+    "colStatus": "Status",
+    "statusBlocked": "Blocked",
+    "statusWatch": "Chase today",
+    "statusOk": "OK",
+    "allClear": "All clear — every dollar of COD cash has been handed in."
   }
 }

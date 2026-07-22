@@ -283,3 +283,253 @@ export async function cashBlockedPointIds(
   }
   return blocked;
 }
+
+// ---------------------------------------------------------------------------
+// Cash exposure report (docs §40): the owner's daily question — "how much of
+// Hezalli's money is in other people's pockets right now?" — answered with a
+// handful of grouped queries. Aging uses the same FIFO rule as the block:
+// cash collected before a cutoff is overdue when it exceeds everything
+// settled so far.
+// ---------------------------------------------------------------------------
+
+export type ExposureHolder = {
+  id: string;
+  name: string;
+  cashOnHand: number;
+  limit: number; // personal limit (0 when the check is off)
+  collateral: number; // deposit (+ effective wallet hold for drivers)
+  overdue24: number; // cash older than 24h, FIFO
+  overdue48: number; // cash older than 48h, FIFO
+  blocked: boolean;
+};
+
+export type CodExposureReport = {
+  totalOutstanding: number;
+  driverCash: number;
+  pointCash: number;
+  totalCollateral: number;
+  coverage: number; // collateral / outstanding, capped at 1 (1 = fully covered)
+  fresh: number; // held < 24h
+  aging24: number; // held 24–48h
+  aging48: number; // held > 48h
+  blockedDrivers: number;
+  blockedPoints: number;
+  holdersCount: number;
+  topDrivers: ExposureHolder[];
+  topPoints: ExposureHolder[];
+};
+
+async function overdueByCourier(
+  courierIds: string[],
+  cutoff: Date,
+): Promise<Map<string, number>> {
+  if (courierIds.length === 0) return new Map();
+  const old = await prisma.courierLedgerEntry.groupBy({
+    by: ["courierId"],
+    where: {
+      courierId: { in: courierIds },
+      type: "COD_COLLECTED",
+      createdAt: { lt: cutoff },
+    },
+    _sum: { amountUsd: true },
+  });
+  return new Map(old.map((g) => [g.courierId, Number(g._sum.amountUsd ?? 0)]));
+}
+
+async function overdueByPoint(
+  pointIds: string[],
+  cutoff: Date,
+): Promise<Map<string, number>> {
+  if (pointIds.length === 0) return new Map();
+  const old = await prisma.deliveryPointLedgerEntry.groupBy({
+    by: ["pointId"],
+    where: {
+      pointId: { in: pointIds },
+      type: { in: ["COD_COLLECTED", "DRIVER_CASH_IN"] },
+      createdAt: { lt: cutoff },
+    },
+    _sum: { amountUsd: true },
+  });
+  return new Map(old.map((g) => [g.pointId, Number(g._sum.amountUsd ?? 0)]));
+}
+
+/** Platform-wide COD cash picture for the admin / delivery-manager dashboard. */
+export async function codExposureReport(topN = 10): Promise<CodExposureReport> {
+  const settings = await getPlatformSettings();
+  const now = Date.now();
+  const cut24 = new Date(now - 24 * 3600_000);
+  const cut48 = new Date(now - 48 * 3600_000);
+  const maxAgeMs = settings.driver_cod_max_age_hours * 3600_000;
+  const cutMaxAge =
+    settings.driver_cod_max_age_hours > 0 ? new Date(now - maxAgeMs) : null;
+
+  // ---- Drivers ------------------------------------------------------------
+  const grouped = await prisma.courierLedgerEntry.groupBy({
+    by: ["courierId", "type"],
+    where: {
+      type: { in: ["COD_COLLECTED", "REMITTANCE", "ADJUSTMENT", "EARNING"] },
+    },
+    _sum: { amountUsd: true },
+    _count: { _all: true },
+  });
+  const cash = new Map<
+    string,
+    { cashOnHand: number; collected: number; deliveries: number }
+  >();
+  for (const g of grouped) {
+    const cur = cash.get(g.courierId) ?? {
+      cashOnHand: 0,
+      collected: 0,
+      deliveries: 0,
+    };
+    const amt = Number(g._sum.amountUsd ?? 0);
+    if (g.type === "EARNING") cur.deliveries = g._count._all;
+    else {
+      cur.cashOnHand += amt;
+      if (g.type === "COD_COLLECTED") cur.collected += amt;
+    }
+    cash.set(g.courierId, cur);
+  }
+  const holders = [...cash.entries()]
+    .filter(([, c]) => c.cashOnHand > EPS)
+    .map(([id]) => id);
+
+  const [users, old24, old48, oldMax] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: holders } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        courierDepositUsd: true,
+        wallet: { select: { availableUsd: true, codHoldUsd: true } },
+      },
+    }),
+    overdueByCourier(holders, cut24),
+    overdueByCourier(holders, cut48),
+    cutMaxAge
+      ? overdueByCourier(holders, cutMaxAge)
+      : new Map<string, number>(),
+  ]);
+  const userBy = new Map(users.map((u) => [u.id, u]));
+
+  const drivers: ExposureHolder[] = holders.map((id) => {
+    const c = cash.get(id)!;
+    const u = userBy.get(id);
+    const deposit = Number(u?.courierDepositUsd ?? 0);
+    const holdEff = Math.max(
+      0,
+      Math.min(
+        Number(u?.wallet?.codHoldUsd ?? 0),
+        Number(u?.wallet?.availableUsd ?? 0),
+      ),
+    );
+    const limit =
+      settings.driver_cash_limit > 0
+        ? round2(
+            settings.driver_cash_limit +
+              deposit +
+              holdEff +
+              trustBonus(c.deliveries, settings),
+          )
+        : 0;
+    const settled = c.collected - c.cashOnHand;
+    const over = (m: Map<string, number>) =>
+      round2(Math.max(0, Math.min(c.cashOnHand, (m.get(id) ?? 0) - settled)));
+    const overdueMax = cutMaxAge ? over(oldMax as Map<string, number>) : 0;
+    return {
+      id,
+      name: u?.name ?? u?.email ?? id.slice(-6),
+      cashOnHand: round2(c.cashOnHand),
+      limit,
+      collateral: round2(deposit + holdEff),
+      overdue24: over(old24),
+      overdue48: over(old48),
+      blocked:
+        (limit > 0 && c.cashOnHand > limit + EPS) ||
+        (cutMaxAge != null && overdueMax > EPS),
+    };
+  });
+
+  // ---- Points ---------------------------------------------------------------
+  const pGrouped = await prisma.deliveryPointLedgerEntry.groupBy({
+    by: ["pointId", "type"],
+    where: {
+      type: { in: ["COD_COLLECTED", "DRIVER_CASH_IN", "COD_REMITTANCE"] },
+    },
+    _sum: { amountUsd: true },
+  });
+  const pCash = new Map<string, { cashOnHand: number; collected: number }>();
+  for (const g of pGrouped) {
+    const cur = pCash.get(g.pointId) ?? { cashOnHand: 0, collected: 0 };
+    const amt = Number(g._sum.amountUsd ?? 0);
+    cur.cashOnHand += amt;
+    if (g.type !== "COD_REMITTANCE") cur.collected += amt;
+    pCash.set(g.pointId, cur);
+  }
+  const pHolders = [...pCash.entries()]
+    .filter(([, c]) => c.cashOnHand > EPS)
+    .map(([id]) => id);
+
+  const [pointRows, pOld24, pOld48] = await Promise.all([
+    prisma.deliveryPoint.findMany({
+      where: { id: { in: pHolders } },
+      select: { id: true, name: true, depositUsd: true },
+    }),
+    overdueByPoint(pHolders, cut24),
+    overdueByPoint(pHolders, cut48),
+  ]);
+  const pointBy = new Map(pointRows.map((p) => [p.id, p]));
+
+  const points: ExposureHolder[] = pHolders.map((id) => {
+    const c = pCash.get(id)!;
+    const p = pointBy.get(id);
+    const deposit = Number(p?.depositUsd ?? 0);
+    const limit =
+      settings.point_cash_limit > 0
+        ? round2(settings.point_cash_limit + deposit)
+        : 0;
+    const settled = c.collected - c.cashOnHand;
+    const over = (m: Map<string, number>) =>
+      round2(Math.max(0, Math.min(c.cashOnHand, (m.get(id) ?? 0) - settled)));
+    return {
+      id,
+      name: p?.name ?? id.slice(-6),
+      cashOnHand: round2(c.cashOnHand),
+      limit,
+      collateral: round2(deposit),
+      overdue24: over(pOld24),
+      overdue48: over(pOld48),
+      blocked: limit > 0 && c.cashOnHand > limit + EPS,
+    };
+  });
+
+  // ---- Totals ---------------------------------------------------------------
+  const all = [...drivers, ...points];
+  const sum = (xs: number[]) => round2(xs.reduce((a, b) => a + b, 0));
+  const totalOutstanding = sum(all.map((h) => h.cashOnHand));
+  const overdue24 = sum(all.map((h) => h.overdue24));
+  const overdue48 = sum(all.map((h) => h.overdue48));
+  const totalCollateral = sum(all.map((h) => h.collateral));
+  const byCash = (a: ExposureHolder, b: ExposureHolder) =>
+    b.cashOnHand - a.cashOnHand;
+
+  return {
+    totalOutstanding,
+    driverCash: sum(drivers.map((h) => h.cashOnHand)),
+    pointCash: sum(points.map((h) => h.cashOnHand)),
+    totalCollateral,
+    coverage:
+      totalOutstanding > 0
+        ? Math.min(1, totalCollateral / totalOutstanding)
+        : 1,
+    fresh: round2(totalOutstanding - overdue24),
+    aging24: round2(overdue24 - overdue48),
+    aging48: overdue48,
+    blockedDrivers: drivers.filter((h) => h.blocked).length,
+    blockedPoints: points.filter((h) => h.blocked).length,
+    holdersCount: all.length,
+    topDrivers: drivers.sort(byCash).slice(0, topN),
+    topPoints: points.sort(byCash).slice(0, topN),
+  };
+}
