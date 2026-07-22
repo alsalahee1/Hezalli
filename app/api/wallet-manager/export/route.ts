@@ -12,10 +12,47 @@ function csvCell(v: string | null | undefined): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const staffId = await requireWalletManagerId();
   if (!staffId) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  // Per-wallet ledger export: /api/wallet-manager/export?wallet=<walletId>
+  const walletId = new URL(req.url).searchParams.get("wallet");
+  if (walletId) {
+    const entries = await prisma.walletEntry.findMany({
+      where: { walletId },
+      orderBy: { createdAt: "desc" },
+      take: 5000,
+      select: {
+        id: true,
+        type: true,
+        amountUsd: true,
+        orderId: true,
+        note: true,
+        createdAt: true,
+      },
+    });
+    const head = ["id", "type", "amount_usd", "order_id", "note", "at"].join(
+      ",",
+    );
+    const body = entries.map((e) =>
+      [
+        e.id,
+        e.type,
+        String(e.amountUsd),
+        e.orderId ?? "",
+        csvCell(e.note),
+        e.createdAt.toISOString(),
+      ].join(","),
+    );
+    return new NextResponse([head, ...body].join("\n"), {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="wallet-ledger.csv"',
+      },
+    });
   }
 
   const [topUps, withdrawals] = await Promise.all([
