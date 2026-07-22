@@ -29,12 +29,24 @@ export default async function DriverResolvePage({
             { deliveryCode: { equals: tn, mode: "insensitive" } },
           ],
         },
-        select: { id: true },
+        select: { id: true, trackingNumber: true, deliveryCode: true },
       })
     : null;
 
   if (shipment) {
-    redirect({ href: `/driver/job/${shipment.id}`, locale });
+    // Scanning the buyer's delivery-code QR (not the parcel's tracking label)
+    // means the driver is AT the door — jump straight into the delivery
+    // confirmation with the code pre-filled, so it's a single scan to deliver.
+    const byCode =
+      !!shipment.deliveryCode &&
+      shipment.deliveryCode.toUpperCase() === tn.toUpperCase() &&
+      shipment.trackingNumber !== tn;
+    redirect({
+      href: byCode
+        ? `/driver/job/${shipment.id}?deliver=1`
+        : `/driver/job/${shipment.id}`,
+      locale,
+    });
   }
 
   const t = await getTranslations("Driver");

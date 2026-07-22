@@ -27,19 +27,30 @@ const FAIL_REASONS = [
 export function JobActions({
   shipmentId,
   status,
+  autoDeliver = false,
+  initialCode,
 }: {
   shipmentId: string;
   status: string;
+  // Set when the driver reached this job by scanning the buyer's delivery-code
+  // QR at the door: open the delivery-confirmation sheet with the code
+  // pre-filled so confirming is a single tap.
+  autoDeliver?: boolean;
+  initialCode?: string;
 }) {
   const t = useTranslations("Driver");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<null | "deliver" | "fail">(null);
+  const [sheet, setSheet] = useState<null | "deliver" | "fail">(
+    autoDeliver ? "deliver" : null,
+  );
 
   // Proof-of-delivery state.
   const [recipient, setRecipient] = useState("");
-  const [deliveryCode, setDeliveryCode] = useState("");
+  const [deliveryCode, setDeliveryCode] = useState(
+    autoDeliver ? (initialCode ?? "") : "",
+  );
   const [photoKey, setPhotoKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
