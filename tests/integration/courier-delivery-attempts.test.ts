@@ -49,10 +49,12 @@ afterAll(async () => {
   await fx.cleanup();
 });
 
-// A shipped COD parcel already assigned to our courier.
-async function makeAssignedParcel() {
+// A shipped parcel already assigned to our courier (COD by default).
+async function makeAssignedParcel(
+  paymentMethod: "COD" | "HEZALLI_BALANCE" = "COD",
+) {
   const { subOrderId } = await fx.createSubOrder({
-    paymentMethod: "COD",
+    paymentMethod,
     status: "SHIPPED",
   });
   const shipment = await prisma.shipment.create({
@@ -181,8 +183,8 @@ describe("proof of delivery", () => {
     expect(sub?.order.payment?.status).toBe("CONFIRMED");
   });
 
-  it("delivers fine with no proof (backward compatible)", async () => {
-    const { shipmentId } = await makeAssignedParcel();
+  it("a PREPAID parcel delivers fine with no proof", async () => {
+    const { shipmentId } = await makeAssignedParcel("HEZALLI_BALANCE");
     as(courierId);
     expect(await courierAdvance(shipmentId, "DELIVERED")).toEqual({ ok: true });
     const ship = await prisma.shipment.findUnique({
@@ -190,5 +192,18 @@ describe("proof of delivery", () => {
       select: { attempts: { select: { recipientName: true } } },
     });
     expect(ship?.attempts[0]?.recipientName).toBeNull();
+  });
+
+  it("a COD parcel requires at least one proof element", async () => {
+    const { shipmentId } = await makeAssignedParcel("COD");
+    as(courierId);
+    // No code, no photo, no recipient → refused for a cash drop.
+    expect(await courierAdvance(shipmentId, "DELIVERED")).toEqual({
+      error: "proofRequired",
+    });
+    // A recipient name alone satisfies it.
+    expect(
+      await courierAdvance(shipmentId, "DELIVERED", { recipientName: "Ali" }),
+    ).toEqual({ ok: true });
   });
 });

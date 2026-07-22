@@ -275,6 +275,9 @@ export async function shipSubOrder(
 export async function markDelivered(subOrderId: string): Promise<Result> {
   const gate = await requireSellerStore();
   if (!gate) return { error: "forbidden" };
+  // A suspended/closed store can't attest deliveries (which capture COD cash
+  // and settle the seller). Ops resolve a suspended store's in-flight orders.
+  if (!gate.active) return { error: "storeSuspended" };
   const locale = await getLocale();
 
   const owns = await prisma.subOrder.findFirst({

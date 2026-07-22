@@ -312,11 +312,11 @@ describe("confirmReceived cannot force-deliver an Express parcel in custody", ()
     expect((await courierCashSummary(driver)).cashOnHand).toBe(0);
     expect(await prisma.ledgerEntry.count({ where: { subOrderId } })).toBe(0);
 
-    // The driver delivers against the buyer's QR — cash lands on their ledger.
+    // The driver delivers with proof (recipient) — cash lands on their ledger.
     as(driver);
-    expect(await courierAdvance(shipment.id, "DELIVERED")).toEqual({
-      ok: true,
-    });
+    expect(
+      await courierAdvance(shipment.id, "DELIVERED", { recipientName: "Ali" }),
+    ).toEqual({ ok: true });
     expect((await courierCashSummary(driver)).cashOnHand).toBe(100);
 
     // NOW the buyer's confirmation completes the order and settles the seller.

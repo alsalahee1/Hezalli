@@ -17,11 +17,13 @@ vi.mock("next-intl/server", async (orig) => ({
   getLocale: vi.fn().mockResolvedValue("en"),
 }));
 
+import { forceOrderStatus } from "@/lib/actions/admin-oversight";
 import {
   assignCourier,
   courierAdvance,
   courierFailDelivery,
 } from "@/lib/actions/courier";
+import { acceptSubOrder, cancelSubOrder } from "@/lib/actions/seller-order";
 import { editTracking, shipSubOrder } from "@/lib/actions/shipment";
 import { overrideShipmentStatus } from "@/lib/actions/shipment-admin";
 import { courierCashSummary } from "@/lib/courier-ledger";
@@ -35,6 +37,7 @@ let fx: Awaited<ReturnType<typeof makeFixture>>;
 let platformCarrierId: string;
 let thirdPartyCarrierId: string;
 let managerId: string;
+let adminId: string;
 const extraUserIds: string[] = [];
 
 async function makeCourier(tag: string): Promise<string> {
@@ -65,7 +68,11 @@ beforeAll(async () => {
     data: { email: `oa-mgr-${uniq}@t.local`, roles: ["DELIVERY_MANAGER"] },
   });
   managerId = mgr.id;
-  extraUserIds.push(mgr.id);
+  const adm = await prisma.user.create({
+    data: { email: `oa-adm-${uniq}@t.local`, roles: ["ADMIN"] },
+  });
+  adminId = adm.id;
+  extraUserIds.push(mgr.id, adm.id);
 
   // Buyer wallet so prepaid refunds have somewhere to land.
   const wallet = await prisma.wallet.upsert({
@@ -392,5 +399,72 @@ describe("seller editTracking is third-party only", () => {
         trackingNumber: "",
       }),
     ).toEqual({ error: "expressManaged" });
+  });
+});
+
+describe("a suspended store can't move money, but can still ship in-flight orders", () => {
+  it("blocks cancel-with-refund while still allowing accept + ship", async () => {
+    // Suspend the fixture's store for the duration of this test.
+    await prisma.store.update({
+      where: { id: fx.storeId },
+      data: { status: "SUSPENDED" },
+    });
+    try {
+      const { subOrderId } = await fx.createSubOrder({
+        paymentMethod: "COD",
+        status: "CONFIRMED",
+      });
+      as(fx.sellerUserId);
+      // Fulfilling an existing paid order is still allowed — buyers aren't
+      // stranded by a suspension.
+      expect(await acceptSubOrder(subOrderId)).toEqual({ ok: true });
+      expect(
+        await shipSubOrder(subOrderId, {
+          carrierId: platformCarrierId,
+          trackingNumber: "",
+        }),
+      ).toEqual({ ok: true });
+      // But a money-outflow action (cancel → buyer refund) is refused.
+      const { subOrderId: sub2 } = await fx.createSubOrder({
+        paymentMethod: "COD",
+        status: "CONFIRMED",
+      });
+      expect(await cancelSubOrder(sub2, "changed my mind")).toEqual({
+        error: "storeSuspended",
+      });
+    } finally {
+      await prisma.store.update({
+        where: { id: fx.storeId },
+        data: { status: "ACTIVE" },
+      });
+    }
+  });
+});
+
+describe("admin forceOrderStatus → COMPLETED settles the seller", () => {
+  it("does not leave a completed order's seller unpaid", async () => {
+    const { orderId, subOrderId } = await fx.createSubOrder({
+      paymentMethod: "HEZALLI_BALANCE", // prepaid, captured
+      status: "DELIVERED",
+    });
+    as(adminId);
+    expect(
+      await forceOrderStatus(orderId, "COMPLETED", "manual close"),
+    ).toEqual({ ok: true });
+    // The sub-order is COMPLETED and settled (a SALE credit exists).
+    expect(
+      (
+        await prisma.subOrder.findUniqueOrThrow({
+          where: { id: subOrderId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe("COMPLETED");
+    const sale = await prisma.ledgerEntry.findFirst({
+      where: { subOrderId, type: "SALE" },
+      select: { amountUsd: true },
+    });
+    expect(sale).not.toBeNull();
+    expect(Number(sale!.amountUsd)).toBe(90); // 100 − 10% commission
   });
 });

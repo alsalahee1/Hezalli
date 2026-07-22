@@ -39,6 +39,11 @@ export async function requireDeliveryManagerId(): Promise<string | null> {
 export async function requireSellerStore(): Promise<{
   userId: string;
   storeId: string;
+  // False when the store is SUSPENDED/CLOSED. Read paths ignore it; the
+  // money-outflow / delivery-attestation actions refuse when it is false so a
+  // store an admin suspended for fraud can't keep refunding or attesting
+  // deliveries (see requireActiveSellerStore).
+  active: boolean;
 } | null> {
   const session = await auth();
   const id = session?.user?.id;
@@ -49,15 +54,17 @@ export async function requireSellerStore(): Promise<{
       roles: true,
       isSuspended: true,
       deletedAt: true,
-      sellerProfile: { select: { store: { select: { id: true } } } },
+      sellerProfile: {
+        select: { store: { select: { id: true, status: true } } },
+      },
     },
   });
   if (!u || u.isSuspended || u.deletedAt || !u.roles.includes("SELLER")) {
     return null;
   }
-  const storeId = u.sellerProfile?.store?.id;
-  if (!storeId) return null;
-  return { userId: id, storeId };
+  const store = u.sellerProfile?.store;
+  if (!store) return null;
+  return { userId: id, storeId: store.id, active: store.status === "ACTIVE" };
 }
 
 // Returns the current user's id + their delivery point id, only if they are an

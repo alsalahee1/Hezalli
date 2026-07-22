@@ -7,6 +7,7 @@ import { requireDeliveryPoint } from "@/lib/authz";
 import { cashBlockedPointIds } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   buyerPickupAtPoint,
   driverManifestAtPoint,
@@ -96,7 +97,17 @@ export async function pointBuyerPickup(
   if (!gate) return { error: "forbidden" };
   const locale = await getLocale();
   const res = await buyerPickupAtPoint(gate.pointId, code, locale);
-  if (res.ok) await revalidatePoint();
+  if (res.ok) {
+    await revalidatePoint();
+    return res;
+  }
+  // A wrong code is the only way to probe the 40-bit pickup codes. Throttle
+  // failed attempts per counter so they can't be ground out, without ever
+  // limiting legitimate (successful) pickups. Mirrors the v1.22 rate-limit
+  // pass on the other self-service money actions.
+  if (!rateLimit(`pickup:${gate.pointId}`, 15, 5 * 60_000).ok) {
+    return { error: "tooMany" };
+  }
   return res;
 }
 

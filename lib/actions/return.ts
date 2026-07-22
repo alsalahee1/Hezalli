@@ -154,6 +154,7 @@ export async function approveReturn(
 ): Promise<Result> {
   const gate = await requireSellerStore();
   if (!gate) return { error: "forbidden" };
+  if (!gate.active) return { error: "storeSuspended" };
   const ret = await loadSellerReturn(returnId, gate.storeId);
   if (!ret) return { error: "notFound" };
   if (ret.status !== "REQUESTED") return { error: "badState" };
@@ -286,6 +287,7 @@ export async function confirmReturnReceived(
 ): Promise<Result> {
   const gate = await requireSellerStore();
   if (!gate) return { error: "forbidden" };
+  if (!gate.active) return { error: "storeSuspended" };
 
   const ret = await prisma.returnRequest.findFirst({
     where: { id: returnId, subOrder: { storeId: gate.storeId } },

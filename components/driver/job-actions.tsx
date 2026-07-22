@@ -313,6 +313,7 @@ function errMsg(t: ReturnType<typeof useTranslations>, key: string): string {
     "badReason",
     "badCode",
     "uploadFailed",
+    "proofRequired",
   ]);
   return known.has(key) ? t(`err_${key}`) : t("err_badState");
 }

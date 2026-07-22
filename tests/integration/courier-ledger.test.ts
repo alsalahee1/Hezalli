@@ -93,7 +93,9 @@ describe("delivery accrues the courier ledger", () => {
     const { shipmentId } = await assignedParcel(courierId, "COD");
 
     as(courierId);
-    expect(await courierAdvance(shipmentId, "DELIVERED")).toEqual({ ok: true });
+    expect(
+      await courierAdvance(shipmentId, "DELIVERED", { recipientName: "Ali" }),
+    ).toEqual({ ok: true });
 
     const s = await courierCashSummary(courierId);
     expect(s.totalCollected).toBe(100); // price 100, no shipping/discount
@@ -141,7 +143,7 @@ describe("recordRemittance", () => {
     const courierId = await freshCourier();
     const { shipmentId } = await assignedParcel(courierId, "COD");
     as(courierId);
-    await courierAdvance(shipmentId, "DELIVERED"); // cashOnHand = 100
+    await courierAdvance(shipmentId, "DELIVERED", { recipientName: "Ali" }); // cashOnHand = 100
 
     // A courier cannot record their own remittance.
     as(courierId);

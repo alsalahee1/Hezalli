@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
 import { notifyBot } from "@/lib/integrations/bot-notify";
+import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { settleReturnedSubOrder } from "@/lib/return-core";
@@ -218,7 +219,12 @@ export async function courierAdvance(
           orderId: true,
           store: { select: { name: true } },
           order: {
-            select: { buyerId: true, buyer: { select: { locale: true } } },
+            select: {
+              buyerId: true,
+              paymentMethod: true,
+              payment: { select: { status: true, confirmedBy: true } },
+              buyer: { select: { locale: true } },
+            },
           },
         },
       },
@@ -250,6 +256,17 @@ export async function courierAdvance(
     const typed = proof?.deliveryCode?.trim().toUpperCase();
     if (typed && typed !== shipment.deliveryCode?.toUpperCase()) {
       return { error: "badCode" };
+    }
+    // A COD drop must carry SOME proof of handover — the buyer's code, a
+    // doorstep photo, or a recipient name. The driver becomes accountable for
+    // the cash either way, but without evidence an "I never received it"
+    // dispute has nothing to weigh. Prepaid drops stay frictionless, and a COD
+    // order already settled digitally (no cash due) is treated as prepaid.
+    const recipient = proof?.recipientName?.trim();
+    const codCashDue =
+      sub.order.paymentMethod === "COD" && !codSettledDigitally(sub.order);
+    if (codCashDue && !typed && !proof?.photoKey && !recipient) {
+      return { error: "proofRequired" };
     }
     const res = await markSubOrderDelivered(sub.id, "courier", locale, {
       courierId,
