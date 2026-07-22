@@ -145,4 +145,60 @@ describe("RTS resolution", () => {
     });
     expect(Number(walletEntry?.amountUsd)).toBeCloseTo(fx.price);
   });
+
+  it("refuses RTS while the buyer has a redelivery booked, allows it once cleared", async () => {
+    // A failed EXPRESS parcel sitting RETURNED_TO_POINT with a redelivery the
+    // buyer just booked — RTS would cancel/refund a live order out from under
+    // them, so it must be blocked until the redelivery is honored/cleared.
+    const { subOrderId, orderId } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "SHIPPED",
+    });
+    const trackingNumber =
+      `RB${Date.now().toString(36)}${(trackingSeq++).toString(36)}`.toUpperCase();
+    await prisma.shipment.create({
+      data: {
+        subOrderId,
+        trackingNumber,
+        status: "RETURNED_TO_POINT",
+        platformManaged: true,
+        deliveryPointId: pointId,
+        atPointId: pointId,
+        attemptCount: 1,
+        redeliverAt: new Date(Date.now() + 2 * 86_400_000),
+        shippedAt: new Date(),
+      },
+    });
+    void orderId;
+
+    as(ownerId);
+    expect(await pointReturnToSeller(trackingNumber, "give up")).toEqual({
+      error: "redeliveryPending",
+    });
+    expect(
+      (
+        await prisma.subOrder.findUniqueOrThrow({
+          where: { id: subOrderId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe("SHIPPED"); // untouched — order still live
+
+    // Once the redelivery is cleared (parcel not rebooked anymore), RTS works.
+    await prisma.shipment.updateMany({
+      where: { subOrderId },
+      data: { redeliverAt: null },
+    });
+    expect(await pointReturnToSeller(trackingNumber, "give up")).toEqual({
+      ok: true,
+    });
+    expect(
+      (
+        await prisma.subOrder.findUniqueOrThrow({
+          where: { id: subOrderId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe("CANCELLED"); // uncaptured COD → cancelled on RTS
+  });
 });

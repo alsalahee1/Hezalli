@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
 import { notifyBot } from "@/lib/integrations/bot-notify";
+import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { settleReturnedSubOrder } from "@/lib/return-core";
@@ -53,12 +54,21 @@ export async function assignCourier(
 
   const shipment = await prisma.shipment.findUnique({
     where: { id: shipmentId },
-    select: { id: true, subOrder: { select: { orderId: true } } },
+    select: {
+      id: true,
+      platformManaged: true,
+      subOrder: { select: { orderId: true } },
+    },
   });
   if (!shipment) return { error: "notFound" };
 
   const id = driverId.trim();
   if (id) {
+    // A Hezalli courier only carries Hezalli Express parcels. Attaching one to
+    // an external-carrier shipment would let them "deliver" it (and capture its
+    // COD onto their ledger) for a parcel Hezalli doesn't run — same guard the
+    // bulk assign already enforces.
+    if (!shipment.platformManaged) return { error: "notPlatformManaged" };
     const driver = await prisma.user.findUnique({
       where: { id },
       select: { roles: true, isSuspended: true, deletedAt: true },
@@ -209,7 +219,12 @@ export async function courierAdvance(
           orderId: true,
           store: { select: { name: true } },
           order: {
-            select: { buyerId: true, buyer: { select: { locale: true } } },
+            select: {
+              buyerId: true,
+              paymentMethod: true,
+              payment: { select: { status: true, confirmedBy: true } },
+              buyer: { select: { locale: true } },
+            },
           },
         },
       },
@@ -219,11 +234,18 @@ export async function courierAdvance(
   const sub = shipment.subOrder;
   // Only an in-flight (SHIPPED) sub-order can be advanced by a driver.
   if (sub.status !== "SHIPPED") return { error: "badState" };
-  // A point-routed parcel the point still holds moves ONLY via point scans
-  // (docs/DELIVERY-POINTS.md) — the driver can't advance it from their phone.
+  // A point-routed parcel moves through its hub, never the driver's phone,
+  // while the point holds it (LABEL_CREATED/AT_POINT/RETURNED_TO_POINT) OR
+  // while it is IN_TRANSIT on the line-haul leg — there the assigned driver is
+  // the TRANSFER driver carrying it between hubs, whose custody ends at the
+  // destination point's receive scan. Only the last-mile driver, after that
+  // scan (status OUT_FOR_DELIVERY), delivers. Direct parcels have no delivery
+  // point, so this never blocks them.
   if (
     shipment.deliveryPointId &&
-    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
+    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT", "IN_TRANSIT"].includes(
+      shipment.status,
+    )
   ) {
     return { error: "badState" };
   }
@@ -234,6 +256,17 @@ export async function courierAdvance(
     const typed = proof?.deliveryCode?.trim().toUpperCase();
     if (typed && typed !== shipment.deliveryCode?.toUpperCase()) {
       return { error: "badCode" };
+    }
+    // A COD drop must carry SOME proof of handover — the buyer's code, a
+    // doorstep photo, or a recipient name. The driver becomes accountable for
+    // the cash either way, but without evidence an "I never received it"
+    // dispute has nothing to weigh. Prepaid drops stay frictionless, and a COD
+    // order already settled digitally (no cash due) is treated as prepaid.
+    const recipient = proof?.recipientName?.trim();
+    const codCashDue =
+      sub.order.paymentMethod === "COD" && !codSettledDigitally(sub.order);
+    if (codCashDue && !typed && !proof?.photoKey && !recipient) {
+      return { error: "proofRequired" };
     }
     const res = await markSubOrderDelivered(sub.id, "courier", locale, {
       courierId,
@@ -334,14 +367,11 @@ export async function courierFailDelivery(
   if (!shipment || !shipment.subOrder) return { error: "notFound" };
   const sub = shipment.subOrder;
   if (sub.status !== "SHIPPED") return { error: "badState" };
-  // A parcel the point still holds can't fail a doorstep attempt — it hasn't
-  // left the hub. (Same guard as courierAdvance.)
-  if (
-    shipment.deliveryPointId &&
-    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT"].includes(shipment.status)
-  ) {
-    return { error: "badState" };
-  }
+  // A FAILED attempt means a doorstep delivery was actually tried, so the
+  // parcel must be OUT_FOR_DELIVERY — the driver has taken it out. This blocks
+  // failing a parcel still at a point, in line-haul, or merely picked up, so a
+  // driver can't rack up attempts toward a forced RETURN without a real try.
+  if (shipment.status !== "OUT_FOR_DELIVERY") return { error: "badState" };
 
   // A DIRECT parcel (no delivery point) that has now exhausted its allowed
   // attempts is returned to the seller instead of sitting FAILED-and-retriable

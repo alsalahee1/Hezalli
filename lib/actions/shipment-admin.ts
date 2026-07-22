@@ -6,7 +6,12 @@ import { getLocale } from "next-intl/server";
 import { audit } from "@/lib/audit";
 import { requireDeliveryManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { settleReturnedSubOrder } from "@/lib/return-core";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
+
+// A sub-order past delivery is settled money — its shipment must not be forced
+// backwards (would run public tracking in reverse and desync the paid order).
+const TERMINAL_SUB = ["COMPLETED", "CANCELLED", "REFUNDED"];
 
 type Result = { ok?: boolean; error?: string };
 
@@ -44,24 +49,54 @@ export async function overrideShipmentStatus(
       id: true,
       status: true,
       shippedAt: true,
+      driverId: true,
+      platformManaged: true,
+      deliveryPointId: true,
       subOrder: { select: { id: true, orderId: true, status: true } },
     },
   });
   if (!shipment) return { error: "notFound" };
   if (shipment.status === status) return { error: "badState" };
+  // Never force a shipment on an already-settled order (completed/refunded/
+  // cancelled) — money has moved and the transition would only desync it.
+  if (TERMINAL_SUB.includes(shipment.subOrder.status)) {
+    return { error: "orderClosed" };
+  }
 
   const location = input?.location?.trim() || null;
   const note = input?.note?.trim() || null;
 
   if (status === "DELIVERED") {
-    // Shared cascade — only acts while the sub-order is SHIPPED (its guard).
+    // Shared cascade (guards on sub-order SHIPPED). Name who holds the cash so
+    // COD lands on a real ledger: the assigned courier, if any. A platform COD
+    // parcel with no assigned courier is refused by the cascade's money safety
+    // net (noCashHandler) — ops must assign a driver (or use the counter/pickup
+    // flow) rather than strand the cash.
     const res = await markSubOrderDelivered(
       shipment.subOrder.id,
       "admin",
       locale,
-      note ? { note } : undefined,
+      {
+        courierId: shipment.driverId ?? undefined,
+        ...(note ? { note } : {}),
+      },
     );
     if (res.error) return res;
+  } else if (status === "RETURNED") {
+    // A real return settles money: refund a captured order (or cancel a COD
+    // one) and restock. Reusing the shared path keeps the console identical to
+    // a point RTS / exhausted-attempts return instead of a bare status write
+    // that strands the buyer's refund and the seller's stock.
+    await settleReturnedSubOrder(shipment.subOrder.id, "admin");
+    await prisma.$transaction([
+      prisma.shipment.update({
+        where: { id: shipment.id },
+        data: { status, stuckFlaggedAt: null, atPointId: null },
+      }),
+      prisma.shipmentEvent.create({
+        data: { shipmentId: shipment.id, status, location, note },
+      }),
+    ]);
   } else {
     await prisma.$transaction([
       prisma.shipment.update({
@@ -69,6 +104,12 @@ export async function overrideShipmentStatus(
         data: {
           status,
           stuckFlaggedAt: null, // moved — allow a future stuck alert again
+          // Keep custody columns consistent with the real transitions: a parcel
+          // now held at its point carries atPointId; one back on the road clears
+          // it. Otherwise counter-pickup / manifest lookups desync.
+          ...(status === "AT_POINT" || status === "RETURNED_TO_POINT"
+            ? { atPointId: shipment.deliveryPointId }
+            : { atPointId: null }),
           ...(status === "IN_TRANSIT" && !shipment.shippedAt
             ? { shippedAt: new Date() }
             : {}),

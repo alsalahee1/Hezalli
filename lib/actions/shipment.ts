@@ -32,6 +32,23 @@ export type ShipInput = {
 // Short unguessable code for the buyer's delivery QR (unique on Shipment).
 const mintDeliveryCode = () => randomBytes(5).toString("hex").toUpperCase();
 
+// Hezalli Express waybill numbers are minted by the platform — the seller has
+// no external carrier to get one from, so asking them to type one only
+// produces made-up values that collide and break the scan flows (driver scan,
+// hub console, public tracking all resolve parcels by this number). Digits
+// after the prefix keep the printed Code 39 barcode compact and scannable.
+async function mintTrackingNumber(): Promise<string> {
+  for (;;) {
+    const digits = Array.from(randomBytes(10), (b) => b % 10).join("");
+    const candidate = `HZE${digits}`;
+    const clash = await prisma.shipment.findFirst({
+      where: { trackingNumber: candidate },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
+  }
+}
+
 // Seller ships a sub-order: records the carrier + tracking number, moves the
 // sub-order to SHIPPED, and notifies the buyer with a tracking link.
 export async function shipSubOrder(
@@ -43,9 +60,8 @@ export async function shipSubOrder(
   const locale = await getLocale();
 
   const carrierId = input.carrierId;
-  const trackingNumber = (input.trackingNumber ?? "").trim();
+  let trackingNumber = (input.trackingNumber ?? "").trim();
   if (!carrierId) return { error: "carrierRequired" };
-  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   const [sub, carrier] = await Promise.all([
     prisma.subOrder.findFirst({
@@ -75,6 +91,13 @@ export async function shipSubOrder(
   if (!sub) return { error: "notFound" };
   if (!carrier) return { error: "carrierRequired" };
   if (sub.status !== "PROCESSING") return { error: "badState" };
+
+  // Hezalli Express: the platform mints the waybill number when none is
+  // provided. Third-party carriers issue their own — the seller must type it.
+  if (!trackingNumber && carrier.platformManaged) {
+    trackingNumber = await mintTrackingNumber();
+  }
+  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   // Optional routing via a Hezalli Point (platform carrier only): the parcel
   // starts LABEL_CREATED (awaiting drop-off) instead of IN_TRANSIT, and
@@ -252,13 +275,23 @@ export async function shipSubOrder(
 export async function markDelivered(subOrderId: string): Promise<Result> {
   const gate = await requireSellerStore();
   if (!gate) return { error: "forbidden" };
+  // A suspended/closed store can't attest deliveries (which capture COD cash
+  // and settle the seller). Ops resolve a suspended store's in-flight orders.
+  if (!gate.active) return { error: "storeSuspended" };
   const locale = await getLocale();
 
   const owns = await prisma.subOrder.findFirst({
     where: { id: subOrderId, storeId: gate.storeId },
-    select: { id: true },
+    select: { id: true, shipment: { select: { platformManaged: true } } },
   });
   if (!owns) return { error: "notFound" };
+  // Hezalli Express parcels are delivered by the platform's own custody chain
+  // (point scans, driver scan against the buyer's QR, counter pickup, or an
+  // audited ops override) — the seller no longer holds the parcel and cannot
+  // attest delivery. Letting them would credit point fees for work never
+  // done and capture COD cash onto no one's ledger. Seller mark-delivered is
+  // for third-party carriers only, where no in-system scan chain exists.
+  if (owns.shipment?.platformManaged) return { error: "expressManaged" };
 
   return markSubOrderDelivered(subOrderId, "seller", locale);
 }
@@ -276,7 +309,6 @@ export async function editTracking(
   const carrierId = input.carrierId;
   const trackingNumber = (input.trackingNumber ?? "").trim();
   if (!carrierId) return { error: "carrierRequired" };
-  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   const sub = await prisma.subOrder.findFirst({
     where: { id: subOrderId, storeId: gate.storeId },
@@ -285,19 +317,36 @@ export async function editTracking(
       orderId: true,
       status: true,
       shipment: {
-        select: { id: true, carrierId: true, trackingNumber: true },
+        select: {
+          id: true,
+          carrierId: true,
+          trackingNumber: true,
+          platformManaged: true,
+        },
       },
       order: { select: { buyerId: true, buyer: { select: { locale: true } } } },
     },
   });
   if (!sub || !sub.shipment) return { error: "notFound" };
   if (sub.status !== "SHIPPED") return { error: "badState" };
+  // Editing is for correcting a THIRD-PARTY carrier's typed tracking number.
+  // A Hezalli Express (platform-managed) parcel is already inside the platform
+  // custody chain — its waybill is system-owned and every point/driver scan
+  // resolves the parcel by it. A seller must not (a) re-point it, nor (b) flip
+  // it to/from platform-managed: flipping an Express parcel to a third-party
+  // carrier would strip platformManaged and re-open the seller "Mark delivered"
+  // path on a parcel a courier is physically carrying (COD onto no ledger),
+  // and re-minting its number mid-transit orphans it from every scan lookup.
+  // Ops can still correct a platform waybill via the delivery-manager console.
+  if (sub.shipment.platformManaged) return { error: "expressManaged" };
 
   const carrier = await prisma.carrier.findUnique({
     where: { id: carrierId },
     select: { id: true, name: true, platformManaged: true },
   });
   if (!carrier) return { error: "carrierRequired" };
+  if (carrier.platformManaged) return { error: "expressManaged" };
+  if (trackingNumber.length < 3) return { error: "trackingRequired" };
 
   await prisma.$transaction([
     prisma.shipment.update({

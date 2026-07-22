@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
+import { settleSubOrder } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
 
@@ -124,7 +125,9 @@ export async function setSellerCommission(
   return { ok: true };
 }
 
-// Admin force-changes an order's status (audit-logged). Does not touch money.
+// Admin force-changes an order's status (audit-logged). Forcing COMPLETED also
+// settles each sub-order so sellers aren't left unpaid; other statuses are a
+// plain status write (refund/cancel money is handled by the dedicated tools).
 export async function forceOrderStatus(
   orderId: string,
   status: string,
@@ -138,7 +141,11 @@ export async function forceOrderStatus(
       id: true,
       status: true,
       subOrders: {
-        select: { shipment: { select: { id: true, status: true } } },
+        select: {
+          id: true,
+          status: true,
+          shipment: { select: { id: true, status: true } },
+        },
       },
     },
   });
@@ -180,6 +187,26 @@ export async function forceOrderStatus(
       }),
     ]),
   ]);
+  // Forcing an order COMPLETED must also settle its sellers — otherwise the
+  // order reads "completed" while sub-orders stay unsettled and settleSubOrder
+  // never runs, silently leaving sellers unpaid. Bring each non-terminal
+  // sub-order to COMPLETED and settle it (idempotent; correct COD vs prepaid
+  // handling lives in settleSubOrder). Refund/cancel semantics for a forced
+  // CANCELLED/REFUNDED are intentionally left to the dedicated refund tools.
+  if (status === "COMPLETED") {
+    for (const s of order.subOrders) {
+      if (["COMPLETED", "CANCELLED", "REFUNDED"].includes(s.status)) continue;
+      const upd = await prisma.subOrder.updateMany({
+        where: {
+          id: s.id,
+          status: { notIn: ["COMPLETED", "CANCELLED", "REFUNDED"] },
+        },
+        data: { status: "COMPLETED" },
+      });
+      if (upd.count === 1) await settleSubOrder(s.id);
+    }
+  }
+
   await audit(adminId, "order.forceStatus", "Order", orderId, {
     from: order.status,
     to: status,

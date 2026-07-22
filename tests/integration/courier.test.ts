@@ -98,7 +98,9 @@ describe("courier dispatch & delivery", () => {
     expect(mid?.events.some((e) => e.status === "OUT_FOR_DELIVERY")).toBe(true);
 
     // Courier delivers → sub-order DELIVERED, COD cash captured.
-    expect(await courierAdvance(shipmentId, "DELIVERED")).toEqual({ ok: true });
+    expect(
+      await courierAdvance(shipmentId, "DELIVERED", { recipientName: "Ali" }),
+    ).toEqual({ ok: true });
     const sub = await prisma.subOrder.findUnique({
       where: { id: subOrderId },
       select: {

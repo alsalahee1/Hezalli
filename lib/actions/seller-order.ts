@@ -123,6 +123,9 @@ export async function cancelSubOrder(
 
   const gate = await requireSellerStore();
   if (!gate) return { error: "forbidden" };
+  // A suspended/closed store keeps read access but can't move money: cancelling
+  // issues a buyer refund. Ops handle a suspended store's in-flight orders.
+  if (!gate.active) return { error: "storeSuspended" };
   const locale = await getLocale();
 
   const sub = await prisma.subOrder.findFirst({

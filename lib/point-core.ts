@@ -33,6 +33,7 @@ async function findParcel(pointId: string, tracking: string) {
       status: true,
       driverId: true,
       attemptCount: true,
+      redeliverAt: true,
       deliveryPointId: true,
       originPointId: true,
       deliveryPoint: { select: { name: true } },
@@ -250,6 +251,10 @@ export async function handoverParcelToDriver(
       status: isOriginHop ? "IN_TRANSIT" : "OUT_FOR_DELIVERY",
       driverId: assignee,
       atPointId: null,
+      // The parcel is now actually going back out — consume any pending
+      // redelivery request so it no longer blocks a later RTS and the buyer's
+      // "rebooked" flag reflects reality.
+      ...(isOriginHop ? {} : { redeliverAt: null, redeliverNote: null }),
     },
   });
   if (claimed.count !== 1) return { error: "badState" };
@@ -379,8 +384,16 @@ export async function returnParcelToSeller(
   if (!parcel) return { error: "notFound" };
   // RTS is a destination-point decision (an origin hub just declines receipt).
   if (parcel.deliveryPointId !== pointId) return { error: "notFound" };
+  // A buyer who has re-booked delivery still expects this parcel — RTS would
+  // wrongly cancel/refund a live order out from under them. Honor the pending
+  // redelivery; it is cleared when the parcel actually goes back out for
+  // delivery (handoverParcelToDriver), after which RTS is allowed again.
+  if (parcel.redeliverAt) return { error: "redeliveryPending" };
   // Failed-delivery parcels RTS from RETURNED_TO_POINT; an uncollected PICKUP
-  // parcel can be sent back straight from AT_POINT (operator judgment).
+  // parcel can be sent back straight from AT_POINT (operator judgment on the
+  // pickup window). Point-routed parcels have no system-enforced attempt cap —
+  // when to give up is the operator's call — so the only hard gate is the
+  // pending-redelivery check above.
   const rtsFrom =
     parcel.subOrder.shippingMethod === "PICKUP"
       ? ["RETURNED_TO_POINT", "AT_POINT"]

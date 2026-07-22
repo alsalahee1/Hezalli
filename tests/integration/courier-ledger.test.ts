@@ -93,7 +93,9 @@ describe("delivery accrues the courier ledger", () => {
     const { shipmentId } = await assignedParcel(courierId, "COD");
 
     as(courierId);
-    expect(await courierAdvance(shipmentId, "DELIVERED")).toEqual({ ok: true });
+    expect(
+      await courierAdvance(shipmentId, "DELIVERED", { recipientName: "Ali" }),
+    ).toEqual({ ok: true });
 
     const s = await courierCashSummary(courierId);
     expect(s.totalCollected).toBe(100); // price 100, no shipping/discount
@@ -120,10 +122,12 @@ describe("delivery accrues the courier ledger", () => {
       paymentMethod: "COD",
       status: "SHIPPED",
     });
+    // A seller only ever delivers a THIRD-PARTY parcel (platform-managed ones
+    // are blocked upstream and refused by the money safety net). Its COD is the
+    // seller's own cash, off-platform — so no courier ledger row is written.
     await prisma.shipment.create({
-      data: { subOrderId, status: "OUT_FOR_DELIVERY", platformManaged: true },
+      data: { subOrderId, status: "OUT_FOR_DELIVERY", platformManaged: false },
     });
-    // Seller path: no courierId proof → no ledger rows.
     expect(await markSubOrderDelivered(subOrderId, "seller", "en")).toEqual({
       ok: true,
     });
@@ -139,7 +143,7 @@ describe("recordRemittance", () => {
     const courierId = await freshCourier();
     const { shipmentId } = await assignedParcel(courierId, "COD");
     as(courierId);
-    await courierAdvance(shipmentId, "DELIVERED"); // cashOnHand = 100
+    await courierAdvance(shipmentId, "DELIVERED", { recipientName: "Ali" }); // cashOnHand = 100
 
     // A courier cannot record their own remittance.
     as(courierId);

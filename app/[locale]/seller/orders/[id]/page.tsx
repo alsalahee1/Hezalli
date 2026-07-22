@@ -75,6 +75,7 @@ export default async function SellerOrderDetailPage({
           sub.shipment.carrier?.trackingUrl,
           sub.shipment.trackingNumber,
         ),
+        platformManaged: sub.shipment.platformManaged,
       }
     : null;
   const showShipping = ["PROCESSING", "SHIPPED", "DELIVERED"].includes(

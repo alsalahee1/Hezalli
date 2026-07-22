@@ -129,7 +129,9 @@ async function deliverParcel(withOrigin: boolean) {
     ok: true,
   });
   as(driver);
-  expect(await courierAdvance(pre!.id, "DELIVERED")).toEqual({ ok: true });
+  expect(
+    await courierAdvance(pre!.id, "DELIVERED", { recipientName: "Ali" }),
+  ).toEqual({ ok: true });
   return subOrderId;
 }
 
