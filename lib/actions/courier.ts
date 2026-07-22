@@ -350,18 +350,11 @@ export async function courierFailDelivery(
   if (!shipment || !shipment.subOrder) return { error: "notFound" };
   const sub = shipment.subOrder;
   if (sub.status !== "SHIPPED") return { error: "badState" };
-  // A parcel the point holds — or one in line-haul between hubs (IN_TRANSIT
-  // with a delivery point, carried by the transfer driver) — hasn't reached a
-  // doorstep, so it can't fail a doorstep attempt. (Same guard as
-  // courierAdvance.) Direct parcels have no delivery point and are unaffected.
-  if (
-    shipment.deliveryPointId &&
-    ["LABEL_CREATED", "AT_POINT", "RETURNED_TO_POINT", "IN_TRANSIT"].includes(
-      shipment.status,
-    )
-  ) {
-    return { error: "badState" };
-  }
+  // A FAILED attempt means a doorstep delivery was actually tried, so the
+  // parcel must be OUT_FOR_DELIVERY — the driver has taken it out. This blocks
+  // failing a parcel still at a point, in line-haul, or merely picked up, so a
+  // driver can't rack up attempts toward a forced RETURN without a real try.
+  if (shipment.status !== "OUT_FOR_DELIVERY") return { error: "badState" };
 
   // A DIRECT parcel (no delivery point) that has now exhausted its allowed
   // attempts is returned to the seller instead of sitting FAILED-and-retriable

@@ -13,7 +13,7 @@ vi.mock("next-intl/server", async (orig) => ({
   getLocale: vi.fn().mockResolvedValue("en"),
 }));
 
-import { courierFailDelivery } from "@/lib/actions/courier";
+import { courierAdvance, courierFailDelivery } from "@/lib/actions/courier";
 import { prisma } from "@/lib/prisma";
 import { makeFixture } from "./factory";
 
@@ -99,6 +99,11 @@ describe("courierFailDelivery auto-return at max attempts", () => {
       ).status,
     ).toBe("SHIPPED");
 
+    // The driver re-attempts: they take the parcel back out (the "Retry
+    // delivery" action) before a second doorstep attempt can be logged.
+    expect(await courierAdvance(shipmentId, "OUT_FOR_DELIVERY")).toEqual({
+      ok: true,
+    });
     // Attempt 2 of 2 → returned to seller.
     expect(await courierFailDelivery(shipmentId, "unreachable")).toEqual({
       ok: true,

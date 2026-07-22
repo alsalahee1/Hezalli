@@ -158,6 +158,38 @@ describe("driver: line-haul transfer driver cannot last-mile a parcel in transit
       .delete({ where: { id: pointId } })
       .catch(() => {});
   });
+
+  it("refuses a FAILED attempt unless the parcel is out for delivery", async () => {
+    const driver = await makeCourier("fd");
+    const { subOrderId } = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "SHIPPED",
+    });
+    // A direct parcel just shipped (IN_TRANSIT), not yet taken out. The driver
+    // can't log a failed doorstep attempt on it — nothing was attempted.
+    const shipment = await prisma.shipment.create({
+      data: {
+        subOrderId,
+        status: "IN_TRANSIT",
+        platformManaged: true,
+        shippedAt: new Date(),
+        driverId: driver,
+      },
+      select: { id: true },
+    });
+    as(driver);
+    expect(await courierFailDelivery(shipment.id, "unreachable")).toEqual({
+      error: "badState",
+    });
+    // Once actually out for delivery, a failed attempt is allowed.
+    await prisma.shipment.update({
+      where: { id: shipment.id },
+      data: { status: "OUT_FOR_DELIVERY" },
+    });
+    expect(await courierFailDelivery(shipment.id, "unreachable")).toEqual({
+      ok: true,
+    });
+  });
 });
 
 describe("staff override: RETURNED settles money, does not just flip a flag", () => {
