@@ -12,10 +12,13 @@ import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 export default async function DriverJobPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ shipmentId: string }>;
+  searchParams: Promise<{ deliver?: string }>;
 }) {
   const { shipmentId } = await params;
+  const { deliver } = await searchParams;
   const courierId = await requireCourierId();
   if (!courierId) return null;
   const t = await getTranslations("Driver");
@@ -28,6 +31,7 @@ export default async function DriverJobPage({
       id: true,
       status: true,
       trackingNumber: true,
+      deliveryCode: true,
       redeliverAt: true,
       redeliverNote: true,
       deliveryPoint: {
@@ -248,7 +252,12 @@ export default async function DriverJobPage({
           {t("heldAtPointHint")}
         </div>
       ) : (
-        <JobActions shipmentId={shipment.id} status={shipment.status} />
+        <JobActions
+          shipmentId={shipment.id}
+          status={shipment.status}
+          autoDeliver={deliver === "1"}
+          initialCode={shipment.deliveryCode ?? undefined}
+        />
       )}
 
       {/* History */}
