@@ -26,7 +26,7 @@ import { confirmReceived } from "@/lib/actions/completion";
 import { assignCourier, courierAdvance } from "@/lib/actions/courier";
 import { placeOrder } from "@/lib/actions/order";
 import { acceptSubOrder } from "@/lib/actions/seller-order";
-import { shipSubOrder } from "@/lib/actions/shipment";
+import { markDelivered, shipSubOrder } from "@/lib/actions/shipment";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { round2 } from "@/lib/finance";
 import { COD_DELIVERY_CONFIRMED_BY } from "@/lib/payment-state";
@@ -126,7 +126,10 @@ describe("full order journey: checkout → delivery → receipt (COD Express)", 
     // Seller was told about the new order.
     expect(
       await prisma.notification.findFirst({
-        where: { userId: fx.sellerUserId, data: { path: ["orderId"], equals: orderId } },
+        where: {
+          userId: fx.sellerUserId,
+          data: { path: ["orderId"], equals: orderId },
+        },
       }),
     ).toBeTruthy();
 
@@ -266,5 +269,50 @@ describe("full order journey: checkout → delivery → receipt (COD Express)", 
 
     // Confirming again has nothing left to do.
     expect(await confirmReceived(orderId)).toEqual({ error: "badState" });
+  });
+});
+
+describe("seller mark-delivered is carrier-scoped", () => {
+  it("blocks Hezalli Express parcels but allows third-party ones", async () => {
+    // Express: the platform's custody chain (point/driver scans, buyer QR)
+    // owns delivery — the seller no longer holds the parcel.
+    const express = await fx.createSubOrder({
+      paymentMethod: "COD",
+      status: "PROCESSING",
+    });
+    as(fx.sellerUserId);
+    expect(
+      await shipSubOrder(express.subOrderId, { carrierId, trackingNumber: "" }),
+    ).toEqual({ ok: true });
+    expect(await markDelivered(express.subOrderId)).toEqual({
+      error: "expressManaged",
+    });
+
+    // Third-party carrier: no in-system scan chain exists, so the seller
+    // relays the carrier's delivery confirmation — still allowed.
+    const thirdParty = await prisma.carrier.create({
+      data: {
+        name: `Manual Carrier ${Math.random().toString(36).slice(2)}`,
+        platformManaged: false,
+      },
+    });
+    try {
+      const manual = await fx.createSubOrder({
+        paymentMethod: "COD",
+        status: "PROCESSING",
+      });
+      expect(
+        await shipSubOrder(manual.subOrderId, {
+          carrierId: thirdParty.id,
+          trackingNumber: "ARX-123456",
+        }),
+      ).toEqual({ ok: true });
+      expect(await markDelivered(manual.subOrderId)).toEqual({ ok: true });
+    } finally {
+      // May still be referenced by the shipment until fx.cleanup runs.
+      await prisma.carrier
+        .delete({ where: { id: thirdParty.id } })
+        .catch(() => {});
+    }
   });
 });

@@ -24,6 +24,7 @@ export type ShipmentInfo = {
   carrierName: string | null;
   trackingNumber: string | null;
   trackingUrl: string | null;
+  platformManaged?: boolean;
 } | null;
 
 export function ShipOrderForm({
@@ -240,22 +241,33 @@ export function ShipOrderForm({
             ) : null}
           </p>
           {status === "SHIPPED" ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                disabled={pending}
-                onClick={() => submit(() => markDelivered(subOrderId))}
-              >
-                {t("markDelivered")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => setEditing(true)}
-              >
-                {t("editTracking")}
-              </Button>
+            <div className="mt-2 space-y-2">
+              {/* Express parcels are delivered by the platform's custody
+                  chain (point/driver scans, buyer QR) — never by the seller. */}
+              {shipment.platformManaged ? (
+                <p className="rounded-md bg-sky-500/10 px-3 py-2 text-xs text-sky-700 dark:text-sky-400">
+                  {t("expressDeliveryHint")}
+                </p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {!shipment.platformManaged ? (
+                  <Button
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => submit(() => markDelivered(subOrderId))}
+                  >
+                    {t("markDelivered")}
+                  </Button>
+                ) : null}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => setEditing(true)}
+                >
+                  {t("editTracking")}
+                </Button>
+              </div>
             </div>
           ) : null}
           {errLine}

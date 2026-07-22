@@ -279,9 +279,16 @@ export async function markDelivered(subOrderId: string): Promise<Result> {
 
   const owns = await prisma.subOrder.findFirst({
     where: { id: subOrderId, storeId: gate.storeId },
-    select: { id: true },
+    select: { id: true, shipment: { select: { platformManaged: true } } },
   });
   if (!owns) return { error: "notFound" };
+  // Hezalli Express parcels are delivered by the platform's own custody chain
+  // (point scans, driver scan against the buyer's QR, counter pickup, or an
+  // audited ops override) — the seller no longer holds the parcel and cannot
+  // attest delivery. Letting them would credit point fees for work never
+  // done and capture COD cash onto no one's ledger. Seller mark-delivered is
+  // for third-party carriers only, where no in-system scan chain exists.
+  if (owns.shipment?.platformManaged) return { error: "expressManaged" };
 
   return markSubOrderDelivered(subOrderId, "seller", locale);
 }
