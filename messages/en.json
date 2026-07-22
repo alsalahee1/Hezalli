@@ -1013,6 +1013,7 @@
     "err_paycod_insufficient": "Your wallet balance doesn't cover this order.",
     "err_paycod_frozen": "Your wallet is frozen — contact support.",
     "err_paycod_disabled": "Online COD payment is currently turned off — settle in cash at delivery.",
+    "err_paycod_tooMany": "Too many attempts — wait a minute and try again.",
     "method_LOCAL_WALLET": "Local wallet",
     "method_BANK_TRANSFER": "Bank transfer",
     "method_USDT": "USDT",
@@ -2185,6 +2186,7 @@
     "err_remit_badInput": "Enter a valid amount, rail, and reference (3+ characters).",
     "err_remit_alreadyOpen": "You already have a claim waiting for confirmation.",
     "err_remit_overRemit": "That is more than the cash you are holding.",
+    "err_remit_tooMany": "Too many claims — wait a few minutes and try again.",
     "holdTitle": "Wallet pledge — raise your cash limit",
     "holdHint": "Wallet balance: {balance} · pledged: {hold} · your COD limit: {limit}. Pledged money stays yours but can't be spent or withdrawn, and it raises your COD limit by the same amount. To lower the pledge, hand in your COD cash first.",
     "holdSave": "Update pledge",
@@ -2193,6 +2195,7 @@
     "err_hold_insufficient": "Your wallet balance doesn't cover that pledge.",
     "err_hold_cashHeld": "Hand in your COD cash first, then lower the pledge.",
     "err_hold_frozen": "Your wallet is frozen — contact support.",
+    "err_hold_tooMany": "Too many changes — wait a minute and try again.",
     "collectFromPoint": "Collect from",
     "pickupPoint": "Pickup point",
     "redeliverOn": "Buyer asked for redelivery on {date}",
@@ -2593,7 +2596,8 @@
     "err_remit_forbidden": "Not allowed.",
     "err_remit_badInput": "Enter a valid amount, rail, and reference (3+ characters).",
     "err_remit_alreadyOpen": "You already have a claim waiting for confirmation.",
-    "err_remit_overRemit": "That is more than the cash you are holding."
+    "err_remit_overRemit": "That is more than the cash you are holding.",
+    "err_remit_tooMany": "Too many claims — wait a few minutes and try again."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

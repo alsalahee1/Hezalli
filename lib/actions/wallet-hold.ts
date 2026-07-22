@@ -13,6 +13,7 @@ import { getLocale } from "next-intl/server";
 import { requireCourierId } from "@/lib/authz";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { getWalletId } from "@/lib/wallet";
 
 type Result = { ok?: boolean; error?: string };
@@ -20,6 +21,11 @@ type Result = { ok?: boolean; error?: string };
 export async function setWalletCodHold(formData: FormData): Promise<Result> {
   const courierId = await requireCourierId();
   if (!courierId) return { error: "forbidden" };
+
+  // Throttle: pledges change occasionally, not in bursts.
+  if (!rateLimit(`codhold:${courierId}`, 10, 60_000).ok) {
+    return { error: "tooMany" };
+  }
 
   const amount = Math.round(Number(formData.get("amount")) * 100) / 100;
   if (!Number.isFinite(amount) || amount < 0) return { error: "badInput" };

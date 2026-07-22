@@ -16,6 +16,7 @@ import { auth } from "@/auth";
 import { recomputeBalance } from "@/lib/finance";
 import { COD_WALLET_CONFIRMED_BY } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import { getSetting } from "@/lib/settings";
 import {
   creditWalletTx,
@@ -37,6 +38,12 @@ export async function payCodWithWallet(orderId: string): Promise<Result> {
   const session = await auth();
   if (!session?.user?.id) return { error: "forbidden" };
   const buyerId = session.user.id;
+
+  // Throttle per user: a legit buyer pays a handful of orders, not dozens a
+  // minute — this blunts scripted probing without touching real use.
+  if (!rateLimit(`paycod:${buyerId}`, 10, 60_000).ok) {
+    return { error: "tooMany" };
+  }
 
   // Admin kill switch (Admin → Settings). Same gate pattern as wallet bills.
   if (!(await getSetting("cod_wallet_pay_enabled"))) {

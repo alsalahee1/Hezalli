@@ -192,7 +192,33 @@ the pickup scan requires the buyer's code — it is the proof of handover.
 - [x] Integration tests: pickup quote/choice, forced routing, ready-notify without auto-assign, code-gated pickup + COD cash + fee ledgers, handover/fail blocked
 - [x] This file kept current
 
-## 7. Out of scope
+## 7. v1.22 — Hardening pass
+
+Security review + throttling of the self-service money actions:
+
+- **Rate limits** (in-memory limiter, per authenticated identity — not IP):
+  `payCodWithWallet` 10/min per buyer, `setWalletCodHold` 10/min per
+  courier, remit-claim submissions 6/10min per courier/point (the one-open-
+  claim rule already exists; this stops submit→reject churn flooding the
+  review queue). Staff actions stay unthrottled — they're role-gated and
+  audited.
+- **Race fixes**: `offsetEarningsAgainstCod` and `approveRemitClaim` now
+  compute/check the courier or point cash INSIDE the transaction under a
+  `SELECT … FOR UPDATE` row lock, so a concurrent hand-in or second offset
+  can never overdraw what the holder actually still owes.
+- Audit sweep of the v1.14–v1.21 surface confirmed: every action is
+  role-gated against the DB (never the JWT), all money writes are
+  conditional flips or guarded decrements, buyer-facing reads are scoped by
+  ownership, and free-text inputs are length-capped and rendered escaped.
+
+### Build checklist (v1.22)
+
+- [x] Rate limits on pay-cod / wallet-hold / remit-claim submissions + `tooMany` i18n (en + ar)
+- [x] Row-locked in-transaction cash re-checks in offset + claim approval
+- [x] Integration tests: limiter wiring on both throttled self-service paths
+- [x] This file kept current
+
+## 8. Out of scope
 
 ## 8. v1.2 — Point capacity & smart selection
 
