@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  BookOpen,
   BadgeCheck,
   Banknote,
   BarChart3,
@@ -71,6 +72,7 @@ const SELLER_NAV: NavItem[] = [
   { href: "/seller/promotions", key: "promotions", icon: Tag },
   { href: "/seller/tools", key: "tools", icon: Wrench },
   { href: "/seller/settings", key: "settings", icon: Settings },
+  { href: "/seller/how", key: "how", icon: BookOpen },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -102,6 +104,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/audit", key: "audit", icon: History },
   { href: "/admin/settings", key: "settings", icon: Settings },
+  { href: "/admin/how", key: "how", icon: BookOpen },
 ];
 
 const WALLET_MANAGER_NAV: NavItem[] = [
@@ -118,6 +121,7 @@ const WALLET_MANAGER_NAV: NavItem[] = [
   { href: "/wallet-manager/audit", key: "audit", icon: ScaleIcon },
   { href: "/wallet-manager/transfers", key: "transfers", icon: Users },
   { href: "/wallet-manager/history", key: "history", icon: History },
+  { href: "/wallet-manager/how", key: "how", icon: BookOpen },
 ];
 const WALLET_MANAGER_PRIMARY = [
   "/wallet-manager",
@@ -140,6 +144,7 @@ const DELIVERY_MANAGER_NAV: NavItem[] = [
     key: "shippingZones",
     icon: MapPin,
   },
+  { href: "/delivery-manager/how", key: "how", icon: BookOpen },
 ];
 const DELIVERY_MANAGER_PRIMARY = [
   "/delivery-manager",
