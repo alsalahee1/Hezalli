@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireWalletManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { recomputeWalletBalance } from "@/lib/wallet";
 
@@ -12,7 +12,7 @@ type Result = { ok?: boolean; error?: string };
 // Admin-only: recompute one wallet's stored balance from its ledger entries,
 // repairing a drift found on the audit page. Audited.
 export async function reconcileWalletBalance(userId: string): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireWalletManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 

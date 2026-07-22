@@ -136,6 +136,13 @@ export default async function WalletManagerHistoryPage() {
           {t("history")}
         </h1>
         <p className="text-muted-foreground text-sm">{t("historyDesc")}</p>
+        <a
+          href="/api/wallet-manager/export"
+          className="text-primary mt-1 inline-block text-sm font-medium hover:underline"
+          download
+        >
+          {t("exportCsv")}
+        </a>
       </div>
       {section(t("processedTopUps"), topUps)}
       {section(t("processedWithdrawals"), withdrawals)}
