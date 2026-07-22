@@ -125,7 +125,11 @@ const WALLET_MANAGER_PRIMARY = [
 
 const DELIVERY_MANAGER_NAV: NavItem[] = [
   { href: "/delivery-manager", key: "dashboard", icon: LayoutDashboard },
+  { href: "/delivery-manager/dispatch", key: "dispatch", icon: Route },
   { href: "/delivery-manager/shipments", key: "shipments", icon: Package },
+  { href: "/delivery-manager/couriers", key: "couriers", icon: Bike },
+  { href: "/delivery-manager/points", key: "points", icon: MapPinned },
+  { href: "/delivery-manager/fleets", key: "fleets", icon: Users },
   { href: "/delivery-manager/carriers", key: "carriers", icon: Truck },
   {
     href: "/delivery-manager/shipping-zones",
@@ -135,9 +139,9 @@ const DELIVERY_MANAGER_NAV: NavItem[] = [
 ];
 const DELIVERY_MANAGER_PRIMARY = [
   "/delivery-manager",
+  "/delivery-manager/dispatch",
   "/delivery-manager/shipments",
-  "/delivery-manager/carriers",
-  "/delivery-manager/shipping-zones",
+  "/delivery-manager/couriers",
 ];
 
 type Variant = "seller" | "admin" | "walletManager" | "deliveryManager";

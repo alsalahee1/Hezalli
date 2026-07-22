@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId, requireCourierId } from "@/lib/authz";
+import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { settleReturnedSubOrder } from "@/lib/return-core";
@@ -46,7 +46,7 @@ export async function assignCourier(
   shipmentId: string,
   driverId: string,
 ): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -110,7 +110,7 @@ export async function assignManyCouriers(
   shipmentIds: string[],
   driverId: string,
 ): Promise<Result & { count?: number }> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
   const id = driverId.trim();
   if (!id) return { error: "invalidDriver" };

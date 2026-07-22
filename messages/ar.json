@@ -2830,6 +2830,24 @@
     "noEvents": "لا توجد أحداث مسجلة.",
     "viewOrder": "عرض الطلب الكامل في لوحة الإدارة ←",
     "shipStatus_AT_POINT": "في نقطة الاستلام",
-    "shipStatus_RETURNED_TO_POINT": "أُعيدت إلى النقطة"
+    "shipStatus_RETURNED_TO_POINT": "أُعيدت إلى النقطة",
+    "dispatch": "التوزيع",
+    "couriers": "السائقون",
+    "points": "النقاط",
+    "fleets": "الأساطيل",
+    "courier": "السائق",
+    "unassigned": "غير مُسند",
+    "routedVia": "موجّهة عبر نقطة",
+    "heldAt": "محتجزة حاليًا في",
+    "attempts": "محاولات التوصيل",
+    "redelivery": "طلب إعادة التوصيل",
+    "deliveryWindow": "موعد التوصيل",
+    "attemptsTitle": "محاولات التسليم",
+    "attempt_DELIVERED": "سُلّمت",
+    "attempt_FAILED": "محاولة فاشلة",
+    "codeVerified": "تم التحقق من الرمز",
+    "prevPage": "الأحدث",
+    "nextPage": "الأقدم",
+    "pageLabel": "صفحة {page}"
   }
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireDeliveryManagerId } from "@/lib/authz";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 
@@ -13,7 +13,7 @@ type Result = { ok?: boolean; error?: string };
 // ledger row that reduces the driver's cash-on-hand. Also used for a manual
 // ADJUSTMENT (± correction). Both are audited.
 export async function recordRemittance(formData: FormData): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
 
   const courierId = String(formData.get("courierId") ?? "");
@@ -78,7 +78,7 @@ export async function recordRemittance(formData: FormData): Promise<Result> {
 export async function recordEarningsPayout(
   formData: FormData,
 ): Promise<Result & { overpaid?: boolean }> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
 
   const courierId = String(formData.get("courierId") ?? "");
@@ -131,7 +131,7 @@ export async function recordEarningsPayout(
 export async function offsetEarningsAgainstCod(
   formData: FormData,
 ): Promise<Result & { offset?: number }> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
 
   const courierId = String(formData.get("courierId") ?? "");

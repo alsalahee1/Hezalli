@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireDeliveryManagerId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -12,7 +12,7 @@ type Result = { ok?: boolean; error?: string };
 // balance Hezalli owes the point) or a manual ± ADJUSTMENT. Both are audited.
 // Mirrors lib/actions/courier-ledger.ts.
 export async function recordPointPayout(formData: FormData): Promise<Result> {
-  const adminId = await requireAdminId();
+  const adminId = await requireDeliveryManagerId();
   if (!adminId) return { error: "forbidden" };
 
   const pointId = String(formData.get("pointId") ?? "");

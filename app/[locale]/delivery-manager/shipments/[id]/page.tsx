@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { buildTrackingUrl } from "@/lib/tracking";
 import { Link } from "@/i18n/navigation";
 import { ShipmentOverride } from "@/components/delivery-manager/shipment-override";
+import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +30,31 @@ export default async function DeliveryManagerShipmentPage({
         shippedAt: true,
         deliveredAt: true,
         carrierId: true,
+        attemptCount: true,
+        redeliverAt: true,
+        redeliverNote: true,
+        atPointId: true,
         carrier: { select: { name: true, trackingUrl: true } },
+        driver: { select: { name: true, phone: true } },
+        deliveryPoint: { select: { name: true, city: true } },
         events: {
           orderBy: { createdAt: "desc" },
           select: {
             id: true,
             status: true,
             location: true,
+            note: true,
+            createdAt: true,
+          },
+        },
+        attempts: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            outcome: true,
+            reason: true,
+            recipientName: true,
+            codeVerified: true,
             note: true,
             createdAt: true,
           },
@@ -48,6 +67,8 @@ export default async function DeliveryManagerShipmentPage({
             store: { select: { name: true } },
             order: {
               select: {
+                deliveryDate: true,
+                deliverySlot: true,
                 buyer: { select: { name: true } },
                 address: {
                   select: { governorate: true, city: true, line1: true },
@@ -64,6 +85,14 @@ export default async function DeliveryManagerShipmentPage({
     }),
   ]);
   if (!shipment) notFound();
+
+  // atPointId is a plain id (no FK) — resolve the holding point's name.
+  const atPoint = shipment.atPointId
+    ? await prisma.deliveryPoint.findUnique({
+        where: { id: shipment.atPointId },
+        select: { name: true, city: true },
+      })
+    : null;
 
   const trackUrl = shipment.trackingNumber
     ? buildTrackingUrl(
@@ -113,6 +142,54 @@ export default async function DeliveryManagerShipmentPage({
             timeStyle: "short",
           })
         : "—",
+    ],
+    [
+      t("courier"),
+      shipment.driver ? (
+        <span key="drv">
+          {shipment.driver.name ?? "—"}
+          {shipment.driver.phone ? (
+            <span className="text-muted-foreground" dir="ltr">
+              {" "}
+              · {shipment.driver.phone}
+            </span>
+          ) : null}
+        </span>
+      ) : (
+        t("unassigned")
+      ),
+    ],
+    [
+      t("routedVia"),
+      shipment.deliveryPoint
+        ? `${shipment.deliveryPoint.name} · ${shipment.deliveryPoint.city}`
+        : "—",
+    ],
+    [t("heldAt"), atPoint ? `${atPoint.name} · ${atPoint.city}` : "—"],
+    [t("attempts"), String(shipment.attemptCount)],
+    [
+      t("redelivery"),
+      shipment.redeliverAt ? (
+        <span key="redeliver">
+          {format.dateTime(shipment.redeliverAt, { dateStyle: "medium" })}
+          {shipment.redeliverNote ? ` · ${shipment.redeliverNote}` : ""}
+        </span>
+      ) : (
+        "—"
+      ),
+    ],
+    [
+      t("deliveryWindow"),
+      shipment.subOrder.order.deliveryDate &&
+      shipment.subOrder.order.deliverySlot ? (
+        <DeliveryWindowBadge
+          key="win"
+          date={shipment.subOrder.order.deliveryDate}
+          slot={shipment.subOrder.order.deliverySlot}
+        />
+      ) : (
+        "—"
+      ),
     ],
   ];
 
@@ -189,6 +266,42 @@ export default async function DeliveryManagerShipmentPage({
           </ol>
         )}
       </section>
+
+      {shipment.attempts.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="font-medium">{t("attemptsTitle")}</h2>
+          <ul className="divide-y rounded-lg border">
+            {shipment.attempts.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+              >
+                <div className="min-w-0">
+                  <p
+                    className={
+                      a.outcome === "DELIVERED"
+                        ? "font-medium text-emerald-600"
+                        : "text-destructive font-medium"
+                    }
+                  >
+                    {t(`attempt_${a.outcome}`)}
+                    {a.codeVerified ? ` · ${t("codeVerified")}` : ""}
+                  </p>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {format.dateTime(a.createdAt, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                    {a.recipientName ? ` · ${a.recipientName}` : ""}
+                    {a.reason ? ` · ${a.reason}` : ""}
+                    {a.note ? ` · ${a.note}` : ""}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <Link
         href={`/admin/orders/${shipment.subOrder.orderId}`}

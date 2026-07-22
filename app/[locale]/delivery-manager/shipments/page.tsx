@@ -30,16 +30,23 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 const STUCK_DAYS = 7;
+const PAGE_SIZE = 50;
 
 export default async function DeliveryManagerShipmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; stuck?: string; q?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    stuck?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const t = await getTranslations("DeliveryManager");
   const format = await getFormatter();
-  const { status, stuck, q } = await searchParams;
+  const { status, stuck, q, page } = await searchParams;
   const query = q?.trim() || "";
+  const pageNum = Math.max(1, Number(page) || 1);
   const activeStatus = STATUSES.includes(status as never) ? status : undefined;
 
   const shipments = await prisma.shipment.findMany({
@@ -74,7 +81,8 @@ export default async function DeliveryManagerShipmentsPage({
         : {}),
     },
     orderBy: { updatedAt: "desc" },
-    take: 100,
+    take: PAGE_SIZE + 1, // one extra row = "there is a next page"
+    skip: (pageNum - 1) * PAGE_SIZE,
     select: {
       id: true,
       status: true,
@@ -82,6 +90,7 @@ export default async function DeliveryManagerShipmentsPage({
       platformManaged: true,
       updatedAt: true,
       carrier: { select: { name: true } },
+      driver: { select: { name: true } },
       subOrder: {
         select: {
           id: true,
@@ -96,6 +105,18 @@ export default async function DeliveryManagerShipmentsPage({
       },
     },
   });
+
+  const hasNext = shipments.length > PAGE_SIZE;
+  const rows = shipments.slice(0, PAGE_SIZE);
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    if (activeStatus) sp.set("status", activeStatus);
+    if (stuck === "1") sp.set("stuck", "1");
+    if (query) sp.set("q", query);
+    if (p > 1) sp.set("page", String(p));
+    const qs = sp.toString();
+    return `/delivery-manager/shipments${qs ? `?${qs}` : ""}`;
+  };
 
   const filterLink = (href: string, label: string, active: boolean) => (
     <Link
@@ -157,13 +178,13 @@ export default async function DeliveryManagerShipmentsPage({
         </button>
       </form>
 
-      {shipments.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed py-10 text-center text-sm">
           {t("shipmentsEmpty")}
         </div>
       ) : (
         <ul className="divide-y rounded-lg border">
-          {shipments.map((s) => (
+          {rows.map((s) => (
             <li key={s.id}>
               <Link
                 href={`/delivery-manager/shipments/${s.id}`}
@@ -183,6 +204,7 @@ export default async function DeliveryManagerShipmentsPage({
                     {s.subOrder.order.buyer.name ?? "—"} ·{" "}
                     {s.subOrder.order.address.governorate}
                     {s.carrier ? ` · ${s.carrier.name}` : ""}
+                    {s.driver ? ` · 🛵 ${s.driver.name ?? ""}` : ""}
                     {s.trackingNumber ? ` · ${s.trackingNumber}` : ""}
                   </p>
                 </div>
@@ -207,6 +229,34 @@ export default async function DeliveryManagerShipmentsPage({
           ))}
         </ul>
       )}
+
+      {pageNum > 1 || hasNext ? (
+        <div className="flex items-center justify-between text-sm">
+          {pageNum > 1 ? (
+            <Link
+              href={pageHref(pageNum - 1)}
+              className="text-primary font-medium hover:underline"
+            >
+              ← {t("prevPage")}
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-muted-foreground text-xs">
+            {t("pageLabel", { page: pageNum })}
+          </span>
+          {hasNext ? (
+            <Link
+              href={pageHref(pageNum + 1)}
+              className="text-primary font-medium hover:underline"
+            >
+              {t("nextPage")} →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

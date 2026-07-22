@@ -4,6 +4,9 @@ export default function Page(props: {
   searchParams: Promise<{ days?: string }>;
 }) {
   return (
-    <DeliveryAnalyticsView base="/admin" searchParams={props.searchParams} />
+    <DeliveryAnalyticsView
+      base="/delivery-manager"
+      searchParams={props.searchParams}
+    />
   );
 }

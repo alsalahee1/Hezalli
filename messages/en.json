@@ -2830,6 +2830,24 @@
     "noEvents": "No events recorded.",
     "viewOrder": "View full order in admin →",
     "shipStatus_AT_POINT": "At pickup point",
-    "shipStatus_RETURNED_TO_POINT": "Returned to point"
+    "shipStatus_RETURNED_TO_POINT": "Returned to point",
+    "dispatch": "Dispatch",
+    "couriers": "Couriers",
+    "points": "Points",
+    "fleets": "Fleets",
+    "courier": "Courier",
+    "unassigned": "Unassigned",
+    "routedVia": "Routed via point",
+    "heldAt": "Currently held at",
+    "attempts": "Delivery attempts",
+    "redelivery": "Redelivery request",
+    "deliveryWindow": "Delivery window",
+    "attemptsTitle": "Doorstep attempts",
+    "attempt_DELIVERED": "Delivered",
+    "attempt_FAILED": "Failed attempt",
+    "codeVerified": "code verified",
+    "prevPage": "Newer",
+    "nextPage": "Older",
+    "pageLabel": "Page {page}"
   }
 }
