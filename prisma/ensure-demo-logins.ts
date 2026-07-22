@@ -1,6 +1,8 @@
 /**
- * Idempotent upsert of the delivery-side demo login accounts —
- * driver@hezalli.com (COURIER) and point@hezalli.com (DELIVERY_POINT).
+ * Idempotent upsert of the later-added demo login accounts —
+ * driver@hezalli.com (COURIER), point@hezalli.com (DELIVERY_POINT),
+ * wallet@hezalli.com (WALLET_MANAGER), delivery@hezalli.com
+ * (DELIVERY_MANAGER).
  *
  * Unlike prisma/seed.ts this is NON-destructive: it adds (or refreshes) just
  * these accounts (and the point's active DeliveryPoint), leaving every existing
@@ -85,6 +87,28 @@ async function main() {
   });
   console.log(
     `Courier ${driverCreated ? "created" : "ensured"} — driver@hezalli.com (COURIER).`,
+  );
+
+  // --- Staff managers → /wallet-manager and /delivery-manager ---
+  const wmCreated = await ensureUser({
+    email: "wallet@hezalli.com",
+    name: "Wallet Manager",
+    phone: "+967700000011",
+    role: "WALLET_MANAGER",
+    passwordHash,
+  });
+  console.log(
+    `Wallet Manager ${wmCreated ? "created" : "ensured"} — wallet@hezalli.com (WALLET_MANAGER).`,
+  );
+  const dmCreated = await ensureUser({
+    email: "delivery@hezalli.com",
+    name: "Delivery Manager",
+    phone: "+967700000012",
+    role: "DELIVERY_MANAGER",
+    passwordHash,
+  });
+  console.log(
+    `Delivery Manager ${dmCreated ? "created" : "ensured"} — delivery@hezalli.com (DELIVERY_MANAGER).`,
   );
 
   // --- Point Center (Hezalli Point partner) → /point ---

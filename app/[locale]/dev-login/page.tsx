@@ -20,6 +20,16 @@ const DEMO = [
     desc: "Store & products (Sana'a Electronics)",
   },
   {
+    email: "wallet@hezalli.com",
+    label: "Wallet Manager",
+    desc: "Money desk — top-ups, withdrawals, payouts (/wallet-manager)",
+  },
+  {
+    email: "delivery@hezalli.com",
+    label: "Delivery Manager",
+    desc: "Shipments oversight — status, tracking, carriers (/delivery-manager)",
+  },
+  {
     email: "point@hezalli.com",
     label: "Point Center",
     desc: "Hezalli Point parcel-hub dashboard (/point)",
