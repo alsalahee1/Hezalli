@@ -191,8 +191,18 @@ export default async function OrderDetailPage({
         {canBuyerCancel(order.status) ? (
           <CancelOrderButton orderId={order.id} />
         ) : null}
+        {/* "Confirm received" only when something is actually confirmable: an
+            already-DELIVERED parcel, or a still-SHIPPED THIRD-PARTY one (there
+            the buyer's confirmation is the delivery signal). For Hezalli Express
+            and PICKUP the driver's QR scan / point counter records delivery, so
+            the buyer confirms only once it reads DELIVERED — showing the button
+            earlier would just surface a refusal. */}
         {order.subOrders.some(
-          (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
+          (s) =>
+            s.status === "DELIVERED" ||
+            (s.status === "SHIPPED" &&
+              !s.shipment?.platformManaged &&
+              s.shippingMethod !== "PICKUP"),
         ) ? (
           <ConfirmReceivedButton orderId={order.id} />
         ) : (
