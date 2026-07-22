@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { applyRefund } from "@/lib/refunds";
 
@@ -129,7 +130,7 @@ export async function cancelSubOrder(
       order: {
         select: {
           paymentMethod: true,
-          payment: { select: { status: true } },
+          payment: { select: { status: true, confirmedBy: true } },
         },
       },
     },
@@ -140,13 +141,12 @@ export async function cancelSubOrder(
   }
 
   // Has the buyer's money been taken in-system? Prepaid orders whose payment is
-  // CONFIRMED (wallet at placement, bank/USDT after admin confirmation) MUST be
-  // refunded when the seller cancels — otherwise the buyer silently loses the
-  // money and the amount is stranded off the ledger. COD and not-yet-paid orders
-  // have nothing to return, so a plain cancel is correct.
-  const paid =
-    sub.order.paymentMethod !== "COD" &&
-    sub.order.payment?.status === "CONFIRMED";
+  // CONFIRMED (wallet at placement, bank/USDT after admin confirmation) — and
+  // COD orders the buyer settled digitally from their wallet (docs §39) — MUST
+  // be refunded when the seller cancels, otherwise the buyer silently loses the
+  // money and the amount is stranded off the ledger. Cash-basis COD and
+  // not-yet-paid orders have nothing to return, so a plain cancel is correct.
+  const paid = paymentCapturedInSystem(sub.order);
 
   if (!paid) {
     return transition(subOrderId, ["CONFIRMED", "PROCESSING"], "CANCELLED", {

@@ -10,6 +10,7 @@ import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
 import { capRedemption } from "@/lib/loyalty";
 import { aggregateOrderStatus } from "@/lib/order-status";
+import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { checkPointRoutable } from "@/lib/point-select";
 import { parseDeliveryWindow } from "@/lib/delivery-slots";
 import { notify } from "@/lib/notify";
@@ -575,7 +576,7 @@ export async function cancelOrder(
       buyerId: true,
       paymentMethod: true,
       couponId: true,
-      payment: { select: { id: true, status: true } },
+      payment: { select: { id: true, status: true, confirmedBy: true } },
       subOrders: {
         select: {
           id: true,
@@ -618,11 +619,12 @@ export async function cancelOrder(
       Number(s.itemsTotal) + Number(s.shippingTotal) - Number(s.discountTotal),
     );
 
-  // A wallet-paid order is CONFIRMED (and thus cancellable) with the money
-  // already taken in-system — cancelling must return it to the wallet.
-  const refundWallet =
-    order.paymentMethod === "HEZALLI_BALANCE" &&
-    order.payment?.status === "CONFIRMED";
+  // Any order whose money was already captured in-system — wallet at
+  // placement, bank/USDT/local wallet after admin confirmation, or a COD
+  // order the buyer settled digitally (docs §39) — is still cancellable while
+  // unshipped, so cancelling must return the money to the buyer's wallet
+  // (mirrors the seller-cancel path, which refunds via applyRefund).
+  const refundWallet = paymentCapturedInSystem(order);
   const walletId = refundWallet ? await getWalletId(order.buyerId) : null;
 
   const cancelledSubIds: string[] = [];

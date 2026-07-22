@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, Printer, Truck } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE, canBuyerCancel } from "@/lib/order-status";
+import { codSettledDigitally } from "@/lib/payment-state";
 import { buildTrackingUrl } from "@/lib/tracking";
 import { getPlatformSettings } from "@/lib/settings";
 import { Link } from "@/i18n/navigation";
@@ -233,8 +234,7 @@ export default async function OrderDetailPage({
           canCover={walletBalance >= Number(order.grandTotal)}
         />
       ) : null}
-      {order.paymentMethod === "COD" &&
-      order.payment?.status === "CONFIRMED" &&
+      {codSettledDigitally(order) &&
       !["COMPLETED", "CANCELLED", "REFUNDED"].includes(order.status) ? (
         <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-500">
           {t("payCodDone")}

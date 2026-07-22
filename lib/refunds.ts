@@ -113,7 +113,7 @@ export async function applyRefund(
 
     const settled = await tx.ledgerEntry.findFirst({
       where: { subOrderId, type: { in: ["SALE", "COD_COMMISSION_DUE"] } },
-      select: { id: true },
+      select: { id: true, type: true },
     });
 
     const refund = await tx.refund.create({
@@ -140,8 +140,11 @@ export async function applyRefund(
       });
     }
 
+    // Reverse whichever entry settlement actually wrote — a digitally-paid
+    // COD sub-order settles as a SALE (docs §39), so keying off the payment
+    // method here would reverse the wrong amount.
     if (settled) {
-      if (sub.order.paymentMethod === "COD") {
+      if (settled.type === "COD_COMMISSION_DUE") {
         // Reverse the COD ledger credit (commission owed, less platform funding).
         await tx.ledgerEntry.create({
           data: {

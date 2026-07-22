@@ -13,6 +13,8 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { recomputeBalance } from "@/lib/finance";
+import { COD_WALLET_CONFIRMED_BY } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -52,6 +54,7 @@ export async function payCodWithWallet(orderId: string): Promise<Result> {
       subOrders: {
         select: {
           status: true,
+          store: { select: { sellerId: true } },
           shipment: { select: { driverId: true, status: true } },
         },
       },
@@ -99,7 +102,9 @@ export async function payCodWithWallet(orderId: string): Promise<Result> {
         data: {
           status: "CONFIRMED",
           confirmedAt: new Date(),
-          confirmedBy: "buyer:wallet",
+          // The stamp lets refund/collection paths tell this digital
+          // settlement apart from a doorstep cash capture (lib/payment-state).
+          confirmedBy: COD_WALLET_CONFIRMED_BY,
           reference: "Paid from HezalliPay wallet",
         },
       });
@@ -148,6 +153,11 @@ export async function payCodWithWallet(orderId: string): Promise<Result> {
   }
 
   await recomputeWalletBalance(buyerId);
+
+  // The money is now held in-system: each seller's escrow applies (the order
+  // will settle like a prepaid one), so refresh their pending balances.
+  const sellerIds = [...new Set(order.subOrders.map((s) => s.store.sellerId))];
+  for (const sid of sellerIds) await recomputeBalance(sid);
 
   const locale = await getLocale();
   revalidatePath(`/${locale}/account/orders/${orderId}`);

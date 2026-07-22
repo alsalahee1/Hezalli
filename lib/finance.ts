@@ -4,6 +4,10 @@
 // edited in place. All amounts are USD (USDT treated 1:1).
 import { isUniqueViolation } from "@/lib/db-errors";
 import { awardPurchasePoints } from "@/lib/loyalty";
+import {
+  COD_DELIVERY_CONFIRMED_BY,
+  codSettledDigitally,
+} from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { creditPurchaseCashback } from "@/lib/wallet-cashback";
 
@@ -95,8 +99,24 @@ export async function recomputeBalance(sellerProfileId: string): Promise<void> {
       store: { sellerId: sellerProfileId },
       status: { in: ESCROW_STATUSES as never },
       order: {
-        paymentMethod: { not: "COD" },
         payment: { status: "CONFIRMED" },
+        OR: [
+          { paymentMethod: { not: "COD" } },
+          // A COD order the buyer settled digitally before handover (docs
+          // §39): the platform holds the money, so it is escrow like any
+          // prepaid order. A doorstep cash capture (confirmedBy
+          // "system:delivery", or null on legacy rows) is not.
+          {
+            payment: {
+              is: {
+                AND: [
+                  { confirmedBy: { not: null } },
+                  { confirmedBy: { not: COD_DELIVERY_CONFIRMED_BY } },
+                ],
+              },
+            },
+          },
+        ],
       },
     },
     select: {
@@ -130,8 +150,11 @@ export async function recomputeBalance(sellerProfileId: string): Promise<void> {
  * recompute the seller's balance. Idempotent — a second call is a no-op.
  * - Prepaid: SALE credit of (items + shipping − commission) moves from escrow
  *   to available.
- * - COD: the seller already holds the cash, so only the commission is charged
- *   (COD_COMMISSION_DUE, negative) — the balance may go negative.
+ * - Cash-basis COD: the seller/courier side already holds the cash, so only
+ *   the commission is charged (COD_COMMISSION_DUE, negative) — the balance may
+ *   go negative.
+ * - COD settled digitally before handover (docs §39): the platform holds the
+ *   buyer's money, so it settles exactly like a prepaid order (SALE credit).
  */
 export async function settleSubOrder(subOrderId: string): Promise<void> {
   const sub = await prisma.subOrder.findUnique({
@@ -149,6 +172,7 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
         select: {
           buyerId: true,
           paymentMethod: true,
+          payment: { select: { status: true, confirmedBy: true } },
           coupon: { select: { scope: true } },
         },
       },
@@ -180,9 +204,12 @@ export async function settleSubOrder(subOrderId: string): Promise<void> {
   // unique index on LedgerEntry (SALE / COD_COMMISSION_DUE per sub-order) is the
   // real idempotency guard: if a concurrent settle already inserted the entry,
   // this transaction fails with a unique violation and we treat it as a no-op.
+  const codCashBasis =
+    sub.order.paymentMethod === "COD" && !codSettledDigitally(sub.order);
+
   try {
     await prisma.$transaction(async (tx) => {
-      if (sub.order.paymentMethod === "COD") {
+      if (codCashBasis) {
         await tx.ledgerEntry.create({
           data: {
             balanceId,

@@ -7,6 +7,10 @@
 import { revalidatePath } from "next/cache";
 
 import { aggregateOrderStatus } from "@/lib/order-status";
+import {
+  COD_DELIVERY_CONFIRMED_BY,
+  codSettledDigitally,
+} from "@/lib/payment-state";
 import { recordDeliveryLedger } from "@/lib/courier-ledger";
 import {
   recordPointCounterCod,
@@ -78,7 +82,7 @@ export async function markSubOrderDelivered(
           buyerId: true,
           paymentMethod: true,
           buyer: { select: { locale: true } },
-          payment: { select: { id: true, status: true } },
+          payment: { select: { id: true, status: true, confirmedBy: true } },
         },
       },
     },
@@ -105,10 +109,11 @@ export async function markSubOrderDelivered(
     sub.shipment.originPointId !== sub.shipment.deliveryPointId,
   );
   const transferFee = isTwoHop ? await getSetting("point_transfer_fee") : 0;
-  // Cash is due only while the payment is unconfirmed — a COD order the
-  // buyer already settled from their wallet (docs §39) delivers like a
-  // prepaid one: the courier/counter collects nothing.
-  const codPaid = sub.order.payment?.status === "CONFIRMED";
+  // Cash is due unless the buyer settled the COD order digitally (docs §39) —
+  // then it delivers like a prepaid one: the courier/counter collects nothing.
+  // A payment CONFIRMED by a sibling sub-order's cash capture does NOT count
+  // as paid: on a multi-seller COD order every sub still collects its own cash.
+  const codPaid = codSettledDigitally(sub.order);
   const codAmount =
     isCod && !codPaid
       ? Number(sub.itemsTotal) +
@@ -195,22 +200,30 @@ export async function markSubOrderDelivered(
       data: { status: "DELIVERED", autoCompleteAt },
     });
 
-    // COD: cash collected on delivery.
-    if (
-      isCod &&
-      sub.order.payment &&
-      sub.order.payment.status !== "CONFIRMED"
-    ) {
-      await tx.payment.update({
-        where: { id: sub.order.payment.id },
-        data: { status: "CONFIRMED", confirmedAt: new Date() },
-      });
-    }
-
     const subs = await tx.subOrder.findMany({
       where: { orderId: sub.orderId },
       select: { status: true },
     });
+
+    // COD: cash is captured sub-order by sub-order, but the Payment row is
+    // order-level. Flip it to CONFIRMED only once NO sub-order can still
+    // collect cash — flipping on the first delivery of a multi-seller order
+    // would tell the remaining drivers/counters the order is already paid.
+    // Conditional update so concurrent sibling deliveries can't race, and the
+    // stamp records that this confirmation is a cash capture (not digital).
+    const stillCollectible = subs.some((s) =>
+      ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED"].includes(s.status),
+    );
+    if (isCod && sub.order.payment && !codPaid && !stillCollectible) {
+      await tx.payment.updateMany({
+        where: { id: sub.order.payment.id, status: { not: "CONFIRMED" } },
+        data: {
+          status: "CONFIRMED",
+          confirmedAt: new Date(),
+          confirmedBy: COD_DELIVERY_CONFIRMED_BY,
+        },
+      });
+    }
     await tx.order.update({
       where: { id: sub.orderId },
       data: {
@@ -227,17 +240,21 @@ export async function markSubOrderDelivered(
       },
     });
 
-    await tx.notification.create({
-      data: {
-        userId: sub.order.buyerId,
-        type: "SHIPMENT",
-        title: ar ? "تم توصيل طلبك" : "Your order was delivered",
-        body: ar
-          ? `وصل طلبك من ${sub.store.name}. أكِّد الاستلام لإتمام الطلب.`
-          : `Your order from ${sub.store.name} arrived. Confirm receipt to complete it.`,
-        data: { orderId: sub.orderId },
-      },
-    });
+    // No "confirm receipt" prompt when the buyer's own confirmation is what
+    // triggered the delivery (confirmReceived) — they already did.
+    if (actor !== "buyer") {
+      await tx.notification.create({
+        data: {
+          userId: sub.order.buyerId,
+          type: "SHIPMENT",
+          title: ar ? "تم توصيل طلبك" : "Your order was delivered",
+          body: ar
+            ? `وصل طلبك من ${sub.store.name}. أكِّد الاستلام لإتمام الطلب.`
+            : `Your order from ${sub.store.name} arrived. Confirm receipt to complete it.`,
+          data: { orderId: sub.orderId },
+        },
+      });
+    }
   });
 
   revalidatePath(`/${locale}/seller/orders`);

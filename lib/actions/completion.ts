@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { settleSubOrder } from "@/lib/finance";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { prisma } from "@/lib/prisma";
+import { markSubOrderDelivered } from "@/lib/shipment-core";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -25,6 +26,8 @@ export async function confirmReceived(orderId: string): Promise<Result> {
         where: { status: { in: ["SHIPPED", "DELIVERED"] } },
         select: {
           id: true,
+          status: true,
+          shipment: { select: { driverId: true } },
           store: {
             select: {
               seller: {
@@ -39,11 +42,29 @@ export async function confirmReceived(orderId: string): Promise<Result> {
   if (!order) return { error: "notFound" };
   if (order.subOrders.length === 0) return { error: "badState" };
 
+  // A sub-order the buyer confirms while still SHIPPED must pass through the
+  // shared delivery core first — jumping straight to COMPLETED would skip the
+  // COD cash capture, the courier's cash/earnings ledger, and the shipment's
+  // DELIVERED state (leaving the driver's own "delivered" scan rejected).
+  // The assigned courier is credited: receipt of a COD parcel means the cash
+  // was handed to whoever delivered it.
   for (const s of order.subOrders) {
-    await prisma.subOrder.update({
-      where: { id: s.id },
+    if (s.status !== "SHIPPED") continue;
+    await markSubOrderDelivered(s.id, "buyer", locale, {
+      courierId: s.shipment?.driverId ?? undefined,
+    });
+  }
+
+  let completed = 0;
+  for (const s of order.subOrders) {
+    // Conditional flip: only a DELIVERED sub-order completes, so a concurrent
+    // refund/return can never be overwritten back to COMPLETED.
+    const upd = await prisma.subOrder.updateMany({
+      where: { id: s.id, status: "DELIVERED" },
       data: { status: "COMPLETED" },
     });
+    if (upd.count !== 1) continue;
+    completed += 1;
     await settleSubOrder(s.id); // immutable ledger credit + balance recompute
     const seller = s.store.seller.user;
     const ar = seller.locale === "ar";
@@ -59,6 +80,7 @@ export async function confirmReceived(orderId: string): Promise<Result> {
       },
     });
   }
+  if (completed === 0) return { error: "badState" };
 
   const subs = await prisma.subOrder.findMany({
     where: { orderId },
