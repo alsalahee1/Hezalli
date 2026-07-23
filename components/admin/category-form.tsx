@@ -4,6 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
 import type { FormState } from "@/lib/actions/category";
+import { SIZE_CLASSES } from "@/lib/validations/product";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ export type CategoryFormData = {
   isActive: boolean;
   parentId: string | null;
   // Delivery defaults for courier capacity (lib/courier-capacity.ts).
+  defaultSizeClass: string | null;
   defaultWeightGrams: number | null;
   defaultDimensionsCm: { l: number; w: number; h: number } | null;
 };
@@ -150,8 +152,21 @@ export function CategoryForm({
       {/* Delivery defaults: typical weight/size for products in this
           category, used for courier capacity when a product has none. */}
       <div className="space-y-1.5">
-        <Label htmlFor="defaultWeightGrams">{t("shippingDefaults")}</Label>
+        <Label htmlFor="defaultSizeClass">{t("shippingDefaults")}</Label>
         <div className="flex flex-wrap items-center gap-2" dir="ltr">
+          <Select
+            id="defaultSizeClass"
+            name="defaultSizeClass"
+            defaultValue={category?.defaultSizeClass ?? ""}
+            className="w-44"
+          >
+            <option value="">{t("sizeClassNone")}</option>
+            {SIZE_CLASSES.map((c) => (
+              <option key={c} value={c}>
+                {t(`size_${c}`)}
+              </option>
+            ))}
+          </Select>
           <Input
             id="defaultWeightGrams"
             name="defaultWeightGrams"

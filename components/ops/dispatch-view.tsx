@@ -250,6 +250,11 @@ export async function DispatchView({ base }: { base: string }) {
                       kg: kg(metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0),
                     })}
                   </span>
+                  {metricsBySubOrder.get(s.subOrder.id)?.freight ? (
+                    <span className="ms-2 rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
+                      {t("freightBadge")}
+                    </span>
+                  ) : null}
                 </p>
                 {s.due ? (
                   <p
