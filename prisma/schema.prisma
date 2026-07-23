@@ -894,6 +894,13 @@ model OrderItem {
   unitPrice     Decimal  @db.Decimal(12, 2)
   quantity      Int
   lineTotal     Decimal  @db.Decimal(12, 2)
+  // Shipping snapshot at checkout (like titleSnapshot): the product's weight/
+  // dimensions as they were when ordered, so in-flight parcel capacity metrics
+  // (lib/courier-capacity.ts) don't shift when the seller edits the catalog.
+  // Null = the product had no value then; capacity falls back to the live
+  // product, then the category's delivery defaults.
+  weightGramsSnapshot Int?
+  dimensionsSnapshot  Json? // { l, w, h } cm
   // The FlashSaleItem whose stock this line claimed at checkout, so a cancel
   // can release it (plain id, no FK — flash sales are deletable).
   flashItemId   String?

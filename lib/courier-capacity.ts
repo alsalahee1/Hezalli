@@ -180,10 +180,12 @@ export function metricsOfItems(items: ItemShipping[]): ParcelMetrics {
 }
 
 /**
- * Parcel metrics per sub-order: each line's product weight/dimensions with the
- * category delivery defaults as fallback (small-parcel constants when neither
- * exists, including when the variant no longer exists). Bulk so the assigner
- * can weigh a whole fleet's in-flight load in two queries.
+ * Parcel metrics per sub-order. Each line's weight/size resolves, in order:
+ * the checkout snapshot (OrderItem.weightGramsSnapshot/dimensionsSnapshot —
+ * frozen so catalog edits don't rewrite in-flight parcels), the live product,
+ * the product category's delivery defaults, then small-parcel constants
+ * (including when the variant no longer exists). Bulk so the assigner can
+ * weigh a whole fleet's in-flight load in two queries.
  */
 export async function subOrderMetrics(
   subOrderIds: string[],
@@ -196,7 +198,13 @@ export async function subOrderMetrics(
 
   const items = await prisma.orderItem.findMany({
     where: { subOrderId: { in: unique } },
-    select: { subOrderId: true, variantId: true, quantity: true },
+    select: {
+      subOrderId: true,
+      variantId: true,
+      quantity: true,
+      weightGramsSnapshot: true,
+      dimensionsSnapshot: true,
+    },
   });
   if (items.length === 0) return out;
 
@@ -233,12 +241,16 @@ export async function subOrderMetrics(
 
   const linesBySubOrder = new Map<string, ItemShipping[]>();
   for (const i of items) {
-    const shipping = shippingByVariant.get(i.variantId) ?? {
+    const live = shippingByVariant.get(i.variantId) ?? {
       weightGrams: null,
       dims: null,
     };
     const lines = linesBySubOrder.get(i.subOrderId) ?? [];
-    lines.push({ quantity: i.quantity, ...shipping });
+    lines.push({
+      quantity: i.quantity,
+      weightGrams: i.weightGramsSnapshot ?? live.weightGrams,
+      dims: parseDimensions(i.dimensionsSnapshot) ?? live.dims,
+    });
     linesBySubOrder.set(i.subOrderId, lines);
   }
   for (const [subOrderId, lines] of linesBySubOrder) {

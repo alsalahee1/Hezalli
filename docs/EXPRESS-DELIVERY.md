@@ -97,8 +97,11 @@ Two refinements apply under both strategies (`lib/courier-capacity.ts`):
   total volume, max simultaneous parcels, and the longest single item that
   physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light and
   low-volume yet impossible on a motorbike). A parcel's metrics come from its
-  lines: `quantity × Product.weightGrams` and `Product.dimensions`
-  (`{ l, w, h }` cm, collected on the seller product form), falling back to
+  lines: `quantity ×` the weight/size **snapshotted at checkout**
+  (`OrderItem.weightGramsSnapshot` / `dimensionsSnapshot`, frozen like
+  `titleSnapshot` so catalog edits can't rewrite in-flight parcels), falling
+  back to the live `Product.weightGrams` / `Product.dimensions`
+  (`{ l, w, h }` cm, collected on the seller product form), then to
   the product category's delivery defaults
   (`Category.defaultWeightGrams` / `defaultDimensions`, admin-set in the
   category manager — so one setting covers e.g. all refrigerators), then to
