@@ -5,11 +5,7 @@ import { Bot, Loader2, Repeat, Send, Star, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
-import {
-  BOT_COOKIE,
-  BOT_IDS,
-  botName as botDisplayName,
-} from "@/lib/ai/bot-constants";
+import { BOT_COOKIE } from "@/lib/ai/bot-constants";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
@@ -61,15 +57,15 @@ function sectionFor(pathname: string): Section {
   return "store";
 }
 
+type SwitcherBot = { id: string; name: string; avatar: string };
+
 export function AiAssistant({
   botId,
-  botName,
-  avatar,
+  bots = [],
   greeting,
 }: {
   botId?: string;
-  botName?: string;
-  avatar?: string;
+  bots?: SwitcherBot[];
   greeting?: string;
 }) {
   const t = useTranslations("Assistant");
@@ -77,11 +73,12 @@ export function AiAssistant({
   const isRtl = locale === "ar";
   const pathname = usePathname();
   const section = sectionFor(pathname);
-  // The active character's display name — falls back to the translated default.
-  const name = botName || t("title");
-  // The other character to offer switching to (2-bot cycle), and its name.
-  const other = BOT_IDS.find((id) => id !== botId);
-  const otherName = other ? botDisplayName(other, locale) : "";
+  // The active character (from the list the server resolved), and the other one
+  // to offer switching to — shown by its own face so the change is obvious.
+  const activeBot = bots.find((b) => b.id === botId);
+  const otherBot = bots.find((b) => b.id !== botId);
+  const name = activeBot?.name || t("title");
+  const avatar = activeBot?.avatar || "";
 
   const [open, setOpen] = useState(false);
   const { mounted, shown } = useMountTransition(open, 200);
@@ -210,15 +207,29 @@ export function AiAssistant({
                 {t("subtitle")}
               </p>
             </div>
-            {other ? (
+            {otherBot ? (
               <button
                 type="button"
-                aria-label={t("switchTo", { name: otherName })}
-                title={t("switchTo", { name: otherName })}
-                onClick={() => switchTo(other)}
-                className="hover:bg-primary-foreground/10 rounded-md p-1.5"
+                aria-label={t("switchTo", { name: otherBot.name })}
+                title={t("switchTo", { name: otherBot.name })}
+                onClick={() => switchTo(otherBot.id)}
+                className="hover:bg-primary-foreground/10 focus-visible:ring-primary-foreground/60 relative rounded-full p-0.5 transition focus-visible:ring-2 focus-visible:outline-none"
               >
-                <Repeat className="size-4" />
+                {/* The other character's face, so it's clear who you'd switch
+                    to; a small swap badge marks it as a switch action. */}
+                {otherBot.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={otherBot.avatar}
+                    alt=""
+                    className="border-primary-foreground/40 size-8 rounded-full border bg-white object-cover opacity-90 grayscale transition hover:opacity-100 hover:grayscale-0"
+                  />
+                ) : (
+                  <Repeat className="size-4" />
+                )}
+                <span className="bg-background text-primary absolute -end-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full shadow">
+                  <Repeat className="size-2.5" />
+                </span>
               </button>
             ) : null}
             <button

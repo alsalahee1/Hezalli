@@ -10,7 +10,7 @@ import { getTheme } from "@/lib/theme";
 import { getSetting } from "@/lib/settings";
 import { assistantReady } from "@/lib/ai/gemini";
 import { getActiveBot, getBotAvatar } from "@/lib/ai/active-bot";
-import { BOTS, botName } from "@/lib/ai/bot-constants";
+import { BOTS, BOT_IDS, botName } from "@/lib/ai/bot-constants";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 
 import "../globals.css";
@@ -60,10 +60,19 @@ export default async function LocaleLayout({
   const theme = await getTheme();
   const showShadi = await assistantReady();
   const activeBot = showShadi ? await getActiveBot() : "shadi";
-  const shadiAvatar = showShadi ? await getBotAvatar(activeBot) : "";
   const shadiGreeting = showShadi
     ? await getSetting(BOTS[activeBot].greetingKey)
     : "";
+  // Every character with its avatar, so the widget can show who you'd switch to.
+  const shadiBots = showShadi
+    ? await Promise.all(
+        BOT_IDS.map(async (id) => ({
+          id,
+          name: botName(id, locale),
+          avatar: await getBotAvatar(id),
+        })),
+      )
+    : [];
 
   return (
     <html
@@ -82,8 +91,7 @@ export default async function LocaleLayout({
           {showShadi ? (
             <AiAssistant
               botId={activeBot}
-              botName={botName(activeBot, locale)}
-              avatar={shadiAvatar}
+              bots={shadiBots}
               greeting={shadiGreeting}
             />
           ) : null}
