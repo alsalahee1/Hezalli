@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { Store, Wallet } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { getRequestDisplayCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/currency-constants";
+import { Link } from "@/i18n/navigation";
 import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
@@ -44,6 +45,7 @@ export default async function WalletPage() {
     redirect(`/${locale}/login?callbackUrl=/${locale}/account/wallet`);
   }
   const t = await getTranslations("Wallet");
+  const tNav = await getTranslations("WalletNav");
   const format = await getFormatter();
 
   const userId = session.user.id;
@@ -140,6 +142,26 @@ export default async function WalletPage() {
           footer, account heading + nav) on mobile so the screen reads like a
           standalone mobile wallet. Desktop is unaffected. */}
       <div data-native-wallet hidden />
+
+      {/* Native app-style top bar — only on phones, where the storefront header
+          is hidden (globals.css [data-native-wallet]) and the wallet would
+          otherwise open with no chrome. Mirrors the driver app header: brand on
+          one side, a storefront escape hatch on the other. The `-mx-4 -mt-3`
+          pulls it out to the edges past the account shell's padding so it reads
+          as a real header bar; `md:hidden` leaves the desktop layout untouched. */}
+      <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky top-0 z-30 -mx-4 -mt-3 flex items-center justify-between border-b px-4 py-3 backdrop-blur md:hidden">
+        <span className="flex items-center gap-2 font-semibold">
+          <Wallet className="text-primary size-5" aria-hidden /> {t("appName")}
+        </span>
+        <Link
+          href="/"
+          aria-label={tNav("exit")}
+          title={tNav("exit")}
+          className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+        >
+          <Store className="size-5" />
+        </Link>
+      </header>
 
       <div className="from-primary/10 flex items-center gap-4 rounded-xl border bg-gradient-to-br to-transparent p-5">
         <Wallet className="text-primary size-8 shrink-0" />
