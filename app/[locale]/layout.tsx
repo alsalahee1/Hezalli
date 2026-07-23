@@ -10,7 +10,7 @@ import { getTheme } from "@/lib/theme";
 import { getSetting } from "@/lib/settings";
 import { assistantReady } from "@/lib/ai/gemini";
 import { getActiveBot, getBotAvatar } from "@/lib/ai/active-bot";
-import { botName } from "@/lib/ai/bot-constants";
+import { BOTS, botName } from "@/lib/ai/bot-constants";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 
 import "../globals.css";
@@ -61,7 +61,9 @@ export default async function LocaleLayout({
   const showShadi = await assistantReady();
   const activeBot = showShadi ? await getActiveBot() : "shadi";
   const shadiAvatar = showShadi ? await getBotAvatar(activeBot) : "";
-  const shadiGreeting = showShadi ? await getSetting("ai_greeting") : "";
+  const shadiGreeting = showShadi
+    ? await getSetting(BOTS[activeBot].greetingKey)
+    : "";
 
   return (
     <html

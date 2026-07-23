@@ -17,8 +17,11 @@ export type BotDef = {
   /** Bundled image used when no custom avatar is set for this bot. */
   defaultAvatar: string;
   gender: "male" | "female";
-  /** getSetting key holding this bot's custom avatar override. */
+  // getSetting keys holding this bot's per-character overrides. Shadi reuses
+  // the original single-bot keys (zero migration); Jumana gets her own.
   avatarKey: "ai_assistant_avatar" | "ai_avatar_jumana";
+  personaKey: "ai_persona" | "ai_persona_jumana";
+  greetingKey: "ai_greeting" | "ai_greeting_jumana";
 };
 
 export const BOTS: Record<BotId, BotDef> = {
@@ -29,14 +32,18 @@ export const BOTS: Record<BotId, BotDef> = {
     defaultAvatar: "/shadi.jpg",
     gender: "male",
     avatarKey: "ai_assistant_avatar",
+    personaKey: "ai_persona",
+    greetingKey: "ai_greeting",
   },
   jumana: {
     id: "jumana",
     nameEn: "Jumana",
     nameAr: "جُمانة",
-    defaultAvatar: "/jumana.jpg",
+    defaultAvatar: "/jumana.png",
     gender: "female",
     avatarKey: "ai_avatar_jumana",
+    personaKey: "ai_persona_jumana",
+    greetingKey: "ai_greeting_jumana",
   },
 };
 

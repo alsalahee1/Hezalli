@@ -186,10 +186,10 @@ export async function runAssistant(
 
   const section = ctx.section ?? "store";
   const bot: BotId = ctx.bot ?? "shadi";
-  // Admin-editable base intro + persona/role (Admin → Shadi). Fetched per turn.
+  // Shared base intro + this character's own persona (Admin → Shadi).
   const [intro, persona] = await Promise.all([
     getSetting("ai_intro").catch(() => ""),
-    getSetting("ai_persona").catch(() => ""),
+    getSetting(BOTS[bot].personaKey).catch(() => ""),
   ]);
   const system = systemPrompt(ctx.locale, section, bot, intro, persona);
 
