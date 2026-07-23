@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { resolveCartLines } from "@/lib/cart";
+import { getDisplayCurrencyCode, getZoneRates } from "@/lib/currency";
 import { listRoutablePoints } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
 import { quoteShippingForStores, type StoreShipOptions } from "@/lib/shipping";
@@ -95,6 +96,10 @@ export default async function CheckoutPage({
   const codEnabled = await getSetting("cod_enabled");
   const scheduleDays = await getSetting("delivery_window_days");
 
+  // Rates for every currency zone, so the summary always shows the exact
+  // amount the order will snapshot for whichever delivery address is picked.
+  const zoneRates = await getZoneRates(await getDisplayCurrencyCode());
+
   // Points that can still take parcels (full ones are filtered out); the
   // client re-sorts nearest-first for whichever address is selected.
   const pointRows = await listRoutablePoints();
@@ -118,6 +123,7 @@ export default async function CheckoutPage({
         walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
         pickupPoints={pickupPoints}
         scheduleDays={scheduleDays}
+        zoneRates={zoneRates}
       />
     </main>
   );

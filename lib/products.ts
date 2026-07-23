@@ -1,6 +1,12 @@
 // Shared product helpers for the buyer-facing catalog (Phase 6+).
-// Prices are stored in USD; display-currency conversion is a later concern.
+// Prices are stored in USD; buyer-facing labels convert to the display
+// currency (lib/currency.ts) when the caller passes one.
 import { localizedName } from "@/lib/categories";
+import {
+  formatMoney,
+  USD_DISPLAY,
+  type DisplayCurrency,
+} from "@/lib/currency-constants";
 
 export function formatUsd(n: number, locale: string): string {
   return new Intl.NumberFormat(locale === "ar" ? "ar" : "en-US", {
@@ -69,16 +75,21 @@ type CardSource = {
 };
 
 /** Map a queried product (with images + variants) to a display card item. */
-export function toCardItem(p: CardSource, locale: string): ProductCardItem {
+export function toCardItem(
+  p: CardSource,
+  locale: string,
+  display: DisplayCurrency = USD_DISPLAY,
+): ProductCardItem {
   const { min, max, compareAt, pctOff, totalStock } = priceInfo(p.variants);
+  const fmt = (n: number) => formatMoney(n, display, locale);
   return {
     id: p.id,
     slug: p.slug,
     title: localizedName(p.title, locale),
     cover: p.images[0]?.url ?? null,
-    priceLabel: formatUsd(min, locale),
-    priceMaxLabel: max > min ? formatUsd(max, locale) : null,
-    compareAtLabel: compareAt != null ? formatUsd(compareAt, locale) : null,
+    priceLabel: fmt(min),
+    priceMaxLabel: max > min ? fmt(max) : null,
+    compareAtLabel: compareAt != null ? fmt(compareAt) : null,
     pctOff,
     rating: p.ratingAvg,
     ratingCount: p.ratingCount,

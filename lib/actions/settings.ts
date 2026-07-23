@@ -290,3 +290,66 @@ export async function savePlatformSettings(
   revalidatePath(`/${locale}`, "layout");
   return { ok: true };
 }
+
+// --- Exchange rates (DECISIONS.md §3) -------------------------------------
+// Display rates per currency zone: Yemen's rial trades at very different
+// values in the Sana'a-area (old rial) and Aden-area (new rial) markets, so
+// YER is managed per zone; SAR/AED use the single DEFAULT-zone row.
+
+export type ExchangeRateInput = {
+  currency: "YER" | "SAR" | "AED";
+  zone: "DEFAULT" | "NORTH" | "SOUTH";
+  rate: number;
+};
+
+const RATE_CURRENCIES = ["YER", "SAR", "AED"];
+const RATE_ZONES = ["DEFAULT", "NORTH", "SOUTH"];
+
+export async function saveExchangeRates(
+  rows: ExchangeRateInput[],
+): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+  if (
+    rows.length === 0 ||
+    rows.some(
+      (r) =>
+        !RATE_CURRENCIES.includes(r.currency) ||
+        !RATE_ZONES.includes(r.zone) ||
+        !Number.isFinite(r.rate) ||
+        r.rate <= 0,
+    )
+  ) {
+    return { error: "invalid" };
+  }
+
+  await prisma.$transaction(
+    rows.map((r) =>
+      prisma.exchangeRate.upsert({
+        where: { currency_zone: { currency: r.currency, zone: r.zone } },
+        update: { rate: r.rate, updatedBy: adminId },
+        create: {
+          currency: r.currency,
+          zone: r.zone,
+          rate: r.rate,
+          updatedBy: adminId,
+        },
+      }),
+    ),
+  );
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.exchange_rates",
+      entity: "ExchangeRate",
+      entityId: "rates",
+      meta: rows as never,
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/settings`);
+  revalidatePath(`/${locale}`, "layout");
+  return { ok: true };
+}

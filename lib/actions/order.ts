@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { getDisplayCurrencyCode, getRateFor } from "@/lib/currency";
 import { getFlashPricesFor, releaseFlashClaims } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
@@ -319,6 +320,14 @@ export async function placeOrder(
       )
     : 0;
 
+  // Snapshot the buyer's display currency at the rate of the delivery
+  // governorate's currency zone (DECISIONS.md §3): the local amount a COD
+  // courier collects is fixed at order time even if rates move afterward.
+  const display = await getRateFor(
+    await getDisplayCurrencyCode(),
+    address.governorate,
+  );
+
   try {
     const orderId = await prisma.$transaction(async (tx) => {
       // Atomic stock decrement — guards against overselling.
@@ -377,9 +386,9 @@ export async function placeOrder(
           ...(couponId ? { coupon: { connect: { id: couponId } } } : {}),
           deliveryDate: deliveryWindow?.date ?? null,
           deliverySlot: deliveryWindow?.slot ?? null,
-          displayCurrency: "USD",
-          exchangeRate: 1,
-          displayTotal: grandTotal,
+          displayCurrency: display.code,
+          exchangeRate: display.rate,
+          displayTotal: round2(grandTotal * display.rate),
           subOrders: {
             create: groups.map((g) => ({
               store: { connect: { id: g.storeId } },

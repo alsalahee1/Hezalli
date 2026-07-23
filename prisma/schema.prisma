@@ -1279,12 +1279,21 @@ model WalletWebauthnChallenge {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Admin-managed display rates (DECISIONS.md §3). Yemen's rial trades at very
+// different values depending on which monetary authority controls an area, so
+// rates are keyed per currency *zone* ("NORTH" / "SOUTH", mapped from the
+// delivery governorate in lib/currency-constants.ts). The "DEFAULT" zone row
+// is the fallback when no zone-specific rate exists (and the only row used
+// for currencies that don't vary by zone, e.g. SAR/AED).
 model ExchangeRate {
   id        String   @id @default(cuid())
-  currency  Currency @unique
+  currency  Currency
+  zone      String   @default("DEFAULT")
   rate      Decimal  @db.Decimal(18, 6)
   updatedBy String?
   updatedAt DateTime @updatedAt
+
+  @@unique([currency, zone])
 }
 
 model PlatformSetting {

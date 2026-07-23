@@ -5,12 +5,14 @@ import { auth } from "@/auth";
 import { getAnnouncement } from "@/lib/actions/announcement";
 import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
+import { getDisplayCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { getTheme } from "@/lib/theme";
 import type { Locale } from "@/i18n/routing";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 import { CartProvider } from "@/components/cart/cart-provider";
+import { CurrencyProvider } from "@/components/currency/currency-provider";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -68,6 +70,7 @@ export default async function ShopLayout({
   const categories = toNavCategories(catRows, locale as Locale);
   const announcement = await getAnnouncement();
   const theme = await getTheme();
+  const displayCurrency = await getDisplayCurrency(session?.user?.id);
 
   // Maintenance mode: the storefront is closed to everyone except admins, who
   // keep full access so they can verify the site before reopening it.
@@ -84,42 +87,45 @@ export default async function ShopLayout({
   }
 
   return (
-    <CartProvider isAuthed={Boolean(session?.user?.id)} initial={initialCart}>
-      <div className="flex min-h-screen flex-col">
-        {announcement.active && announcement.text ? (
-          <AnnouncementBanner text={announcement.text} />
-        ) : null}
-        <SiteHeader
-          user={
-            user
-              ? { name: user.name, email: user.email, image: user.image }
-              : null
-          }
-          isSeller={user?.roles.includes("SELLER") ?? false}
-          isAdmin={isAdmin}
-          isCourier={user?.roles.includes("COURIER") ?? false}
-          isPointOperator={
-            (user?.roles.includes("DELIVERY_POINT") &&
-              user?.deliveryPoint?.status === "ACTIVE") ??
-            false
-          }
-          isFleetOwner={user?.ownedFleet?.isActive ?? false}
-          walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
-          categories={categories}
-          theme={theme}
-        />
-        <div className="flex-1">{children}</div>
-        <SiteFooter />
-        {/* Reserve room so the fixed bottom tab bar never covers footer content
+    <CurrencyProvider value={displayCurrency}>
+      <CartProvider isAuthed={Boolean(session?.user?.id)} initial={initialCart}>
+        <div className="flex min-h-screen flex-col">
+          {announcement.active && announcement.text ? (
+            <AnnouncementBanner text={announcement.text} />
+          ) : null}
+          <SiteHeader
+            user={
+              user
+                ? { name: user.name, email: user.email, image: user.image }
+                : null
+            }
+            isSeller={user?.roles.includes("SELLER") ?? false}
+            isAdmin={isAdmin}
+            isCourier={user?.roles.includes("COURIER") ?? false}
+            isPointOperator={
+              (user?.roles.includes("DELIVERY_POINT") &&
+                user?.deliveryPoint?.status === "ACTIVE") ??
+              false
+            }
+            isFleetOwner={user?.ownedFleet?.isActive ?? false}
+            walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
+            categories={categories}
+            theme={theme}
+            displayCurrency={displayCurrency.code}
+          />
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
+          {/* Reserve room so the fixed bottom tab bar never covers footer content
             on phones; the extra space collapses at `md` where the bar hides. */}
-        <div
-          className="h-16 md:hidden"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          aria-hidden
-        />
-        {process.env.GEMINI_API_KEY ? <AiAssistant /> : null}
-        <MobileTabBar wishlistCount={wishlistCount} />
-      </div>
-    </CartProvider>
+          <div
+            className="h-16 md:hidden"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            aria-hidden
+          />
+          {process.env.GEMINI_API_KEY ? <AiAssistant /> : null}
+          <MobileTabBar wishlistCount={wishlistCount} />
+        </div>
+      </CartProvider>
+    </CurrencyProvider>
   );
 }

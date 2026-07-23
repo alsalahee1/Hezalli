@@ -2,8 +2,9 @@ import { Zap } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { localizedName } from "@/lib/categories";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import type { getFlashSales } from "@/lib/flash";
-import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { Countdown } from "@/components/promotions/countdown";
 
@@ -18,6 +19,7 @@ export async function FlashSection({
 }) {
   const locale = await getLocale();
   const t = await getTranslations("Flash");
+  const display = await getRequestDisplayCurrency();
 
   return (
     <section className="rounded-lg border">
@@ -71,14 +73,14 @@ export async function FlashSection({
               </p>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <span className="text-sm font-bold text-rose-600" dir="ltr">
-                  {formatUsd(sale$, locale)}
+                  {formatMoney(sale$, display, locale)}
                 </span>
                 {orig > sale$ ? (
                   <span
                     className="text-muted-foreground text-xs line-through"
                     dir="ltr"
                   >
-                    {formatUsd(orig, locale)}
+                    {formatMoney(orig, display, locale)}
                   </span>
                 ) : null}
               </div>
