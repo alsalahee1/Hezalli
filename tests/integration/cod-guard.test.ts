@@ -404,6 +404,13 @@ describe("deposits & trust bonus raise the personal limit", () => {
     status = await courierCodStatus(c);
     expect(status.badgeBonus).toBe(100);
     expect(status.cashLimit).toBe(150);
+
+    // Seasonal badges are recognition, not credit — no limit change.
+    await prisma.courierBadgeAward.create({
+      data: { courierId: c, badgeId: "season_رمضان ٢٠٢٦" },
+    });
+    status = await courierCodStatus(c);
+    expect(status.badgeBonus).toBe(100);
   });
 
   it("a point deposit raises its cash holding limit 1:1", async () => {

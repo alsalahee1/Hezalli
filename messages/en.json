@@ -1713,11 +1713,22 @@
     "badgeBonusHint": "USD added to a driver's cash limit for each earned quality badge (top rated, streak, first-attempt, on-time, verified). 0 = off.",
     "badgeCap": "Badge bonus cap (USD)",
     "badgeCapHint": "Maximum total limit increase a driver can earn from badges.",
+    "badgePriority": "Priority dispatch for badge holders",
+    "badgePriorityHint": "Among equally loaded (or equally near) drivers, auto-assignment prefers the one with more quality badges. Never overrides load balancing or distance.",
+    "seasonName": "Seasonal badge: name",
+    "seasonNameHint": "Display name of the season badge (e.g. Ramadan Hero 2026). Empty = no active season.",
+    "seasonStart": "Season start",
+    "seasonStartHint": "First day of the season (inclusive).",
+    "seasonEnd": "Season end",
+    "seasonEndHint": "Last day of the season (inclusive).",
+    "seasonTarget": "Season delivery target",
+    "seasonTargetHint": "Deliveries completed inside the season window that earn the badge.",
     "codWalletPay": "Doorstep wallet payment for COD",
     "codWalletPayHint": "Buyers can settle a COD order from their HezalliPay balance before handover — the driver collects nothing.",
     "platformWalletEmail": "Hezalli wallet account (email)",
     "platformWalletEmailHint": "The ADMIN account whose HezalliPay wallet receives couriers' in-app COD remittances. Leave empty to turn in-app remittance off.",
     "err_badCashLimit": "Enter valid COD credit-control limits.",
+    "err_badSeason": "Enter a valid season: name, start and end dates in order, and a target of at least 1.",
     "err_badWalletEmail": "Enter a valid email for the Hezalli wallet account."
   },
   "Vouchers": {
@@ -2321,7 +2332,12 @@
     "badge_verified_pro": "Trusted hands",
     "badgeDesc_verified_pro": "Verify the buyer's code or QR on 90% of drop-offs (20+ deliveries)",
     "badgePerkActive": "Your quality badges raise your COD cash limit by {amount}.",
-    "badgePerkHint": "Each quality badge you earn raises your COD cash limit by {amount} (up to {cap})."
+    "badgePerkHint": "Each quality badge you earn raises your COD cash limit by {amount} (up to {cap}).",
+    "badgeDesc_seasonal": "{target, plural, one {Complete # delivery during {name}} other {Complete # deliveries during {name}}}",
+    "leaderboardTitle": "Top couriers this week",
+    "leaderboardEmpty": "No deliveries this week yet — be the first on the board!",
+    "leaderboardYou": "You",
+    "leaderboardMyRank": "Your rank: #{rank} with {count, plural, one {# delivery} other {# deliveries}} this week"
   },
   "Dispatch": {
     "title": "Dispatch",

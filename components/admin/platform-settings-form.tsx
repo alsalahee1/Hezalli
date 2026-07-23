@@ -75,6 +75,11 @@ export function PlatformSettingsForm({
     trust_bonus_cap_usd: String(current.trust_bonus_cap_usd),
     badge_bonus_usd: String(current.badge_bonus_usd),
     badge_bonus_cap_usd: String(current.badge_bonus_cap_usd),
+    badge_priority_dispatch: current.badge_priority_dispatch,
+    season_badge_name: current.season_badge_name,
+    season_start_date: current.season_start_date,
+    season_end_date: current.season_end_date,
+    season_target_deliveries: String(current.season_target_deliveries),
     cod_wallet_pay_enabled: current.cod_wallet_pay_enabled,
     platform_wallet_email: current.platform_wallet_email,
   });
@@ -135,6 +140,11 @@ export function PlatformSettingsForm({
         trust_bonus_cap_usd: Number(f.trust_bonus_cap_usd),
         badge_bonus_usd: Number(f.badge_bonus_usd),
         badge_bonus_cap_usd: Number(f.badge_bonus_cap_usd),
+        badge_priority_dispatch: f.badge_priority_dispatch,
+        season_badge_name: f.season_badge_name,
+        season_start_date: f.season_start_date,
+        season_end_date: f.season_end_date,
+        season_target_deliveries: Number(f.season_target_deliveries),
         cod_wallet_pay_enabled: f.cod_wallet_pay_enabled,
         platform_wallet_email: f.platform_wallet_email,
       });
@@ -406,6 +416,48 @@ export function PlatformSettingsForm({
             type="number"
             value={f.badge_bonus_cap_usd}
             onChange={(e) => set("badge_bonus_cap_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.badge_priority_dispatch}
+            onChange={(e) => set("badge_priority_dispatch", e.target.checked)}
+          />
+          {t("badgePriority")}
+          <span className="text-muted-foreground text-xs">
+            {t("badgePriorityHint")}
+          </span>
+        </label>
+        <Field label={t("seasonName")} hint={t("seasonNameHint")}>
+          <Input
+            value={f.season_badge_name}
+            onChange={(e) => set("season_badge_name", e.target.value)}
+          />
+        </Field>
+        <Field label={t("seasonStart")} hint={t("seasonStartHint")}>
+          <Input
+            type="date"
+            value={f.season_start_date}
+            onChange={(e) => set("season_start_date", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("seasonEnd")} hint={t("seasonEndHint")}>
+          <Input
+            type="date"
+            value={f.season_end_date}
+            onChange={(e) => set("season_end_date", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("seasonTarget")} hint={t("seasonTargetHint")}>
+          <Input
+            type="number"
+            value={f.season_target_deliveries}
+            onChange={(e) => set("season_target_deliveries", e.target.value)}
             dir="ltr"
           />
         </Field>

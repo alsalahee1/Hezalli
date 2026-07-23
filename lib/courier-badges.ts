@@ -27,11 +27,24 @@ export const TOP_RATED_AVG = 4.5;
 export const TOP_RATED_MIN_RATINGS = 10;
 export const STREAK_TARGET = 10;
 
-export type BadgeKind = "milestone" | "quality" | "reliability";
+// The non-milestone, non-seasonal badges. These are the only ids that count
+// toward driver perks (COD badge bonus, priority dispatch) and the only ones
+// shown to buyers on the public tracking page — quality over volume.
+export const QUALITY_BADGE_IDS = [
+  "top_rated",
+  "five_star_streak",
+  "first_attempt_pro",
+  "on_time_hero",
+  "verified_pro",
+] as const;
+
+export type BadgeKind = "milestone" | "quality" | "reliability" | "seasonal";
 
 export type BadgeState = {
   // i18n suffix: "milestone" badges render from `target`, the rest have
-  // per-id name/description keys (badge_<id> / badgeDesc_<id>).
+  // per-id name/description keys (badge_<id> / badgeDesc_<id>). Seasonal
+  // badges are admin-configured: id is "season_<name>" and `label` carries
+  // the display name (the id itself is the permanent record).
   id: string;
   kind: BadgeKind;
   earned: boolean;
@@ -40,7 +53,13 @@ export type BadgeState = {
   // it's big enough, then the rate against its threshold.
   current: number;
   target: number;
+  label?: string;
 };
+
+/** Display name for a seasonal badge id ("season_<name>" → "<name>"). */
+export function seasonalBadgeLabel(badgeId: string): string {
+  return badgeId.replace(/^season_/, "");
+}
 
 /** Consecutive 5★ ratings counted from the newest (input newest-first). */
 export function fiveStarStreak(starsNewestFirst: number[]): number {

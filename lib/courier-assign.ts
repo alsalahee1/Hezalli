@@ -17,6 +17,7 @@
 // first sweep after opening (lib/offer-sweep.ts), so night orders wait for
 // the morning wave instead of pinging sleeping drivers.
 import { codBlockedCourierIds } from "@/lib/cod-guard";
+import { QUALITY_BADGE_IDS } from "@/lib/courier-badges";
 import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
 import { notify } from "@/lib/notify";
@@ -50,6 +51,10 @@ type CourierLoad = {
   // trusted). Breaks ranking ties after load; the hard gate is applied before
   // ranking (see activeCouriersWithLoad).
   rate: number;
+  // Earned quality badges (lib/courier-badges.ts). With
+  // badge_priority_dispatch on, equally loaded/near couriers rank badge
+  // holders first — the perk never overrides load balancing or distance.
+  badges: number;
   governorate: string | null;
   lat: number | null;
   lng: number | null;
@@ -96,28 +101,46 @@ async function activeCouriersWithLoad(
   }
 
   const ids = eligible.map((c) => c.id);
-  const loads = await prisma.shipment.groupBy({
-    by: ["driverId"],
-    where: { driverId: { in: ids }, subOrder: { status: "SHIPPED" } },
-    _count: { _all: true },
-  });
+  const [loads, awards] = await Promise.all([
+    prisma.shipment.groupBy({
+      by: ["driverId"],
+      where: { driverId: { in: ids }, subOrder: { status: "SHIPPED" } },
+      _count: { _all: true },
+    }),
+    settings.badge_priority_dispatch
+      ? prisma.courierBadgeAward.groupBy({
+          by: ["courierId"],
+          where: {
+            courierId: { in: ids },
+            badgeId: { in: [...QUALITY_BADGE_IDS] },
+          },
+          _count: { _all: true },
+        })
+      : [],
+  ]);
   const loadBy = new Map(loads.map((l) => [l.driverId, l._count._all]));
+  const badgesBy = new Map(awards.map((a) => [a.courierId, a._count._all]));
   return eligible.map((c) => ({
     id: c.id,
     load: loadBy.get(c.id) ?? 0,
     rate: stats.get(c.id)?.rate ?? 1,
+    badges: badgesBy.get(c.id) ?? 0,
     governorate: c.courierLocation?.governorate ?? null,
     lat: c.courierLocation?.lat ?? null,
     lng: c.courierLocation?.lng ?? null,
   }));
 }
 
-// Fewest active jobs wins; ties go to the more reliable driver, then id for
-// deterministic behavior.
+// Fewest active jobs wins; ties go to the driver with more quality badges,
+// then the more reliable one, then id for deterministic behavior.
 function leastLoaded(list: CourierLoad[]): string | null {
   if (list.length === 0) return null;
   return [...list].sort(
-    (a, b) => a.load - b.load || b.rate - a.rate || a.id.localeCompare(b.id),
+    (a, b) =>
+      a.load - b.load ||
+      b.badges - a.badges ||
+      b.rate - a.rate ||
+      a.id.localeCompare(b.id),
   )[0].id;
 }
 
@@ -153,6 +176,7 @@ export async function pickCourierForShipment(
             haversineKm(dLat, dLng, a.lat!, a.lng!) -
               haversineKm(dLat, dLng, b.lat!, b.lng!) ||
             a.load - b.load ||
+            b.badges - a.badges ||
             b.rate - a.rate ||
             a.id.localeCompare(b.id),
         )[0].id;

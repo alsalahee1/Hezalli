@@ -12,7 +12,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
-import { syncedCourierPerformance } from "@/lib/courier-performance";
+import {
+  syncedCourierPerformance,
+  weeklyLeaderboard,
+} from "@/lib/courier-performance";
 import type { BadgeState } from "@/lib/courier-badges";
 import { getPlatformSettings } from "@/lib/settings";
 import { StarRating } from "@/components/product/star-rating";
@@ -38,9 +41,10 @@ export default async function DriverStatsPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [{ stats, badges, earnedCount }, settings] = await Promise.all([
+  const [{ stats, badges, earnedCount }, settings, board] = await Promise.all([
     syncedCourierPerformance(courierId),
     getPlatformSettings(),
+    weeklyLeaderboard(courierId),
   ]);
   const earned = badges.filter((b) => b.earned);
   const next = badges.filter((b) => !b.earned);
@@ -59,14 +63,19 @@ export default async function DriverStatsPage() {
     : 0;
 
   const badgeName = (b: BadgeState) =>
-    b.kind === "milestone"
-      ? t("badge_milestone", { target: b.target })
-      : t(`badge_${b.id}`);
+    b.kind === "seasonal"
+      ? (b.label ?? b.id)
+      : b.kind === "milestone"
+        ? t("badge_milestone", { target: b.target })
+        : t(`badge_${b.id}`);
   const badgeDesc = (b: BadgeState) =>
-    b.kind === "milestone"
-      ? t("badgeDesc_milestone", { target: b.target })
-      : t(`badgeDesc_${b.id}`);
-  const badgeIcon = (b: BadgeState) => BADGE_ICONS[b.id] ?? PackageCheck;
+    b.kind === "seasonal"
+      ? t("badgeDesc_seasonal", { target: b.target, name: b.label ?? b.id })
+      : b.kind === "milestone"
+        ? t("badgeDesc_milestone", { target: b.target })
+        : t(`badgeDesc_${b.id}`);
+  const badgeIcon = (b: BadgeState) =>
+    b.kind === "seasonal" ? Trophy : (BADGE_ICONS[b.id] ?? PackageCheck);
 
   const pctOrDash = (v: number | null) => (v == null ? "—" : `${v}%`);
 
@@ -217,6 +226,61 @@ export default async function DriverStatsPage() {
           </ul>
         </>
       ) : null}
+
+      {/* Weekly leaderboard — friendly competition, first names only. */}
+      <h2 className="font-semibold">{t("leaderboardTitle")}</h2>
+      {board.rows.length === 0 ? (
+        <div className="text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
+          {t("leaderboardEmpty")}
+        </div>
+      ) : (
+        <div className="rounded-xl border">
+          <ol>
+            {board.rows.map((r, i) => {
+              const me = r.courierId === courierId;
+              return (
+                <li
+                  key={r.courierId}
+                  className={cn(
+                    "flex items-center gap-3 border-b px-4 py-2.5 text-sm last:border-b-0",
+                    me && "bg-amber-500/5",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "w-6 text-center font-semibold tabular-nums",
+                      i === 0 ? "text-amber-500" : "text-muted-foreground",
+                    )}
+                    dir="ltr"
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {me ? t("leaderboardYou") : r.name}
+                  </span>
+                  {r.rating != null ? (
+                    <StarRating rating={r.rating} size={12} />
+                  ) : null}
+                  <span
+                    className="text-muted-foreground text-xs tabular-nums"
+                    dir="ltr"
+                  >
+                    {t("statDeliveriesCount", { count: r.deliveries })}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+          {board.myRank != null && board.myRank > board.rows.length ? (
+            <p className="text-muted-foreground border-t px-4 py-2.5 text-xs">
+              {t("leaderboardMyRank", {
+                rank: board.myRank,
+                count: board.myDeliveries,
+              })}
+            </p>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

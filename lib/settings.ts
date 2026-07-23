@@ -126,6 +126,18 @@ export type PlatformSettings = {
   // `badge_bonus_cap_usd`. Set the bonus to 0 to turn the perk off.
   badge_bonus_usd: number;
   badge_bonus_cap_usd: number;
+  // Priority dispatch: among equally loaded (or equally near) couriers,
+  // auto-assignment offers the parcel to the one holding more quality badges.
+  // Never overrides load balancing or distance — badges only break ties.
+  badge_priority_dispatch: boolean;
+  // Seasonal badge (e.g. a Ramadan rush): couriers who complete
+  // `season_target_deliveries` between the start and end dates (inclusive,
+  // YYYY-MM-DD) earn a permanent badge named `season_badge_name`. Empty name
+  // or dates = no active season. Past awards keep their name via the badge id.
+  season_badge_name: string;
+  season_start_date: string;
+  season_end_date: string;
+  season_target_deliveries: number;
   // Doorstep wallet payment for COD orders (docs §39): when on, a buyer can
   // settle a COD order from their HezalliPay balance before handover, so the
   // driver/counter collects nothing. Off hides the pay button and blocks the
@@ -191,6 +203,11 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   trust_bonus_cap_usd: 100,
   badge_bonus_usd: 25,
   badge_bonus_cap_usd: 100,
+  badge_priority_dispatch: true,
+  season_badge_name: "",
+  season_start_date: "",
+  season_end_date: "",
+  season_target_deliveries: 30,
   cod_wallet_pay_enabled: true,
   platform_wallet_email: "admin@hezalli.com",
 };

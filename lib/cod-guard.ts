@@ -21,6 +21,7 @@
 //   point limit  = point_cash_limit + the point's deposit (1:1)
 // Deposits are optional — a driver with none simply lives on base + history.
 // The age limit stays fixed for everyone: trusted or not, cash must not sit.
+import { QUALITY_BADGE_IDS } from "@/lib/courier-badges";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings, type PlatformSettings } from "@/lib/settings";
 
@@ -89,10 +90,10 @@ function trustBonus(deliveries: number, s: PlatformSettings): number {
   return round2(Math.min(earned, Math.max(0, s.trust_bonus_cap_usd)));
 }
 
-// Quality work earns limit too: each earned non-milestone badge
+// Quality work earns limit too: each earned QUALITY badge
 // (lib/courier-badges.ts — top rated, 5-star streak, first-attempt, on-time,
-// verified) adds badge_bonus_usd, capped. Milestone badges are excluded —
-// delivery volume already earns limit through the trust bonus above.
+// verified) adds badge_bonus_usd, capped. Milestone and seasonal badges are
+// excluded — delivery volume already earns limit through the trust bonus.
 async function badgeBonusByCourier(
   courierIds: string[],
   s: PlatformSettings,
@@ -107,7 +108,7 @@ async function badgeBonusByCourier(
     by: ["courierId"],
     where: {
       courierId: { in: courierIds },
-      badgeId: { not: { startsWith: "deliveries_" } },
+      badgeId: { in: [...QUALITY_BADGE_IDS] },
     },
     _count: { _all: true },
   });
