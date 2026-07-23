@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatMoney,
+  isSelectableZone,
   pickRate,
+  selectableZoneOf,
   USD_DISPLAY,
   zoneForGovernorate,
 } from "@/lib/currency-constants";
@@ -67,6 +69,23 @@ describe("pickRate", () => {
   it("skips a non-positive zone row in favor of the fallback", () => {
     const withBadRow = [...rows, { currency: "YER", zone: "SOUTH", rate: 0 }];
     expect(pickRate(withBadRow, "YER", "SOUTH")).toBe(1650);
+  });
+});
+
+describe("selectable rial markets", () => {
+  it("accepts only the two explicit markets", () => {
+    expect(isSelectableZone("NORTH")).toBe(true);
+    expect(isSelectableZone("SOUTH")).toBe(true);
+    expect(isSelectableZone("DEFAULT")).toBe(false);
+    expect(isSelectableZone(undefined)).toBe(false);
+    expect(isSelectableZone("Aden")).toBe(false);
+  });
+
+  it("coerces resolved zones to a market: DEFAULT/undefined read as SOUTH", () => {
+    expect(selectableZoneOf("NORTH")).toBe("NORTH");
+    expect(selectableZoneOf("SOUTH")).toBe("SOUTH");
+    expect(selectableZoneOf("DEFAULT")).toBe("SOUTH");
+    expect(selectableZoneOf(undefined)).toBe("SOUTH");
   });
 });
 

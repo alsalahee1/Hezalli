@@ -6,6 +6,7 @@ import { getAnnouncement } from "@/lib/actions/announcement";
 import { getServerCartData } from "@/lib/cart";
 import { toNavCategories } from "@/lib/categories";
 import { getDisplayCurrency } from "@/lib/currency";
+import { selectableZoneOf } from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { getTheme } from "@/lib/theme";
@@ -111,6 +112,7 @@ export default async function ShopLayout({
             categories={categories}
             theme={theme}
             displayCurrency={displayCurrency.code}
+            displayZone={selectableZoneOf(displayCurrency.zone)}
           />
           <div className="flex-1">{children}</div>
           <SiteFooter />

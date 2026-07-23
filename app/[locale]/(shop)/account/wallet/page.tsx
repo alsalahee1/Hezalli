@@ -5,7 +5,7 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { getRequestDisplayCurrency } from "@/lib/currency";
-import { formatMoney } from "@/lib/currency-constants";
+import { formatMoney, selectableZoneOf } from "@/lib/currency-constants";
 import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
@@ -151,6 +151,7 @@ export default async function WalletPage() {
         <div className="absolute end-3 top-3">
           <CurrencyToggleButton
             initialCurrency={display.code}
+            initialZone={selectableZoneOf(display.zone)}
             locale={locale}
           />
         </div>
