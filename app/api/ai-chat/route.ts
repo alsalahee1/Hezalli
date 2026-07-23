@@ -2,9 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/auth";
-import { runAssistant, type ChatMessage } from "@/lib/ai/assistant";
+import {
+  runAssistant,
+  type AssistantSection,
+  type ChatMessage,
+} from "@/lib/ai/assistant";
 import { checkGlobalCaps } from "@/lib/ai/guards";
 import { assistantReady, GeminiError } from "@/lib/ai/gemini";
+import { prisma } from "@/lib/prisma";
 import { rateLimitAsync } from "@/lib/rate-limit";
 import { routing } from "@/i18n/routing";
 
@@ -35,7 +40,50 @@ const bodySchema = z.object({
     .min(1)
     .max(20),
   locale: z.enum(["ar", "en"]).optional(),
+  // Where the widget was opened from. Client-reported, so privileged sections
+  // are verified against the user's real roles below.
+  section: z
+    .enum(["store", "seller", "admin", "wallet", "driver", "point", "fleet"])
+    .optional(),
 });
+
+/**
+ * A privileged section only sticks if the signed-in user actually holds the
+ * matching role — otherwise Shadi quietly runs in shopper mode. The section
+ * only tailors guidance (no extra data tools), but role-checking keeps the
+ * prompt honest about who it's talking to.
+ */
+async function resolveSection(
+  requested: AssistantSection,
+  userId: string | null,
+): Promise<AssistantSection> {
+  if (requested === "store") return "store";
+  if (!userId) return "store";
+  if (requested === "wallet") return "wallet"; // any signed-in user has one
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      roles: true,
+      ownedFleet: { select: { isActive: true } },
+      deliveryPoint: { select: { status: true } },
+    },
+  });
+  const ok =
+    requested === "seller"
+      ? user?.roles.includes("SELLER")
+      : requested === "admin"
+        ? user?.roles.includes("ADMIN")
+        : requested === "driver"
+          ? user?.roles.includes("COURIER")
+          : requested === "point"
+            ? user?.roles.includes("DELIVERY_POINT") &&
+              user?.deliveryPoint?.status === "ACTIVE"
+            : requested === "fleet"
+              ? (user?.ownedFleet?.isActive ?? false)
+              : false;
+  return ok ? requested : "store";
+}
 
 export async function POST(req: NextRequest) {
   if (!(await assistantReady())) {
@@ -70,11 +118,16 @@ export async function POST(req: NextRequest) {
     (spLocale === "ar" || spLocale === "en" ? spLocale : routing.defaultLocale);
 
   const history: ChatMessage[] = parsed.messages;
+  const section = await resolveSection(
+    parsed.section ?? "store",
+    session?.user?.id ?? null,
+  );
 
   try {
     const reply = await runAssistant(history, {
       locale,
       userId: session?.user?.id ?? null,
+      section,
     });
     return NextResponse.json(reply);
   } catch (err) {
