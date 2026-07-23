@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { QrCode as QrIcon, ShoppingBag, Store, Wallet } from "lucide-react";
+import { ShoppingBag, Store, Wallet } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -88,12 +88,6 @@ export default async function PointLayout({
           {/* Sweep alerts (stale parcel, pickup expiry) land here — without
               the bell the operator would never see them inside this shell. */}
           <NotificationBell variant="point" />
-          <Link
-            href="/point/scan"
-            className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-          >
-            <QrIcon className="size-4" /> {t("scan")}
-          </Link>
         </div>
       </header>
 
