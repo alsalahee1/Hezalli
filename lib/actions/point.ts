@@ -38,7 +38,12 @@ export async function pointReceiveParcel(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await receiveParcelAtPoint(gate.pointId, tracking, shelf);
+  const res = await receiveParcelAtPoint(
+    gate.pointId,
+    tracking,
+    shelf,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -51,7 +56,12 @@ export async function pointHandoverParcel(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await handoverParcelToDriver(gate.pointId, tracking, driverId);
+  const res = await handoverParcelToDriver(
+    gate.pointId,
+    tracking,
+    driverId,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -77,7 +87,7 @@ export async function pointHandoverManifest(
   if (!gate) return { error: "forbidden" };
   const id = driverId.trim();
   if (!id) return { error: "driverRequired" };
-  const res = await handoverManifestToDriver(gate.pointId, id);
+  const res = await handoverManifestToDriver(gate.pointId, id, gate.userId);
   if (res.handed > 0) await revalidatePoint();
   return { ok: true, ...res };
 }
@@ -90,7 +100,13 @@ export async function pointReceiveReturn(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await receiveReturnAtPoint(gate.pointId, tracking, note, shelf);
+  const res = await receiveReturnAtPoint(
+    gate.pointId,
+    tracking,
+    note,
+    shelf,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -107,7 +123,7 @@ export async function pointBuyerPickup(code: string): Promise<{
   // Cash-gated: a shelves organizer may not take a buyer's COD money.
   if (!gate || !canHandleCash(gate.access)) return { error: "forbidden" };
   const locale = await getLocale();
-  const res = await buyerPickupAtPoint(gate.pointId, code, locale);
+  const res = await buyerPickupAtPoint(gate.pointId, code, locale, gate.userId);
   if (res.ok) {
     await revalidatePoint();
     return res;
@@ -215,7 +231,12 @@ export async function pointReturnToSeller(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await returnParcelToSeller(gate.pointId, tracking, note);
+  const res = await returnParcelToSeller(
+    gate.pointId,
+    tracking,
+    note,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }

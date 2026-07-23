@@ -967,6 +967,40 @@ Now the owner attaches EXISTING Hezalli accounts to the hub as employees
       removal keeps the account, strangers refused)
 - [x] This file kept current
 
+## 42e. v1.28 — Per-staff accountability
+
+Adding staff (§42d) gave a hub several logins but no oversight: every scan and
+COD row recorded *the point*, not *the person*, so an owner couldn't see who
+did what or reconcile a cashier's drawer. Now the acting user is stamped
+through the counter flow:
+
+- **`ShipmentEvent.actorId`** (+ migration) — the custody scan records who did
+  it. `receiveParcelAtPoint`, `handoverParcelToDriver`, `receiveReturnAtPoint`,
+  `returnParcelToSeller`, `buyerPickupAtPoint`, and the manifest handover all
+  take the caller's `gate.userId` and stamp it on the event. Null for automatic
+  transitions and courier-side events.
+- **`DeliveryPointLedgerEntry.createdById` on COD** — counter COD
+  (`recordPointCounterCod`, via `markSubOrderDelivered`'s `DeliveryProof.actorId`)
+  now records the cashier, matching the driver-cash-in path that already did.
+  So every dollar the hub takes is attributed to a person.
+- **Who-did-what view** — `lib/point-staff-activity.ts` rolls the hub's day up
+  by person (received / handed over / picked up / returns + cash taken); the
+  `/point/staff` screen shows today's scoreboard above the roster. Cash per
+  cashier IS the drawer-reconciliation number. Owner/manager only.
+- **Staff notifications** — role change, pause, reinstate, and removal now
+  notify the employee in their locale (they no longer learn of a demotion by
+  hitting a wall).
+
+### Build checklist (v1.28)
+
+- [x] `ShipmentEvent.actorId` + index + migration
+- [x] Acting user threaded through all six counter transitions + COD ledger
+- [x] `pointStaffActivity` rollup + `/point/staff` today scoreboard
+- [x] Staff notified on role/pause/reinstate/removal
+- [x] i18n (en + ar) + integration test (`point-staff.test.ts`: scan
+      attribution, activity rollup, standing-change notifications)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
