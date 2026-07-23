@@ -34,6 +34,7 @@ export type EditProduct = {
   condition: string;
   lowStockThreshold: number;
   weightGrams: number | null;
+  dimensionsCm: { l: number; w: number; h: number } | null;
   status: string;
   images: UploadedImage[];
   variants: VariantInput[];
@@ -87,6 +88,10 @@ export function ProductForm({
   async function submit(intent: "draft" | "publish") {
     const fd = new FormData(formRef.current!);
     const weight = fd.get("weightGrams");
+    // All three sides make a size; anything less is "not provided".
+    const side = (k: string) => Number(fd.get(k)) || 0;
+    const dims = { l: side("dimL"), w: side("dimW"), h: side("dimH") };
+    const hasDims = dims.l > 0 && dims.w > 0 && dims.h > 0;
     const input: ProductInput = {
       id: product?.id,
       titleEn,
@@ -100,6 +105,7 @@ export function ProductForm({
         : "NEW") as ProductInput["condition"],
       lowStockThreshold: Number(fd.get("lowStockThreshold") ?? 0) || 0,
       weightGrams: weight ? Number(weight) : null,
+      dimensionsCm: hasDims ? dims : null,
       images,
       variants: variantsRef.current,
       intent,
@@ -291,6 +297,42 @@ export function ProductForm({
               dir="ltr"
               defaultValue={product?.lowStockThreshold ?? 0}
             />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="dimL">{t("dimensions")}</Label>
+            <div className="flex items-center gap-2" dir="ltr">
+              {(["dimL", "dimW", "dimH"] as const).map((k, i) => (
+                <Input
+                  key={k}
+                  id={k}
+                  name={k}
+                  type="number"
+                  min={1}
+                  max={1000}
+                  placeholder={t(k)}
+                  className="w-28"
+                  aria-invalid={Boolean(err("dimensionsCm"))}
+                  defaultValue={
+                    product?.dimensionsCm
+                      ? [
+                          product.dimensionsCm.l,
+                          product.dimensionsCm.w,
+                          product.dimensionsCm.h,
+                        ][i]
+                      : ""
+                  }
+                />
+              ))}
+            </div>
+            {err("dimensionsCm") ? (
+              <p className="text-destructive text-xs">
+                {t(err("dimensionsCm")!)}
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                {t("dimensionsHint")}
+              </p>
+            )}
           </div>
         </div>
       </section>

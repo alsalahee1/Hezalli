@@ -14,6 +14,7 @@ import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { checkPointRoutable } from "@/lib/point-select";
 import { parseDeliveryWindow } from "@/lib/delivery-slots";
 import { notify } from "@/lib/notify";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import {
@@ -100,7 +101,14 @@ export async function placeOrder(
       stock: true,
       isActive: true,
       product: {
-        select: { id: true, storeId: true, status: true, title: true },
+        select: {
+          id: true,
+          storeId: true,
+          status: true,
+          title: true,
+          weightGrams: true,
+          dimensions: true,
+        },
       },
     },
   });
@@ -117,6 +125,10 @@ export async function placeOrder(
     price: number;
     qty: number;
     flashItemId: string | null;
+    // Shipping snapshot: the product's weight/size at checkout, frozen onto
+    // the order line so courier capacity math survives catalog edits.
+    weightGrams: number | null;
+    dimensions: Prisma.JsonValue;
   };
   const byStore = new Map<string, Line[]>();
   for (const it of items) {
@@ -135,6 +147,8 @@ export async function placeOrder(
       qty: it.quantity,
       // Remember which flash item this line claimed so a cancel can release it.
       flashItemId: flash?.itemId ?? null,
+      weightGrams: v.product.weightGrams,
+      dimensions: v.product.dimensions,
     };
     const arr = byStore.get(v.product.storeId) ?? [];
     arr.push(line);
@@ -388,6 +402,10 @@ export async function placeOrder(
                   quantity: l.qty,
                   lineTotal: round2(l.price * l.qty),
                   flashItemId: l.flashItemId,
+                  weightGramsSnapshot: l.weightGrams,
+                  dimensionsSnapshot:
+                    (l.dimensions as Prisma.InputJsonValue | null) ??
+                    Prisma.DbNull,
                 })),
               },
             })),

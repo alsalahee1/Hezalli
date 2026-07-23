@@ -21,6 +21,10 @@ export type VariantInput = {
   stock: number;
 };
 
+// Package size in cm, stored as Product.dimensions `{ l, w, h }`. Optional —
+// with weight, it lets dispatch match parcels to delivery-vehicle capacity.
+export type DimensionsCmInput = { l: number; w: number; h: number };
+
 export type ProductInput = {
   id?: string;
   titleEn: string;
@@ -32,6 +36,7 @@ export type ProductInput = {
   condition: Condition;
   lowStockThreshold: number;
   weightGrams?: number | null;
+  dimensionsCm?: DimensionsCmInput | null;
   images: ProductImageInput[];
   variants: VariantInput[];
   intent: "draft" | "publish";
@@ -51,4 +56,14 @@ export const productScalarsSchema = z.object({
     z.coerce.number().int().min(0).max(5_000_000),
     z.null(),
   ]),
+  dimensionsCm: z
+    .union([
+      z.object({
+        l: z.coerce.number().min(1, "dimensionsInvalid").max(1000, "dimensionsInvalid"),
+        w: z.coerce.number().min(1, "dimensionsInvalid").max(1000, "dimensionsInvalid"),
+        h: z.coerce.number().min(1, "dimensionsInvalid").max(1000, "dimensionsInvalid"),
+      }),
+      z.null(),
+    ])
+    .optional(),
 });

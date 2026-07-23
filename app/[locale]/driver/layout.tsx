@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Store, Truck, Wallet } from "lucide-react";
+import { BookOpen, Store, Truck, Wallet } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -77,6 +77,17 @@ export default async function DriverLayout({
             className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
           >
             <Wallet className="size-5" />
+          </Link>
+          {/* How-it-works moved off the bottom bar (kept to 5 tabs) — the driver
+              guide is reference material, so it lives with the other utility
+              links up here. */}
+          <Link
+            href="/driver/how"
+            aria-label={t("how")}
+            title={t("how")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <BookOpen className="size-5" />
           </Link>
         </div>
       </header>
