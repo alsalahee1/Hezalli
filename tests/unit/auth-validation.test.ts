@@ -50,3 +50,37 @@ describe("registerSchema email normalization", () => {
     if (r.success) expect(r.data.email).toBe("new.buyer@example.com");
   });
 });
+
+describe("registerSchema optional home governorate", () => {
+  const base = {
+    name: "New Buyer",
+    email: "buyer@example.com",
+    password: "password123",
+    confirmPassword: "password123",
+    acceptTerms: true,
+  };
+
+  it("accepts a valid governorate value", () => {
+    const r = registerSchema.safeParse({ ...base, homeGovernorate: "Sana'a" });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.homeGovernorate).toBe("Sana'a");
+  });
+
+  it("treats blank / missing as undefined (skipped)", () => {
+    const blank = registerSchema.safeParse({ ...base, homeGovernorate: "" });
+    expect(blank.success).toBe(true);
+    if (blank.success) expect(blank.data.homeGovernorate).toBeUndefined();
+
+    const missing = registerSchema.safeParse(base);
+    expect(missing.success).toBe(true);
+    if (missing.success) expect(missing.data.homeGovernorate).toBeUndefined();
+  });
+
+  it("rejects a value that is not a real governorate", () => {
+    const r = registerSchema.safeParse({
+      ...base,
+      homeGovernorate: "Atlantis",
+    });
+    expect(r.success).toBe(false);
+  });
+});
