@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
+import { DEFAULT_INTRO } from "@/lib/ai/prompt-defaults";
 import { getTelegramToken, telegramApi } from "@/lib/integrations/telegram";
 import { prisma } from "@/lib/prisma";
 import type { AiSettingKey, PlatformSettings } from "@/lib/settings";
@@ -423,6 +424,7 @@ export type AssistantSettingsInput = {
   spendCapUsd: number;
   telegramEnabled: boolean;
   whatsappEnabled: boolean;
+  intro: string;
   persona: string;
   greeting: string;
   temperature: number;
@@ -460,8 +462,11 @@ export async function saveAssistantSettings(
   if (!Number.isFinite(spendCap) || spendCap < 0 || spendCap > 1_000_000)
     return { error: "badCaps" };
 
-  // Persona/role + greeting are free text; temperature and reply length are
-  // clamped to the ranges Gemini accepts.
+  // Base intro is free text; storing it verbatim would freeze the wording even
+  // if we later improve DEFAULT_INTRO, so an unchanged/blank intro normalises to
+  // "" (= use the default). Persona/greeting are free text too.
+  const introRaw = (input.intro || "").trim().slice(0, 2000);
+  const intro = introRaw === DEFAULT_INTRO.trim() ? "" : introRaw;
   const persona = (input.persona || "").trim().slice(0, 4000);
   const greeting = (input.greeting || "").trim().slice(0, 600);
   const temperature = Number(input.temperature);
@@ -485,6 +490,7 @@ export async function saveAssistantSettings(
     ai_spend_cap_usd: spendCap,
     ai_channel_telegram: Boolean(input.telegramEnabled),
     ai_channel_whatsapp: Boolean(input.whatsappEnabled),
+    ai_intro: intro,
     ai_persona: persona,
     ai_greeting: greeting,
     ai_temperature: Math.round(temperature * 100) / 100,

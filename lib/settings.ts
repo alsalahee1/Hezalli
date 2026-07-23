@@ -207,6 +207,10 @@ export type PlatformSettings = {
   ai_channel_telegram: boolean;
   ai_channel_whatsapp: boolean;
   // ── Persona & behaviour (Admin → Shadi). ──
+  // The editable base "intro" of the system prompt — Shadi's identity and the
+  // marketplace description (the first block of "Layer 1"). Empty falls back to
+  // the built-in DEFAULT_INTRO. The rule block after it stays locked in code.
+  ai_intro: string;
   // The bot's editable "role": extra natural-language instructions appended to
   // the built-in system prompt (personality, tone, dialect, rules, things it
   // may/may not do). Empty = Shadi's default behaviour only.
@@ -301,6 +305,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   ai_spend_cap_usd: 0,
   ai_channel_telegram: true,
   ai_channel_whatsapp: true,
+  ai_intro: "",
   ai_persona: "",
   ai_greeting: "",
   ai_temperature: 0.3,
