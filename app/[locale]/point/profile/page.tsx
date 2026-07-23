@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { Landmark, MapPin, Phone, Store } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { canManagePoint, canViewMoney } from "@/lib/point-access";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { getPlatformSettings } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
@@ -52,8 +53,11 @@ export default async function PointProfilePage() {
       </div>
 
       {/* Vacation mode: stop new routing while the shop is closed; the
-          counter keeps working for parcels already announced or held. */}
-      <PointPauseToggle paused={point.pausedAt != null} />
+          counter keeps working for parcels already announced or held.
+          Owner/manager only — a cashier can't close the hub. */}
+      {canManagePoint(gate.access) ? (
+        <PointPauseToggle paused={point.pausedAt != null} />
+      ) : null}
 
       <div className="space-y-2 rounded-xl border p-4 text-sm">
         <p className="flex items-center gap-2 font-semibold">
@@ -83,17 +87,19 @@ export default async function PointProfilePage() {
             {point.capacity ?? t("profileUnlimited")}
           </p>
         </div>
-        <div className="rounded-xl border p-3">
-          <p className="text-muted-foreground text-xs font-medium">
-            {t("profileDeposit")}
-          </p>
-          <p className="mt-1 text-lg font-semibold" dir="ltr">
-            {money(deposit)}
-          </p>
-        </div>
+        {canViewMoney(gate.access) ? (
+          <div className="rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("profileDeposit")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(deposit)}
+            </p>
+          </div>
+        ) : null}
       </div>
 
-      {cashLimit > 0 ? (
+      {cashLimit > 0 && canViewMoney(gate.access) ? (
         <section className="space-y-2 rounded-xl border p-4">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold">
             <Landmark className="size-4" /> {t("profileLimitTitle")}

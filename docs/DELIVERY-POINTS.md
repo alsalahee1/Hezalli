@@ -918,6 +918,55 @@ lever was an admin suspension. Now the operator pauses themselves
       restores, non-operator refused)
 - [x] This file kept current
 
+## 42d. v1.27 — Point staff (multi-account hubs)
+
+A real hub is not one person: the shop has a store manager, a cashier, a
+money collector, a shelves organizer. Until now they all shared the owner's
+login — no accountability and full money access for whoever held the phone.
+Now the owner attaches EXISTING Hezalli accounts to the hub as employees
+(`PointStaff`: `userId` unique — one hub per person — with a
+`PointStaffRole` job and an `isActive` off-switch):
+
+- **Membership is the grant** — staff never receive the `DELIVERY_POINT`
+  role. `requireDeliveryPoint()` admits the owner of an ACTIVE point OR an
+  active `PointStaff` member of one, and reports the caller's tier
+  (`access: OWNER | MANAGER | CASHIER | COLLECTOR | ORGANIZER`) so every
+  action and page scopes what the job may do (`lib/point-access.ts`).
+- **Job tiers** — every tier works parcels (receive, shelve, hand over,
+  returns). Cash at the counter (buyer COD pickups, driver hand-ins) is
+  everyone but the ORGANIZER. Money views (ledger, statement, stats, remit
+  claims) are OWNER/MANAGER/COLLECTOR. Team + vacation mode are
+  OWNER/MANAGER. Payout requests and earnings→wallet moves stay OWNER-only —
+  both pay the owner, so an employee triggering one would move the hub's
+  earnings into their own pocket.
+- **The team screen** (`/point/staff`, owner/manager) — hire by phone or
+  email (the same identifier rule as wallet P2P; no invite flow, the
+  employee registers a normal account first), change jobs, pause a member
+  (row kept, access revoked), or remove them. All writes audited
+  (`point.staffAdd/Role/Activate/Deactivate/Remove`); the hire notifies the
+  employee in their locale. Managers can't touch their own row, hub owners
+  can't be hired elsewhere, and the roster is capped at 20.
+- **The shell follows the tier** — the tab bar hides money tabs from
+  cashiers/organizers and the team tab from non-managers; the profile page
+  hides the pause toggle and cash-limit figures the same way. The server
+  re-gates everything regardless.
+
+### Build checklist (v1.27)
+
+- [x] `PointStaffRole` + `PointStaff` + migration
+- [x] `requireDeliveryPoint()` admits staff and reports the access tier;
+      capability rules shared client/server in `lib/point-access.ts`
+- [x] Money actions gated: COD pickup + driver cash-in (cash tiers), remit
+      claims (money-view tiers), pause (owner/manager), payout request +
+      earnings→wallet (owner only)
+- [x] Money pages + statement CSV export gated to money-view tiers
+- [x] `/point/staff` roster + hire/role/pause/remove actions (audited,
+      notified, self-row and owner-poaching refused)
+- [x] i18n (en + ar) + integration test (`point-staff.test.ts`: hire by
+      phone/email, guards, tier scoping per action, pause revokes access,
+      removal keeps the account, strangers refused)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

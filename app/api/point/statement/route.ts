@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { canViewMoney } from "@/lib/point-access";
 import {
   monthRange,
   pointStatement,
@@ -13,7 +14,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const gate = await requireDeliveryPoint();
-  if (!gate) {
+  // Money view only — cashiers/organizers can't export the statement.
+  if (!gate || !canViewMoney(gate.access)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   const { searchParams } = new URL(req.url);

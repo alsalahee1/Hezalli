@@ -1,10 +1,11 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { canViewMoney } from "@/lib/point-access";
 import { monthRange, pointStatement } from "@/lib/point-statement";
 import { cn } from "@/lib/utils";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 
 // The hub's monthly statement (docs §28): opening → entries → closing for
 // both the earnings side and the COD cash side, plus a CSV export.
@@ -15,6 +16,10 @@ export default async function PointStatementPage({
 }) {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
+  // Money view: hidden from cashiers/organizers (docs §42d).
+  if (!canViewMoney(gate.access)) {
+    redirect({ href: "/point", locale: await getLocale() });
+  }
   const { month } = await searchParams;
   const t = await getTranslations("Point");
   const format = await getFormatter();

@@ -16,6 +16,7 @@ import {
   requireDeliveryPoint,
 } from "@/lib/authz";
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { canViewMoney } from "@/lib/point-access";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -83,7 +84,9 @@ export async function submitPointRemitClaim(
   formData: FormData,
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
-  if (!gate) return { error: "forbidden" };
+  // Money-view staff only: squaring the hub's cash with Hezalli is the
+  // owner's, manager's, or money collector's job.
+  if (!gate || !canViewMoney(gate.access)) return { error: "forbidden" };
   if (!rateLimit(`remit:${gate.pointId}`, 6, 10 * 60_000).ok) {
     return { error: "tooMany" };
   }

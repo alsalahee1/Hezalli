@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import type { PointAccess } from "@/lib/point-access";
 import { prisma } from "@/lib/prisma";
 
 // Returns the current user's id only if they are an active ADMIN (checked
@@ -106,12 +107,16 @@ export async function requireActiveSeller(): Promise<{
   };
 }
 
-// Returns the current user's id + their delivery point id, only if they are an
-// active DELIVERY_POINT operator owning an ACTIVE point (checked against the
-// DB). Guards point-operator actions/pages.
+// Returns the current user's id + their delivery point id, only if they work
+// at an ACTIVE point (checked against the DB): either the DELIVERY_POINT
+// operator owning it, or an active PointStaff member — membership is the
+// grant, staff never hold the role. `access` reports which tier so callers
+// can scope what each job may do (see lib/point-access.ts). Guards
+// point-operator actions/pages.
 export async function requireDeliveryPoint(): Promise<{
   userId: string;
   pointId: string;
+  access: PointAccess;
 } | null> {
   const session = await auth();
   const id = session?.user?.id;
@@ -123,18 +128,27 @@ export async function requireDeliveryPoint(): Promise<{
       isSuspended: true,
       deletedAt: true,
       deliveryPoint: { select: { id: true, status: true } },
+      pointStaff: {
+        select: {
+          role: true,
+          isActive: true,
+          point: { select: { id: true, status: true } },
+        },
+      },
     },
   });
+  if (!u || u.isSuspended || u.deletedAt) return null;
   if (
-    !u ||
-    u.isSuspended ||
-    u.deletedAt ||
-    !u.roles.includes("DELIVERY_POINT") ||
-    u.deliveryPoint?.status !== "ACTIVE"
+    u.roles.includes("DELIVERY_POINT") &&
+    u.deliveryPoint?.status === "ACTIVE"
   ) {
-    return null;
+    return { userId: id, pointId: u.deliveryPoint.id, access: "OWNER" };
   }
-  return { userId: id, pointId: u.deliveryPoint.id };
+  const staff = u.pointStaff;
+  if (staff?.isActive && staff.point.status === "ACTIVE") {
+    return { userId: id, pointId: staff.point.id, access: staff.role };
+  }
+  return null;
 }
 
 // Returns the current user's id + the fleet they own, only if they own an

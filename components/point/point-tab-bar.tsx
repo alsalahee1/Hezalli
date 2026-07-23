@@ -8,19 +8,31 @@ import {
   QrCode,
   Store,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CenterTabBar } from "@/components/layout/center-tab-bar";
+import {
+  canManagePoint,
+  canViewMoney,
+  type PointAccess,
+} from "@/lib/point-access";
 
 /**
  * Bottom bar for the Hezalli Point operator app. Same shared CenterTabBar as
  * the driver app so the installed hub app feels native at every width.
+ * Tabs follow the caller's access tier (docs §42d): money views only for
+ * owner/manager/collector, the staff screen only for owner/manager — the
+ * server re-gates every page, this just keeps dead tabs out of the bar.
  */
-export function PointTabBar() {
+export function PointTabBar({ access }: { access: PointAccess }) {
   const t = useTranslations("Point");
   const tCommon = useTranslations("Common");
+
+  const money = canViewMoney(access);
+  const manage = canManagePoint(access);
 
   return (
     <CenterTabBar
@@ -32,12 +44,25 @@ export function PointTabBar() {
         { href: "/point", label: t("parcels"), icon: Package, exact: true },
         { href: "/point/history", label: t("history"), icon: History },
         { href: "/point/scan", label: t("scan"), icon: QrCode },
-        { href: "/point/ledger", label: t("ledger"), icon: Wallet },
+        money
+          ? { href: "/point/ledger", label: t("ledger"), icon: Wallet }
+          : { href: "/point/profile", label: t("profileTab"), icon: Store },
       ]}
       moreItems={[
-        { href: "/point/stats", label: t("statsTab"), icon: TrendingUp },
-        { href: "/point/statement", label: t("stmtTitle"), icon: FileText },
-        { href: "/point/profile", label: t("profileTab"), icon: Store },
+        ...(money
+          ? [
+              { href: "/point/stats", label: t("statsTab"), icon: TrendingUp },
+              {
+                href: "/point/statement",
+                label: t("stmtTitle"),
+                icon: FileText,
+              },
+              { href: "/point/profile", label: t("profileTab"), icon: Store },
+            ]
+          : []),
+        ...(manage
+          ? [{ href: "/point/staff", label: t("staffTab"), icon: Users }]
+          : []),
         { href: "/point/how", label: t("howTab"), icon: CircleHelp },
       ]}
     />
