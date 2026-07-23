@@ -1608,11 +1608,11 @@
     "hint": "Enter to send · Shift+Enter for a new line"
   },
   "Assistant": {
-    "title": "Hezalli Assistant",
-    "subtitle": "AI shopping helper",
-    "open": "Open shopping assistant",
+    "title": "Shadi",
+    "subtitle": "Hezalli's AI shopping helper",
+    "open": "Open Shadi, the shopping assistant",
     "close": "Close",
-    "greeting": "Hi! I can help you find products, compare prices, and check your orders. What are you looking for?",
+    "greeting": "Hi! I'm Shadi. I can help you find products, compare prices, and check your orders. What are you looking for?",
     "placeholder": "Ask me anything…",
     "send": "Send",
     "thinking": "Thinking…",

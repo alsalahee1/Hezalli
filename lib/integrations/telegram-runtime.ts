@@ -41,8 +41,8 @@ function resolveLocale(code?: string): "ar" | "en" {
 
 function startText(locale: string): string {
   return locale === "ar"
-    ? "مرحبًا بك في مساعد هزلي! 🛍️\nاكتب ما تبحث عنه أو أرسل رسالة صوتية وسأساعدك في العثور على المنتجات ومقارنة الأسعار."
-    : "Welcome to the Hezalli assistant! 🛍️\nType what you're looking for (or send a voice note) and I'll help you find products and compare prices.";
+    ? "مرحبًا! أنا شادي، مساعد هزلي 🛍️\nاكتب ما تبحث عنه أو أرسل رسالة صوتية وسأساعدك في العثور على المنتجات ومقارنة الأسعار."
+    : "Hi! I'm Shadi, the Hezalli assistant 🛍️\nType what you're looking for (or send a voice note) and I'll help you find products and compare prices.";
 }
 
 function errorText(locale: string): string {
