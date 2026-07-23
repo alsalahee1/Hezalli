@@ -169,6 +169,7 @@ export async function markSubOrderDelivered(
           deliveredAt: new Date(),
           attemptCount: { increment: 1 },
           atPointId: null,
+          shelfCode: null,
         },
       });
       await tx.shipmentEvent.create({
