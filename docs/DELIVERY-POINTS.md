@@ -1073,6 +1073,28 @@ the same optional proof:
       photo stored on the attempt)
 - [x] This file kept current
 
+## 42i. v1.32 — Printable pickup receipt
+
+The counter took cash but couldn't hand the buyer anything. Now a successful
+pickup offers a printable receipt:
+
+- **Receipt route** `/point/receipt/[code]` — resolves the buyer's delivery
+  code among parcels this hub has DELIVERED, and renders a receipt card: hub
+  name/phone/address, store, tracking, collection time, and the cash actually
+  taken (the `COD_COLLECTED` ledger row) or a "prepaid" note.
+- **Print** — a client Print button calls `window.print()`; the point shell's
+  header and tab bar are `print:hidden`, so only the receipt card prints (or
+  saves to PDF / shares on mobile).
+- **Discoverable** — a successful pickup in the scan station shows a "Receipt"
+  link on that feedback row.
+
+### Build checklist (v1.32)
+
+- [x] `/point/receipt/[code]` printable receipt (gated) + `print:hidden` shell
+- [x] Receipt link on successful pickup feedback in the scan station
+- [x] i18n (en + ar)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
