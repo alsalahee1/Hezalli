@@ -17,7 +17,7 @@ import { ChatIcon } from "@/components/chat/chat-icon";
 import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
-import { CurrencySwitcher, CurrencyToggleButton } from "./currency-switcher";
+import { CurrencySwitcher } from "./currency-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { Logo } from "./logo";
 import { SearchBar } from "./search-bar";
@@ -98,15 +98,6 @@ export function SiteHeader({
               locale={locale}
             />
             <LanguageSwitcher />
-          </div>
-          {/* Mobile: prices in rial or dollars is an everyday decision here,
-              so a one-press corner button flips YER⇄USD without opening the
-              menu (where the full SAR/AED switcher remains available). */}
-          <div className="md:hidden">
-            <CurrencyToggleButton
-              initialCurrency={displayCurrency}
-              locale={locale}
-            />
           </div>
           <Button
             variant="ghost"

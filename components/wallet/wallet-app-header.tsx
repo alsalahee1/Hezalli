@@ -1,12 +1,10 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { ChevronLeft, LayoutDashboard, Store, Wallet } from "lucide-react";
 
 import { auth } from "@/auth";
-import { getDisplayCurrencyCode } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { dashboardHref } from "@/lib/dashboard-href";
 import { Link } from "@/i18n/navigation";
-import { CurrencyToggleButton } from "@/components/layout/currency-switcher";
 
 /**
  * Native app-style top bar for the wallet on phones. On mobile the storefront
@@ -23,10 +21,6 @@ export async function WalletAppHeader({ backHref }: { backHref?: string }) {
   const t = await getTranslations("Wallet");
   const tNav = await getTranslations("WalletNav");
   const q = await getTranslations("QuickNav");
-  const locale = await getLocale();
-  // The storefront header (and its currency switcher) is hidden in this
-  // native-wallet mode, so the corner flip button stands in for it here.
-  const currency = await getDisplayCurrencyCode();
 
   // Resolve where "my dashboard" lives for this user (seller center, admin
   // panel, driver app, …) so the wallet links back to it like every other
@@ -74,11 +68,8 @@ export async function WalletAppHeader({ backHref }: { backHref?: string }) {
           <Wallet className="text-primary size-5" aria-hidden /> {t("appName")}
         </span>
       </div>
-      {backHref ? (
-        <CurrencyToggleButton initialCurrency={currency} locale={locale} />
-      ) : (
+      {backHref ? null : (
         <div className="flex items-center gap-1">
-          <CurrencyToggleButton initialCurrency={currency} locale={locale} />
           <Link
             href={dash}
             aria-label={q("dashboard")}

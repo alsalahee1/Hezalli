@@ -19,6 +19,7 @@ import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 import { WalletAppHeader } from "@/components/wallet/wallet-app-header";
 import { WalletDeepLink } from "@/components/wallet/wallet-deep-link";
 import { BillPayForm } from "@/components/wallet/bill-pay-form";
+import { CurrencyToggleButton } from "@/components/layout/currency-switcher";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
 import { BILLERS, billerName } from "@/lib/wallet-billers";
@@ -144,7 +145,15 @@ export default async function WalletPage() {
 
       <WalletAppHeader />
 
-      <div className="from-primary/10 flex items-center gap-4 rounded-xl border bg-gradient-to-br to-transparent p-5">
+      <div className="from-primary/10 relative flex items-center gap-4 rounded-xl border bg-gradient-to-br to-transparent p-5">
+        {/* One-press currency flip in the banner's corner — the storefront
+            header (and its switcher) is hidden in native-wallet mode. */}
+        <div className="absolute end-3 top-3">
+          <CurrencyToggleButton
+            initialCurrency={display.code}
+            locale={locale}
+          />
+        </div>
         <Wallet className="text-primary size-8 shrink-0" />
         <div>
           <p className="text-muted-foreground text-sm">{t("balance")}</p>
