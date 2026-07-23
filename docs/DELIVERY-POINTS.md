@@ -1021,6 +1021,32 @@ can be frozen during an investigation without waiting on the owner.
       refused; frozen member's access revoked)
 - [x] This file kept current
 
+## 42g. v1.30 — Opening hours
+
+A hub could only signal "closed" via the all-or-nothing vacation pause. Now it
+publishes a weekly schedule (`DeliveryPoint.openingHours` JSON, + migration):
+7 slots (0=Sunday..6=Saturday), each `{ open, close }` in "HH:MM" Asia/Aden
+wall-clock or null for a closed day.
+
+- **One rule, shared** — `lib/point-hours.ts` (pure) validates the schedule
+  and answers "open now?" including overnight windows (e.g. 18:00→02:00) and
+  open-all-day (open===close). Same UTC+3 convention as `dispatch-hours.ts`.
+- **Editor** — owner/manager set hours from `/point/profile`
+  (`setPointHours`, gated); other staff see a read-only open/closed line.
+- **Discovery** — the public `/points` directory shows an Open/Closed chip per
+  hub (computed server-side in `point-public.ts`); hubs that haven't published
+  hours show no chip. Independent of vacation pause, which still stops routing.
+
+### Build checklist (v1.30)
+
+- [x] `DeliveryPoint.openingHours` + migration
+- [x] `lib/point-hours.ts` parse + `isPointOpenNow` (overnight, all-day) + unit
+      test (`point-hours.test.ts`)
+- [x] `setPointHours` (owner/manager gated) + profile editor + open/closed line
+- [x] Public directory Open/Closed chip
+- [x] i18n (en + ar)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

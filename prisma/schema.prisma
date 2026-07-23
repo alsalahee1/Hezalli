@@ -389,6 +389,12 @@ model DeliveryPoint {
   // are still accepted at the counter and held ones stay collectible.
   // Self-service toggle from the point app; null = open.
   pausedAt       DateTime?
+  // Weekly opening hours (docs §42g): a 7-slot array (0=Sunday..6=Saturday),
+  // each `{ open, close }` in "HH:MM" Asia/Aden wall-clock or null for a closed
+  // day. Null/absent = hours not published (no open/closed badge). A
+  // display/discovery aid, separate from the vacation pause that stops routing.
+  // See lib/point-hours.ts.
+  openingHours   Json?
   status         DeliveryPointStatus        @default(ACTIVE)
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt

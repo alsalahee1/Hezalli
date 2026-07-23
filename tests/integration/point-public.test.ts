@@ -108,6 +108,8 @@ describe("publicPointsByGovernorate", () => {
       city: "Taiz",
       addressLine: "Public st",
       phone: "770000015",
+      // No hours published on the fixture → no open/closed chip.
+      openNow: null,
     });
   });
 });

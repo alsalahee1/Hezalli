@@ -1,6 +1,11 @@
 // Public-facing views of the Hezalli Points network (docs §24). Only exposes
 // what a walk-in customer could see on the shopfront: hub name, address, and
 // phone — never capacity, load, ledgers, or the operator's account.
+import {
+  hasAnyHours,
+  isPointOpenNow,
+  parseWeeklyHours,
+} from "@/lib/point-hours";
 import { prisma } from "@/lib/prisma";
 
 export type PublicPoint = {
@@ -10,7 +15,16 @@ export type PublicPoint = {
   city: string;
   addressLine: string;
   phone: string;
+  // Open right now per the hub's published hours (docs §42g), or null when it
+  // hasn't published any — the page shows a chip only when this is non-null.
+  openNow: boolean | null;
 };
+
+// Derive the open-now flag from a hub's stored openingHours JSON.
+function openNowFrom(openingHours: unknown): boolean | null {
+  const hours = parseWeeklyHours(openingHours);
+  return hours && hasAnyHours(hours) ? isPointOpenNow(hours) : null;
+}
 
 /**
  * ACTIVE hubs grouped by governorate, for the public /points directory.
@@ -29,12 +43,14 @@ export async function publicPointsByGovernorate(): Promise<
       city: true,
       addressLine: true,
       phone: true,
+      openingHours: true,
     },
   });
   const groups = new Map<string, PublicPoint[]>();
   for (const p of rows) {
+    const { openingHours, ...rest } = p;
     const list = groups.get(p.governorate) ?? [];
-    list.push(p);
+    list.push({ ...rest, openNow: openNowFrom(openingHours) });
     groups.set(p.governorate, list);
   }
   return [...groups.entries()].map(([governorate, points]) => ({
@@ -53,7 +69,7 @@ export async function pickupHubForShipment(shipment: {
   atPointId?: string | null;
 }): Promise<PublicPoint | null> {
   if (shipment.status !== "AT_POINT" || !shipment.atPointId) return null;
-  return prisma.deliveryPoint.findFirst({
+  const p = await prisma.deliveryPoint.findFirst({
     where: { id: shipment.atPointId, status: "ACTIVE" },
     select: {
       id: true,
@@ -62,6 +78,10 @@ export async function pickupHubForShipment(shipment: {
       city: true,
       addressLine: true,
       phone: true,
+      openingHours: true,
     },
   });
+  if (!p) return null;
+  const { openingHours, ...rest } = p;
+  return { ...rest, openNow: openNowFrom(openingHours) };
 }

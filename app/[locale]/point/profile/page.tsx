@@ -4,9 +4,15 @@ import { Landmark, MapPin, Phone, Store } from "lucide-react";
 import { requireDeliveryPoint } from "@/lib/authz";
 import { canManagePoint, canViewMoney } from "@/lib/point-access";
 import { pointLedgerSummary } from "@/lib/point-ledger";
+import {
+  hasAnyHours,
+  isPointOpenNow,
+  parseWeeklyHours,
+} from "@/lib/point-hours";
 import { getPlatformSettings } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { PointPauseToggle } from "@/components/point/point-pause-toggle";
+import { PointHoursEditor } from "@/components/point/point-hours-editor";
 
 // The hub's own record card: the business details published in the public
 // /points directory, the capacity admins set, and the cash-limit breakdown
@@ -33,6 +39,7 @@ export default async function PointProfilePage() {
         capacity: true,
         depositUsd: true,
         pausedAt: true,
+        openingHours: true,
         createdAt: true,
       },
     }),
@@ -45,6 +52,12 @@ export default async function PointProfilePage() {
   const cashLimit =
     settings.point_cash_limit > 0 ? settings.point_cash_limit + deposit : 0;
 
+  // Published opening hours (docs §42g) drive an open/closed chip; the editor
+  // is shown to owner/manager only.
+  const hours = parseWeeklyHours(point.openingHours);
+  const openNow = hours && hasAnyHours(hours) ? isPointOpenNow(hours) : null;
+  const canManage = canManagePoint(gate.access);
+
   return (
     <div className="space-y-4">
       <div>
@@ -55,8 +68,24 @@ export default async function PointProfilePage() {
       {/* Vacation mode: stop new routing while the shop is closed; the
           counter keeps working for parcels already announced or held.
           Owner/manager only — a cashier can't close the hub. */}
-      {canManagePoint(gate.access) ? (
-        <PointPauseToggle paused={point.pausedAt != null} />
+      {canManage ? <PointPauseToggle paused={point.pausedAt != null} /> : null}
+
+      {/* Weekly opening hours: an editor for owner/manager, a read-only
+          open/closed line for everyone else. */}
+      {canManage ? (
+        <PointHoursEditor initial={hours} />
+      ) : openNow !== null ? (
+        <p className="text-sm">
+          {openNow ? (
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+              {t("hoursOpenNow")}
+            </span>
+          ) : (
+            <span className="text-muted-foreground font-medium">
+              {t("hoursClosedNow")}
+            </span>
+          )}
+        </p>
       ) : null}
 
       <div className="space-y-2 rounded-xl border p-4 text-sm">
