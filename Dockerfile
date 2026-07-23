@@ -72,6 +72,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Generated Prisma client (imported by the app at runtime).
 COPY --from=builder --chown=nextjs:nodejs /app/lib/generated ./lib/generated
 
+# Writable upload dir for the local storage driver (lib/storage.ts). The server
+# runs unprivileged (USER nextjs), and /app is root-owned, so without this the
+# first upload's mkdir/write under /app/.uploads fails with EACCES and EVERY
+# image upload errors. In production compose this path is a named volume so
+# uploads persist across redeploys — a fresh volume inherits this owner.
+RUN mkdir -p /app/.uploads && chown -R nextjs:nodejs /app/.uploads
+
 USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]
