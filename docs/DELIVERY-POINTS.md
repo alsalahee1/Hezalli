@@ -1047,6 +1047,32 @@ wall-clock or null for a closed day.
 - [x] i18n (en + ar)
 - [x] This file kept current
 
+## 42h. v1.31 — Counter proof-of-pickup
+
+The doorstep flow captured a recipient name + photo on the DeliveryAttempt,
+but the counter-pickup path recorded only the verified code — weaker evidence
+for the exact moment cash and goods change hands. Counter pickup now captures
+the same optional proof:
+
+- **Optional recipient + photo** at the pickup station (`point-scan.tsx`,
+  pickup mode) — a name field and an "add handover photo" button (same
+  `/api/upload` → `photoKey` pattern as the driver). Filled before scanning
+  the buyer's QR; per-pickup, reset after each collection.
+- **Threaded through** `pointBuyerPickup` → `buyerPickupAtPoint` →
+  `markSubOrderDelivered`'s proof, landing on `DeliveryAttempt.recipientName`
+  and `proofPhotoKey` — no schema change (the fields already existed). The
+  buyer's delivery code stays the primary proof; these are extra evidence, so
+  both remain optional and never block a pickup.
+- The buyer's existing delivery-proof card renders it automatically.
+
+### Build checklist (v1.31)
+
+- [x] Optional recipient + photo capture in point-scan pickup mode
+- [x] `pointBuyerPickup` / `buyerPickupAtPoint` thread proof to the attempt
+- [x] i18n (en + ar) + integration test (`point-pickup.test.ts`: recipient +
+      photo stored on the attempt)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
