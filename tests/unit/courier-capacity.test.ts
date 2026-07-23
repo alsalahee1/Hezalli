@@ -23,6 +23,7 @@ function courier(over: Partial<CourierLoad> & { id: string }): CourierLoad {
     loadWeightGrams: 0,
     loadVolumeCm3: 0,
     vehicleType: null,
+    rate: 1,
     governorate: null,
     lat: null,
     lng: null,

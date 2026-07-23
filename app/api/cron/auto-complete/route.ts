@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { autoCompleteDeliveredOrders } from "@/lib/actions/completion";
 import { expireStaleOrders } from "@/lib/actions/payment";
 import { autoApproveReturns } from "@/lib/actions/return";
+import { sweepCourierOffers } from "@/lib/offer-sweep";
+import { sweepSellerSla } from "@/lib/seller-sla";
 import { sweepStuckShipments } from "@/lib/shipment-sweep";
 
 // Scheduled endpoint (e.g. Vercel Cron) that completes delivered orders past
@@ -19,18 +21,25 @@ async function run(req: Request) {
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const [completed, autoApproved, expired, stuck] = await Promise.all([
-    autoCompleteDeliveredOrders(),
-    autoApproveReturns(),
-    expireStaleOrders(),
-    sweepStuckShipments(),
-  ]);
+  const [completed, autoApproved, expired, stuck, offers, sellerSla] =
+    await Promise.all([
+      autoCompleteDeliveredOrders(),
+      autoApproveReturns(),
+      expireStaleOrders(),
+      sweepStuckShipments(),
+      sweepCourierOffers(),
+      sweepSellerSla(),
+    ]);
   return NextResponse.json({
     ok: true,
     completed,
     autoApproved,
     expired,
     stuckFlagged: stuck.flagged,
+    offersExpired: offers.expired,
+    offersWaved: offers.waved,
+    sellerSlaReminded: sellerSla.reminded,
+    sellerSlaCancelled: sellerSla.cancelled,
   });
 }
 

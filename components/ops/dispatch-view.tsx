@@ -12,6 +12,7 @@ import {
 
 import { requireDeliveryManagerId } from "@/lib/authz";
 import { subOrderMetrics } from "@/lib/courier-capacity";
+import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -72,11 +73,13 @@ export async function DispatchView({ base }: { base: string }) {
   ]);
 
   // Parcel weights (the same numbers capacity-aware auto-assignment uses),
-  // both per row and summed per assigned courier so the pickers show what a
-  // driver is already carrying.
+  // both per row and summed per assigned courier, plus each driver's 90-day
+  // offer acceptance rate — so the pickers show what a driver is carrying and
+  // whether they actually take the jobs they're offered.
   const metricsBySubOrder = await subOrderMetrics(
     shipments.map((s) => s.subOrder.id),
   );
+  const acceptance = await courierAcceptanceStats(couriers.map((c) => c.id));
   const kg = (grams: number) =>
     format.number(grams / 1000, { maximumFractionDigits: 1 });
   const loadByDriver = new Map<string, { count: number; grams: number }>();
@@ -91,6 +94,7 @@ export async function DispatchView({ base }: { base: string }) {
   const tCouriers = await getTranslations("AdminCouriers");
   const courierOptions = couriers.map((c) => {
     const load = loadByDriver.get(c.id);
+    const stats = acceptance.get(c.id);
     const parts = [
       c.name ?? c.id.slice(-6),
       c.courierLocation?.governorate,
@@ -100,6 +104,7 @@ export async function DispatchView({ base }: { base: string }) {
       load
         ? t("optionLoad", { count: load.count, kg: kg(load.grams) })
         : null,
+      stats?.rate != null ? `${Math.round(stats.rate * 100)}%` : null,
     ].filter(Boolean);
     return { id: c.id, name: parts.join(" · ") };
   });

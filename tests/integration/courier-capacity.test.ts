@@ -19,6 +19,15 @@ const extraUserIds: string[] = [];
 
 beforeAll(async () => {
   fx = await makeFixture();
+  // Pin dispatch to 24/7 so assignment is exercised at any wall-clock time
+  // (the default window would queue parcels outside 8–21 Aden time).
+  for (const key of ["dispatch_hours_start", "dispatch_hours_end"]) {
+    await prisma.platformSetting.upsert({
+      where: { key },
+      create: { key, value: 0 },
+      update: { value: 0 },
+    });
+  }
   const uniq = Date.now().toString(36);
   gov = `CapGov-${uniq}`;
   // All parcels in this suite deliver into a governorate only this suite uses.
@@ -58,6 +67,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await prisma.platformSetting
+    .deleteMany({
+      where: { key: { in: ["dispatch_hours_start", "dispatch_hours_end"] } },
+    })
+    .catch(() => {});
   await prisma.notification
     .deleteMany({ where: { userId: { in: extraUserIds } } })
     .catch(() => {});

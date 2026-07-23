@@ -10,7 +10,7 @@ describe("sanitizeCmsHtml", () => {
   });
 
   it("strips <script> and its contents", () => {
-    const out = sanitizeCmsHtml('<p>hi</p><script>alert(1)</script>');
+    const out = sanitizeCmsHtml("<p>hi</p><script>alert(1)</script>");
     expect(out).toBe("<p>hi</p>");
     expect(out).not.toContain("script");
   });

@@ -5,20 +5,24 @@ import {
   Clock,
   MapPin,
   PackageCheck,
+  Trophy,
   Wallet,
 } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { courierPerformance } from "@/lib/courier-performance";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocationShare } from "@/components/driver/location-share";
+import { OfferActions } from "@/components/driver/offer-actions";
 import { PushToggle } from "@/components/driver/push-toggle";
 import { QrCode } from "@/components/orders/qr-code";
+import { StarRating } from "@/components/product/star-rating";
 import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 export default async function DriverJobsPage() {
@@ -31,13 +35,19 @@ export default async function DriverJobsPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [rawJobs, settings, location, cash, cod] = await Promise.all([
+  const [rawJobs, settings, location, cash, cod, perf] = await Promise.all([
     prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
       select: {
         id: true,
         status: true,
         shippedAt: true,
+        // A live offer means this job is only PROPOSED — the card grows
+        // accept/decline controls until the driver answers (or first-scans).
+        offers: {
+          where: { driverId: courierId, status: "OFFERED" },
+          select: { expiresAt: true },
+        },
         subOrder: {
           select: {
             shippingMethod: true,
@@ -67,6 +77,7 @@ export default async function DriverJobsPage() {
     }),
     courierCashSummary(courierId),
     courierCodStatus(courierId),
+    courierPerformance(courierId),
   ]);
 
   const now = new Date();
@@ -90,7 +101,32 @@ export default async function DriverJobsPage() {
 
   return (
     <div className="space-y-4">
-      <LocationShare currentGovernorate={location?.governorate ?? null} />
+      {/* Cash the driver is holding + fees earned → full ledger. */}
+      {cash.cashOnHand > 0 || cash.earnings > 0 ? (
+        <Link href="/driver/ledger" className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
+              <Wallet className="size-3.5" /> {t("cashToRemit")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(cash.cashOnHand)}
+            </p>
+            {cod.cashLimit > 0 ? (
+              <p className="text-muted-foreground mt-0.5 text-[11px]">
+                {t("codLimitLine", { limit: money(cod.cashLimit) })}
+              </p>
+            ) : null}
+          </div>
+          <div className="rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("earnings")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(cash.earnings)}
+            </p>
+          </div>
+        </Link>
+      ) : null}
       <PushToggle />
 
       {/* COD credit control (lib/cod-guard.ts): blocked drivers see WHY they
@@ -139,32 +175,35 @@ export default async function DriverJobsPage() {
         </div>
       </details>
 
-      {/* Cash the driver is holding + fees earned → full ledger. */}
-      {cash.cashOnHand > 0 || cash.earnings > 0 ? (
-        <Link href="/driver/ledger" className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
-              <Wallet className="size-3.5" /> {t("cashToRemit")}
-            </p>
-            <p className="mt-1 text-lg font-semibold" dir="ltr">
-              {money(cash.cashOnHand)}
-            </p>
-            {cod.cashLimit > 0 ? (
-              <p className="text-muted-foreground mt-0.5 text-[11px]">
-                {t("codLimitLine", { limit: money(cod.cashLimit) })}
-              </p>
+      <LocationShare currentGovernorate={location?.governorate ?? null} />
+
+      {/* Performance & badges: the driver's own scoreboard → /driver/stats.
+          Volume AND quality both count (lib/courier-badges.ts). */}
+      <Link
+        href="/driver/stats"
+        className="hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4"
+      >
+        <span className="rounded-full bg-amber-500/15 p-2 text-amber-600 dark:text-amber-500">
+          <Trophy className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{t("statsTitle")}</p>
+          <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs">
+            {perf.stats.ratingCount > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <StarRating rating={perf.stats.ratingAvg} size={12} />
+                <span dir="ltr">{perf.stats.ratingAvg}</span>
+              </span>
             ) : null}
-          </div>
-          <div className="rounded-xl border p-3">
-            <p className="text-muted-foreground text-xs font-medium">
-              {t("earnings")}
-            </p>
-            <p className="mt-1 text-lg font-semibold" dir="ltr">
-              {money(cash.earnings)}
-            </p>
-          </div>
-        </Link>
-      ) : null}
+            <span>
+              {t("statDeliveriesCount", { count: perf.stats.deliveries })}
+            </span>
+            <span>·</span>
+            <span>{t("badgesEarnedCount", { count: perf.earnedCount })}</span>
+          </p>
+        </div>
+        <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
+      </Link>
 
       <div>
         <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
@@ -184,7 +223,11 @@ export default async function DriverJobsPage() {
             <li key={j.id}>
               <Link
                 href={`/driver/job/${j.id}`}
-                className="hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4"
+                className={cn(
+                  "hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4",
+                  j.offers.length > 0 &&
+                    "rounded-b-none border-amber-500/50 bg-amber-500/5",
+                )}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -231,6 +274,12 @@ export default async function DriverJobsPage() {
                 </div>
                 <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
               </Link>
+              {j.offers.length > 0 ? (
+                <OfferActions
+                  shipmentId={j.id}
+                  expiresAt={j.offers[0].expiresAt}
+                />
+              ) : null}
             </li>
           ))}
         </ul>

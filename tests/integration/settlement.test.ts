@@ -133,7 +133,10 @@ describe("applyRefund", () => {
         paymentMethod: "HEZALLI_BALANCE",
         status: "CANCELLED",
       });
-      const res = await applyRefund(subOrderId, { reason: "t", actor: "admin" });
+      const res = await applyRefund(subOrderId, {
+        reason: "t",
+        actor: "admin",
+      });
       expect(res.error).toBe("badState");
     } finally {
       await fx.cleanup();
@@ -150,7 +153,10 @@ describe("applyRefund", () => {
         where: { orderId },
         data: { status: "REFUNDED" },
       });
-      const res = await applyRefund(subOrderId, { reason: "t", actor: "admin" });
+      const res = await applyRefund(subOrderId, {
+        reason: "t",
+        actor: "admin",
+      });
       expect(res.error).toBe("badState");
     } finally {
       await fx.cleanup();

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
+import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import { notifyBot } from "@/lib/integrations/bot-notify";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -84,10 +85,19 @@ export async function assignCourier(
     }
   }
 
-  await prisma.shipment.update({
-    where: { id: shipmentId },
-    data: { driverId: id || null },
-  });
+  // A manual dispatch decision overrides the offer flow: void any open offer
+  // (its driver no longer holds the job) and clear the escalation flag so a
+  // re-stranded parcel can alert staff again.
+  await prisma.$transaction([
+    prisma.shipment.update({
+      where: { id: shipmentId },
+      data: { driverId: id || null, assignmentEscalatedAt: null },
+    }),
+    prisma.shipmentOffer.updateMany({
+      where: { shipmentId, status: "OFFERED" },
+      data: { status: "EXPIRED" },
+    }),
+  ]);
 
   if (id) {
     await prisma.notification.create({
@@ -192,7 +202,7 @@ export async function assignManyCouriers(
 
   const claimed = await prisma.shipment.updateMany({
     where: { id: { in: ids }, driverId: null, platformManaged: true },
-    data: { driverId: id },
+    data: { driverId: id, assignmentEscalatedAt: null },
   });
   const count = claimed.count;
 
@@ -219,6 +229,98 @@ export async function assignManyCouriers(
   revalidatePath(`/${locale}/admin/dispatch`);
   revalidatePath(`/${locale}/driver`);
   return { ok: true, count };
+}
+
+// Reasons a driver can decline an offered job. Kept in sync with the decline
+// picker and the `Driver.declineReason_*` i18n keys.
+const DECLINE_REASONS = new Set([
+  "too_far",
+  "off_duty",
+  "too_many_jobs",
+  "other",
+]);
+
+// Driver answers a pending job offer: accept locks the job in; decline hands
+// the parcel back and immediately cascades it to the next courier (or alerts
+// dispatch when nobody is left). Advancing the shipment (first scan) accepts
+// implicitly — see courierAdvance.
+export async function courierRespondOffer(
+  shipmentId: string,
+  response: "ACCEPT" | "DECLINE",
+  reason?: string,
+): Promise<Result> {
+  const courierId = await requireCourierId();
+  if (!courierId) return { error: "forbidden" };
+  const locale = await getLocale();
+
+  const offer = await prisma.shipmentOffer.findUnique({
+    where: { shipmentId_driverId: { shipmentId, driverId: courierId } },
+    select: {
+      id: true,
+      status: true,
+      shipment: {
+        select: { status: true, driverId: true, deliveryPointId: true },
+      },
+    },
+  });
+  // Only a live offer for a parcel the driver still holds can be answered. An
+  // offer whose window lapsed but wasn't swept yet is still answerable —
+  // accept wins over a pending expiry.
+  if (
+    !offer ||
+    offer.status !== "OFFERED" ||
+    offer.shipment.driverId !== courierId
+  ) {
+    return { error: "notFound" };
+  }
+
+  if (response === "ACCEPT") {
+    await prisma.shipmentOffer.updateMany({
+      where: { id: offer.id, status: "OFFERED" },
+      data: { status: "ACCEPTED", respondedAt: new Date() },
+    });
+    revalidatePath(`/${locale}/driver`);
+    return { ok: true };
+  }
+
+  if (!DECLINE_REASONS.has(reason ?? "")) return { error: "badReason" };
+  // Declining is only possible before the first scan. After that the parcel
+  // (and its COD accountability) is the driver's; problems then go through
+  // courierFailDelivery or dispatch, never a silent hand-back.
+  const openStatuses = offerOpenStatuses(offer.shipment.deliveryPointId);
+  if (!(openStatuses as string[]).includes(offer.shipment.status)) {
+    return { error: "badState" };
+  }
+
+  const released = await prisma.$transaction(async (tx) => {
+    const o = await tx.shipmentOffer.updateMany({
+      where: { id: offer.id, status: "OFFERED" },
+      data: { status: "REJECTED", reason, respondedAt: new Date() },
+    });
+    if (o.count !== 1) return false;
+    const s = await tx.shipment.updateMany({
+      where: {
+        id: shipmentId,
+        driverId: courierId,
+        status: { in: openStatuses },
+      },
+      data: { driverId: null },
+    });
+    return s.count === 1;
+  });
+  if (!released) return { error: "badState" };
+
+  // Move the parcel along right away — an honest "no" should cost the buyer
+  // minutes, not hours. Best-effort: the cron sweep is the safety net.
+  try {
+    await cascadeShipmentOffer(shipmentId);
+  } catch {
+    // The offer sweep will retry the cascade.
+  }
+
+  revalidatePath(`/${locale}/driver`);
+  revalidatePath(`/${locale}/admin/dispatch`);
+  return { ok: true };
 }
 
 export type CourierAction = "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED";
@@ -298,6 +400,13 @@ export async function courierAdvance(
   ) {
     return { error: "badState" };
   }
+
+  // Working the parcel IS accepting it: the first scan settles any pending
+  // offer so the accept window stops ticking (drivers who act never time out).
+  await prisma.shipmentOffer.updateMany({
+    where: { shipmentId, driverId: courierId, status: "OFFERED" },
+    data: { status: "ACCEPTED", respondedAt: new Date() },
+  });
 
   if (action === "DELIVERED") {
     // Optional strongest proof: the buyer's delivery code (typed or scanned
