@@ -22,6 +22,7 @@ import {
   USD_DISPLAY,
   zoneForGovernorate,
 } from "@/lib/currency-constants";
+import { isFreightClass } from "@/lib/validations/product";
 import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -126,7 +127,11 @@ export function CheckoutFlow({
       const itemsTotal = g.lines.reduce((s, l) => s + l.price * l.quantity, 0);
       const o = opts[g.storeId];
       const express = o?.express ?? null;
-      const pickup = o?.pickup && pickupPoints.length > 0 ? o.pickup : null;
+      // Freight (xlarge/oversized items) is delivered direct — point pickup
+      // isn't offered for a group containing one (the server enforces too).
+      const freight = g.lines.some((l) => isFreightClass(l.sizeClass));
+      const pickup =
+        !freight && o?.pickup && pickupPoints.length > 0 ? o.pickup : null;
       const wanted = methodByStore[g.storeId] ?? "STANDARD";
       const selectedMethod: ShippingMethod =
         wanted === "EXPRESS" && express
@@ -146,6 +151,7 @@ export function CheckoutFlow({
         standard: o?.standard ?? null,
         express,
         pickup,
+        freight,
         selectedMethod,
         shipping: option?.fee ?? 0,
       };
@@ -238,11 +244,14 @@ export function CheckoutFlow({
   };
 
   const anyPickup = groups.some((g) => g.selectedMethod === "PICKUP");
-  // The scheduled-window picker is offered only when a group ships Express and
-  // scheduling is enabled (delivery_window_days > 0).
+  // The scheduled-window picker is offered when a group ships Express — and
+  // REQUIRED when the cart holds freight (someone must be home for a fridge)
+  // — while scheduling is enabled (delivery_window_days > 0).
   const anyExpress = groups.some((g) => g.selectedMethod === "EXPRESS");
+  const anyFreight = groups.some((g) => g.freight);
   const scheduleBounds = deliveryWindowBounds(scheduleDays);
-  const canSchedule = anyExpress && !!scheduleBounds;
+  const canSchedule = (anyExpress || anyFreight) && !!scheduleBounds;
+  const freightNeedsWindow = anyFreight && !!scheduleBounds;
 
   // Nearest points first for the selected delivery address (same-governorate
   // matches lead; the server already filtered out full points).
@@ -264,6 +273,10 @@ export function CheckoutFlow({
     }
     if (anyPickup && !pickupPointId) {
       setError("pickupPointRequired");
+      return;
+    }
+    if (freightNeedsWindow && !(deliveryDate && deliverySlot)) {
+      setError("deliveryWindowRequiredFreight");
       return;
     }
     setPlacing(true);
@@ -517,14 +530,17 @@ export function CheckoutFlow({
               </div>
             ) : null}
 
-            {/* Optional scheduled delivery window (Express only). */}
+            {/* Scheduled delivery window: optional for Express, required for
+                freight (big items are delivered by appointment). */}
             {canSchedule ? (
               <div className="space-y-2 rounded-md border border-violet-500/40 bg-violet-500/5 p-3">
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   <CalendarClock className="size-4" /> {t("scheduleLabel")}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {t("scheduleHint")}
+                  {freightNeedsWindow
+                    ? t("scheduleRequiredFreight")
+                    : t("scheduleHint")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <input

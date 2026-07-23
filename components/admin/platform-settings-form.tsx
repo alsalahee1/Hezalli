@@ -55,6 +55,10 @@ export function PlatformSettingsForm({
       current.courier_offer_timeout_minutes,
     ),
     courier_offer_max_rounds: String(current.courier_offer_max_rounds),
+    job_board_enabled: current.job_board_enabled,
+    job_board_window_minutes: String(current.job_board_window_minutes),
+    job_board_max_active_jobs: String(current.job_board_max_active_jobs),
+    pickup_deadline_hours: String(current.pickup_deadline_hours),
     dispatch_hours_start: String(current.dispatch_hours_start),
     dispatch_hours_end: String(current.dispatch_hours_end),
     seller_ship_days: String(current.seller_ship_days),
@@ -113,6 +117,10 @@ export function PlatformSettingsForm({
         courier_assign_strategy: f.courier_assign_strategy,
         courier_offer_timeout_minutes: Number(f.courier_offer_timeout_minutes),
         courier_offer_max_rounds: Number(f.courier_offer_max_rounds),
+        job_board_enabled: f.job_board_enabled,
+        job_board_window_minutes: Number(f.job_board_window_minutes),
+        job_board_max_active_jobs: Number(f.job_board_max_active_jobs),
+        pickup_deadline_hours: Number(f.pickup_deadline_hours),
         dispatch_hours_start: Number(f.dispatch_hours_start),
         dispatch_hours_end: Number(f.dispatch_hours_end),
         seller_ship_days: Number(f.seller_ship_days),
@@ -425,6 +433,30 @@ export function PlatformSettingsForm({
             dir="ltr"
           />
         </Field>
+        <Field label={t("jobBoardWindow")} hint={t("jobBoardWindowHint")}>
+          <Input
+            type="number"
+            value={f.job_board_window_minutes}
+            onChange={(e) => set("job_board_window_minutes", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("jobBoardMaxJobs")} hint={t("jobBoardMaxJobsHint")}>
+          <Input
+            type="number"
+            value={f.job_board_max_active_jobs}
+            onChange={(e) => set("job_board_max_active_jobs", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("pickupDeadline")} hint={t("pickupDeadlineHint")}>
+          <Input
+            type="number"
+            value={f.pickup_deadline_hours}
+            onChange={(e) => set("pickup_deadline_hours", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
         <Field label={t("dispatchHoursStart")} hint={t("dispatchHoursHint")}>
           <Input
             type="number"
@@ -513,6 +545,18 @@ export function PlatformSettingsForm({
           {t("expressAutoAssign")}
           <span className="text-muted-foreground text-xs">
             {t("expressAutoAssignHint")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.job_board_enabled}
+            onChange={(e) => set("job_board_enabled", e.target.checked)}
+          />
+          {t("jobBoard")}
+          <span className="text-muted-foreground text-xs">
+            {t("jobBoardHint")}
           </span>
         </label>
         <label className="flex items-center gap-2 text-sm">

@@ -27,10 +27,12 @@
 // the morning wave instead of pinging sleeping drivers.
 import { codBlockedCourierIds } from "@/lib/cod-guard";
 import {
+  effectiveVehicleCapacity,
   hasRoomFor,
   type ParcelMetrics,
   subOrderMetric,
   subOrderMetrics,
+  type VehicleCapacity,
   ZERO_METRICS,
 } from "@/lib/courier-capacity";
 import { courierAcceptanceStats } from "@/lib/courier-reliability";
@@ -208,14 +210,21 @@ export function pickFrom(
   list: CourierLoad[],
   strategy: AssignStrategy,
   parcel: ParcelInfo,
+  capacityTable?: Record<string, VehicleCapacity>,
 ): string | null {
   const metrics = parcel.metrics ?? ZERO_METRICS;
-  const capable = list.filter((c) => hasRoomFor(c, metrics));
+  // Oversized freight (sofas, wardrobes) never auto-assigns: it needs crew
+  // planning, so it always goes through manual dispatch (the null triggers
+  // the same escalation path as "nobody eligible").
+  if (metrics.oversized) return null;
+  const capable = list.filter((c) => hasRoomFor(c, metrics, capacityTable));
   if (capable.length === 0) return null;
 
   const gov = parcel.destGovernorate;
+  // Freight is appointment-bound — a truck run is one or two big items, not a
+  // parcel round — so it doesn't ride the same-destination batching bonus.
   const batched = (c: CourierLoad) =>
-    gov && c.activeGovernorates.has(gov) ? 0 : 1;
+    !metrics.freight && gov && c.activeGovernorates.has(gov) ? 0 : 1;
   const best = (candidates: CourierLoad[]) =>
     [...candidates].sort(
       (a, b) =>
@@ -270,11 +279,13 @@ export async function pickCourierForShipment(
 ): Promise<string | null> {
   const all = await activeCouriersWithLoad(excludeIds);
   if (all.length === 0) return null;
-  return pickFrom(all, strategy, {
-    destGovernorate,
-    destCoords,
-    metrics: parcelMetrics,
-  });
+  const capacityTable = await effectiveVehicleCapacity();
+  return pickFrom(
+    all,
+    strategy,
+    { destGovernorate, destCoords, metrics: parcelMetrics },
+    capacityTable,
+  );
 }
 
 /**

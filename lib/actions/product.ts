@@ -149,6 +149,9 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
     status,
     basePrice,
     lowStockThreshold: s.lowStockThreshold,
+    // Standard package size for delivery capacity (undefined = not submitted
+    // → leave as-is on update; null = seller cleared it).
+    sizeClass: s.sizeClass,
     weightGrams: s.weightGrams ?? null,
     // Package size for delivery capacity. Undefined = field not submitted →
     // leave as-is on update; explicit null = seller cleared it.

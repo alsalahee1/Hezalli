@@ -5,7 +5,7 @@
 //
 // Callers (lib/actions/point.ts) are responsible for authorization; pointId
 // here is always the *authenticated* operator's point.
-import { autoAssignShipment } from "@/lib/courier-assign";
+import { dispatchShippedParcel } from "@/lib/job-board";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { settleReturnedSubOrder } from "@/lib/return-core";
@@ -185,11 +185,12 @@ export async function receiveParcelAtPoint(
     }),
   ]);
 
-  // Hand it to a courier now, when auto-assign is on. Best-effort. Never for
-  // pickup parcels — the buyer is the last mile.
-  if (!isPickup && (await getSetting("express_auto_assign"))) {
+  // Hand it to a courier now — the open job board or an auto-assign push
+  // offer, per platform settings. Best-effort. Never for pickup parcels — the
+  // buyer is the last mile.
+  if (!isPickup) {
     try {
-      await autoAssignShipment(parcel.id);
+      await dispatchShippedParcel(parcel.id);
     } catch {
       // Ops/point staff can still assign at handover.
     }

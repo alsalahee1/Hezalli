@@ -235,7 +235,9 @@ describe("driver job offers", () => {
     // The sweep also refuses to act while dispatch is closed.
     expect(await sweepCourierOffers()).toEqual({
       expired: 0,
+      reclaimed: 0,
       waved: 0,
+      boarded: 0,
       reescalated: 0,
     });
 

@@ -26,6 +26,9 @@ export type PickerProduct = {
   storeId: string;
   storeName: string;
   storeSlug: string;
+  // Resolved package class (product's own, else category default) — carried
+  // on the cart line for the checkout freight rules.
+  sizeClass: string | null;
 };
 
 const OPTION_LABELS: Record<string, { en: string; ar: string }> = {
@@ -127,6 +130,7 @@ export function VariantPicker({
           compareAtPrice: current.compareAtPrice ?? null,
           stock: current.stock,
           quantity: clampedQty,
+          sizeClass: product.sizeClass,
         },
         clampedQty,
       );

@@ -26,8 +26,13 @@ export const categorySchema = z.object({
   parentId: z.string().trim().optional(),
   position: z.coerce.number().int().min(0, "positionInvalid").max(9999),
   isActive: z.boolean().optional(),
-  // Delivery defaults: typical unit weight/size for products in this
+  // Delivery defaults: typical unit size/weight for products in this
   // category, used for courier capacity when a product has none of its own.
+  // The class list mirrors SIZE_CLASSES (lib/validations/product.ts).
+  defaultSizeClass: z.union([
+    z.enum(["envelope", "small", "medium", "large", "xlarge", "oversized"]),
+    z.null(),
+  ]),
   defaultWeightGrams: z.union([
     z.coerce
       .number()
