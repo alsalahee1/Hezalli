@@ -1,3 +1,4 @@
+import { rateLimitAsync } from "@/lib/rate-limit";
 import {
   getTrackingSnapshot,
   isTerminalTracking,
@@ -6,6 +7,11 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function clientIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  return (fwd?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
+}
 
 // Realtime shipment tracking over Server-Sent Events. The server re-reads the
 // snapshot every few seconds and pushes an `update` only when it changes, so the
@@ -25,6 +31,10 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ tracking: string }> },
 ) {
+  // Throttle new stream connections per IP to blunt tracking-number enumeration.
+  if (!(await rateLimitAsync(`track-stream:${clientIp(req)}`, 30, 60_000)).ok) {
+    return new Response("rate limited", { status: 429 });
+  }
   const { tracking } = await params;
   const decoded = decodeURIComponent(tracking);
   const encoder = new TextEncoder();

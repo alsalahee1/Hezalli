@@ -1,26 +1,11 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
-// Baseline Content-Security-Policy. Next.js App Router injects inline bootstrap
-// scripts and some inline styles, so 'unsafe-inline' is required there; images
-// may come from the storage domain (https) or data URIs. Tighten with nonces in
-// a later hardening pass if needed.
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https:",
-  "font-src 'self' data:",
-  "connect-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
-
+// The Content-Security-Policy is set per-request in middleware.ts so each HTML
+// document carries a fresh script nonce (dropping 'unsafe-inline' for scripts).
+// The remaining security headers stay here so they also cover /api routes and
+// static assets, which the middleware matcher excludes.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",

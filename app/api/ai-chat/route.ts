@@ -3,8 +3,20 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { runAssistant, type ChatMessage } from "@/lib/ai/assistant";
+import { checkGlobalCaps } from "@/lib/ai/guards";
 import { geminiConfigured, GeminiError } from "@/lib/ai/gemini";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import { routing } from "@/i18n/routing";
+
+// Best-effort client IP for throttling (behind the platform's proxy).
+function clientIp(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  return (
+    fwd?.split(",")[0] ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  ).trim();
+}
 
 // The assistant hits the DB and an external API, so it can't be statically
 // cached.
@@ -31,6 +43,17 @@ export async function POST(req: NextRequest) {
       { error: "assistant_unavailable" },
       { status: 503 },
     );
+  }
+
+  // This endpoint is unauthenticated and each call fans out to several paid
+  // Gemini requests, so throttle abuse two ways: a per-IP burst limit, plus the
+  // same global daily/spend backstop the messaging channels use. Without this a
+  // scripted loop can run up an unbounded Gemini bill.
+  if (!(await rateLimitAsync(`aichat:${clientIp(req)}`, 15, 60_000)).ok) {
+    return NextResponse.json({ error: "assistant_busy" }, { status: 429 });
+  }
+  if (!(await checkGlobalCaps(Date.now())).ok) {
+    return NextResponse.json({ error: "assistant_busy" }, { status: 429 });
   }
 
   let parsed;

@@ -17,9 +17,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Telegram echoes the secret we set via setWebhook; reject anything else.
+  // Telegram echoes the secret we set via setWebhook. Fail CLOSED: a configured
+  // bot MUST have a webhook secret set, and every update must present it —
+  // otherwise an anonymous POST would be processed as a genuine Telegram update
+  // (letting an attacker impersonate a linked user or burn the AI budget).
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (secret && req.headers.get("x-telegram-bot-api-secret-token") !== secret) {
+  if (
+    !secret ||
+    req.headers.get("x-telegram-bot-api-secret-token") !== secret
+  ) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

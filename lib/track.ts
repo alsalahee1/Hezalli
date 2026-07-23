@@ -60,7 +60,9 @@ export async function getTrackingSnapshot(
       ? { lat: addr.lat, lng: addr.lng }
       : null;
 
-  // Only share the courier point during an active delivery run.
+  // Only share the courier point during an active delivery run. (Enumeration of
+  // tracking numbers is throttled at the route layer; opaque/longer tracking
+  // ids are a recommended further hardening — see SECURITY-AUDIT.md.)
   const loc =
     shipment.status === "OUT_FOR_DELIVERY"
       ? shipment.driver?.courierLocation

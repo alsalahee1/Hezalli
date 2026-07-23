@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireDeliveryManagerId } from "@/lib/authz";
+import { csvCell } from "@/lib/csv";
 import { prisma } from "@/lib/prisma";
 
 // CSV export of the shipments list, honouring the same filters as the
@@ -21,11 +22,6 @@ const STATUSES = [
 ] as const;
 
 const STUCK_DAYS = 7;
-
-function csvCell(v: string | null | undefined): string {
-  const s = v ?? "";
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export async function GET(req: Request) {
   const staffId = await requireDeliveryManagerId();

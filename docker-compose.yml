@@ -48,6 +48,10 @@ services:
       && { npx tsx prisma/seed-if-empty.ts || echo 'WARN: seed-if-empty failed (non-fatal), continuing'; }
       && { npx tsx prisma/ensure-categories.ts || echo 'WARN: ensure-categories failed (non-fatal), continuing'; }"
     environment:
+      # Production runtime: makes the destructive demo seed refuse (see
+      # prisma/seed-if-empty.ts and prisma/seed.ts) so a first deploy never
+      # provisions the shared-password demo/admin accounts.
+      NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
       db:

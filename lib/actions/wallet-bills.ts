@@ -15,7 +15,12 @@ import { getBillProvider } from "@/lib/providers/bill-provider";
 // `wallet_bills_provider` can select them by id.
 import "@/lib/providers/reloadly-airtime";
 import { verifyWalletAuth } from "@/lib/wallet-step-auth";
-import { checkOutflowLimit } from "@/lib/wallet-velocity";
+import {
+  assertOutflowWithinLimitTx,
+  checkOutflowLimit,
+  outflowCaps,
+  VelocityError,
+} from "@/lib/wallet-velocity";
 import {
   creditWalletTx,
   getWalletId,
@@ -72,8 +77,11 @@ export async function payBill(input: {
     return { error: "insufficient" };
 
   // Velocity cap only matters once we know the funds exist.
+  // Pre-flight velocity check for a fast rejection; the authoritative, race-proof
+  // guard runs inside the transaction below.
   const velocity = await checkOutflowLimit(userId, amount);
   if (!velocity.ok) return { error: velocity.error };
+  const caps = await outflowCaps(userId);
 
   const entryType = input.kind === "AIRTIME" ? "AIRTIME_TOPUP" : "BILL_PAYMENT";
   const cleanNote = input.note?.trim() || null;
@@ -91,6 +99,11 @@ export async function payBill(input: {
         data: { availableUsd: { decrement: amount } },
       });
       if (upd.count !== 1) throw new BillError();
+
+      // Authoritative AML/velocity cap — race-proof under the wallet row lock,
+      // before this outflow's own entry is written. Critical here because
+      // AIRTIME/bills can be auto-fulfilled to arbitrary accounts.
+      await assertOutflowWithinLimitTx(tx, walletId, caps, amount);
 
       const bill = await tx.walletBillPayment.create({
         data: {
@@ -114,6 +127,7 @@ export async function payBill(input: {
     });
   } catch (e) {
     if (e instanceof BillError) return { error: "insufficient" };
+    if (e instanceof VelocityError) return { error: e.reason };
     throw e;
   }
 

@@ -136,7 +136,9 @@ export function CodeScanButton({ onScan }: { onScan: (code: string) => void }) {
               muted
               playsInline
             />
-            <div className="pointer-events-none absolute inset-[15%] rounded-2xl border-2 border-white/80" />
+            <div className="pointer-events-none absolute inset-[15%] overflow-hidden rounded-2xl border-2 border-white/80">
+              {scanning ? <span className="qr-scanline" /> : null}
+            </div>
             {!scanning && !error ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm text-white">
                 <Camera className="me-2 size-5" /> {t("startingCamera")}
