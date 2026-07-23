@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Clock,
+  History,
   MapPin,
   PackageCheck,
   Wallet,
@@ -173,11 +174,19 @@ export default async function DriverJobsPage() {
 
       <LocationShare currentGovernorate={location?.governorate ?? null} />
 
-      <div>
-        <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
-        <p className="text-muted-foreground text-sm">
-          {t("jobsCount", { count: jobs.length })}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
+          <p className="text-muted-foreground text-sm">
+            {t("jobsCount", { count: jobs.length })}
+          </p>
+        </div>
+        <Link
+          href="/driver/history"
+          className="text-primary inline-flex shrink-0 items-center gap-1 text-sm font-medium hover:underline"
+        >
+          <History className="size-4" /> {t("history")}
+        </Link>
       </div>
 
       {jobs.length === 0 ? (
