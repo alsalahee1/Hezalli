@@ -6,12 +6,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { autoAssignShipment } from "@/lib/courier-assign";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { makeFixture } from "./factory";
 
 let fx: Awaited<ReturnType<typeof makeFixture>>;
 let bikeCourier: string;
 let carCourier: string;
+let vanCourier: string;
 let gov: string; // unique destination governorate → batching is deterministic
 const extraUserIds: string[] = [];
 
@@ -41,9 +43,18 @@ beforeAll(async () => {
       courierVehicleType: "car",
     },
   });
+  const van = await prisma.user.create({
+    data: {
+      email: `van-${uniq}@t.local`,
+      roles: ["COURIER"],
+      locale: "en",
+      courierVehicleType: "van",
+    },
+  });
   bikeCourier = bike.id;
   carCourier = car.id;
-  extraUserIds.push(bike.id, car.id);
+  vanCourier = van.id;
+  extraUserIds.push(bike.id, car.id, van.id);
 });
 
 afterAll(async () => {
@@ -154,5 +165,70 @@ describe("capacity-aware courier assignment", () => {
 
     await retire(seed.subOrderId);
     await retire(p.subOrderId);
+  });
+
+  it("routes an item too long for bike and car past both", async () => {
+    // A 2 m curtain rod: 2 kg, low volume — but longer than a motorbike
+    // (60 cm) or a car (180 cm) can take. Only the van (300 cm) fits.
+    await prisma.product.update({
+      where: { id: fx.productId },
+      data: { weightGrams: 2_000, dimensions: { l: 200, w: 10, h: 10 } },
+    });
+    const p = await shippedParcel();
+    const chosen = await autoAssignShipment(p.shipmentId);
+    expect(chosen).toBeTruthy();
+    expect([bikeCourier, carCourier]).not.toContain(chosen);
+    // Among this suite's couriers, only the van qualifies.
+    if ([bikeCourier, carCourier, vanCourier].includes(chosen!)) {
+      expect(chosen).toBe(vanCourier);
+    }
+
+    await retire(p.subOrderId);
+    await prisma.product.update({
+      where: { id: fx.productId },
+      data: { weightGrams: 500, dimensions: Prisma.DbNull },
+    });
+  });
+
+  it("falls back to the category's delivery defaults when the product has none", async () => {
+    // A category whose typical item weighs 40 kg (e.g. appliances); the
+    // product itself carries no weight or size. The category default must
+    // keep the parcel off the motorbike.
+    const uniq2 = Date.now().toString(36);
+    const heavyCat = await prisma.category.create({
+      data: {
+        name: { en: "Appliances", ar: "أجهزة" },
+        slug: `heavycat-${uniq2}`,
+        defaultWeightGrams: 40_000,
+      },
+    });
+    const unlabeled = await prisma.product.create({
+      data: {
+        storeId: fx.storeId,
+        categoryId: heavyCat.id,
+        title: { en: "Fridge", ar: "ثلاجة" },
+        slug: `fridge-${uniq2}`,
+        basePrice: 100,
+        status: "ACTIVE",
+        weightGrams: null,
+        variants: {
+          create: { sku: `fridge-${uniq2}`, name: "F", price: 100, stock: 5 },
+        },
+      },
+      include: { variants: true },
+    });
+
+    const p = await shippedParcel();
+    await prisma.orderItem.updateMany({
+      where: { subOrderId: p.subOrderId },
+      data: { variantId: unlabeled.variants[0].id },
+    });
+    const chosen = await autoAssignShipment(p.shipmentId);
+    expect(chosen).toBeTruthy();
+    expect(chosen).not.toBe(bikeCourier);
+
+    await retire(p.subOrderId);
+    await prisma.product.delete({ where: { id: unlabeled.id } });
+    await prisma.category.delete({ where: { id: heavyCat.id } });
   });
 });

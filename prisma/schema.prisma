@@ -640,6 +640,11 @@ model Category {
   icon     String?
   position Int        @default(0)
   isActive Boolean    @default(true)
+  // Optional delivery defaults: typical unit weight/size for products in this
+  // category, used by capacity-aware dispatch when a product doesn't specify
+  // its own (lib/courier-capacity.ts). Admin-set from the category manager.
+  defaultWeightGrams Int?
+  defaultDimensions  Json? // { l, w, h } cm — same shape as Product.dimensions
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")
   products Product[]

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { requireDeliveryManagerId } from "@/lib/authz";
-import { subOrderWeights } from "@/lib/courier-capacity";
+import { subOrderMetrics } from "@/lib/courier-capacity";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -74,7 +74,7 @@ export async function DispatchView({ base }: { base: string }) {
   // Parcel weights (the same numbers capacity-aware auto-assignment uses),
   // both per row and summed per assigned courier so the pickers show what a
   // driver is already carrying.
-  const weightBySubOrder = await subOrderWeights(
+  const metricsBySubOrder = await subOrderMetrics(
     shipments.map((s) => s.subOrder.id),
   );
   const kg = (grams: number) =>
@@ -84,7 +84,7 @@ export async function DispatchView({ base }: { base: string }) {
     if (!s.driverId) continue;
     const cur = loadByDriver.get(s.driverId) ?? { count: 0, grams: 0 };
     cur.count += 1;
-    cur.grams += weightBySubOrder.get(s.subOrder.id) ?? 0;
+    cur.grams += metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0;
     loadByDriver.set(s.driverId, cur);
   }
 
@@ -242,7 +242,7 @@ export async function DispatchView({ base }: { base: string }) {
                   <span className="ms-2 inline-flex items-center gap-1">
                     <Weight className="size-3.5" />
                     {t("parcelWeight", {
-                      kg: kg(weightBySubOrder.get(s.subOrder.id) ?? 0),
+                      kg: kg(metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0),
                     })}
                   </span>
                 </p>

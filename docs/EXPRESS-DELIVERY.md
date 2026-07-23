@@ -93,16 +93,23 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
 Two refinements apply under both strategies (`lib/courier-capacity.ts`):
 
 - **Vehicle capacity** — each vehicle from the courier application (foot,
-  bicycle, motorbike, car, van) has a carrying profile: a max total weight and
-  a max number of simultaneous parcels (`VEHICLE_CAPACITY`). A parcel's weight
-  is the sum of its lines' `quantity × Product.weightGrams` (unlabeled items
-  count as `DEFAULT_ITEM_WEIGHT_GRAMS` so they still consume capacity).
-  Couriers whose vehicle can't take the parcel — too heavy outright, or the
-  driver is already at their weight/parcel limit — are skipped. The approved
-  vehicle is copied to `User.courierVehicleType` on application approval;
-  couriers without one (granted the role manually) are unconstrained, matching
-  the pre-capacity behavior. If **no** active courier can carry a parcel it
-  stays unassigned and dispatch routes it manually.
+  bicycle, motorbike, car, van) has a carrying profile: max total weight, max
+  total volume, max simultaneous parcels, and the longest single item that
+  physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light and
+  low-volume yet impossible on a motorbike). A parcel's metrics come from its
+  lines: `quantity × Product.weightGrams` and `Product.dimensions`
+  (`{ l, w, h }` cm, collected on the seller product form), falling back to
+  the product category's delivery defaults
+  (`Category.defaultWeightGrams` / `defaultDimensions`, admin-set in the
+  category manager — so one setting covers e.g. all refrigerators), then to
+  small-parcel constants so unlabeled items still consume capacity. Summed
+  parcel volume is inflated by `PACKING_FACTOR` since real items don't
+  tessellate. Couriers whose vehicle can't take the parcel — too heavy or too
+  long outright, or the driver is already at a weight/volume/parcel limit —
+  are skipped. The approved vehicle is copied to `User.courierVehicleType` on
+  application approval; couriers without one (granted the role manually) are
+  unconstrained, matching the pre-capacity behavior. If **no** active courier
+  can carry a parcel it stays unassigned and dispatch routes it manually.
 - **Batching** — a courier already carrying an in-flight parcel to the same
   destination governorate is preferred over everyone else (before distance and
   load), capacity permitting. Orders heading the same way accumulate onto one

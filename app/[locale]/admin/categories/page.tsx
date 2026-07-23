@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
+import { parseDimensions } from "@/lib/courier-capacity";
 import { prisma } from "@/lib/prisma";
 import type { LocalizedName } from "@/lib/categories";
 import {
@@ -26,6 +27,8 @@ export default async function AdminCategoriesPage() {
       position: c.position,
       isActive: c.isActive,
       parentId: c.parentId,
+      defaultWeightGrams: c.defaultWeightGrams,
+      defaultDimensionsCm: parseDimensions(c.defaultDimensions),
       productCount: c._count.products,
       childCount: c._count.children,
     };

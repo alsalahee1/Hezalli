@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireActiveSeller } from "@/lib/authz";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugifyWithFallback } from "@/lib/slug";
 import { isOwnStorageUrl } from "@/lib/storage";
@@ -149,6 +150,12 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
     basePrice,
     lowStockThreshold: s.lowStockThreshold,
     weightGrams: s.weightGrams ?? null,
+    // Package size for delivery capacity. Undefined = field not submitted →
+    // leave as-is on update; explicit null = seller cleared it.
+    dimensions:
+      s.dimensionsCm === undefined
+        ? undefined
+        : (s.dimensionsCm ?? Prisma.DbNull),
   };
 
   const productId = await prisma.$transaction(async (tx) => {

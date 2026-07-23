@@ -3,7 +3,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
 import { courierCodStatus } from "@/lib/cod-guard";
-import { capacityFor, subOrderWeights } from "@/lib/courier-capacity";
+import { capacityFor, subOrderMetrics } from "@/lib/courier-capacity";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { courierRating } from "@/lib/courier-ratings";
 import { prisma } from "@/lib/prisma";
@@ -66,11 +66,11 @@ export async function CourierDetailView({
 
   // What the driver is carrying right now, in the same terms auto-assignment
   // uses to decide whether they can take more (lib/courier-capacity.ts).
-  const parcelWeights = await subOrderWeights(
+  const parcelMetrics = await subOrderMetrics(
     activeParcels.map((s) => s.subOrderId),
   );
-  const loadWeightGrams = [...parcelWeights.values()].reduce(
-    (a, b) => a + b,
+  const loadWeightGrams = [...parcelMetrics.values()].reduce(
+    (a, b) => a + b.weightGrams,
     0,
   );
   const capacity = capacityFor(courier.courierVehicleType);

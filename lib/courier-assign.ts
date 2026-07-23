@@ -17,8 +17,10 @@
 import { codBlockedCourierIds } from "@/lib/cod-guard";
 import {
   hasRoomFor,
-  subOrderWeightGrams,
-  subOrderWeights,
+  type ParcelMetrics,
+  subOrderMetric,
+  subOrderMetrics,
+  ZERO_METRICS,
 } from "@/lib/courier-capacity";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
@@ -30,6 +32,7 @@ export type CourierLoad = {
   id: string;
   load: number;
   loadWeightGrams: number;
+  loadVolumeCm3: number;
   vehicleType: string | null;
   governorate: string | null;
   lat: number | null;
@@ -72,21 +75,24 @@ async function activeCouriersWithLoad(): Promise<CourierLoad[]> {
       },
     },
   });
-  const weights = await subOrderWeights(active.map((s) => s.subOrderId));
+  const metrics = await subOrderMetrics(active.map((s) => s.subOrderId));
 
   const byDriver = new Map<
     string,
-    { load: number; weight: number; govs: Set<string> }
+    { load: number; weight: number; volume: number; govs: Set<string> }
   >();
   for (const s of active) {
     if (!s.driverId) continue;
     const cur = byDriver.get(s.driverId) ?? {
       load: 0,
       weight: 0,
+      volume: 0,
       govs: new Set<string>(),
     };
     cur.load += 1;
-    cur.weight += weights.get(s.subOrderId) ?? 0;
+    const m = metrics.get(s.subOrderId) ?? ZERO_METRICS;
+    cur.weight += m.weightGrams;
+    cur.volume += m.volumeCm3;
     const gov = s.subOrder?.order.address?.governorate;
     if (gov) cur.govs.add(gov);
     byDriver.set(s.driverId, cur);
@@ -98,6 +104,7 @@ async function activeCouriersWithLoad(): Promise<CourierLoad[]> {
       id: c.id,
       load: cur?.load ?? 0,
       loadWeightGrams: cur?.weight ?? 0,
+      loadVolumeCm3: cur?.volume ?? 0,
       vehicleType: c.courierVehicleType,
       governorate: c.courierLocation?.governorate ?? null,
       lat: c.courierLocation?.lat ?? null,
@@ -123,13 +130,14 @@ export async function pickLeastLoadedCourierId(): Promise<string | null> {
 export type ParcelInfo = {
   destGovernorate: string | null;
   destCoords?: { lat: number | null; lng: number | null } | null;
-  weightGrams?: number;
+  metrics?: ParcelMetrics;
 };
 
 /**
  * Pure ranking core of pickCourierForShipment, exported for tests.
  *
- * 1. Drop couriers without room for the parcel (vehicle weight/parcel limits).
+ * 1. Drop couriers without room for the parcel (vehicle weight/volume/parcel
+ *    limits, and its longest item must physically fit the vehicle).
  * 2. Prefer a courier already delivering to the destination governorate
  *    (batching) — they're making that trip anyway, capacity permitting.
  * 3. Within that, the strategy's usual order: distance (nearest) or load.
@@ -139,7 +147,8 @@ export function pickFrom(
   strategy: AssignStrategy,
   parcel: ParcelInfo,
 ): string | null {
-  const capable = list.filter((c) => hasRoomFor(c, parcel.weightGrams ?? 0));
+  const metrics = parcel.metrics ?? ZERO_METRICS;
+  const capable = list.filter((c) => hasRoomFor(c, metrics));
   if (capable.length === 0) return null;
 
   const gov = parcel.destGovernorate;
@@ -191,14 +200,14 @@ export async function pickCourierForShipment(
   destGovernorate: string | null,
   strategy: AssignStrategy,
   destCoords?: { lat: number | null; lng: number | null } | null,
-  parcelWeightGrams?: number,
+  parcelMetrics?: ParcelMetrics,
 ): Promise<string | null> {
   const all = await activeCouriersWithLoad();
   if (all.length === 0) return null;
   return pickFrom(all, strategy, {
     destGovernorate,
     destCoords,
-    weightGrams: parcelWeightGrams,
+    metrics: parcelMetrics,
   });
 }
 
@@ -232,12 +241,12 @@ export async function autoAssignShipment(
 
   const strategy = await getSetting("courier_assign_strategy");
   const addr = shipment.subOrder?.order.address;
-  const weightGrams = await subOrderWeightGrams(shipment.subOrderId);
+  const metrics = await subOrderMetric(shipment.subOrderId);
   const driverId = await pickCourierForShipment(
     addr?.governorate ?? null,
     strategy === "nearest" ? "nearest" : "balanced",
     addr ? { lat: addr.lat, lng: addr.lng } : null,
-    weightGrams,
+    metrics,
   );
   if (!driverId) return null;
 

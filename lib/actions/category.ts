@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { categorySchema } from "@/lib/validations/category";
 import { fieldErrors } from "@/lib/validations/auth";
@@ -23,6 +24,14 @@ async function revalidate() {
 }
 
 function parse(formData: FormData) {
+  // Delivery defaults: an empty weight clears it; a size needs all three
+  // sides, anything less counts as "not provided".
+  const side = (k: string) => Number(formData.get(k)) || 0;
+  const dims = {
+    l: side("dimL"),
+    w: side("dimW"),
+    h: side("dimH"),
+  };
   return categorySchema.safeParse({
     nameEn: formData.get("nameEn"),
     nameAr: formData.get("nameAr"),
@@ -31,6 +40,9 @@ function parse(formData: FormData) {
     parentId: formData.get("parentId") || undefined,
     position: formData.get("position") ?? 0,
     isActive: formData.get("isActive") === "on",
+    defaultWeightGrams: formData.get("defaultWeightGrams") || null,
+    defaultDimensionsCm:
+      dims.l > 0 && dims.w > 0 && dims.h > 0 ? dims : null,
   });
 }
 
@@ -58,8 +70,17 @@ export async function createCategory(
 
   const parsed = parse(formData);
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
-  const { nameEn, nameAr, slug, icon, parentId, position, isActive } =
-    parsed.data;
+  const {
+    nameEn,
+    nameAr,
+    slug,
+    icon,
+    parentId,
+    position,
+    isActive,
+    defaultWeightGrams,
+    defaultDimensionsCm,
+  } = parsed.data;
 
   if (
     await prisma.category.findUnique({ where: { slug }, select: { id: true } })
@@ -82,6 +103,8 @@ export async function createCategory(
       parentId: parentId || null,
       position,
       isActive: isActive ?? true,
+      defaultWeightGrams,
+      defaultDimensions: defaultDimensionsCm ?? Prisma.DbNull,
     },
   });
 
@@ -101,8 +124,17 @@ export async function updateCategory(
 
   const parsed = parse(formData);
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
-  const { nameEn, nameAr, slug, icon, parentId, position, isActive } =
-    parsed.data;
+  const {
+    nameEn,
+    nameAr,
+    slug,
+    icon,
+    parentId,
+    position,
+    isActive,
+    defaultWeightGrams,
+    defaultDimensionsCm,
+  } = parsed.data;
 
   if (slug !== existing.slug) {
     const taken = await prisma.category.findUnique({
@@ -131,6 +163,8 @@ export async function updateCategory(
       parentId: parentId || null,
       position,
       isActive: isActive ?? true,
+      defaultWeightGrams,
+      defaultDimensions: defaultDimensionsCm ?? Prisma.DbNull,
     },
   });
 

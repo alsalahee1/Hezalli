@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { categoryOptions } from "@/lib/categories";
+import { parseDimensions } from "@/lib/courier-capacity";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import {
@@ -61,6 +62,7 @@ export default async function EditProductPage({
     condition: product.condition,
     lowStockThreshold: product.lowStockThreshold,
     weightGrams: product.weightGrams,
+    dimensionsCm: parseDimensions(product.dimensions),
     status: product.status,
     images: product.images.map((i) => ({ url: i.url })),
     variants: product.variants.map((v) => ({
