@@ -78,9 +78,29 @@ export default async function PointLedgerPage({
   const hasOpen = payoutRequests.some(
     (r) => r.status === "REQUESTED" || r.status === "APPROVED",
   );
+  // Each courier's current cash-on-hand (collected − remitted ± adjustments),
+  // in one grouped query, so the cash-in form can offer "collect all".
+  const courierIds = couriers.map((c) => c.id);
+  const balanceRows = courierIds.length
+    ? await prisma.courierLedgerEntry.groupBy({
+        by: ["courierId"],
+        where: {
+          courierId: { in: courierIds },
+          type: { in: ["COD_COLLECTED", "REMITTANCE", "ADJUSTMENT"] },
+        },
+        _sum: { amountUsd: true },
+      })
+    : [];
+  const cashByDriver = new Map(
+    balanceRows.map((r) => [r.courierId, Number(r._sum.amountUsd ?? 0)]),
+  );
   const drivers = couriers.map((c) => ({
     id: c.id,
     name: c.name ?? c.email ?? c.id.slice(-6),
+    cashOnHand: Math.max(
+      0,
+      Math.round((cashByDriver.get(c.id) ?? 0) * 100) / 100,
+    ),
   }));
 
   return (
