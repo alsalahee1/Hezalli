@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { loadReceiptForOwner } from "@/lib/wallet-receipt";
 import { ReceiptView } from "@/components/wallet/receipt-view";
 import { ShareReceiptButton } from "@/components/wallet/share-receipt-button";
+import { WalletAppHeader } from "@/components/wallet/wallet-app-header";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +36,13 @@ export default async function WalletTxPage({
           Desktop is unaffected. */}
       <div data-native-wallet hidden />
 
+      <WalletAppHeader backHref="/account/wallet" />
+
+      {/* Desktop keeps an in-content back link; on phones the header's back
+          arrow handles it, so hide this one there to avoid two back affordances. */}
       <Link
         href="/account/wallet"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+        className="text-muted-foreground hover:text-foreground hidden items-center gap-1.5 text-sm md:inline-flex"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" />
         {t("backToWallet")}

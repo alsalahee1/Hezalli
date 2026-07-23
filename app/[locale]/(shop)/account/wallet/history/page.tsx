@@ -10,6 +10,7 @@ import { abs } from "@/lib/seo";
 import { getSetting } from "@/lib/settings";
 import { getWalletView } from "@/lib/wallet";
 import { QrCode } from "@/components/orders/qr-code";
+import { WalletAppHeader } from "@/components/wallet/wallet-app-header";
 import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 
 export const dynamic = "force-dynamic";
@@ -58,9 +59,13 @@ export default async function WalletHistoryPage() {
           the history reads like a standalone wallet screen. */}
       <div data-native-wallet hidden />
 
+      <WalletAppHeader backHref="/account/wallet" />
+
+      {/* Desktop keeps an in-content back link; on phones the header's back
+          arrow handles it, so hide this one there to avoid two back affordances. */}
       <Link
         href="/account/wallet"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+        className="text-muted-foreground hover:text-foreground hidden items-center gap-1.5 text-sm md:inline-flex"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" />
         {t("backToWallet")}
