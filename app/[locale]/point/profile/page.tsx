@@ -5,6 +5,7 @@ import { requireDeliveryPoint } from "@/lib/authz";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { getPlatformSettings } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
+import { PointPauseToggle } from "@/components/point/point-pause-toggle";
 
 // The hub's own record card: the business details published in the public
 // /points directory, the capacity admins set, and the cash-limit breakdown
@@ -30,6 +31,7 @@ export default async function PointProfilePage() {
         addressLine: true,
         capacity: true,
         depositUsd: true,
+        pausedAt: true,
         createdAt: true,
       },
     }),
@@ -48,6 +50,10 @@ export default async function PointProfilePage() {
         <h1 className="text-lg font-semibold">{t("profileTitle")}</h1>
         <p className="text-muted-foreground text-sm">{t("profileSubtitle")}</p>
       </div>
+
+      {/* Vacation mode: stop new routing while the shop is closed; the
+          counter keeps working for parcels already announced or held. */}
+      <PointPauseToggle paused={point.pausedAt != null} />
 
       <div className="space-y-2 rounded-xl border p-4 text-sm">
         <p className="flex items-center gap-2 font-semibold">

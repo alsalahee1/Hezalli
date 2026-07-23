@@ -2882,7 +2882,15 @@
     "searchResultsFor": "Parcels for “{query}” at your hub.",
     "prevPage": "Newer",
     "nextPage": "Older",
-    "noMoreEntries": "Nothing further back."
+    "noMoreEntries": "Nothing further back.",
+    "hubPausedTitle": "Your hub is paused",
+    "hubPausedBody": "No new parcels are routed to you and your hub is hidden from the directory. Announced parcels are still accepted, and held parcels stay collectible.",
+    "hubPausedBanner": "New routing is off while you're on a break — resume anytime from My hub.",
+    "hubPauseTitle": "Take a break",
+    "hubPauseBody": "Pause new routing while your shop is closed — parcels already announced or held keep flowing, and you can resume anytime.",
+    "hubPauseBtn": "Pause",
+    "hubResumeBtn": "Resume routing",
+    "pauseError": "Could not update — try again."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -2992,7 +3000,8 @@
     "payout_PAID": "Paid",
     "payout_REJECTED": "Rejected",
     "err_badState": "Already processed.",
-    "err_notFound": "Request not found."
+    "err_notFound": "Request not found.",
+    "paused": "On break"
   },
   "DeliveryProof": {
     "title": "Proof of delivery",

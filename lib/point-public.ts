@@ -12,12 +12,15 @@ export type PublicPoint = {
   phone: string;
 };
 
-/** ACTIVE hubs grouped by governorate, for the public /points directory. */
+/**
+ * ACTIVE hubs grouped by governorate, for the public /points directory.
+ * Hubs on a vacation pause are hidden — a walk-in would find a closed door.
+ */
 export async function publicPointsByGovernorate(): Promise<
   { governorate: string; points: PublicPoint[] }[]
 > {
   const rows = await prisma.deliveryPoint.findMany({
-    where: { status: "ACTIVE" },
+    where: { status: "ACTIVE", pausedAt: null },
     orderBy: [{ governorate: "asc" }, { city: "asc" }, { name: "asc" }],
     select: {
       id: true,

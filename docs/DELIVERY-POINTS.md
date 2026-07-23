@@ -884,6 +884,40 @@ Rounding out the v1.24 app for real counter volume:
 - [x] i18n (en + ar)
 - [x] This file kept current
 
+## 42c. v1.26 — Hub vacation mode
+
+A shop closes for Eid, a family trip, a renovation — until now the only
+lever was an admin suspension. Now the operator pauses themselves
+(`DeliveryPoint.pausedAt`, toggled from `/point/profile` via
+`setPointPaused`, audited `point.pause`):
+
+- **No NEW routing while paused** — the checkout pickup picker, the seller
+  drop-off/origin pickers, and the server re-check (`point-select`) all
+  treat a paused hub like a suspended one, and it disappears from the
+  public `/points` directory.
+- **The counter keeps working** — parcels already announced are still
+  accepted at the desk, held parcels stay collectible (buyer pickups,
+  driver manifests), and committed PICKUP orders still ship to the hub:
+  exactly the capacity-gate exemptions, reused.
+- **Visible everywhere it matters** — an amber banner on the hub dashboard
+  (linking to the resume switch), the loud/quiet toggle card on the profile
+  page, and an "on break" chip on the admin/delivery-manager network list.
+  Only the operator can lift their own pause; admin suspension remains a
+  separate, staff-owned lever.
+
+### Build checklist (v1.26)
+
+- [x] `DeliveryPoint.pausedAt` + migration
+- [x] `point-select` (picker + server re-check) and `point-public`
+      (directory) exclude paused hubs; pickup-hub card on the track page
+      unaffected (the parcel is already there)
+- [x] `setPointPaused` (operator-gated, audited) + profile toggle +
+      dashboard banner + admin list chip
+- [x] i18n (en + ar) + integration test (`point-pause.test.ts`: pause →
+      unroutable + hidden, committed pickup still ships and scans, resume
+      restores, non-operator refused)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

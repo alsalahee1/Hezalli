@@ -75,7 +75,7 @@ export default async function PointDashboardPage() {
     maxDeliveryAttempts(),
     prisma.deliveryPoint.findUnique({
       where: { id: gate.pointId },
-      select: { capacity: true, depositUsd: true },
+      select: { capacity: true, depositUsd: true, pausedAt: true },
     }),
     getPlatformSettings(),
     pointLedgerSummary(gate.pointId),
@@ -183,6 +183,22 @@ export default async function PointDashboardPage() {
           </span>
         ) : null}
       </div>
+
+      {/* Vacation mode: remind the operator the tap is off and where the
+          resume switch lives — a quiet dashboard shouldn't be a mystery. */}
+      {me?.pausedAt ? (
+        <Link
+          href="/point/profile"
+          className="block rounded-xl border border-amber-500/50 bg-amber-500/10 p-4"
+        >
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-700 dark:text-amber-500">
+            <AlertTriangle className="size-4" /> {t("hubPausedTitle")}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {t("hubPausedBanner")}
+          </p>
+        </Link>
+      ) : null}
 
       {cashBlocked ? (
         <Link

@@ -32,6 +32,7 @@ export async function PointsView({ base }: { base: string }) {
         phone: true,
         status: true,
         capacity: true,
+        pausedAt: true,
         owner: { select: { name: true, email: true } },
       },
     }),
@@ -212,6 +213,13 @@ export async function PointsView({ base }: { base: string }) {
                     {p.status === "SUSPENDED" ? (
                       <span className="bg-destructive/10 text-destructive rounded px-1.5 py-0.5 text-xs font-medium">
                         {t("suspended")}
+                      </span>
+                    ) : null}
+                    {/* Operator's own vacation pause (docs §42c) — informational,
+                        only the operator can lift it. */}
+                    {p.pausedAt ? (
+                      <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                        {t("paused")}
                       </span>
                     ) : null}
                     <form action={setPointStatus}>

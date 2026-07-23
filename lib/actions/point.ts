@@ -216,3 +216,33 @@ export async function pointReturnToSeller(
   if (res.ok) await revalidatePoint();
   return res;
 }
+
+// Vacation mode: the operator pauses NEW routing to their hub — pickers and
+// the server re-check skip it, and it drops off the public directory — while
+// the counter keeps working: announced parcels are still accepted, held
+// parcels stay collectible, drivers still pick up. Self-service both ways
+// (docs/DELIVERY-POINTS.md §42c).
+export async function setPointPaused(paused: boolean): Promise<Result> {
+  const gate = await requireDeliveryPoint();
+  if (!gate) return { error: "forbidden" };
+
+  await prisma.deliveryPoint.update({
+    where: { id: gate.pointId },
+    data: { pausedAt: paused ? new Date() : null },
+  });
+  await prisma.auditLog.create({
+    data: {
+      actorId: gate.userId,
+      action: "point.pause",
+      entity: "DeliveryPoint",
+      entityId: gate.pointId,
+      meta: { paused },
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/point`);
+  revalidatePath(`/${locale}/point/profile`);
+  revalidatePath(`/${locale}/points`);
+  return { ok: true };
+}

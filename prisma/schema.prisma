@@ -379,6 +379,11 @@ model DeliveryPoint {
   // Security deposit Hezalli holds from this operator (docs §32). Optional —
   // raises the point's unremitted-cash limit 1:1. Admin-set, audited.
   depositUsd  Decimal             @default(0) @db.Decimal(12, 2)
+  // Vacation mode: while set, the hub gets NO new routing (pickers +
+  // server re-check) and drops off the public directory; announced parcels
+  // are still accepted at the counter and held ones stay collectible.
+  // Self-service toggle from the point app; null = open.
+  pausedAt    DateTime?
   status      DeliveryPointStatus @default(ACTIVE)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
