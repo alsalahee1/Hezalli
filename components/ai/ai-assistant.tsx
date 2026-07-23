@@ -1,14 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, Send, Star, X } from "lucide-react";
+import { Bot, Loader2, Repeat, Send, Star, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
+import {
+  BOT_COOKIE,
+  BOT_IDS,
+  botName as botDisplayName,
+} from "@/lib/ai/bot-constants";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
 import { ShadiIcon } from "@/components/ai/shadi-icon";
+
+// Switch character: persist the choice in a cookie and reload so the server
+// re-resolves the avatar, name, and system-prompt identity.
+function switchTo(id: string) {
+  document.cookie = `${BOT_COOKIE}=${id}; path=/; max-age=31536000; SameSite=Lax`;
+  window.location.reload();
+}
 
 type ProductCard = {
   slug: string;
@@ -50,9 +62,13 @@ function sectionFor(pathname: string): Section {
 }
 
 export function AiAssistant({
+  botId,
+  botName,
   avatar,
   greeting,
 }: {
+  botId?: string;
+  botName?: string;
   avatar?: string;
   greeting?: string;
 }) {
@@ -61,6 +77,11 @@ export function AiAssistant({
   const isRtl = locale === "ar";
   const pathname = usePathname();
   const section = sectionFor(pathname);
+  // The active character's display name — falls back to the translated default.
+  const name = botName || t("title");
+  // The other character to offer switching to (2-bot cycle), and its name.
+  const other = BOT_IDS.find((id) => id !== botId);
+  const otherName = other ? botDisplayName(other, locale) : "";
 
   const [open, setOpen] = useState(false);
   const { mounted, shown } = useMountTransition(open, 200);
@@ -184,13 +205,22 @@ export function AiAssistant({
               <Bot className="size-5" />
             )}
             <div className="flex-1">
-              <p className="text-sm leading-tight font-semibold">
-                {t("title")}
-              </p>
+              <p className="text-sm leading-tight font-semibold">{name}</p>
               <p className="text-primary-foreground/80 text-xs">
                 {t("subtitle")}
               </p>
             </div>
+            {other ? (
+              <button
+                type="button"
+                aria-label={t("switchTo", { name: otherName })}
+                title={t("switchTo", { name: otherName })}
+                onClick={() => switchTo(other)}
+                className="hover:bg-primary-foreground/10 rounded-md p-1.5"
+              >
+                <Repeat className="size-4" />
+              </button>
+            ) : null}
             <button
               type="button"
               aria-label={t("close")}
@@ -219,7 +249,7 @@ export function AiAssistant({
                   <ShadiIcon className="text-primary mx-auto size-8" />
                 )}
                 <p className="whitespace-pre-line">
-                  {greeting?.trim() || t("greeting")}
+                  {greeting?.trim() || t("greeting", { name })}
                 </p>
                 <div className="flex flex-col gap-2">
                   {suggestions.map((s) => (

@@ -5,6 +5,8 @@
 import "server-only";
 
 import { startLink, unlinkChat } from "@/lib/ai/account-link";
+import { getDefaultBot } from "@/lib/ai/active-bot";
+import { botName } from "@/lib/ai/bot-constants";
 import { formatReplyText, runChannelTurn } from "@/lib/ai/channel";
 import { renderVoice, replyMode, wantsVoice } from "@/lib/ai/voice-reply";
 import { routing } from "@/i18n/routing";
@@ -39,10 +41,10 @@ function resolveLocale(code?: string): "ar" | "en" {
   return routing.defaultLocale;
 }
 
-function startText(locale: string): string {
+function startText(locale: string, name: string): string {
   return locale === "ar"
-    ? "مرحبًا! أنا شادي، مساعد هزلي 🛍️\nاكتب ما تبحث عنه أو أرسل رسالة صوتية وسأساعدك في العثور على المنتجات ومقارنة الأسعار."
-    : "Hi! I'm Shadi, the Hezalli assistant 🛍️\nType what you're looking for (or send a voice note) and I'll help you find products and compare prices.";
+    ? `مرحبًا! أنا ${name}، مساعد هزلي 🛍️\nاكتب ما تبحث عنه أو أرسل رسالة صوتية وسأساعدك في العثور على المنتجات ومقارنة الأسعار.`
+    : `Hi! I'm ${name}, the Hezalli assistant 🛍️\nType what you're looking for (or send a voice note) and I'll help you find products and compare prices.`;
 }
 
 function errorText(locale: string): string {
@@ -75,12 +77,9 @@ export async function processTelegramUpdate(
   const locale = resolveLocale(msg?.from?.language_code);
 
   try {
-    if (!text && !voiceFile) {
-      await sendTelegramMessage(chatId, startText(locale));
-      return;
-    }
-    if (text === "/start") {
-      await sendTelegramMessage(chatId, startText(locale));
+    if ((!text && !voiceFile) || text === "/start") {
+      const name = botName(await getDefaultBot(), locale);
+      await sendTelegramMessage(chatId, startText(locale, name));
       return;
     }
 

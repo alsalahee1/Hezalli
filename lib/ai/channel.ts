@@ -12,6 +12,7 @@ import {
   type AudioInput,
   type ChatMessage,
 } from "./assistant";
+import { getDefaultBot } from "./active-bot";
 import {
   checkGlobalCaps,
   checkRate,
@@ -111,6 +112,8 @@ export async function runChannelTurn(opts: {
   // A voice note with no caption still needs a text turn for history/context.
   const displayText = userText || (audio ? "[voice message]" : "");
   const prior = priorMessages(existing?.messages);
+  // Messaging channels always speak as the platform's default character.
+  const bot = await getDefaultBot();
 
   // Self-healing: if Gemini rejects a poisoned/oversized history, wipe this
   // chat's memory and retry once from a clean slate.
@@ -124,7 +127,7 @@ export async function runChannelTurn(opts: {
     try {
       reply = await runAssistant(
         history,
-        { locale, userId: existing?.userId ?? null },
+        { locale, userId: existing?.userId ?? null, bot },
         { audio },
       );
       break;

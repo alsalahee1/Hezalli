@@ -7,6 +7,7 @@ import {
   type AssistantSection,
   type ChatMessage,
 } from "@/lib/ai/assistant";
+import { getActiveBot } from "@/lib/ai/active-bot";
 import { checkGlobalCaps } from "@/lib/ai/guards";
 import { assistantReady, GeminiError } from "@/lib/ai/gemini";
 import { prisma } from "@/lib/prisma";
@@ -122,12 +123,15 @@ export async function POST(req: NextRequest) {
     parsed.section ?? "store",
     session?.user?.id ?? null,
   );
+  // Which character is active for this shopper (cookie → admin default).
+  const bot = await getActiveBot();
 
   try {
     const reply = await runAssistant(history, {
       locale,
       userId: session?.user?.id ?? null,
       section,
+      bot,
     });
     return NextResponse.json(reply);
   } catch (err) {

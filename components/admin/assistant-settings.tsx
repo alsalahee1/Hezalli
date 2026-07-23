@@ -10,6 +10,7 @@ import {
   saveAssistantKey,
   saveAssistantSettings,
 } from "@/lib/actions/settings";
+import type { BotId } from "@/lib/ai/bot-constants";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,10 +30,17 @@ const VOICES = [
 ];
 const REPLY_MODES = ["text", "voice", "both", "match"] as const;
 
-export type AssistantCurrent = {
-  enabled: boolean;
+export type BotCard = {
+  id: string;
+  name: string;
   avatar: string;
   defaultAvatar: string;
+};
+
+export type AssistantCurrent = {
+  enabled: boolean;
+  bots: BotCard[];
+  defaultBot: string;
   keySource: "db" | "env" | "none";
   model: string;
   replyMode: string;
@@ -89,6 +97,7 @@ export function AssistantSettings({
     spendCapUsd: String(current.spendCapUsd || ""),
     telegramEnabled: current.telegramEnabled,
     whatsappEnabled: current.whatsappEnabled,
+    defaultBot: current.defaultBot,
     // Show the effective intro so it's editable in place; empty override means
     // "use the default", so seed the box with the default text.
     intro: current.intro || current.defaultIntro,
@@ -132,6 +141,7 @@ export function AssistantSettings({
         maxTokens: Number(f.maxTokens),
         telegramEnabled: f.telegramEnabled,
         whatsappEnabled: f.whatsappEnabled,
+        defaultBot: f.defaultBot,
       }),
     );
 
@@ -159,35 +169,64 @@ export function AssistantSettings({
             {t("enabledHint")}
           </span>
         </label>
-        <div className="space-y-1.5">
-          <span className="text-sm font-medium">{t("avatar")}</span>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="bg-muted size-16 shrink-0 overflow-hidden rounded-full border">
-              {current.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={current.avatar}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : null}
-            </div>
-            <ImageUploader
-              folder="avatars"
-              onUploaded={(url) => run(() => saveAssistantAvatar(url))}
-            />
-            {current.avatar && current.avatar !== current.defaultAvatar ? (
-              <Button
-                variant="outline"
-                onClick={() => run(() => saveAssistantAvatar(null))}
-                disabled={pending}
-              >
-                {t("avatarReset")}
-              </Button>
-            ) : null}
+        {/* Characters: each has its own image; one is the platform default. */}
+        <div className="space-y-2">
+          <span className="text-sm font-medium">{t("charactersTitle")}</span>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {current.bots.map((bot) => (
+              <div key={bot.id} className="space-y-3 rounded-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-muted size-14 shrink-0 overflow-hidden rounded-full border">
+                    {bot.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={bot.avatar}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">{bot.name}</p>
+                    <label className="mt-1 flex items-center gap-1.5 text-xs">
+                      <input
+                        type="radio"
+                        name="defaultBot"
+                        className="size-3.5"
+                        checked={f.defaultBot === bot.id}
+                        onChange={() => set("defaultBot", bot.id)}
+                      />
+                      {f.defaultBot === bot.id
+                        ? t("isDefault")
+                        : t("makeDefault")}
+                    </label>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ImageUploader
+                    folder="avatars"
+                    onUploaded={(url) =>
+                      run(() => saveAssistantAvatar(bot.id as BotId, url))
+                    }
+                  />
+                  {bot.avatar && bot.avatar !== bot.defaultAvatar ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        run(() => saveAssistantAvatar(bot.id as BotId, null))
+                      }
+                      disabled={pending}
+                    >
+                      {t("avatarReset")}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ))}
           </div>
           <span className="text-muted-foreground block text-xs">
-            {t("avatarHint")}
+            {t("charactersHint")}
           </span>
         </div>
       </section>
