@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId } from "@/lib/authz";
+import { requireAdminId, requireDeliveryManagerId } from "@/lib/authz";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { categorySchema } from "@/lib/validations/category";
@@ -169,6 +169,68 @@ export async function updateCategory(
   });
 
   await revalidate();
+  return { ok: true };
+}
+
+// Delivery staff set (or clear) a category's delivery defaults — the typical
+// unit weight/size used for courier capacity when a product has none of its
+// own (lib/courier-capacity.ts). Deliberately narrow: DELIVERY_MANAGER (or
+// ADMIN) may touch ONLY these two fields, never names, slugs, or the tree —
+// the full category manager stays admin-only. Audited, since it changes which
+// vehicles receive which parcels.
+export async function setCategoryShippingDefaults(
+  categoryId: string,
+  defaultWeightGrams: number | null,
+  defaultDimensionsCm: { l: number; w: number; h: number } | null,
+): Promise<{ ok?: boolean; error?: string }> {
+  const staffId = await requireDeliveryManagerId();
+  if (!staffId) return { error: "forbidden" };
+
+  const weight =
+    defaultWeightGrams == null ? null : Math.round(defaultWeightGrams);
+  if (weight != null && (weight < 0 || weight > 5_000_000)) {
+    return { error: "weightInvalid" };
+  }
+  const dims = defaultDimensionsCm;
+  const sideOk = (v: number) => Number.isFinite(v) && v >= 1 && v <= 1000;
+  if (dims && !(sideOk(dims.l) && sideOk(dims.w) && sideOk(dims.h))) {
+    return { error: "dimensionsInvalid" };
+  }
+
+  const category = await prisma.category.findUnique({
+    where: { id: categoryId },
+    select: { id: true, defaultWeightGrams: true, defaultDimensions: true },
+  });
+  if (!category) return { error: "notFound" };
+
+  await prisma.$transaction([
+    prisma.category.update({
+      where: { id: category.id },
+      data: {
+        defaultWeightGrams: weight,
+        defaultDimensions: dims ?? Prisma.DbNull,
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: staffId,
+        action: "category.shippingDefaults",
+        entity: "Category",
+        entityId: category.id,
+        meta: {
+          from: {
+            weightGrams: category.defaultWeightGrams,
+            dimensions: category.defaultDimensions,
+          },
+          to: { weightGrams: weight, dimensions: dims },
+        } as Prisma.InputJsonValue,
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/categories`);
+  revalidatePath(`/${locale}/delivery-manager/categories`);
   return { ok: true };
 }
 

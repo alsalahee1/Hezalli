@@ -149,6 +149,11 @@ const DELIVERY_MANAGER_NAV: NavItem[] = [
     key: "shippingZones",
     icon: MapPin,
   },
+  {
+    href: "/delivery-manager/categories",
+    key: "deliveryDefaults",
+    icon: Shapes,
+  },
   { href: "/delivery-manager/how", key: "how", icon: BookOpen },
 ];
 const DELIVERY_MANAGER_PRIMARY = [

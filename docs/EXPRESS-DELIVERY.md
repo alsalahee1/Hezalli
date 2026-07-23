@@ -109,8 +109,11 @@ Two refinements apply under both strategies (`lib/courier-capacity.ts`):
   back to the live `Product.weightGrams` / `Product.dimensions`
   (`{ l, w, h }` cm, collected on the seller product form), then to
   the product category's delivery defaults
-  (`Category.defaultWeightGrams` / `defaultDimensions`, admin-set in the
-  category manager — so one setting covers e.g. all refrigerators), then to
+  (`Category.defaultWeightGrams` / `defaultDimensions` — so one setting covers
+  e.g. all refrigerators; editable in the admin category manager and, via the
+  narrow audited `setCategoryShippingDefaults` action, on the delivery-manager
+  portal's "Delivery defaults" page — those two fields only, never names,
+  slugs, or the tree), then to
   small-parcel constants so unlabeled items still consume capacity. Summed
   parcel volume is inflated by `PACKING_FACTOR` since real items don't
   tessellate. Couriers whose vehicle can't take the parcel — too heavy or too
