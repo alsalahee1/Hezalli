@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { QrCode as QrIcon, Store, Truck, Wallet } from "lucide-react";
+import { Store, Truck, Wallet } from "lucide-react";
 
 import type { Metadata, Viewport } from "next";
 
@@ -77,12 +77,6 @@ export default async function DriverLayout({
             className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
           >
             <Wallet className="size-5" />
-          </Link>
-          <Link
-            href="/driver/scan"
-            className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
-          >
-            <QrIcon className="size-4" /> {t("scan")}
           </Link>
         </div>
       </header>
