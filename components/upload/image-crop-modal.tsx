@@ -48,10 +48,17 @@ export function ImageCropModal({
     null,
   );
 
+  // Load as a data: URL, NOT a blob: object URL — the app's CSP allows
+  // `img-src 'self' data: https:` but not `blob:`, so an <img src="blob:…">
+  // is blocked by the browser and never renders (the bug behind the blank
+  // crop frame). createImageBitmap in compressImage reads the File directly,
+  // which is why upload worked while this preview didn't.
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setSrc(url);
-    return () => URL.revokeObjectURL(url);
+    const reader = new FileReader();
+    reader.onload = () =>
+      setSrc(typeof reader.result === "string" ? reader.result : "");
+    reader.readAsDataURL(file);
+    return () => reader.abort();
   }, [file]);
 
   // Track the frame's rendered width (its height follows from `aspect`).
