@@ -336,7 +336,11 @@ describe("pickFrom (freight)", () => {
     expect(
       pickFrom([truck], "balanced", {
         destGovernorate: "Aden",
-        metrics: parcel({ weightGrams: 200_000, oversized: true, freight: true }),
+        metrics: parcel({
+          weightGrams: 200_000,
+          oversized: true,
+          freight: true,
+        }),
       }),
     ).toBeNull();
   });
