@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireDeliveryPoint } from "@/lib/authz";
+import { requireDeliveryManagerId, requireDeliveryPoint } from "@/lib/authz";
 import {
   canManagePoint,
   POINT_STAFF_ROLES,
@@ -324,5 +324,65 @@ export async function removePointStaff(staffId: string): Promise<Result> {
   ]);
 
   await revalidateStaff();
+  return { ok: true };
+}
+
+// Ops lever (admin / delivery-manager): pause or reinstate a hub's staff
+// member — e.g. freeze a rogue employee during a fraud investigation without
+// waiting on the owner. Scoped by pointId so the staffId must belong to that
+// hub. Removal and role changes stay the owner's call; ops only holds the
+// access switch. Audited (byOps) and the employee is notified.
+export async function adminSetPointStaffActive(
+  pointId: string,
+  staffId: string,
+  active: boolean,
+): Promise<Result> {
+  const adminId = await requireDeliveryManagerId();
+  if (!adminId) return { error: "forbidden" };
+
+  const row = await prisma.pointStaff.findFirst({
+    where: { id: staffId, pointId },
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { locale: true } },
+      point: { select: { name: true } },
+    },
+  });
+  if (!row) return { error: "notFound" };
+
+  const notice = staffNotice(
+    row.user.locale,
+    row.point.name,
+    active ? "activated" : "paused",
+  );
+  await prisma.$transaction([
+    prisma.pointStaff.update({
+      where: { id: row.id },
+      data: { isActive: active },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: active ? "point.staffActivate" : "point.staffDeactivate",
+        entity: "DeliveryPoint",
+        entityId: pointId,
+        meta: { staffUserId: row.userId, byOps: true },
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        userId: row.userId,
+        type: "SHIPMENT",
+        title: notice.title,
+        body: notice.body,
+        data: { link: notice.link },
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/points/${pointId}`);
+  revalidatePath(`/${locale}/delivery-manager/points/${pointId}`);
   return { ok: true };
 }

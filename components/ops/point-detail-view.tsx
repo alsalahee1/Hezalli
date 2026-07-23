@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { DepositForm } from "@/components/admin/deposit-form";
 import { PointPayoutForm } from "@/components/admin/point-payout-form";
 import { PointPayoutRequests } from "@/components/admin/point-payout-requests";
+import { AdminStaffRoster } from "@/components/admin/admin-staff-roster";
 
 // Per-point settlement: headline balance + fee/payout totals, a record-a-
 // payout form, and the raw ledger. The balance is what Hezalli owes the
@@ -39,6 +40,18 @@ export async function PointDetailView({
       capacity: true,
       depositUsd: true,
       owner: { select: { name: true, email: true } },
+      // The hub's team (docs §42d) — ops sees who works here and can pause a
+      // member's access during an investigation (owner-invisible until now).
+      staff: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          user: { select: { name: true, phone: true, email: true } },
+        },
+      },
     },
   });
   if (!point) notFound();
@@ -189,6 +202,27 @@ export async function PointDetailView({
             current={Number(point.depositUsd)}
           />
         </div>
+      </section>
+
+      {/* The hub's team + an ops access switch (docs §42d). */}
+      <section className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold">{t("staffHeading")}</h2>
+        {point.staff.length === 0 ? (
+          <p className="text-muted-foreground text-sm">{t("staffNone")}</p>
+        ) : (
+          <AdminStaffRoster
+            pointId={point.id}
+            owner={{ name: point.owner.name, email: point.owner.email }}
+            staff={point.staff.map((s) => ({
+              id: s.id,
+              name: s.user.name,
+              contact: s.user.phone ?? s.user.email ?? null,
+              role: s.role,
+              isActive: s.isActive,
+              since: format.dateTime(s.createdAt, { dateStyle: "medium" }),
+            }))}
+          />
+        )}
       </section>
 
       {/* Operator-initiated payout requests (docs §22). */}

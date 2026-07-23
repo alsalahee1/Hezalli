@@ -1001,6 +1001,26 @@ through the counter flow:
       attribution, activity rollup, standing-change notifications)
 - [x] This file kept current
 
+## 42f. v1.29 — Ops visibility of staff
+
+Staff management was 100% owner/manager-only: an admin investigating a
+dispute couldn't even see who worked at a hub. The ops point-detail view
+(`components/ops/point-detail-view.tsx`, shared by `/admin/points/[id]` and
+`/delivery-manager/points/[id]`) now shows the **team roster** (owner + each
+member's name, role, status, join date) and gives ops **one lever**: pause or
+reinstate a member's access (`adminSetPointStaffActive`, delivery-manager
+gated, audited `byOps`, employee notified). Hiring, role changes, and removal
+stay the owner's call — ops only holds the access switch, so a rogue employee
+can be frozen during an investigation without waiting on the owner.
+
+### Build checklist (v1.29)
+
+- [x] Roster + `AdminStaffRoster` in the shared ops point-detail view
+- [x] `adminSetPointStaffActive` (delivery-manager gated, audited, notified)
+- [x] i18n (en + ar) + integration test (ops can pause/reinstate; non-ops
+      refused; frozen member's access revoked)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

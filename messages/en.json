@@ -3172,7 +3172,20 @@
     "payout_REJECTED": "Rejected",
     "err_badState": "Already processed.",
     "err_notFound": "Request not found.",
-    "paused": "On break"
+    "paused": "On break",
+    "staffHeading": "Team",
+    "staffNone": "No staff added to this point.",
+    "staffOwner": "Owner",
+    "staffRole_MANAGER": "Store manager",
+    "staffRole_CASHIER": "Cashier",
+    "staffRole_COLLECTOR": "Money collector",
+    "staffRole_ORGANIZER": "Shelves organizer",
+    "staffActive": "Active",
+    "staffPaused": "Paused",
+    "staffSince": "since {date}",
+    "staffDeactivate": "Pause",
+    "staffReactivate": "Reinstate",
+    "staffErr": "Couldn't update — try again."
   },
   "DeliveryProof": {
     "title": "Proof of delivery",

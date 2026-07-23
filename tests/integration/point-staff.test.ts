@@ -23,6 +23,7 @@ import {
 import { requestPointPayout } from "@/lib/actions/point-payout";
 import {
   addPointStaff,
+  adminSetPointStaffActive,
   removePointStaff,
   setPointStaffActive,
   setPointStaffRole,
@@ -43,6 +44,7 @@ let carrierId: string;
 let managerId: string;
 let organizerId: string;
 let otherOwnerId: string;
+let adminId: string;
 let userIds: string[];
 
 const uniq = Date.now().toString(36);
@@ -97,13 +99,21 @@ beforeAll(async () => {
   const carrier = await prisma.carrier.create({
     data: { name: `Hezalli Express S-${uniq}`, platformManaged: true },
   });
+  const admin = await prisma.user.create({
+    data: {
+      email: `ps-adm-${uniq}@t.local`,
+      roles: ["DELIVERY_MANAGER"],
+      locale: "en",
+    },
+  });
   ownerId = owner.id;
   pointId = point.id;
   carrierId = carrier.id;
   managerId = manager.id;
   organizerId = organizer.id;
   otherOwnerId = otherOwner.id;
-  userIds = [owner.id, manager.id, organizer.id, otherOwner.id];
+  adminId = admin.id;
+  userIds = [owner.id, manager.id, organizer.id, otherOwner.id, admin.id];
 });
 
 afterAll(async () => {
@@ -257,5 +267,23 @@ describe("point staff", () => {
     // A stranger can't manage anyone's roster.
     as(fx.buyerId);
     expect(await removePointStaff(selfRow.id)).toEqual({ error: "forbidden" });
+
+    // Ops (delivery-manager) can freeze a member's access without the owner —
+    // and a non-ops user cannot. selfRow is the manager's membership row.
+    expect(await adminSetPointStaffActive(pointId, selfRow.id, false)).toEqual({
+      error: "forbidden",
+    });
+    as(adminId);
+    expect(await adminSetPointStaffActive(pointId, selfRow.id, false)).toEqual({
+      ok: true,
+    });
+    as(managerId);
+    expect(await requireDeliveryPoint()).toBeNull();
+    as(adminId);
+    expect(await adminSetPointStaffActive(pointId, selfRow.id, true)).toEqual({
+      ok: true,
+    });
+    as(managerId);
+    expect(await requireDeliveryPoint()).not.toBeNull();
   });
 });
