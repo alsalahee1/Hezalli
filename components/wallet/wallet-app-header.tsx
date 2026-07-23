@@ -18,7 +18,10 @@ export async function WalletAppHeader({ backHref }: { backHref?: string }) {
   const tNav = await getTranslations("WalletNav");
 
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky top-0 z-30 -mx-4 -mt-3 flex items-center justify-between border-b px-4 py-3 backdrop-blur md:hidden">
+    <header
+      data-app-header
+      className="bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky top-0 z-30 -mx-4 -mt-3 flex items-center justify-between border-b px-4 py-3 backdrop-blur md:hidden"
+    >
       <div className="flex items-center gap-1">
         {backHref ? (
           <Link
