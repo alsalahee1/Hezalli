@@ -40,6 +40,7 @@ export type SettingsInput = {
   job_board_enabled: boolean;
   job_board_window_minutes: number;
   job_board_max_active_jobs: number;
+  pickup_deadline_hours: number;
   dispatch_hours_start: number;
   dispatch_hours_end: number;
   seller_ship_days: number;
@@ -157,6 +158,14 @@ export async function savePlatformSettings(
   const boardMaxJobs = int(input.job_board_max_active_jobs);
   if (!Number.isFinite(boardMaxJobs) || boardMaxJobs < 0 || boardMaxJobs > 100)
     return { error: "badBoardCap" };
+  // Pickup deadline for accepted-but-never-scanned jobs (0 = off, max a week).
+  const pickupDeadline = int(input.pickup_deadline_hours);
+  if (
+    !Number.isFinite(pickupDeadline) ||
+    pickupDeadline < 0 ||
+    pickupDeadline > 168
+  )
+    return { error: "badPickupDeadline" };
   const dispatchStart = int(input.dispatch_hours_start);
   const dispatchEnd = int(input.dispatch_hours_end);
   if (
@@ -256,6 +265,7 @@ export async function savePlatformSettings(
     job_board_enabled: Boolean(input.job_board_enabled),
     job_board_window_minutes: boardWindow,
     job_board_max_active_jobs: boardMaxJobs,
+    pickup_deadline_hours: pickupDeadline,
     dispatch_hours_start: dispatchStart,
     dispatch_hours_end: dispatchEnd,
     seller_ship_days: shipDays,

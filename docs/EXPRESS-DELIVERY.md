@@ -75,6 +75,7 @@ All keys live in `PlatformSetting` (see `lib/settings.ts` for defaults).
 | `job_board_enabled` | `false` | Post unassigned parcels on the open driver job board (§4b) — any eligible driver can claim, first tap wins. |
 | `job_board_window_minutes` | `15` | How long a parcel stays board-only before push-offers ALSO start chasing a driver. `0` = both channels at once. |
 | `job_board_max_active_jobs` | `10` | A driver already holding this many in-flight deliveries can't claim more from the board. `0` = no cap. |
+| `pickup_deadline_hours` | `0` | Hours an ACCEPTED job (tapped offer or board claim) may sit without a single scan before the sweep takes it back and re-dispatches it. Forced/manual assignments are exempt. `0` = off. |
 
 Rules worth knowing:
 
@@ -189,6 +190,18 @@ it (`ShipmentOffer`; driver UI on `/driver`). The full lifecycle:
 clocks pause, and the first sweep after opening runs the **morning wave**,
 offering out everything that accumulated overnight. Nobody is pinged at 3 AM,
 and no offer silently expires while the fleet sleeps.
+
+**Pickup deadline** (`pickup_deadline_hours`, off by default): accepting is a
+commitment, but only a scan proves the parcel changed hands. A driver who
+tapped accept (or claimed off the board, §4b) and still hasn't made a single
+scan after the deadline loses the job automatically: the sweep expires their
+offer (`reason: pickup_timeout`), releases the parcel, notifies them, and
+re-dispatches — the cascade moves it to the next courier (their expired row
+excludes them), and with the board on it reappears there too. Only untouched
+parcels qualify (the same `offerOpenStatuses` rule as declines), so a driver
+who already collected the parcel can never lose it in software while holding
+it physically. Forced and manual assignments carry no accepted-offer row and
+are exempt — ops decisions stay with ops.
 
 **Reliability** (`lib/courier-reliability.ts`): every answered offer feeds a
 90-day acceptance rate per driver. Ties in ranking go to the more reliable
