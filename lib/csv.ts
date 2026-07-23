@@ -1,3 +1,16 @@
+// Escape a value for one CSV cell: RFC-4180 quoting PLUS neutralization of
+// spreadsheet formula injection. Excel/Sheets execute a cell that begins with
+// `= + - @` (or a leading tab/CR), so a user-controlled field like a display
+// name of `=HYPERLINK(...)` would run when staff open an export. Prefixing such
+// a cell with a single quote makes the spreadsheet render it as literal text.
+// Always route user-controlled text through this; server-generated numeric
+// columns can be written raw so they stay numeric.
+export function csvCell(v: unknown): string {
+  let s = v == null ? "" : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 // Minimal RFC-4180-ish CSV parser used by the seller bulk-import tool (Step
 // 17.7). Handles quoted fields, escaped quotes (""), and CRLF/LF line endings.
 // Kept in its own pure module (no "use server") so it can be unit tested.

@@ -117,6 +117,31 @@ describe("delivery accrues the courier ledger", () => {
     expect(s.earnings).toBe(1.5);
   });
 
+  it("concurrent DELIVERED submits mint only one earning (C2 race guard)", async () => {
+    const courierId = await freshCourier();
+    const { subOrderId } = await assignedParcel(courierId, "HEZALLI_BALANCE");
+    const proof = { courierId };
+
+    // Two near-simultaneous "delivered" submits for one parcel. The atomic
+    // SHIPPED→DELIVERED claim (plus the partial-unique ledger index) must let
+    // at most one accrue the delivery fee — never two.
+    const results = await Promise.allSettled([
+      markSubOrderDelivered(subOrderId, "courier", "en", proof),
+      markSubOrderDelivered(subOrderId, "courier", "en", proof),
+    ]);
+    const oks = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as { ok?: boolean }).ok,
+    ).length;
+    expect(oks).toBe(1);
+
+    const earnings = await prisma.courierLedgerEntry.count({
+      where: { subOrderId, type: "EARNING" },
+    });
+    expect(earnings).toBe(1);
+    const s = await courierCashSummary(courierId);
+    expect(s.earnings).toBe(1.5); // a single fee, not 3.0
+  });
+
   it("a seller-marked delivery accrues nothing to any courier ledger", async () => {
     const { subOrderId } = await fx.createSubOrder({
       paymentMethod: "COD",

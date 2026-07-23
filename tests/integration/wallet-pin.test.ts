@@ -70,15 +70,68 @@ describe("wallet PIN (Step 19.9)", () => {
     expect((await verifyWalletPin(userId, PIN)).error).toBe("locked");
   });
 
-  it("changing the PIN requires the current one and clears the lock", async () => {
+  it("changing the PIN requires proving the current one (step-up)", async () => {
     as(userId);
+    // The change now proves the current factor through the SAME lockout-aware
+    // path as an outflow (so the change endpoint can't be used to brute-force
+    // the current PIN). Clear the lock left by the previous test to exercise the
+    // change flow directly — while genuinely locked it correctly refuses.
+    const walletId = await getWalletId(userId);
+    await prisma.wallet.update({
+      where: { id: walletId },
+      data: { pinFailedCount: 0, pinLockedUntil: null },
+    });
     expect(
       (await setWalletPin({ pin: "1111", currentPin: "0000" })).error,
     ).toBe("wrongCurrentPin");
     expect((await setWalletPin({ pin: "1111", currentPin: PIN })).ok).toBe(
       true,
     );
-    // New PIN works and the lockout is gone.
+    // New PIN works.
     expect((await verifyWalletPin(userId, "1111")).ok).toBe(true);
+  });
+
+  it("blocks enrolling a first PIN on a passkey-protected wallet without the passkey (H1)", async () => {
+    const uniq = Math.random().toString(36).slice(2);
+    const u = await prisma.user.create({
+      data: { email: `pk-${uniq}@t.local`, roles: ["BUYER"], locale: "en" },
+    });
+    await getWalletId(u.id);
+    // A registered passkey is a step-up factor even with no PIN set.
+    await prisma.walletCredential.create({
+      data: {
+        userId: u.id,
+        credentialId: `cred-${uniq}`,
+        publicKey: "test-key",
+        transports: ["internal"],
+      },
+    });
+    as(u.id);
+    // Enrolling a first PIN must require proving the passkey — a bare session
+    // cannot set one (else a hijacked session would bypass the passkey).
+    expect((await setWalletPin({ pin: "4321" })).error).toBe("wrongCurrentPin");
+    expect(await walletHasPin(u.id)).toBe(false);
+
+    await prisma.walletCredential.deleteMany({ where: { userId: u.id } });
+    await prisma.wallet.deleteMany({ where: { userId: u.id } });
+    await prisma.user.deleteMany({ where: { id: u.id } });
+    as(userId); // restore the suite's actor
+  });
+
+  it("refuses to change the PIN while the wallet is locked", async () => {
+    as(userId);
+    const walletId = await getWalletId(userId);
+    await prisma.wallet.update({
+      where: { id: walletId },
+      data: {
+        pinFailedCount: 5,
+        pinLockedUntil: new Date(Date.now() + 15 * 60_000),
+      },
+    });
+    // Even with the correct current PIN, a locked wallet won't change its PIN —
+    // the change endpoint is not a lockout bypass.
+    expect((await setWalletPin({ pin: "2222", currentPin: "1111" })).error).toBe(
+      "wrongCurrentPin",
+    );
   });
 });

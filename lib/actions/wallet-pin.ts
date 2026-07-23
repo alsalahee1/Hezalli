@@ -4,19 +4,27 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { getWalletId } from "@/lib/wallet";
+import { verifyWalletAuth } from "@/lib/wallet-step-auth";
 
 type Result = { ok?: boolean; error?: string };
 
 const PIN_RE = /^\d{4,6}$/;
 
-// Set or change the wallet PIN. A 4–6 digit numeric PIN. Changing an existing
-// PIN requires the current one. Resets any lockout on success.
+// Set or change the wallet PIN. A 4–6 digit numeric PIN. Resets any lockout on
+// success.
+//
+// SECURITY: setting/replacing the PIN is itself a money-authorizing operation —
+// once set, the PIN authorizes every wallet outflow. So whenever the wallet
+// already has ANY step-up factor (an existing PIN or a registered passkey), a
+// change requires proving that factor first. Otherwise a hijacked session could
+// enrol a fresh PIN on a passkey-only wallet and bypass the passkey entirely.
 export async function setWalletPin(input: {
   pin: string;
   currentPin?: string;
+  passkey?: string;
 }): Promise<Result> {
   const session = await auth();
   const locale = await getLocale();
@@ -31,13 +39,17 @@ export async function setWalletPin(input: {
     where: { id: walletId },
     select: { pinHash: true },
   });
+  const hasPasskey =
+    (await prisma.walletCredential.count({ where: { userId } })) > 0;
 
-  // Changing an existing PIN requires proving the current one.
-  if (wallet.pinHash) {
-    const current = String(input.currentPin ?? "").trim();
-    if (!current || !(await verifyPassword(current, wallet.pinHash))) {
-      return { error: "wrongCurrentPin" };
-    }
+  // Step-up required when a factor already exists: the current PIN, or (for a
+  // passkey-protected wallet setting its first PIN) a passkey assertion.
+  if (wallet.pinHash || hasPasskey) {
+    const res = await verifyWalletAuth(userId, {
+      pin: input.currentPin,
+      passkey: input.passkey,
+    });
+    if (!res.ok) return { error: "wrongCurrentPin" };
   }
 
   const pinHash = await hashPassword(pin);

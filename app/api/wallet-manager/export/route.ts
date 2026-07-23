@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { requireWalletManagerId } from "@/lib/authz";
+import { csvCell } from "@/lib/csv";
 import { prisma } from "@/lib/prisma";
 
 // CSV export of the money desk's processed history: top-ups and withdrawals
 // with their outcomes and reviewer. Capped at 5000 rows per section.
 export const dynamic = "force-dynamic";
-
-function csvCell(v: string | null | undefined): string {
-  const s = v ?? "";
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export async function GET(req: Request) {
   const staffId = await requireWalletManagerId();

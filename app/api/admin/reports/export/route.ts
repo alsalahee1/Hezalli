@@ -1,13 +1,9 @@
 import { requireAdminId } from "@/lib/authz";
+import { csvCell } from "@/lib/csv";
 import { prisma } from "@/lib/prisma";
 
 // CSV export of orders in a date range. Admin-only.
 export const dynamic = "force-dynamic";
-
-function csvCell(v: unknown): string {
-  const s = v == null ? "" : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export async function GET(req: Request) {
   if (!(await requireAdminId())) {

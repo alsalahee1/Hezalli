@@ -52,14 +52,22 @@ export async function applyRefund(
           paymentMethod: true,
           buyerId: true,
           buyer: { select: { locale: true } },
-          payment: { select: { id: true } },
+          payment: { select: { id: true, status: true } },
           coupon: { select: { scope: true } },
         },
       },
     },
   });
   if (!sub) return { error: "notFound" };
-  if (sub.status === "REFUNDED") return { error: "badState" };
+  // Terminal states must block a refund. A buyer-cancelled sub-order was already
+  // refunded to the wallet by the cancel path (which does NOT write a Refund
+  // row), so relying on the Refund-sum cap alone would let this issue a second
+  // full refund. Treat CANCELLED — and an already-REFUNDED order payment — as
+  // terminal too.
+  if (sub.status === "REFUNDED" || sub.status === "CANCELLED") {
+    return { error: "badState" };
+  }
+  if (sub.order.payment?.status === "REFUNDED") return { error: "badState" };
 
   const itemsTotal = Number(sub.itemsTotal);
   const shipping = Number(sub.shippingTotal);

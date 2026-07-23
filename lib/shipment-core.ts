@@ -143,7 +143,23 @@ export async function markSubOrderDelivered(
     return { error: "noCashHandler" };
   }
 
+  let alreadyDelivered = false;
   await prisma.$transaction(async (tx) => {
+    // Atomically claim the SHIPPED→DELIVERED transition. updateMany with a
+    // status guard makes the transition itself the lock: a concurrent
+    // double-submit (two tabs / double-tap / retry) that already flipped the
+    // row sees count 0 here and bails, so one delivery can never mint duplicate
+    // courier/point earnings or COD ledger rows. (The pre-transaction status
+    // check above is only a fast path; this is the authoritative guard.)
+    const claimed = await tx.subOrder.updateMany({
+      where: { id: subOrderId, status: "SHIPPED" },
+      data: { status: "DELIVERED", autoCompleteAt },
+    });
+    if (claimed.count !== 1) {
+      alreadyDelivered = true;
+      return;
+    }
+
     if (sub.shipment) {
       const recipientName = proof?.recipientName?.trim() || null;
       await tx.shipment.update({
@@ -217,11 +233,7 @@ export async function markSubOrderDelivered(
       }
     }
 
-    await tx.subOrder.update({
-      where: { id: subOrderId },
-      data: { status: "DELIVERED", autoCompleteAt },
-    });
-
+    // (Sub-order status was already flipped by the atomic claim above.)
     const subs = await tx.subOrder.findMany({
       where: { orderId: sub.orderId },
       select: { status: true },
@@ -278,6 +290,9 @@ export async function markSubOrderDelivered(
       });
     }
   });
+
+  // A concurrent request won the transition — treat this one as a no-op.
+  if (alreadyDelivered) return { error: "badState" };
 
   revalidatePath(`/${locale}/seller/orders`);
   revalidatePath(`/${locale}/seller/orders/${subOrderId}`);

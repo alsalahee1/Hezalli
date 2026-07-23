@@ -2,6 +2,7 @@
 // signed and immutable, so opening balances and monthly deltas are pure SUMs
 // over the same DeliveryPointLedgerEntry table the live balances use —
 // nothing stored, nothing to drift.
+import { csvCell } from "@/lib/csv";
 import { prisma } from "@/lib/prisma";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -115,7 +116,6 @@ export function monthRange(month?: string | null): {
 
 /** The statement's entry list as CSV (date, type, amount, note). */
 export function statementCsv(entries: StatementEntry[]): string {
-  const esc = (s: string) => `"${s.replaceAll('"', '""')}"`;
   const lines = [
     "date,type,amount_usd,note",
     ...entries.map((e) =>
@@ -123,7 +123,7 @@ export function statementCsv(entries: StatementEntry[]): string {
         e.createdAt.toISOString(),
         e.type,
         e.amountUsd.toFixed(2),
-        esc(e.note ?? ""),
+        csvCell(e.note ?? ""),
       ].join(","),
     ),
   ];

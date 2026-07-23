@@ -26,14 +26,16 @@ function phoneNumberId(): string {
 
 /**
  * Verify the X-Hub-Signature-256 header against the raw request body using the
- * app secret. Returns true when no app secret is configured (verification off).
+ * app secret. Fails CLOSED in production: when no app secret is configured an
+ * unsigned webhook is rejected (in development it is allowed, since Meta lets
+ * you test without an app secret).
  */
 export function verifyWhatsAppSignature(
   rawBody: string,
   header: string | null,
 ): boolean {
   const secret = process.env.WHATSAPP_APP_SECRET;
-  if (!secret) return true; // opt-in; recommended for production
+  if (!secret) return process.env.NODE_ENV !== "production";
   if (!header?.startsWith("sha256=")) return false;
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
   const got = header.slice("sha256=".length);
