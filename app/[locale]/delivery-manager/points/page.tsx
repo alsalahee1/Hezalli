@@ -1,5 +1,10 @@
 import { PointsView } from "@/components/ops/points-view";
+import { DeliveryGate } from "@/components/auth/delivery-gate";
 
 export default function Page() {
-  return <PointsView base="/delivery-manager" />;
+  return (
+    <DeliveryGate scope="POINTS">
+      <PointsView base="/delivery-manager" />
+    </DeliveryGate>
+  );
 }

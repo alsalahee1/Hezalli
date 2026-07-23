@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import type { Role } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fieldErrors } from "@/lib/validations/auth";
@@ -101,7 +101,7 @@ export async function applyAsCourier(
 export async function reviewCourierApplication(
   formData: FormData,
 ): Promise<void> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("FLEET");
   if (!adminId) return;
 
   const applicationId = String(formData.get("applicationId") ?? "");

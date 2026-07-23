@@ -97,6 +97,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/shipping-zones", key: "shippingZones", icon: MapPin },
   { href: "/admin/carriers", key: "carriers", icon: Truck },
   { href: "/delivery-manager", key: "deliveryManager", icon: Truck },
+  { href: "/admin/delivery-team", key: "deliveryTeam", icon: Users },
   { href: "/admin/dispatch", key: "dispatch", icon: Route },
   { href: "/admin/couriers", key: "couriers", icon: Bike },
   { href: "/admin/fleets", key: "fleets", icon: Truck },
@@ -218,11 +219,19 @@ const VARIANTS: Record<
 export function DashboardShell({
   variant,
   children,
+  navKeys,
 }: {
   variant: Variant;
   children: React.ReactNode;
+  // When set, restricts the sidebar to items whose key is listed — used by the
+  // delivery-ops team so a scoped member sees only their desks. Omit to show
+  // the variant's full nav (all other dashboards).
+  navKeys?: string[];
 }) {
-  const { nav, primary, ns, titleKey, base } = VARIANTS[variant];
+  const { nav: fullNav, primary, ns, titleKey, base } = VARIANTS[variant];
+  const nav = navKeys
+    ? fullNav.filter((item) => navKeys.includes(item.key))
+    : fullNav;
   const t = useTranslations(ns);
   const c = useTranslations("Common");
   const q = useTranslations("QuickNav");

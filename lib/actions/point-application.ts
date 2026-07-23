@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import type { Role } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fieldErrors } from "@/lib/validations/auth";
@@ -103,7 +103,7 @@ export async function applyAsDeliveryPoint(
 export async function reviewPointApplication(
   formData: FormData,
 ): Promise<void> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("POINTS");
   if (!adminId) return;
 
   const applicationId = String(formData.get("applicationId") ?? "");
@@ -220,7 +220,7 @@ export async function reviewPointApplication(
 // Admin sets a point's parcel capacity (max held/inbound at once). Empty or
 // zero clears it back to unlimited. Gates NEW routing only — see the docs §8.
 export async function setPointCapacity(formData: FormData): Promise<void> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("POINTS");
   if (!adminId) return;
 
   const pointId = String(formData.get("pointId") ?? "");
@@ -259,7 +259,7 @@ export async function setPointCapacity(formData: FormData): Promise<void> {
 // Admin toggles a point's status. Suspending stops new routing (the seller
 // picker only lists ACTIVE points) and locks the operator out of /point.
 export async function setPointStatus(formData: FormData): Promise<void> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("POINTS");
   if (!adminId) return;
 
   const pointId = String(formData.get("pointId") ?? "");

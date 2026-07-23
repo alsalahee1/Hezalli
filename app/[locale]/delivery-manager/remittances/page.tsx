@@ -1,6 +1,8 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { Forbidden } from "@/components/auth/forbidden";
 import {
   RemitClaimQueue,
   type RemitClaimRow,
@@ -12,6 +14,7 @@ export const dynamic = "force-dynamic";
 // oldest first. Approval settles the claimant's cash ledger; recent decisions
 // are listed below for reference.
 export default async function DeliveryManagerRemittancesPage() {
+  if (!(await requireDeliveryScope("SETTLEMENT"))) return <Forbidden />;
   const t = await getTranslations("DeliveryManager");
   const format = await getFormatter();
 

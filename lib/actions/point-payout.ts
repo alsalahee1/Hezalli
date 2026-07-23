@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireDeliveryManagerId, requireDeliveryPoint } from "@/lib/authz";
+import { requireDeliveryScope, requireDeliveryPoint } from "@/lib/authz";
 import { canMoveEarnings } from "@/lib/point-access";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
@@ -86,7 +86,7 @@ export async function markPointPayoutPaid(
   requestId: string,
   reference: string,
 ): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("SETTLEMENT");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -159,7 +159,7 @@ export async function rejectPointPayout(
   requestId: string,
   reason: string,
 ): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("SETTLEMENT");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 

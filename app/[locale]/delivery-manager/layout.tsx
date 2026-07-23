@@ -1,7 +1,8 @@
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { getDeliveryAccess } from "@/lib/authz";
+import { visibleNavKeys } from "@/lib/delivery-access";
 import { redirect } from "@/i18n/navigation";
 import { Forbidden } from "@/components/auth/forbidden";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -17,16 +18,21 @@ export default async function DeliveryManagerLayout({
   // Authentication (the middleware also gates this, belt-and-suspenders).
   if (!session?.user?.id) redirect({ href: "/login", locale });
 
-  // Authorization from the DB, not the JWT (authoritative; picks up role and
-  // suspension changes without waiting for a re-login). ADMIN is a superset.
-  const user = await prisma.user.findUnique({
-    where: { id: session!.user.id },
-    select: { roles: true, isSuspended: true, deletedAt: true },
-  });
-  if (!user || user.deletedAt) redirect({ href: "/login", locale });
-  const allowed =
-    user!.roles.includes("DELIVERY_MANAGER") || user!.roles.includes("ADMIN");
-  if (user!.isSuspended || !allowed) return <Forbidden />;
+  // Authorization + desk access from the DB, not the JWT (authoritative; picks
+  // up role, scope, and suspension changes without a re-login). ADMIN and a
+  // Head of Delivery (no stored scopes) get "ALL"; a scoped member gets only
+  // their desks. Not on the team at all → Forbidden.
+  const gate = await getDeliveryAccess();
+  if (!gate) return <Forbidden />;
 
-  return <DashboardShell variant="deliveryManager">{children}</DashboardShell>;
+  // Trim the sidebar to the desks this member may work — the per-page and
+  // per-action gates enforce the same rule if someone types a URL directly.
+  return (
+    <DashboardShell
+      variant="deliveryManager"
+      navKeys={visibleNavKeys(gate.access)}
+    >
+      {children}
+    </DashboardShell>
+  );
 }

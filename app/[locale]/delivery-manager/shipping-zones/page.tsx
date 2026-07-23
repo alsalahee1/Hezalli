@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
 
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { Forbidden } from "@/components/auth/forbidden";
 import {
   ShippingZoneManager,
   type ZoneRow,
@@ -9,6 +11,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DeliveryManagerShippingZonesPage() {
+  if (!(await requireDeliveryScope("NETWORK"))) return <Forbidden />;
   const t = await getTranslations("AdminShippingZones");
   const zones = await prisma.shippingZone.findMany({
     orderBy: { name: "asc" },

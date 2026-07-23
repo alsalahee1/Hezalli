@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -16,7 +16,7 @@ export async function saveCarrier(input: {
   trackingUrl?: string;
   platformManaged?: boolean;
 }): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("FLEET");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -43,7 +43,7 @@ export async function saveCarrier(input: {
 
 // Delete a carrier; detach it from any existing shipments first.
 export async function deleteCarrier(id: string): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("FLEET");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 

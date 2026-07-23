@@ -1,4 +1,10 @@
 import { auth } from "@/auth";
+import {
+  type DeliveryAccess,
+  type DeliveryScope,
+  accessHasScope,
+  resolveDeliveryAccess,
+} from "@/lib/delivery-access";
 import type { PointAccess } from "@/lib/point-access";
 import { prisma } from "@/lib/prisma";
 
@@ -30,9 +36,52 @@ export async function requireWalletManagerId(): Promise<string | null> {
   return requireStaffId("WALLET_MANAGER");
 }
 
-// Guards delivery-domain staff actions (shipments, carriers, zones).
+// Umbrella gate for the delivery-ops area: any team member (ADMIN, or a
+// DELIVERY_MANAGER regardless of which desks they hold) passes. Use this only
+// where every desk shares the read — the /delivery-manager layout entry and the
+// dashboard landing. Desk-specific actions/pages must use requireDeliveryScope.
 export async function requireDeliveryManagerId(): Promise<string | null> {
   return requireStaffId("DELIVERY_MANAGER");
+}
+
+// The current user's delivery-team access, or null if they are not on the team.
+// ADMIN and a Head of Delivery (a DELIVERY_MANAGER with no stored scopes) both
+// resolve to "ALL"; a scoped member resolves to just their desks. Drives nav
+// filtering in the layout and every desk gate below. Read from the DB, never
+// the JWT, so scope changes take effect without a re-login.
+export async function getDeliveryAccess(): Promise<{
+  userId: string;
+  access: DeliveryAccess;
+} | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      roles: true,
+      isSuspended: true,
+      deletedAt: true,
+      deliveryScopes: true,
+    },
+  });
+  if (!u || u.isSuspended || u.deletedAt) return null;
+  if (u.roles.includes("ADMIN")) return { userId: id, access: "ALL" };
+  if (!u.roles.includes("DELIVERY_MANAGER")) return null;
+  return { userId: id, access: resolveDeliveryAccess(u.deliveryScopes) };
+}
+
+// Desk gate: the current user must be able to work `scope` — ADMIN and Head of
+// Delivery pass every desk; a scoped member passes only their own. Returns the
+// user id (for audit-actor stamping) or null. Guards delivery-team actions,
+// pages, and API routes so a member limited to one desk can't reach another by
+// calling its action or typing its URL.
+export async function requireDeliveryScope(
+  scope: DeliveryScope,
+): Promise<string | null> {
+  const gate = await getDeliveryAccess();
+  if (!gate) return null;
+  return accessHasScope(gate.access, scope) ? gate.userId : null;
 }
 
 // Returns the current active seller's user id + their store id, or null.

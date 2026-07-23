@@ -1,8 +1,10 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { Forbidden } from "@/components/auth/forbidden";
 import {
   ShipmentBulkList,
   type ShipmentRow,
@@ -36,6 +38,7 @@ export default async function DeliveryManagerShipmentsPage({
     page?: string;
   }>;
 }) {
+  if (!(await requireDeliveryScope("DISPATCH"))) return <Forbidden />;
   const t = await getTranslations("DeliveryManager");
   const format = await getFormatter();
   const { status, stuck, q, page } = await searchParams;

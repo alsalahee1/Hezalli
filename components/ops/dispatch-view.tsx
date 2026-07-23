@@ -10,7 +10,7 @@ import {
   Weight,
 } from "lucide-react";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { subOrderMetrics } from "@/lib/courier-capacity";
 import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { Link } from "@/i18n/navigation";
@@ -27,7 +27,7 @@ import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 // courier, and its delivery-SLA state. Overdue parcels sort first so ops chase
 // them before the promise is missed.
 export async function DispatchView({ base }: { base: string }) {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("DISPATCH");
   if (!adminId) return <Forbidden />;
   const t = await getTranslations("Dispatch");
   const tShip = await getTranslations("Orders");

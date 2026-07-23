@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
 
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { Forbidden } from "@/components/auth/forbidden";
 import {
   CarrierManager,
   type CarrierRow,
@@ -9,6 +11,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DeliveryManagerCarriersPage() {
+  if (!(await requireDeliveryScope("FLEET"))) return <Forbidden />;
   const t = await getTranslations("AdminCarriers");
   const carriers = await prisma.carrier.findMany({
     orderBy: { name: "asc" },

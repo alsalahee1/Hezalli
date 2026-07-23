@@ -24,7 +24,20 @@ enum Role {
   COURIER // Hezalli Express delivery driver
   DELIVERY_POINT // partner-operated parcel hub operator (Hezalli Point)
   WALLET_MANAGER // staff: manages the HezalliPay wallet domain (/wallet-manager)
-  DELIVERY_MANAGER // staff: manages shipments, carriers, zones (/delivery-manager)
+  DELIVERY_MANAGER // staff: works the delivery ops team (/delivery-manager)
+}
+
+// Desks within the delivery-ops team. The DELIVERY_MANAGER role is the entry
+// credential to /delivery-manager; a member's deliveryScopes then narrow WHICH
+// desks they may work. An empty scope list = "Head of Delivery": every desk,
+// which keeps every pre-existing DELIVERY_MANAGER account working unchanged.
+// ADMIN is a superset of all desks. See lib/delivery-access.ts + lib/authz.ts.
+enum DeliveryScope {
+  DISPATCH // live routing & tracking: dispatch board, scan, shipments
+  FLEET // drivers, fleets, carriers, vehicles + their applications
+  POINTS // partner point centers: staff, applications, capacity
+  SETTLEMENT // money in from drivers & points: cash, remittances, payouts, deposits
+  NETWORK // shipping zones & category delivery defaults
 }
 
 enum Currency {
@@ -237,6 +250,9 @@ model User {
   passwordHash      String?
   image             String?
   roles             Role[]    @default([BUYER])
+  // Desks a DELIVERY_MANAGER team member may work. Empty = Head of Delivery
+  // (all desks). Ignored for non-DELIVERY_MANAGER users. See DeliveryScope.
+  deliveryScopes    DeliveryScope[] @default([])
   locale            String    @default("ar")
   // Home governorate chosen at signup (optional). Sets the buyer's default
   // currency zone — which Yemeni rial prices show in — before they've added a
