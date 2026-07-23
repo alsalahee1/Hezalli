@@ -5,7 +5,7 @@ import { Bot, Loader2, Send, Sparkles, Star, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
 
@@ -27,10 +27,33 @@ type Message = {
   cards?: ProductCard[];
 };
 
+type Section =
+  "store" | "seller" | "admin" | "wallet" | "driver" | "point" | "fleet";
+
+// Which part of the platform the user is on, from the (locale-stripped)
+// pathname. Sent with every message so Shadi tailors its help to the page;
+// the API re-checks roles before honouring a privileged section.
+function sectionFor(pathname: string): Section {
+  if (pathname.startsWith("/seller")) return "seller";
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/wallet-manager") ||
+    pathname.startsWith("/delivery-manager")
+  )
+    return "admin";
+  if (pathname.startsWith("/account/wallet")) return "wallet";
+  if (pathname.startsWith("/driver")) return "driver";
+  if (pathname.startsWith("/point")) return "point";
+  if (pathname.startsWith("/fleet")) return "fleet";
+  return "store";
+}
+
 export function AiAssistant({ avatar }: { avatar?: string }) {
   const t = useTranslations("Assistant");
   const locale = useLocale();
   const isRtl = locale === "ar";
+  const pathname = usePathname();
+  const section = sectionFor(pathname);
 
   const [open, setOpen] = useState(false);
   const { mounted, shown } = useMountTransition(open, 200);
@@ -70,6 +93,7 @@ export function AiAssistant({ avatar }: { avatar?: string }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           locale,
+          section,
           messages: next.map((m) => ({ role: m.role, text: m.text })),
         }),
       });
@@ -99,7 +123,12 @@ export function AiAssistant({ avatar }: { avatar?: string }) {
     }
   }
 
-  const suggestions = [t("suggest1"), t("suggest2"), t("suggest3")];
+  // Starter chips match the page: shopping ideas on the storefront, seller
+  // questions in the Seller Center, wallet questions in HezalliPay, and so on.
+  const suggestions =
+    section === "store"
+      ? [t("suggest1"), t("suggest2"), t("suggest3")]
+      : [1, 2, 3].map((n) => t(`suggest_${section}${n}`));
 
   return (
     <>

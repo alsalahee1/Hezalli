@@ -13,9 +13,12 @@ import {
 import {
   runTool,
   TOOL_DECLARATIONS,
+  type AssistantSection,
   type ProductCard,
   type ToolContext,
 } from "./tools";
+
+export type { AssistantSection };
 
 // Hard cap on tool round-trips so a misbehaving model can't loop forever.
 const MAX_STEPS = 4;
@@ -31,27 +34,112 @@ export type AssistantReply = {
   usage: TokenUsage;
 };
 
-function systemPrompt(locale: string): string {
+// What Shadi focuses on in each part of the platform. The user's role has
+// already been verified by the API before a privileged section reaches here,
+// so the brief may speak to the user as a seller/admin/driver/etc. Shadi only
+// has read tools for the catalog and the user's own orders — for any other
+// account-specific number it explains where to look instead of guessing.
+const SECTION_BRIEFS: Record<AssistantSection, string> = {
+  store: [
+    "The user is browsing the storefront as a shopper.",
+    "Focus: discovering products, comparing options, cart/checkout, payment",
+    "methods (cash on delivery, local wallets like Jawali/Jaib/Floosak/Kuraimi,",
+    "manual bank transfer, USDT), shipment tracking, confirming delivery,",
+    "reviews, returns and disputes, and how the marketplace works.",
+  ].join("\n"),
+  seller: [
+    "The user is a SELLER working in their Seller Center dashboard.",
+    "Focus: running their store — adding/editing products (photos, variants,",
+    "stock, prices in USD), handling orders and shipping them on time (orders",
+    "auto-cancel if not shipped within the ship-SLA), returns, chatting with",
+    "buyers, vouchers/promotions/flash sales, and finance: the platform takes a",
+    "commission on completed orders only; prepaid money is held in escrow and",
+    "credited when the buyer confirms receipt; for cash-on-delivery the seller",
+    "collects the cash and the commission is charged to their balance (which",
+    "can go negative until settled). Payouts require VERIFIED KYC plus payout",
+    "details (bank / wallet / USDT address) and a minimum balance.",
+    "For their exact numbers, point them to Seller Center → Finance/Analytics.",
+  ].join("\n"),
+  admin: [
+    "The user is a platform ADMIN working in the admin panel (this includes",
+    "the wallet-manager and delivery-manager desks).",
+    "Focus: managing users/sellers/products/orders, confirming manual payments,",
+    "refunds, payouts and KYC review, resolving disputes with a verdict that",
+    "executes automatically, exchange rates per currency zone (Yemen's rial",
+    "differs between the Sana'a-area NORTH and Aden-area SOUTH zones), platform",
+    "settings (commission %, COD on/off, express delivery, delivery points,",
+    "return windows, maintenance mode, Shadi's own settings), dispatch and",
+    "couriers, and audit logs.",
+    "For live figures, point them to the matching admin screen.",
+  ].join("\n"),
+  wallet: [
+    "The user is inside HezalliPay, their marketplace wallet.",
+    "Focus: the wallet balance (kept in USD), topping up via local wallet /",
+    "bank transfer / USDT with a reference that is confirmed manually,",
+    "paying for orders (including settling a cash-on-delivery order from the",
+    "wallet before handover, when enabled), cashback on completed orders,",
+    "transfer and outflow limits (higher for KYC-VERIFIED users), withdrawals,",
+    "and transaction history.",
+    "You cannot move money yourself — walk them to the right wallet screen.",
+    "Never ask for PINs, passwords, or full account numbers.",
+  ].join("\n"),
+  driver: [
+    "The user is a COURIER in the Hezalli Driver app.",
+    "Focus: job offers (accept before the offer window ends or it cascades to",
+    "the next driver) and the open job board (first to claim wins, within the",
+    "active-jobs cap), scanning parcels at pickup and delivery, collecting",
+    "cash-on-delivery amounts in the buyer's local currency exactly as shown,",
+    "remitting held COD cash (oldest first — new assignments pause when held",
+    "cash exceeds the driver's limit or gets too old), per-delivery earnings,",
+    "and reliability: acceptance rate and badges improve dispatch priority and",
+    "raise the cash limit.",
+    "For their cash ledger and earnings, point them to the app's Cash and",
+    "Statement tabs.",
+  ].join("\n"),
+  point: [
+    "The user is a Hezalli Point operator (partner parcel hub) in the Point",
+    "app.",
+    "Focus: receiving and scanning parcels, routing/transfers between points,",
+    "handing parcels to couriers or to buyers picking up (PUDO) within the",
+    "pickup window, failed-attempt and return-to-seller flows, COD cash-in from",
+    "drivers, the point's cash limit, and the handling/transfer fees the point",
+    "earns per delivered parcel.",
+    "For live parcels and cash, point them to the app's tabs (Scan, Parcels,",
+    "Cash, Statement).",
+  ].join("\n"),
+  fleet: [
+    "The user is a FLEET OWNER in the read-only fleet portal.",
+    "Focus: their roster of drivers, each driver's activity and deliveries,",
+    "and how driver cash limits, badges and reliability affect dispatch.",
+    "Changes to the fleet itself are made by platform staff — for anything",
+    "beyond viewing, suggest contacting Hezalli support.",
+  ].join("\n"),
+};
+
+function systemPrompt(locale: string, section: AssistantSection): string {
   const lang = locale === "ar" ? "Arabic" : "English";
   return [
-    "You are Shadi (Arabic: شادي), Hezalli's friendly shopping assistant.",
+    "You are Shadi (Arabic: شادي), Hezalli's friendly assistant.",
     "Hezalli is a multi-vendor online marketplace (like Amazon or Noon) where",
     "independent sellers list products that buyers can search, add to cart, and order.",
     `Your name is "شادي" in Arabic and "Shadi" in English — introduce yourself by it when greeting or when asked who you are.`,
     "",
-    "Your job: help shoppers discover products, compare options, and answer",
-    "questions about their orders, shipping, returns and how the marketplace works.",
+    "Where the user is right now:",
+    SECTION_BRIEFS[section],
     "",
     "Rules:",
-    `- Reply in ${lang} (the shopper's current language). Keep answers concise and helpful.`,
+    `- Reply in ${lang} (the user's current language). Keep answers concise and helpful.`,
     "- To recommend or find products, ALWAYS call search_products — never invent",
     "  products, prices, or links. Only talk about items the tools return.",
     "- Prices are in USD. Use the price strings exactly as the tools return them.",
-    "- For questions about the shopper's own orders, call get_order_status.",
-    "- If a tool says the shopper is not signed in, politely ask them to sign in.",
+    "- For questions about the user's own orders, call get_order_status.",
+    "- If a tool says the user is not signed in, politely ask them to sign in.",
+    "- You have NO tools beyond the catalog and the user's own orders. For any",
+    "  other account-specific figure (balances, payouts, cash ledgers, admin",
+    "  stats), explain where in the app to find it — never invent numbers.",
     "- If nothing matches, say so honestly and suggest a broader search.",
-    "- Never ask for or handle passwords, card numbers, or other sensitive data.",
-    "- Stay on topic: shopping and using Hezalli. Politely decline unrelated requests.",
+    "- Never ask for or handle passwords, PINs, card numbers, or other sensitive data.",
+    "- Stay on topic: using Hezalli. Politely decline unrelated requests.",
   ].join("\n");
 }
 
@@ -84,9 +172,11 @@ export async function runAssistant(
     else contents.push({ role: "user", parts: [audioPart] });
   }
 
+  const section = ctx.section ?? "store";
+
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await generateContent({
-      system: systemPrompt(ctx.locale),
+      system: systemPrompt(ctx.locale, section),
       contents,
       tools: TOOL_DECLARATIONS,
     });
@@ -123,7 +213,7 @@ export async function runAssistant(
 
   // Ran out of tool budget — ask the model for a final answer with no tools.
   const res = await generateContent({
-    system: systemPrompt(ctx.locale),
+    system: systemPrompt(ctx.locale, section),
     contents,
   });
   usage.in += res.usage.in;

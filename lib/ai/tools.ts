@@ -27,9 +27,18 @@ export type ProductCard = {
   outOfStock: boolean;
 };
 
+// Which part of the platform the user is talking to Shadi from. The widget
+// reports it from the current route; the API downgrades it to "store" when the
+// user lacks the matching role. Messaging channels (Telegram/WhatsApp) always
+// run as "store".
+export type AssistantSection =
+  "store" | "seller" | "admin" | "wallet" | "driver" | "point" | "fleet";
+
 export type ToolContext = {
   locale: string;
   userId: string | null;
+  // Tailors the system prompt to where the user is. Defaults to "store".
+  section?: AssistantSection;
 };
 
 export type ToolResult = {
