@@ -20,6 +20,7 @@ import { RedeliveryForm } from "@/components/orders/redelivery-form";
 import { DeliveryRating } from "@/components/orders/delivery-rating";
 import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 import { ChatLauncher } from "@/components/chat/chat-launcher";
+import { ReviewForm } from "@/components/product/review-form";
 import {
   ReturnBlock,
   type ReturnView,
@@ -92,6 +93,7 @@ export default async function OrderDetailPage({
           id: true,
           product: {
             select: {
+              id: true,
               slug: true,
               images: {
                 orderBy: { position: "asc" },
@@ -106,8 +108,36 @@ export default async function OrderDetailPage({
   const metaByVariant = new Map(
     imgRows.map((v) => [
       v.id,
-      { url: v.product.images[0]?.url ?? null, slug: v.product.slug },
+      {
+        url: v.product.images[0]?.url ?? null,
+        slug: v.product.slug,
+        productId: v.product.id,
+      },
     ]),
+  );
+
+  // Post-purchase reviews: each product in a COMPLETED sub-order can be rated
+  // right here (the same ReviewForm the product page uses; one review per
+  // product per sub-order, editable within the edit window).
+  const completedSubs = order.subOrders.filter((s) => s.status === "COMPLETED");
+  const myReviews = completedSubs.length
+    ? await prisma.review.findMany({
+        where: {
+          buyerId: session.user.id,
+          subOrderId: { in: completedSubs.map((s) => s.id) },
+        },
+        select: {
+          id: true,
+          productId: true,
+          subOrderId: true,
+          rating: true,
+          comment: true,
+          images: { select: { url: true } },
+        },
+      })
+    : [];
+  const reviewByKey = new Map(
+    myReviews.map((r) => [`${r.subOrderId}:${r.productId}`, r]),
   );
 
   const money = (n: unknown) =>
@@ -208,12 +238,25 @@ export default async function OrderDetailPage({
         ) : (
           futureBtn(t("confirmReceived"), t("confirmHint"))
         )}
-        {futureBtn(t("review"), t("reviewHint"))}
-        {order.subOrders.some(
-          (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
-        )
-          ? futureBtn(t("notReceived"), t("notReceivedHint"))
-          : null}
+        {completedSubs.length > 0 ? (
+          <Button asChild size="sm" variant="outline">
+            <a href="#rate-products">{t("review")}</a>
+          </Button>
+        ) : (
+          futureBtn(t("review"), t("reviewHint"))
+        )}
+        {/* "Not received": jump to the affected shipment's card, where the
+            refund request (delivered) or seller chat (still shipping) lives. */}
+        {(() => {
+          const claimable = order.subOrders.find(
+            (s) => s.status === "SHIPPED" || s.status === "DELIVERED",
+          );
+          return claimable ? (
+            <Button asChild size="sm" variant="outline">
+              <a href={`#sub-${claimable.id}`}>{t("notReceived")}</a>
+            </Button>
+          ) : null;
+        })()}
         <Button asChild size="sm" variant="ghost">
           <a href={`/${locale}/invoice/${order.id}`} target="_blank">
             <Printer className="size-4" /> {t("invoice")}
@@ -321,7 +364,7 @@ export default async function OrderDetailPage({
           (!returnBase ||
             Date.now() - new Date(returnBase).getTime() <= returnWindowMs);
         return (
-          <section key={s.id} className="rounded-lg border">
+          <section key={s.id} id={`sub-${s.id}`} className="rounded-lg border">
             <div className="flex items-center justify-between gap-2 border-b px-4 py-2 text-sm">
               <span className="flex items-center gap-2 font-medium">
                 {s.store.name}
@@ -543,6 +586,63 @@ export default async function OrderDetailPage({
           </section>
         );
       })}
+
+      {/* Rate purchased products (completed sub-orders only) */}
+      {completedSubs.length > 0 ? (
+        <section id="rate-products" className="rounded-lg border p-4">
+          <h3 className="mb-3 font-medium">{t("review")}</h3>
+          <div className="space-y-4">
+            {completedSubs.flatMap((s) => {
+              const seen = new Set<string>();
+              return s.items.map((it) => {
+                const meta = metaByVariant.get(it.variantId);
+                const productId = meta?.productId;
+                if (!productId) return null;
+                const key = `${s.id}:${productId}`;
+                if (seen.has(key)) return null;
+                seen.add(key);
+                const existing = reviewByKey.get(key);
+                return (
+                  <div
+                    key={key}
+                    className="flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      {meta?.url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={meta.url}
+                          alt=""
+                          className="size-12 shrink-0 rounded border object-cover"
+                        />
+                      ) : null}
+                      <p className="truncate text-sm font-medium">
+                        {it.titleSnapshot}
+                      </p>
+                    </div>
+                    <div className="min-w-0 grow sm:grow-0">
+                      <ReviewForm
+                        productId={productId}
+                        subOrderId={s.id}
+                        existing={
+                          existing
+                            ? {
+                                reviewId: existing.id,
+                                rating: existing.rating,
+                                comment: existing.comment ?? "",
+                                images: existing.images.map((i) => i.url),
+                              }
+                            : undefined
+                        }
+                      />
+                    </div>
+                  </div>
+                );
+              });
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Address */}

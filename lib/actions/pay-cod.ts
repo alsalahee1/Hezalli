@@ -111,8 +111,10 @@ export async function payCodWithWallet(orderId: string): Promise<Result> {
           confirmedAt: new Date(),
           // The stamp lets refund/collection paths tell this digital
           // settlement apart from a doorstep cash capture (lib/payment-state).
+          // The reference embeds the order id: Payment.reference is unique
+          // (receipt-reuse guard), so a shared constant would collide.
           confirmedBy: COD_WALLET_CONFIRMED_BY,
-          reference: "Paid from HezalliPay wallet",
+          reference: `HezalliPay wallet · ${order.id}`,
         },
       });
       if (paid.count !== 1) throw new PayError("alreadyPaid");

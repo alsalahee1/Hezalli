@@ -21,6 +21,9 @@ export function assertEnv(): void {
       "WHATSAPP_APP_SECRET (required whenever WHATSAPP_TOKEN is set)",
     );
   }
+  if (process.env.RESEND_API_KEY && !process.env.EMAIL_FROM) {
+    missing.push("EMAIL_FROM (required whenever RESEND_API_KEY is set)");
+  }
 
   if (missing.length > 0) {
     throw new Error(

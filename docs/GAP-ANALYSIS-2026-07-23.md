@@ -69,21 +69,27 @@ Domain scores (checklist items DONE / PARTIAL / MISSING):
 
 ## P0 — Launch blockers (broken promises, money/abuse risk, dead ends)
 
-| # | Gap | Evidence | Why it blocks launch |
+**Status update (2026-07-23, same-day remediation):** 12 of 13 P0 items are now
+FIXED (verified: tsc clean, eslint 0 errors, 350/350 unit+integration tests,
+production build, 13/13 Playwright e2e including the new checkout spec, all 42
+migrations apply cleanly). P0-3 (SMS provider) remains open — it needs a
+commercial gateway decision for Yemen and is tracked in P1.
+
+| # | Gap | Status | Resolution |
 |---|---|---|---|
-| P0-1 | **Password reset does not exist** — page renders `ComingSoon` | `app/[locale]/(auth)/forgot-password/page.tsx:13` | Any user who forgets a password permanently loses the account (and wallet access) |
-| P0-2 | **Email sending is a stub** — `sendEmail` transport is a commented plug-in point; no ESP (Resend/SES) wired | `lib/email.ts:56-63` | No order emails, no notification emails, no newsletter, no future reset emails. All email-dependent features silently no-op |
-| P0-3 | **No SMS provider at all** — no OTP capability; `OtpToken` model is dead code | schema `OtpToken` unused; no gateway in `lib/` | In Yemen, phone-first verification is the norm; phone numbers are entered but never verified |
-| P0-4 | **Public store page shows no products** — grid is a "productsComing" placeholder | `app/[locale]/(shop)/store/[slug]/page.tsx:163-174` | A marketplace where visiting a shop shows nothing is visibly unfinished to every buyer |
-| P0-5 | **Store logo/banner upload has no UI** ("imagesSoon" placeholder; banner renders a gradient) | `components/seller/store-settings-form.tsx:99-101`, `store/[slug]/page.tsx:79-80` | Sellers cannot brand their stores at all |
-| P0-6 | **Payment proof reuse not prevented** — no unique constraint on `Payment.reference`/`usdtTxHash` nor `WalletTopUp` equivalents | `prisma/schema.prisma:918-922, 1159-1162` | Same bank slip / USDT tx submittable for multiple orders/top-ups; only manual admin vigilance catches it |
-| P0-7 | **Order confirmation & seller new-order notices bypass `notify()`** — raw in-app rows only; no email/push/bot | `lib/actions/order.ts:484, 519-527` vs `lib/notify.ts:37-52` | Sellers miss orders unless they poll the dashboard; buyers get no confirmation outside the app |
-| P0-8 | **No serviceability gate at checkout** — unknown zones silently fall back to default fee instead of refusing/flagging | `lib/shipping.ts:114-122, 161-166` | Orders accepted to areas you cannot deliver to → guaranteed cancellations/refunds |
-| P0-9 | **Checkout has zero e2e tests** — Playwright specs cover home/product/search/CMS only | `tests/e2e/` (no checkout spec) | The single most important flow can regress unnoticed |
-| P0-10 | **Error tracking not wired** — `captureError` logs to console; Sentry is a commented seam | `lib/observability.ts`, `instrumentation.ts` | Production failures are invisible; you find out from angry users |
-| P0-11 | **2 of 4 cron routes unscheduled** in `vercel.json` (`/api/cron/points`, `/api/cron/marketing`) | `vercel.json` vs `app/api/cron/*` | Silent no-run on Vercel deploys unless host crontab covers them |
-| P0-12 | **"Open dispute" / "write review" buttons on the order page are disabled stubs** | `account/orders/[id]/page.tsx:211-216` | Buyer protection is advertised but the entry point from the order is dead |
-| P0-13 | **Terms/Privacy pages hardcoded English-only, not translated** | `(shop)/terms/page.tsx`, `(shop)/privacy/page.tsx` (no `t()`) | Legal pages unreadable for the primary (Arabic) audience |
+| P0-1 | Password reset did not exist (`ComingSoon`) | ✅ FIXED | Full flow: `lib/actions/password-reset.ts` (hashed one-time tokens in `OtpToken`, 30-min TTL, rate-limited, no account-existence leak), `forgot-password` + `reset-password` pages, en/ar messages |
+| P0-2 | Email sending was a stub | ✅ FIXED | `lib/email.ts` now sends via Resend HTTP API when `RESEND_API_KEY`+`EMAIL_FROM` are set (documented in `.env.production.example`); graceful logged no-op otherwise. **Action needed: create a Resend account + set the 2 env vars** |
+| P0-3 | No SMS provider / phone OTP | ⏳ OPEN (→P1) | Needs a Yemen SMS gateway decision; `OtpToken` model is ready |
+| P0-4 | Store page showed no products | ✅ FIXED | Real paginated product grid via the listing engine (`getListing` + `sellerSlug` pin) on `store/[slug]` |
+| P0-5 | No store logo/banner upload | ✅ FIXED | Upload UI in seller settings (via `/api/upload`, own-storage URL validation); banner renders on the public store page |
+| P0-6 | Payment receipt reuse not prevented | ✅ FIXED | Migration `20260723090000_payment_reference_reuse_guard`: case-insensitive unique indexes on `Payment`/`WalletTopUp` reference + usdtTxHash, de-dup of existing rows, `err_proofReused` handling in both submit actions |
+| P0-7 | Order/seller notices bypassed `notify()` | ✅ FIXED | Buyer confirmation, seller new-order, seller cancel notice, and seller→buyer status updates all route through `notify()` (in-app + email + push per prefs) after the money tx commits |
+| P0-8 | No serviceability gate at checkout | ✅ FIXED | New `require_zone_coverage` platform setting (admin toggle): uncovered governorates get a checkout warning and `placeOrder` refuses home delivery (`zoneNotCovered`); pickup stays allowed. Default off until zones are configured |
+| P0-9 | Checkout had zero e2e tests | ✅ FIXED | `tests/e2e/checkout.spec.ts`: login → PDP → cart → COD checkout → success → order list, passing |
+| P0-10 | Error tracking not wired | ✅ FIXED | `captureError` reports to Sentry via the envelope HTTP API when `SENTRY_DSN` is set (no SDK, fire-and-forget); console always. **Action needed: create a Sentry project + set `SENTRY_DSN`** |
+| P0-11 | 2 of 4 cron routes unscheduled | ✅ FIXED | `vercel.json` now schedules points (6h) and marketing (12h) crons |
+| P0-12 | Order-page review/dispute buttons were dead stubs | ✅ FIXED | "Rate products" section with the real `ReviewForm` per completed item; "Not received" jumps to the shipment card (refund request / seller chat); new `not_received` return reason feeds the existing returns→dispute machinery |
+| P0-13 | Terms/Privacy hardcoded English | ✅ FIXED | `/terms`, `/privacy`, `/about` now redirect to the bilingual, admin-editable CMS pages (`/p/terms` etc.); register form links updated |
 
 ## P1 — Needed within weeks of launch (parity essentials + T&S/ops maturity)
 

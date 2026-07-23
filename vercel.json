@@ -8,6 +8,14 @@
     {
       "path": "/api/cron/shipments",
       "schedule": "30 */6 * * *"
+    },
+    {
+      "path": "/api/cron/points",
+      "schedule": "15 */6 * * *"
+    },
+    {
+      "path": "/api/cron/marketing",
+      "schedule": "45 */12 * * *"
     }
   ]
 }

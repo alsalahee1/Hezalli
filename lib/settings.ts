@@ -19,6 +19,10 @@ export type PlatformSettings = {
   // store falls back to when it hasn't set its own per-zone express fee. ETAs
   // are the delivery-time estimates (in days) shown to buyers at checkout.
   express_enabled: boolean;
+  // When true, checkout refuses home delivery to a governorate no ShippingZone
+  // covers (pickup at a Hezalli Point stays allowed). Off by default so
+  // existing deploys keep the fall-back-to-default-fee behavior.
+  require_zone_coverage: boolean;
   default_express_fee: number;
   std_eta_min_days: number;
   std_eta_max_days: number;
@@ -118,6 +122,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   cod_enabled: true,
   maintenance_mode: false,
   express_enabled: true,
+  require_zone_coverage: false,
   default_express_fee: 10,
   std_eta_min_days: 3,
   std_eta_max_days: 7,

@@ -1148,6 +1148,10 @@ async function main() {
   const COMMISSION = 0.1;
 
   // Helper: build one single-seller order with items, payment, shipment.
+  // Monotonic suffix so every seeded payment reference/tx-hash is unique
+  // (they carry unique indexes as the receipt-reuse fraud guard).
+  let seedPaymentRef = 1000;
+
   async function createOrder(opts: {
     buyerId: string;
     addressId: string;
@@ -1234,14 +1238,20 @@ async function main() {
             amountUsd: grandTotal,
             confirmedAt: paymentStatus === "CONFIRMED" ? new Date() : null,
             usdtNetwork: opts.paymentMethod === "USDT" ? "TRC20" : null,
+            // Payment.reference/usdtTxHash are unique (receipt-reuse guard),
+            // so each seeded payment gets its own suffix.
             usdtTxHash:
-              opts.paymentMethod === "USDT" ? "0xseedtxhash1234567890" : null,
+              opts.paymentMethod === "USDT"
+                ? `0xseedtxhash${++seedPaymentRef}`
+                : null,
             usdtAddress:
               opts.paymentMethod === "USDT"
                 ? "TSeedUsdtAddr000000000000000000000"
                 : null,
             reference:
-              opts.paymentMethod === "LOCAL_WALLET" ? "JAWALI-REF-88213" : null,
+              opts.paymentMethod === "LOCAL_WALLET"
+                ? `JAWALI-REF-88${++seedPaymentRef}`
+                : null,
           },
         },
         history: {

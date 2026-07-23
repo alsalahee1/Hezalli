@@ -176,7 +176,6 @@
     "slug": "Store URL",
     "slugHelp": "Lowercase letters, numbers, and dashes only. Changing it changes your public store link.",
     "description": "Store description",
-    "imagesSoon": "Logo and banner upload are coming with image storage — a placeholder banner is shown until then.",
     "returnPolicy": "Return policy",
     "shippingPolicy": "Shipping policy",
     "contact": "Customer service contact",
@@ -200,7 +199,13 @@
     "shippingManage": "Manage shipping rates",
     "notifTitle": "Notifications",
     "notifDesc": "Choose how you're alerted about new orders and payments.",
-    "notifManage": "Manage notifications"
+    "notifManage": "Manage notifications",
+    "logo": "Store logo",
+    "banner": "Store banner",
+    "uploadLogo": "Upload logo",
+    "uploadBanner": "Upload banner",
+    "removeImage": "Remove image",
+    "invalidImage": "That image could not be used. Please upload it again."
   },
   "SellerProducts": {
     "title": "Products",
@@ -305,7 +310,6 @@
     "memberSince": "Member since",
     "productsTitle": "Products",
     "noProductsYet": "This store hasn't listed any products yet.",
-    "productsComing": "{count} products — the product grid arrives with the catalog phase.",
     "policiesTitle": "Store policies",
     "returnPolicy": "Return policy",
     "shippingPolicy": "Shipping policy",
@@ -399,7 +403,24 @@
     "forbiddenTitle": "Access denied",
     "forbiddenDesc": "You don't have permission to view this page.",
     "backHome": "Back to home",
-    "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again."
+    "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again.",
+    "forgotTitle": "Forgot your password?",
+    "forgotSubtitle": "Enter your email and we'll send you a reset link",
+    "resetRequestButton": "Send reset link",
+    "resetRequestSending": "Sending…",
+    "resetRequestSent": "If an account exists for that email, a reset link is on its way. Check your inbox (and spam folder).",
+    "resetRequestAgain": "Request a new link",
+    "backToLogin": "Back to sign in",
+    "resetTitle": "Set a new password",
+    "resetSubtitle": "Choose a new password for your account",
+    "newPassword": "New password",
+    "resetButton": "Save new password",
+    "resetSaving": "Saving…",
+    "resetDone": "Your password has been updated. You can now sign in.",
+    "resetLinkInvalid": "This reset link is invalid or has expired. Please request a new one.",
+    "resetEmailSubject": "Reset your Hezalli password",
+    "resetEmailBody": "We received a request to reset your password. Click the button below within 30 minutes to choose a new one. If you didn't ask for this, you can safely ignore this email.",
+    "resetEmailCta": "Reset password"
   },
   "Account": {
     "title": "My account",
@@ -957,7 +978,9 @@
     "scheduleSlotAny": "Any time",
     "scheduleClear": "Clear",
     "err_badDeliveryWindow": "That delivery window isn’t available. Please pick another day or time.",
-    "err_deliveryWindowNotExpress": "Scheduled windows are only available for Hezalli Express items."
+    "err_deliveryWindowNotExpress": "Scheduled windows are only available for Hezalli Express items.",
+    "err_zoneNotCovered": "We don't deliver to this area yet. Choose pickup at a Hezalli Point, or use a different address.",
+    "zoneNotCoveredWarn": "Home delivery isn't available in this governorate yet — pickup at a Hezalli Point still works."
   },
   "DeliveryWindow": {
     "slot_MORNING": "Morning (9 AM–12 PM)",
@@ -1154,7 +1177,8 @@
     "err_proofRequired": "Please provide your payment reference.",
     "err_badState": "This order can't be paid right now.",
     "err_notFound": "Order not found.",
-    "err_unauthorized": "Please sign in."
+    "err_unauthorized": "Please sign in.",
+    "err_proofReused": "The transfer reference or transaction hash you entered was already used for another payment. Each receipt can be used once — check the number, or contact support if you believe this is a mistake."
   },
   "AdminPayments": {
     "title": "Payments",
@@ -1447,7 +1471,8 @@
     "err_badState": "This action isn't available right now.",
     "err_trackingRequired": "Enter a valid tracking number.",
     "err_alreadyEscalated": "This return is already escalated.",
-    "err_forbidden": "You don't have permission to do this."
+    "err_forbidden": "You don't have permission to do this.",
+    "reason_not_received": "Order not received"
   },
   "SellerReturns": {
     "title": "Returns",
@@ -1697,7 +1722,9 @@
     "platformWalletEmail": "Hezalli wallet account (email)",
     "platformWalletEmailHint": "The ADMIN account whose HezalliPay wallet receives couriers' in-app COD remittances. Leave empty to turn in-app remittance off.",
     "err_badCashLimit": "Enter valid COD credit-control limits.",
-    "err_badWalletEmail": "Enter a valid email for the Hezalli wallet account."
+    "err_badWalletEmail": "Enter a valid email for the Hezalli wallet account.",
+    "requireZoneCoverage": "Require delivery-zone coverage",
+    "requireZoneCoverageHint": "Refuse home delivery to governorates without a shipping zone (pickup stays available)."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",
@@ -2072,7 +2099,8 @@
     "err_failed": "Couldn’t complete that. Please try again.",
     "err_noPasskey": "No passkey is registered.",
     "courierEarnings": "Delivery earnings",
-    "pointEarnings": "Point earnings"
+    "pointEarnings": "Point earnings",
+    "err_proofReused": "The transfer reference or transaction hash you entered was already used for another payment. Each receipt can be used once — check the number, or contact support if you believe this is a mistake."
   },
   "ShippingLabel": {
     "title": "Shipping label",

@@ -5,6 +5,7 @@ export const RETURN_REASONS = [
   "wrong_item",
   "not_as_described",
   "missing_parts",
+  "not_received",
   "changed_mind",
   "other",
 ] as const;

@@ -16,10 +16,16 @@ import {
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getListing } from "@/lib/search";
 import type { StorePolicies } from "@/lib/validations/store";
+import { ProductCard } from "@/components/product/product-card";
+import { ListingPagination } from "@/components/shop/listing-pagination";
 import { FollowButton } from "@/components/store/follow-button";
 
-type Props = { params: Promise<{ locale: string; slug: string }> };
+type Props = {
+  params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 async function getStore(slug: string) {
   const store = await prisma.store.findUnique({
@@ -46,12 +52,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: store?.name ?? "Store" };
 }
 
-export default async function StorePage({ params }: Props) {
+export default async function StorePage({ params, searchParams }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
   const store = await getStore(slug);
   if (!store) notFound();
+
+  // The store's catalog, through the same listing engine as /search — pinned
+  // to this store, paginated via ?page=.
+  const listing = await getListing(await searchParams, locale, {
+    sellerSlug: slug,
+  });
 
   const session = await auth();
   let following = false;
@@ -76,8 +88,17 @@ export default async function StorePage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-12">
-      {/* Banner (image upload arrives with file storage) */}
-      <div className="from-primary/25 via-primary/10 to-muted h-36 rounded-b-xl bg-gradient-to-l sm:h-48" />
+      {/* Banner: the store's uploaded image, or a brand gradient fallback. */}
+      {store.banner ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={store.banner}
+          alt=""
+          className="h-36 w-full rounded-b-xl object-cover sm:h-48"
+        />
+      ) : (
+        <div className="from-primary/25 via-primary/10 to-muted h-36 rounded-b-xl bg-gradient-to-l sm:h-48" />
+      )}
 
       {/* Identity row */}
       <div className="-mt-8 flex flex-col gap-4 px-2 sm:flex-row sm:items-end">
@@ -160,17 +181,27 @@ export default async function StorePage({ params }: Props) {
         </div>
       </div>
 
-      {/* Products (grid fills in Phase 5) */}
+      {/* Products */}
       <section className="mt-10">
         <h2 className="mb-4 text-lg font-semibold">{t("productsTitle")}</h2>
-        <div className="text-muted-foreground flex flex-col items-center gap-2 rounded-lg border border-dashed py-12 text-center text-sm">
-          <StoreIcon className="size-6" />
-          <p>
-            {store._count.products > 0
-              ? t("productsComing", { count: store._count.products })
-              : t("noProductsYet")}
-          </p>
-        </div>
+        {listing.items.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {listing.items.map((item) => (
+                <ProductCard key={item.slug} item={item} />
+              ))}
+            </div>
+            <ListingPagination
+              page={listing.page}
+              totalPages={listing.totalPages}
+            />
+          </>
+        ) : (
+          <div className="text-muted-foreground flex flex-col items-center gap-2 rounded-lg border border-dashed py-12 text-center text-sm">
+            <StoreIcon className="size-6" />
+            <p>{t("noProductsYet")}</p>
+          </div>
+        )}
       </section>
 
       {/* Policies */}

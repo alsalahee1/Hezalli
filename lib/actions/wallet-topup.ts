@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { audit } from "@/lib/audit";
 import { requireWalletManagerId } from "@/lib/authz";
 import { round2 } from "@/lib/finance";
@@ -67,17 +68,24 @@ export async function requestTopUp(input: {
     amount;
   if (projected > limits.cap) return { error: "capExceeded" };
 
-  await prisma.walletTopUp.create({
-    data: {
-      walletId,
-      method: input.method,
-      amountUsd: amount,
-      status: "AWAITING_CONFIRMATION",
-      reference: isUsdt ? null : input.reference?.trim() || null,
-      usdtNetwork: isUsdt ? (input.usdtNetwork ?? "TRC20") : null,
-      usdtTxHash: isUsdt ? input.usdtTxHash?.trim() || null : null,
-    },
-  });
+  try {
+    await prisma.walletTopUp.create({
+      data: {
+        walletId,
+        method: input.method,
+        amountUsd: amount,
+        status: "AWAITING_CONFIRMATION",
+        reference: isUsdt ? null : input.reference?.trim() || null,
+        usdtNetwork: isUsdt ? (input.usdtNetwork ?? "TRC20") : null,
+        usdtTxHash: isUsdt ? input.usdtTxHash?.trim() || null : null,
+      },
+    });
+  } catch (e) {
+    // Unique guard on reference/txHash: this receipt already backs another
+    // top-up — reject the reuse instead of queueing it for admin review.
+    if (isUniqueViolation(e)) return { error: "proofReused" };
+    throw e;
+  }
 
   revalidatePath(`/${locale}/account/wallet`);
   revalidatePath(`/${locale}/admin/payments`);

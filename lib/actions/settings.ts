@@ -28,6 +28,7 @@ export type SettingsInput = {
   wallet_daily_outflow_usd: number;
   wallet_monthly_outflow_usd: number;
   express_enabled: boolean;
+  require_zone_coverage: boolean;
   default_express_fee: number;
   std_eta_min_days: number;
   std_eta_max_days: number;
@@ -189,6 +190,7 @@ export async function savePlatformSettings(
     wallet_daily_outflow_usd: dailyOut,
     wallet_monthly_outflow_usd: monthlyOut,
     express_enabled: Boolean(input.express_enabled),
+    require_zone_coverage: Boolean(input.require_zone_coverage),
     default_express_fee: expressFee,
     std_eta_min_days: etas[0],
     std_eta_max_days: etas[1],

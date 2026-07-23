@@ -215,10 +215,11 @@ async function pageProductIds(
 export async function getListing(
   sp: RawSearchParams,
   locale: string,
-  opts: { categorySlug?: string } = {},
+  opts: { categorySlug?: string; sellerSlug?: string } = {},
 ): Promise<ListingResult> {
   const params = parseListingParams(sp);
   if (opts.categorySlug) params.category = opts.categorySlug;
+  if (opts.sellerSlug) params.seller = opts.sellerSlug;
 
   const ranks = params.q ? await ftsRanks(params.q) : null;
   const ftsIdList = ranks ? [...ranks.keys()] : null;

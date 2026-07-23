@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { updateStoreSettings, type FormState } from "@/lib/actions/store";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploader } from "@/components/upload/image-uploader";
 
 export type StoreSettingsData = {
   name: string;
@@ -16,6 +18,8 @@ export type StoreSettingsData = {
   returnPolicy: string;
   shippingPolicy: string;
   contact: string;
+  logo: string;
+  banner: string;
 };
 
 export function StoreSettingsForm({ store }: { store: StoreSettingsData }) {
@@ -27,6 +31,9 @@ export function StoreSettingsForm({ store }: { store: StoreSettingsData }) {
   const err = (k?: string) => (k ? t(k) : undefined);
 
   const field = (key: string) => state.errors?.[key];
+
+  const [logo, setLogo] = useState(store.logo);
+  const [banner, setBanner] = useState(store.banner);
 
   return (
     <form action={action} className="max-w-2xl space-y-5" noValidate>
@@ -96,8 +103,67 @@ export function StoreSettingsForm({ store }: { store: StoreSettingsData }) {
         ) : null}
       </div>
 
-      <div className="bg-muted/40 text-muted-foreground rounded-md border border-dashed px-3 py-2 text-sm">
-        {t("imagesSoon")}
+      {/* Branding: logo + banner, uploaded via /api/upload; the hidden
+          inputs carry the resulting URLs into the server action. */}
+      <input type="hidden" name="logo" value={logo} />
+      <input type="hidden" name="banner" value={banner} />
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>{t("logo")}</Label>
+          <div className="flex items-center gap-3">
+            {logo ? (
+              <span className="relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logo}
+                  alt=""
+                  className="size-16 rounded-full border object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLogo("")}
+                  aria-label={t("removeImage")}
+                  className="bg-background text-muted-foreground hover:text-destructive absolute -end-1 -top-1 rounded-full border p-0.5"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            ) : null}
+            <ImageUploader
+              folder="stores"
+              onUploaded={setLogo}
+              label={t("uploadLogo")}
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("banner")}</Label>
+          <div className="space-y-2">
+            {banner ? (
+              <span className="relative block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={banner}
+                  alt=""
+                  className="h-20 w-full rounded-md border object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBanner("")}
+                  aria-label={t("removeImage")}
+                  className="bg-background text-muted-foreground hover:text-destructive absolute -end-1 -top-1 rounded-full border p-0.5"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            ) : null}
+            <ImageUploader
+              folder="banners"
+              onUploaded={setBanner}
+              label={t("uploadBanner")}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">

@@ -7,7 +7,11 @@ export const runtime = "nodejs";
 
 function clientIp(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for");
-  return (fwd?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
+  return (
+    fwd?.split(",")[0] ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  ).trim();
 }
 
 // Live courier position for the public tracking page (one-shot JSON). Kept as a

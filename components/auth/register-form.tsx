@@ -109,7 +109,7 @@ export function RegisterForm({ refCode }: { refCode?: string }) {
             {t.rich("acceptTerms", {
               terms: (chunks) => (
                 <Link
-                  href="/terms"
+                  href="/p/terms"
                   className="text-foreground underline underline-offset-2"
                 >
                   {chunks}
@@ -117,7 +117,7 @@ export function RegisterForm({ refCode }: { refCode?: string }) {
               ),
               privacy: (chunks) => (
                 <Link
-                  href="/privacy"
+                  href="/p/privacy"
                   className="text-foreground underline underline-offset-2"
                 >
                   {chunks}

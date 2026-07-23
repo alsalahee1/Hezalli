@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isOwnStorageUrl } from "@/lib/storage";
 import {
   storeSettingsSchema,
   type StorePolicies,
@@ -48,6 +49,18 @@ export async function updateStoreSettings(
   const { name, slug, description, returnPolicy, shippingPolicy, contact } =
     parsed.data;
 
+  // Logo/banner come from /api/upload; only our own storage URLs are
+  // accepted so the fields can't point at arbitrary external images. An
+  // empty string clears the image.
+  const logoRaw = String(formData.get("logo") ?? "");
+  const bannerRaw = String(formData.get("banner") ?? "");
+  if (logoRaw && !isOwnStorageUrl(logoRaw)) {
+    return { formError: "invalidImage" };
+  }
+  if (bannerRaw && !isOwnStorageUrl(bannerRaw)) {
+    return { formError: "invalidImage" };
+  }
+
   // Slug uniqueness (only when it changes).
   if (slug !== store.slug) {
     const taken = await prisma.store.findUnique({
@@ -66,7 +79,14 @@ export async function updateStoreSettings(
   try {
     await prisma.store.update({
       where: { id: store.id },
-      data: { name, slug, description: description || null, policies },
+      data: {
+        name,
+        slug,
+        description: description || null,
+        policies,
+        logo: logoRaw || null,
+        banner: bannerRaw || null,
+      },
     });
   } catch {
     // Unique-constraint race on slug between check and write.

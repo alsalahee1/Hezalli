@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
 import { releaseFlashClaims } from "@/lib/flash";
+import { notify } from "@/lib/notify";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { paymentCapturedInSystem } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -89,20 +90,21 @@ async function transition(
           : `${sub.store.name}: ${to}`,
       },
     });
-
-    const ar = sub.order.buyer.locale === "ar";
-    await tx.notification.create({
-      data: {
-        userId: sub.order.buyerId,
-        type: "ORDER",
-        title: ar ? "تحديث الطلب" : "Order update",
-        body: ar
-          ? `طلبك من ${sub.store.name} ${statusWord(to, true)}.`
-          : `Your order from ${sub.store.name} is ${statusWord(to, false)}.`,
-        data: { orderId: sub.orderId },
-      },
-    });
   });
+
+  // Buyer status notice goes through notify() (in-app + email + push per
+  // prefs) after the transaction commits — best-effort, never rolls back.
+  const ar = sub.order.buyer.locale === "ar";
+  await notify({
+    userId: sub.order.buyerId,
+    type: "ORDER",
+    title: ar ? "تحديث الطلب" : "Order update",
+    body: ar
+      ? `طلبك من ${sub.store.name} ${statusWord(to, true)}.`
+      : `Your order from ${sub.store.name} is ${statusWord(to, false)}.`,
+    data: { orderId: sub.orderId },
+    link: `/account/orders/${sub.orderId}`,
+  }).catch(() => {});
 
   revalidatePath(`/${locale}/seller/orders`);
   revalidatePath(`/${locale}/seller/orders/${subOrderId}`);

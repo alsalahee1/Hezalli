@@ -19,6 +19,7 @@ import { getSetting } from "@/lib/settings";
 import {
   quoteShippingForStores,
   resolveShippingChoice,
+  resolveZoneId,
   type ShippingMethod,
 } from "@/lib/shipping";
 import { validateCoupon } from "@/lib/vouchers";
@@ -148,6 +149,18 @@ export async function placeOrder(
     // the stored per-line totals (no sub-cent drift into commission/refund math).
     itemsTotal: round2(lines.reduce((s, l) => s + round2(l.price * l.qty), 0)),
   }));
+  // Serviceability gate: when the platform requires zone coverage, home
+  // delivery to a governorate no ShippingZone serves is refused outright
+  // (instead of silently falling back to the default fee for an address we
+  // may not actually deliver to). Pickup at a Hezalli Point stays allowed.
+  if (await getSetting("require_zone_coverage")) {
+    const covered = await resolveZoneId(address.governorate);
+    const wantsHomeDelivery = rawGroups.some(
+      (g) => (input.shippingMethods ?? {})[g.storeId] !== "PICKUP",
+    );
+    if (!covered && wantsHomeDelivery) return { error: "zoneNotCovered" };
+  }
+
   // Authoritative shipping: zone-based rate for the destination governorate,
   // for the buyer's chosen tier (standard/express) per store. The fee is always
   // re-derived here — the client choice only selects which option applies.
@@ -473,59 +486,6 @@ export async function placeOrder(
         });
       }
 
-      // Confirmed-at-placement orders (COD, wallet) notify sellers immediately;
-      // manual-prepaid orders notify sellers only once payment is confirmed
-      // (see confirmPayment).
-      if (confirmedNow) {
-        for (const g of groups) {
-          const seller = sellerByStore.get(g.storeId);
-          if (!seller) continue;
-          const ar = seller.locale === "ar";
-          await tx.notification.create({
-            data: {
-              userId: seller.id,
-              type: "ORDER",
-              title: ar ? "طلب جديد" : "New order",
-              body: ar
-                ? `لديك طلب جديد بقيمة ${g.itemsTotal.toFixed(2)}$.`
-                : `You have a new order worth $${g.itemsTotal.toFixed(2)}.`,
-              data: { orderId: order.id, link: "/seller/orders" },
-            },
-          });
-        }
-      }
-      const ar = locale === "ar";
-      const amt = grandTotal.toFixed(2);
-      const buyerNote = wallet
-        ? {
-            title: ar ? "تم الدفع من محفظتك" : "Paid from your wallet",
-            body: ar
-              ? `تم تأكيد طلبك بقيمة ${amt}$ (مدفوع من محفظة HezalliPay).`
-              : `Your $${amt} order is confirmed (paid from your HezalliPay balance).`,
-          }
-        : manualPrepaid
-          ? {
-              title: ar ? "طلبك بانتظار الدفع" : "Complete your payment",
-              body: ar
-                ? `أكمل دفع ${amt}$ وأرسل إثبات الدفع.`
-                : `Complete your $${amt} payment and submit proof.`,
-            }
-          : {
-              title: ar ? "تم استلام طلبك" : "Order placed",
-              body: ar
-                ? `تم تأكيد طلبك بقيمة ${amt}$ (الدفع عند الاستلام).`
-                : `Your order for $${amt} is confirmed (cash on delivery).`,
-            };
-      await tx.notification.create({
-        data: {
-          userId,
-          type: manualPrepaid || wallet ? "PAYMENT" : "ORDER",
-          title: buyerNote.title,
-          body: buyerNote.body,
-          data: { orderId: order.id, link: `/account/orders/${order.id}` },
-        },
-      });
-
       // Clear the purchased items from the cart.
       await tx.cartItem.deleteMany({
         where: { cart: { userId }, variantId: { in: variantIds } },
@@ -548,6 +508,59 @@ export async function placeOrder(
       ];
       for (const pid of sellerProfileIds) await recomputeBalance(pid);
     }
+
+    // Notifications go through notify() (in-app + email + push per user
+    // prefs) after the money transaction commits — a notification failure
+    // must never roll back a placed order. Confirmed-at-placement orders
+    // (COD, wallet) alert sellers immediately; manual-prepaid orders alert
+    // sellers only once payment is confirmed (see confirmPayment).
+    if (confirmedNow) {
+      for (const g of groups) {
+        const seller = sellerByStore.get(g.storeId);
+        if (!seller) continue;
+        const sar = seller.locale === "ar";
+        await notify({
+          userId: seller.id,
+          type: "ORDER",
+          title: sar ? "طلب جديد" : "New order",
+          body: sar
+            ? `لديك طلب جديد بقيمة ${g.itemsTotal.toFixed(2)}$.`
+            : `You have a new order worth $${g.itemsTotal.toFixed(2)}.`,
+          data: { orderId },
+          link: "/seller/orders",
+        }).catch(() => {});
+      }
+    }
+    const ar = locale === "ar";
+    const amt = grandTotal.toFixed(2);
+    const buyerNote = wallet
+      ? {
+          title: ar ? "تم الدفع من محفظتك" : "Paid from your wallet",
+          body: ar
+            ? `تم تأكيد طلبك بقيمة ${amt}$ (مدفوع من محفظة HezalliPay).`
+            : `Your $${amt} order is confirmed (paid from your HezalliPay balance).`,
+        }
+      : manualPrepaid
+        ? {
+            title: ar ? "طلبك بانتظار الدفع" : "Complete your payment",
+            body: ar
+              ? `أكمل دفع ${amt}$ وأرسل إثبات الدفع.`
+              : `Complete your $${amt} payment and submit proof.`,
+          }
+        : {
+            title: ar ? "تم استلام طلبك" : "Order placed",
+            body: ar
+              ? `تم تأكيد طلبك بقيمة ${amt}$ (الدفع عند الاستلام).`
+              : `Your order for $${amt} is confirmed (cash on delivery).`,
+          };
+    await notify({
+      userId,
+      type: manualPrepaid || wallet ? "PAYMENT" : "ORDER",
+      title: buyerNote.title,
+      body: buyerNote.body,
+      data: { orderId },
+      link: `/account/orders/${orderId}`,
+    }).catch(() => {});
 
     revalidatePath(`/${locale}/account/orders`);
     revalidatePath(`/${locale}/seller/orders`);
@@ -739,30 +752,31 @@ export async function cancelOrder(
           : "Cancelled by buyer",
       },
     });
-    // Notify only the sellers whose sub-orders were actually cancelled.
-    const notified = new Set<string>();
-    for (const sub of cancellable) {
-      if (!cancelledSubIds.includes(sub.id)) continue;
-      const seller = sub.store.seller.user;
-      if (notified.has(seller.id)) continue;
-      notified.add(seller.id);
-      const ar = seller.locale === "ar";
-      await tx.notification.create({
-        data: {
-          userId: seller.id,
-          type: "ORDER",
-          title: ar ? "أُلغي طلب" : "Order cancelled",
-          body: ar
-            ? "ألغى المشتري طلباً كان موجهاً لمتجرك."
-            : "A buyer cancelled an order for your store.",
-          data: { orderId: order.id },
-        },
-      });
-    }
   });
 
   // Lost the race to a concurrent cancel / status advance — nothing was written.
   if (cancelledSubIds.length === 0) return { error: "tooLate" };
+
+  // Notify only the sellers whose sub-orders were actually cancelled — via
+  // notify() (in-app + email + push) after the transaction commits.
+  const notifiedSellers = new Set<string>();
+  for (const sub of cancellable) {
+    if (!cancelledSubIds.includes(sub.id)) continue;
+    const seller = sub.store.seller.user;
+    if (notifiedSellers.has(seller.id)) continue;
+    notifiedSellers.add(seller.id);
+    const sar = seller.locale === "ar";
+    await notify({
+      userId: seller.id,
+      type: "ORDER",
+      title: sar ? "أُلغي طلب" : "Order cancelled",
+      body: sar
+        ? "ألغى المشتري طلباً كان موجهاً لمتجرك."
+        : "A buyer cancelled an order for your store.",
+      data: { orderId: order.id },
+      link: "/seller/orders",
+    }).catch(() => {});
+  }
 
   // Wallet refund settled instantly: recompute the buyer's balance and drop the
   // now-cancelled sub-orders from each affected seller's escrow.

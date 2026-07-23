@@ -1,7 +1,7 @@
-// Email transport adapter + one branded template every email shares. No
-// provider is wired yet (Resend/SES etc. plug in at the marked point in Phase
-// 12.3); until then sending is a no-op, but the branded HTML is always built so
-// swapping in a transport needs no other change.
+// Email transport adapter + one branded template every email shares. The
+// transport is Resend's HTTP API (no SDK dependency), enabled by setting
+// RESEND_API_KEY + EMAIL_FROM. Without them sending is a logged no-op, so
+// dev/test environments never need a provider.
 export type EmailMessage = {
   to: string;
   subject: string;
@@ -44,6 +44,12 @@ export function renderEmail(opts: {
 </body></html>`;
 }
 
+export function isEmailConfigured(): boolean {
+  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+}
+
+let warnedUnconfigured = false;
+
 export async function sendEmail(msg: EmailMessage): Promise<void> {
   const html = renderEmail({
     title: msg.subject,
@@ -51,6 +57,34 @@ export async function sendEmail(msg: EmailMessage): Promise<void> {
     ctaLabel: msg.ctaLabel,
     ctaUrl: msg.ctaUrl,
   });
-  // Plug-in point: `await resend.emails.send({ to: msg.to, subject: msg.subject, html })`.
-  void html;
+
+  if (!isEmailConfigured()) {
+    if (!warnedUnconfigured) {
+      warnedUnconfigured = true;
+      console.warn(
+        "[email] RESEND_API_KEY / EMAIL_FROM not set — emails are dropped.",
+      );
+    }
+    return;
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM,
+      to: [msg.to],
+      subject: msg.subject,
+      html,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      `Email send failed (${res.status}): ${detail.slice(0, 300)}`,
+    );
+  }
 }

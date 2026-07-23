@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { requireWalletManagerId } from "@/lib/authz";
 import { recomputeBalance } from "@/lib/finance";
 import { releaseFlashClaims } from "@/lib/flash";
@@ -47,26 +48,33 @@ export async function submitPaymentProof(input: {
   if (isUsdt && !input.usdtTxHash?.trim()) return { error: "proofRequired" };
   if (!isUsdt && !input.reference?.trim()) return { error: "proofRequired" };
 
-  await prisma.$transaction([
-    prisma.payment.update({
-      where: { id: order.payment.id },
-      data: {
-        status: "AWAITING_CONFIRMATION",
-        reference: input.reference?.trim() || null,
-        usdtNetwork: isUsdt ? (input.usdtNetwork ?? "TRC20") : null,
-        usdtTxHash: isUsdt ? input.usdtTxHash?.trim() || null : null,
-        usdtAddress: isUsdt ? input.usdtAddress?.trim() || null : null,
-      },
-    }),
-    prisma.orderStatusHistory.create({
-      data: {
-        orderId: order.id,
-        status: "PENDING",
-        actor: "buyer",
-        note: "Payment proof submitted",
-      },
-    }),
-  ]);
+  try {
+    await prisma.$transaction([
+      prisma.payment.update({
+        where: { id: order.payment.id },
+        data: {
+          status: "AWAITING_CONFIRMATION",
+          reference: input.reference?.trim() || null,
+          usdtNetwork: isUsdt ? (input.usdtNetwork ?? "TRC20") : null,
+          usdtTxHash: isUsdt ? input.usdtTxHash?.trim() || null : null,
+          usdtAddress: isUsdt ? input.usdtAddress?.trim() || null : null,
+        },
+      }),
+      prisma.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: "PENDING",
+          actor: "buyer",
+          note: "Payment proof submitted",
+        },
+      }),
+    ]);
+  } catch (e) {
+    // Unique guard on reference/txHash: this receipt was already submitted
+    // for another payment — a reused proof, not a retry of this one.
+    if (isUniqueViolation(e)) return { error: "proofReused" };
+    throw e;
+  }
 
   revalidatePath(`/${locale}/account/orders/${order.id}`);
   revalidatePath(`/${locale}/admin/payments`);

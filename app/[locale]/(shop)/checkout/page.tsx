@@ -5,7 +5,11 @@ import { auth } from "@/auth";
 import { resolveCartLines } from "@/lib/cart";
 import { listRoutablePoints } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
-import { quoteShippingForStores, type StoreShipOptions } from "@/lib/shipping";
+import {
+  quoteShippingForStores,
+  resolveZoneId,
+  type StoreShipOptions,
+} from "@/lib/shipping";
 import { getSetting } from "@/lib/settings";
 import {
   CheckoutFlow,
@@ -95,6 +99,19 @@ export default async function CheckoutPage({
   const codEnabled = await getSetting("cod_enabled");
   const scheduleDays = await getSetting("delivery_window_days");
 
+  // Serviceability: with coverage required, flag addresses in governorates no
+  // ShippingZone serves so the client can warn and steer to pickup (placeOrder
+  // re-checks authoritatively).
+  const uncoveredAddressIds: string[] = [];
+  if (await getSetting("require_zone_coverage")) {
+    const govs = [...new Set(addrRows.map((a) => a.governorate))];
+    const zones = await Promise.all(govs.map((g) => resolveZoneId(g)));
+    const uncoveredGovs = new Set(govs.filter((_, i) => !zones[i]));
+    for (const a of addrRows) {
+      if (uncoveredGovs.has(a.governorate)) uncoveredAddressIds.push(a.id);
+    }
+  }
+
   // Points that can still take parcels (full ones are filtered out); the
   // client re-sorts nearest-first for whichever address is selected.
   const pointRows = await listRoutablePoints();
@@ -118,6 +135,7 @@ export default async function CheckoutPage({
         walletBalance={Number(buyer?.wallet?.availableUsd ?? 0)}
         pickupPoints={pickupPoints}
         scheduleDays={scheduleDays}
+        uncoveredAddressIds={uncoveredAddressIds}
       />
     </main>
   );

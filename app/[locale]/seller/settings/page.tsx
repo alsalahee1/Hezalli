@@ -59,6 +59,8 @@ export default async function SellerSettingsPage() {
             returnPolicy: policies.returnPolicy ?? "",
             shippingPolicy: policies.shippingPolicy ?? "",
             contact: policies.contact ?? "",
+            logo: store.logo ?? "",
+            banner: store.banner ?? "",
           }}
         />
       </section>

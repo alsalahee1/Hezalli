@@ -46,6 +46,7 @@ export function CheckoutFlow({
   walletBalance = 0,
   pickupPoints = [],
   scheduleDays = 0,
+  uncoveredAddressIds = [],
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
@@ -56,6 +57,9 @@ export function CheckoutFlow({
   pickupPoints?: PickupPointOption[];
   // Days ahead a buyer may schedule an Express delivery window; 0 = off.
   scheduleDays?: number;
+  // Addresses whose governorate no shipping zone covers (only populated when
+  // the platform requires coverage): home delivery there is refused server-side.
+  uncoveredAddressIds?: string[];
 }) {
   const t = useTranslations("Checkout");
   const tWin = useTranslations("DeliveryWindow");
@@ -342,6 +346,14 @@ export function CheckoutFlow({
                   <Plus className="size-4" /> {t("addAddress")}
                 </Link>
               </Button>
+              {uncoveredAddressIds.includes(addressId) ? (
+                <p
+                  role="alert"
+                  className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-500"
+                >
+                  {t("zoneNotCoveredWarn")}
+                </p>
+              ) : null}
             </div>
           )}
         </section>

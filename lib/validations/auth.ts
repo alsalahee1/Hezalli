@@ -33,6 +33,16 @@ export const loginSchema = z.object({
   remember: z.boolean().optional(),
 });
 
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, "passwordShort").max(100, "passwordLong"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "passwordMismatch",
+    path: ["confirmPassword"],
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 

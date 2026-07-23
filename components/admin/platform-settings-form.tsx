@@ -49,6 +49,7 @@ export function PlatformSettingsForm({
     wallet_p2p_enabled: current.wallet_p2p_enabled,
     wallet_bills_enabled: current.wallet_bills_enabled,
     express_enabled: current.express_enabled,
+    require_zone_coverage: current.require_zone_coverage,
     express_auto_assign: current.express_auto_assign,
     courier_assign_strategy: current.courier_assign_strategy,
     points_enabled: current.points_enabled,
@@ -100,6 +101,7 @@ export function PlatformSettingsForm({
         wallet_p2p_enabled: f.wallet_p2p_enabled,
         wallet_bills_enabled: f.wallet_bills_enabled,
         express_enabled: f.express_enabled,
+        require_zone_coverage: f.require_zone_coverage,
         express_auto_assign: f.express_auto_assign,
         courier_assign_strategy: f.courier_assign_strategy,
         points_enabled: f.points_enabled,
@@ -425,6 +427,18 @@ export function PlatformSettingsForm({
           {t("expressEnabled")}
           <span className="text-muted-foreground text-xs">
             {t("expressEnabledHint")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.require_zone_coverage}
+            onChange={(e) => set("require_zone_coverage", e.target.checked)}
+          />
+          {t("requireZoneCoverage")}
+          <span className="text-muted-foreground text-xs">
+            {t("requireZoneCoverageHint")}
           </span>
         </label>
         <label className="flex items-center gap-2 text-sm">
