@@ -382,7 +382,11 @@
     "tooLarge": "Image is too large (max 5 MB). Please choose a smaller one.",
     "unsupportedType": "That image format isn't supported. Please use JPEG, PNG, WebP, or GIF.",
     "serverError": "Couldn't save the image right now. Please try again.",
-    "notSignedIn": "Please sign in to upload an image."
+    "notSignedIn": "Please sign in to upload an image.",
+    "cropTitle": "Crop image",
+    "cropApply": "Apply",
+    "cropCancel": "Cancel",
+    "zoom": "Zoom"
   },
   "Auth": {
     "loginTitle": "Welcome back",
