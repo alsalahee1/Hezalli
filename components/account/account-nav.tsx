@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bot,
   Gift,
   Link2,
   Lock,
@@ -22,6 +23,7 @@ const ITEMS = [
   { href: "/account/wallet", key: "wallet", icon: Wallet },
   { href: "/account/loyalty", key: "loyalty", icon: Gift },
   { href: "/account/link-telegram", key: "connections", icon: Link2 },
+  { href: "/account/settings/assistant", key: "assistant", icon: Bot },
 ] as const;
 
 export function AccountNav() {

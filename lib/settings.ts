@@ -184,6 +184,12 @@ export type PlatformSettings = {
   // widget. A public path or URL; admins change it from Admin → Shadi
   // (upload or reset). Empty falls back to the bundled default.
   ai_assistant_avatar: string;
+  // Jumana's (جُمانة) face — the second assistant character. Same rules as
+  // Shadi's avatar; falls back to the bundled /jumana.jpg.
+  ai_avatar_jumana: string;
+  // Which character is the platform default: "shadi" | "jumana". A shopper can
+  // override it for themselves with the bot switcher (a cookie).
+  ai_default_bot: string;
   // ── Shadi tuning (Admin → Shadi page). For every "" / 0 value the runtime
   // falls back to the matching env var, then to the built-in default — so a
   // fresh install behaves exactly as before an admin touches anything. ──
@@ -296,6 +302,8 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   platform_wallet_email: "admin@hezalli.com",
   ai_assistant_enabled: true,
   ai_assistant_avatar: "/shadi.jpg",
+  ai_avatar_jumana: "/jumana.jpg",
+  ai_default_bot: "shadi",
   ai_gemini_model: "",
   ai_reply_mode: "",
   ai_tts_voice: "",

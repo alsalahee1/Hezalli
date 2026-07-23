@@ -12,7 +12,8 @@ import {
   type Part,
   type TokenUsage,
 } from "./gemini";
-import { DEFAULT_INTRO, lockedRules } from "./prompt-defaults";
+import { BOTS, type BotId } from "./bot-constants";
+import { defaultIntro, lockedRules } from "./prompt-defaults";
 import {
   runTool,
   TOOL_DECLARATIONS,
@@ -122,15 +123,16 @@ const SECTION_BRIEFS: Record<AssistantSection, string> = {
 function systemPrompt(
   locale: string,
   section: AssistantSection,
+  bot: BotId,
   intro: string,
   persona: string,
 ): string {
   const lang = locale === "ar" ? "Arabic" : "English";
   // The intro (identity + marketplace description) is admin-editable; empty
-  // falls back to the built-in DEFAULT_INTRO. The rule block is locked — it's
-  // what keeps Shadi calling tools and never inventing data or leaking secrets.
+  // falls back to the active character's default identity. The rule block is
+  // locked — it keeps the bot calling tools and never inventing data.
   const lines = [
-    intro.trim() || DEFAULT_INTRO,
+    intro.trim() || defaultIntro(BOTS[bot]),
     "",
     "Where the user is right now:",
     SECTION_BRIEFS[section],
@@ -183,12 +185,13 @@ export async function runAssistant(
   }
 
   const section = ctx.section ?? "store";
+  const bot: BotId = ctx.bot ?? "shadi";
   // Admin-editable base intro + persona/role (Admin → Shadi). Fetched per turn.
   const [intro, persona] = await Promise.all([
     getSetting("ai_intro").catch(() => ""),
     getSetting("ai_persona").catch(() => ""),
   ]);
-  const system = systemPrompt(ctx.locale, section, intro, persona);
+  const system = systemPrompt(ctx.locale, section, bot, intro, persona);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await generateContent({

@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { getTheme } from "@/lib/theme";
 import { getSetting } from "@/lib/settings";
 import { assistantReady } from "@/lib/ai/gemini";
+import { getActiveBot, getBotAvatar } from "@/lib/ai/active-bot";
+import { botName } from "@/lib/ai/bot-constants";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 
 import "../globals.css";
@@ -57,7 +59,8 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
   const theme = await getTheme();
   const showShadi = await assistantReady();
-  const shadiAvatar = showShadi ? await getSetting("ai_assistant_avatar") : "";
+  const activeBot = showShadi ? await getActiveBot() : "shadi";
+  const shadiAvatar = showShadi ? await getBotAvatar(activeBot) : "";
   const shadiGreeting = showShadi ? await getSetting("ai_greeting") : "";
 
   return (
@@ -75,7 +78,12 @@ export default async function LocaleLayout({
             reach it. Hidden when the admin toggle is off or no Gemini key is
             configured (Admin → Settings, or the GEMINI_API_KEY env var). */}
           {showShadi ? (
-            <AiAssistant avatar={shadiAvatar} greeting={shadiGreeting} />
+            <AiAssistant
+              botId={activeBot}
+              botName={botName(activeBot, locale)}
+              avatar={shadiAvatar}
+              greeting={shadiGreeting}
+            />
           ) : null}
         </NextIntlClientProvider>
       </body>

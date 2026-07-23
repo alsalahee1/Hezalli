@@ -436,6 +436,7 @@
     "security": "Security",
     "orders": "Orders",
     "connections": "Connections",
+    "assistant": "Assistant",
     "profileTitle": "Profile",
     "profileDesc": "Update your name and contact details.",
     "name": "Full name",
@@ -525,6 +526,13 @@
     "books": "Books & Stationery",
     "sports": "Sports & Outdoors",
     "automotive": "Automotive & Tools"
+  },
+  "BotSwitcher": {
+    "title": "Chat assistant",
+    "desc": "Choose who you'd like to chat with. You can switch anytime — inside the chat too.",
+    "active": "Chatting with you now",
+    "choose": "Tap to choose",
+    "unavailable": "The assistant isn't available right now."
   },
   "QuickNav": {
     "store": "Storefront",
@@ -1626,9 +1634,10 @@
   "Assistant": {
     "title": "Shadi",
     "subtitle": "Hezalli's AI shopping helper",
-    "open": "Open Shadi, the shopping assistant",
+    "open": "Open the shopping assistant",
     "close": "Close",
-    "greeting": "Hi! I'm Shadi. I can help you find products, compare prices, and check your orders. What are you looking for?",
+    "switchTo": "Switch to {name}",
+    "greeting": "Hi! I'm {name}. I can help you find products, compare prices, and check your orders. What are you looking for?",
     "placeholder": "Ask me anything…",
     "send": "Send",
     "thinking": "Thinking…",
@@ -1838,6 +1847,10 @@
     "avatar": "Bot image",
     "avatarHint": "Shown on the chat bubble and inside the chat window. Square images look best.",
     "avatarReset": "Reset to default",
+    "charactersTitle": "Characters",
+    "charactersHint": "Each character has its own image. Shoppers can switch between them; the default is used until they do (and on Telegram/WhatsApp). Square images look best.",
+    "isDefault": "Default character",
+    "makeDefault": "Set as default",
     "personaTitle": "Persona & behavior",
     "intro": "Base identity & description",
     "introHint": "The opening of Shadi's instructions — who it is and what Hezalli is. Edit freely, or use Reset to restore the default. This is the safe half of the base prompt; the rules below are always applied on top.",
