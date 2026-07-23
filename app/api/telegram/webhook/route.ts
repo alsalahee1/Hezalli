@@ -1,6 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 
-import { geminiConfigured } from "@/lib/ai/gemini";
+import { assistantReady } from "@/lib/ai/gemini";
 import { telegramConfigured } from "@/lib/integrations/telegram";
 import { seenTelegramUpdate } from "@/lib/integrations/telegram-dedup";
 import {
@@ -13,7 +13,7 @@ export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   // Ack quietly when the bot isn't fully configured so Telegram stops retrying.
-  if (!telegramConfigured() || !geminiConfigured()) {
+  if (!telegramConfigured() || !(await assistantReady())) {
     return NextResponse.json({ ok: true });
   }
 

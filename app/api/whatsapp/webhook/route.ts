@@ -1,6 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 
-import { geminiConfigured } from "@/lib/ai/gemini";
+import { assistantReady } from "@/lib/ai/gemini";
 import {
   processWhatsAppPayload,
   type WhatsAppPayload,
@@ -28,7 +28,7 @@ export function GET(req: NextRequest) {
 
 // POST: inbound messages + status callbacks.
 export async function POST(req: NextRequest) {
-  if (!whatsappConfigured() || !geminiConfigured()) {
+  if (!whatsappConfigured() || !(await assistantReady())) {
     return NextResponse.json({ ok: true });
   }
 

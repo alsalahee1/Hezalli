@@ -11,6 +11,8 @@ import "server-only";
 
 import { spawn } from "node:child_process";
 
+import { getGeminiKey } from "@/lib/ai/gemini";
+
 // A dedicated TTS-capable model (distinct from the chat model). Overridable.
 const TTS_MODEL =
   process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
@@ -85,7 +87,7 @@ export async function synthesizeVoice(
   text: string,
   opts: { voice?: string; style?: string } = {},
 ): Promise<TtsResult | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = await getGeminiKey();
   if (!apiKey) return null;
   const clean = (text || "").slice(0, MAX_CHARS).trim();
   if (!clean) return null;

@@ -87,6 +87,7 @@ export function PlatformSettingsForm({
     season_target_deliveries: String(current.season_target_deliveries),
     cod_wallet_pay_enabled: current.cod_wallet_pay_enabled,
     platform_wallet_email: current.platform_wallet_email,
+    ai_assistant_enabled: current.ai_assistant_enabled,
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -157,6 +158,7 @@ export function PlatformSettingsForm({
         season_target_deliveries: Number(f.season_target_deliveries),
         cod_wallet_pay_enabled: f.cod_wallet_pay_enabled,
         platform_wallet_email: f.platform_wallet_email,
+        ai_assistant_enabled: f.ai_assistant_enabled,
       });
       if (res.error) setErr(res.error);
       else {
@@ -685,6 +687,18 @@ export function PlatformSettingsForm({
           {t("walletBills")}
           <span className="text-muted-foreground text-xs">
             {t("walletBillsHint")}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.ai_assistant_enabled}
+            onChange={(e) => set("ai_assistant_enabled", e.target.checked)}
+          />
+          {t("aiEnabled")}
+          <span className="text-muted-foreground text-xs">
+            {t("aiEnabledHint")}
           </span>
         </label>
       </div>
