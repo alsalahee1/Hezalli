@@ -128,6 +128,9 @@ afterAll(async () => {
   await prisma.courierLedgerEntry
     .deleteMany({ where: { courierId: { in: userIds } } })
     .catch(() => {});
+  await prisma.courierBadgeAward
+    .deleteMany({ where: { courierId: { in: userIds } } })
+    .catch(() => {});
   await prisma.notification
     .deleteMany({ where: { userId: { in: userIds } } })
     .catch(() => {});
@@ -364,6 +367,50 @@ describe("deposits & trust bonus raise the personal limit", () => {
       data: { courierId: c, type: "COD_COLLECTED", amountUsd: 10 },
     });
     expect((await codBlockedCourierIds([c])).has(c)).toBe(true);
+  });
+
+  it("quality badges earn limit; milestones and the cap don't overpay", async () => {
+    const c = await makeCourier("badge");
+    await prisma.courierLedgerEntry.create({
+      data: { courierId: c, type: "COD_COLLECTED", amountUsd: 65 },
+    });
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(true); // base 50
+
+    // One quality badge → limit 50 + 25 = 75 ≥ 65 → unblocked.
+    await prisma.courierBadgeAward.create({
+      data: { courierId: c, badgeId: "top_rated" },
+    });
+    expect((await codBlockedCourierIds([c])).has(c)).toBe(false);
+    let status = await courierCodStatus(c);
+    expect(status.badgeBonus).toBe(25);
+    expect(status.cashLimit).toBe(75);
+
+    // Milestone badges don't count — volume is the trust bonus's job.
+    await prisma.courierBadgeAward.create({
+      data: { courierId: c, badgeId: "deliveries_50" },
+    });
+    status = await courierCodStatus(c);
+    expect(status.badgeBonus).toBe(25);
+
+    // All five quality badges would be $125 — the default cap holds it at $100.
+    await prisma.courierBadgeAward.createMany({
+      data: [
+        "five_star_streak",
+        "first_attempt_pro",
+        "on_time_hero",
+        "verified_pro",
+      ].map((badgeId) => ({ courierId: c, badgeId })),
+    });
+    status = await courierCodStatus(c);
+    expect(status.badgeBonus).toBe(100);
+    expect(status.cashLimit).toBe(150);
+
+    // Seasonal badges are recognition, not credit — no limit change.
+    await prisma.courierBadgeAward.create({
+      data: { courierId: c, badgeId: "season_رمضان ٢٠٢٦" },
+    });
+    status = await courierCodStatus(c);
+    expect(status.badgeBonus).toBe(100);
   });
 
   it("a point deposit raises its cash holding limit 1:1", async () => {

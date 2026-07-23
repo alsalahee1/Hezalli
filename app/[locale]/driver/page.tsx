@@ -13,7 +13,7 @@ import {
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
-import { courierPerformance } from "@/lib/courier-performance";
+import { syncedCourierPerformance } from "@/lib/courier-performance";
 import { boardReadyAtPoint, openBoardWhere } from "@/lib/job-board";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -80,7 +80,7 @@ export default async function DriverJobsPage() {
       }),
       courierCashSummary(courierId),
       courierCodStatus(courierId),
-      courierPerformance(courierId),
+      syncedCourierPerformance(courierId),
       // Open, claimable board parcels — for the "job board" teaser card.
       prisma.shipment.findMany({
         where: openBoardWhere(),

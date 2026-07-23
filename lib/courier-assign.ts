@@ -26,6 +26,7 @@
 // first sweep after opening (lib/offer-sweep.ts), so night orders wait for
 // the morning wave instead of pinging sleeping drivers.
 import { codBlockedCourierIds } from "@/lib/cod-guard";
+import { QUALITY_BADGE_IDS } from "@/lib/courier-badges";
 import {
   effectiveVehicleCapacity,
   hasRoomFor,
@@ -72,6 +73,10 @@ export type CourierLoad = {
   // trusted). Breaks ranking ties after load; the hard gate is applied before
   // ranking (see activeCouriersWithLoad).
   rate: number;
+  // Earned quality badges (lib/courier-badges.ts). With
+  // badge_priority_dispatch on, equally loaded/near couriers rank badge
+  // holders first — the perk never overrides load balancing or distance.
+  badges: number;
   governorate: string | null;
   lat: number | null;
   lng: number | null;
@@ -124,18 +129,32 @@ async function activeCouriersWithLoad(
   // In-flight parcels with their destination and weight, so a driver's load is
   // known in kilos, liters, and destinations — not just a count.
   const ids = eligible.map((c) => c.id);
-  const active = await prisma.shipment.findMany({
-    where: { driverId: { in: ids }, subOrder: { status: "SHIPPED" } },
-    select: {
-      driverId: true,
-      subOrderId: true,
-      subOrder: {
-        select: {
-          order: { select: { address: { select: { governorate: true } } } },
+  const [active, awards] = await Promise.all([
+    prisma.shipment.findMany({
+      where: { driverId: { in: ids }, subOrder: { status: "SHIPPED" } },
+      select: {
+        driverId: true,
+        subOrderId: true,
+        subOrder: {
+          select: {
+            order: { select: { address: { select: { governorate: true } } } },
+          },
         },
       },
-    },
-  });
+    }),
+    // Quality-badge counts for priority dispatch (tie-break only).
+    settings.badge_priority_dispatch
+      ? prisma.courierBadgeAward.groupBy({
+          by: ["courierId"],
+          where: {
+            courierId: { in: ids },
+            badgeId: { in: [...QUALITY_BADGE_IDS] },
+          },
+          _count: { _all: true },
+        })
+      : [],
+  ]);
+  const badgesBy = new Map(awards.map((a) => [a.courierId, a._count._all]));
   const metrics = await subOrderMetrics(active.map((s) => s.subOrderId));
 
   const byDriver = new Map<
@@ -168,6 +187,7 @@ async function activeCouriersWithLoad(
       loadVolumeCm3: cur?.volume ?? 0,
       vehicleType: c.courierVehicleType,
       rate: stats.get(c.id)?.rate ?? 1,
+      badges: badgesBy.get(c.id) ?? 0,
       governorate: c.courierLocation?.governorate ?? null,
       lat: c.courierLocation?.lat ?? null,
       lng: c.courierLocation?.lng ?? null,
@@ -176,12 +196,16 @@ async function activeCouriersWithLoad(
   });
 }
 
-// Fewest active jobs wins; ties go to the more reliable driver, then id for
-// deterministic behavior.
+// Fewest active jobs wins; ties go to the driver with more quality badges,
+// then the more reliable one, then id for deterministic behavior.
 function leastLoaded(list: CourierLoad[]): string | null {
   if (list.length === 0) return null;
   return [...list].sort(
-    (a, b) => a.load - b.load || b.rate - a.rate || a.id.localeCompare(b.id),
+    (a, b) =>
+      a.load - b.load ||
+      b.badges - a.badges ||
+      b.rate - a.rate ||
+      a.id.localeCompare(b.id),
   )[0].id;
 }
 
@@ -204,7 +228,7 @@ export type ParcelInfo = {
  * 2. Prefer a courier already delivering to the destination governorate
  *    (batching) — they're making that trip anyway, capacity permitting.
  * 3. Within that, the strategy's usual order: distance (nearest) or load,
- *    with the more reliable driver winning ties.
+ *    with quality-badge holders, then the more reliable driver, winning ties.
  */
 export function pickFrom(
   list: CourierLoad[],
@@ -230,6 +254,7 @@ export function pickFrom(
       (a, b) =>
         batched(a) - batched(b) ||
         a.load - b.load ||
+        b.badges - a.badges ||
         b.rate - a.rate ||
         a.id.localeCompare(b.id),
     )[0].id;
@@ -247,6 +272,7 @@ export function pickFrom(
             haversineKm(dLat, dLng, a.lat!, a.lng!) -
               haversineKm(dLat, dLng, b.lat!, b.lng!) ||
             a.load - b.load ||
+            b.badges - a.badges ||
             b.rate - a.rate ||
             a.id.localeCompare(b.id),
         )[0].id;

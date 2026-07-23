@@ -60,6 +60,13 @@ export type SettingsInput = {
   trust_step_deliveries: number;
   trust_step_bonus_usd: number;
   trust_bonus_cap_usd: number;
+  badge_bonus_usd: number;
+  badge_bonus_cap_usd: number;
+  badge_priority_dispatch: boolean;
+  season_badge_name: string;
+  season_start_date: string;
+  season_end_date: string;
+  season_target_deliveries: number;
   cod_wallet_pay_enabled: boolean;
   platform_wallet_email: string;
 };
@@ -226,6 +233,33 @@ export async function savePlatformSettings(
   const trustCap = money2(input.trust_bonus_cap_usd);
   if (![trustBonus, trustCap].every((n) => Number.isFinite(n) && n >= 0))
     return { error: "badCashLimit" };
+  const badgeBonus = money2(input.badge_bonus_usd);
+  const badgeCap = money2(input.badge_bonus_cap_usd);
+  if (![badgeBonus, badgeCap].every((n) => Number.isFinite(n) && n >= 0))
+    return { error: "badCashLimit" };
+
+  // Seasonal badge: either fully configured (name + two valid dates in order)
+  // or fully off (empty name). Dates are plain YYYY-MM-DD.
+  const seasonName = (input.season_badge_name || "").trim().slice(0, 60);
+  const seasonStart = (input.season_start_date || "").trim();
+  const seasonEnd = (input.season_end_date || "").trim();
+  const seasonTarget = int(input.season_target_deliveries);
+  if (
+    !Number.isFinite(seasonTarget) ||
+    seasonTarget < 0 ||
+    seasonTarget > 10000
+  )
+    return { error: "badSeason" };
+  if (seasonName) {
+    const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+    if (
+      !isDay(seasonStart) ||
+      !isDay(seasonEnd) ||
+      seasonStart > seasonEnd ||
+      seasonTarget < 1
+    )
+      return { error: "badSeason" };
+  }
 
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
@@ -285,6 +319,13 @@ export async function savePlatformSettings(
     trust_step_deliveries: trustStep,
     trust_step_bonus_usd: trustBonus,
     trust_bonus_cap_usd: trustCap,
+    badge_bonus_usd: badgeBonus,
+    badge_bonus_cap_usd: badgeCap,
+    badge_priority_dispatch: Boolean(input.badge_priority_dispatch),
+    season_badge_name: seasonName,
+    season_start_date: seasonName ? seasonStart : "",
+    season_end_date: seasonName ? seasonEnd : "",
+    season_target_deliveries: seasonTarget,
     cod_wallet_pay_enabled: Boolean(input.cod_wallet_pay_enabled),
     platform_wallet_email: platformWalletEmail,
   };
