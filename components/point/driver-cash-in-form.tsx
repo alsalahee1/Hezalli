@@ -103,7 +103,7 @@ export function DriverCashInForm({ drivers }: { drivers: Driver[] }) {
       {/* Once a driver is chosen, show what they're holding and a one-tap
           "collect all" that fills the amount with their full cash-on-hand. */}
       {selected ? (
-        <div className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2">
+        <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-md px-3 py-2">
           <span className="text-xs">
             {t("cashInOnHand", { amount: money(onHand) })}
           </span>
