@@ -19,7 +19,6 @@ import { WalletTabBar } from "@/components/wallet/wallet-tab-bar";
 import { WalletAppHeader } from "@/components/wallet/wallet-app-header";
 import { WalletDeepLink } from "@/components/wallet/wallet-deep-link";
 import { BillPayForm } from "@/components/wallet/bill-pay-form";
-import { CurrencySwitcher } from "@/components/layout/currency-switcher";
 import { ReferralLink } from "@/components/account/referral-link";
 import { QrCode } from "@/components/orders/qr-code";
 import { BILLERS, billerName } from "@/lib/wallet-billers";
@@ -158,12 +157,6 @@ export default async function WalletPage() {
             </p>
           ) : null}
           <p className="text-muted-foreground text-xs">{t("subtitle")}</p>
-          {/* The wallet opens as a standalone app on phones (storefront
-              header hidden), so the display-currency switch lives right on
-              the balance card too. */}
-          <div className="mt-3">
-            <CurrencySwitcher initialCurrency={display.code} locale={locale} />
-          </div>
         </div>
       </div>
 
