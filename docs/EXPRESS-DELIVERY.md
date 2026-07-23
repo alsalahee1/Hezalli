@@ -99,23 +99,27 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
 Two refinements apply under both strategies (`lib/courier-capacity.ts`):
 
 - **Vehicle capacity** — each vehicle from the courier application (foot,
-  bicycle, motorbike, car, van) has a carrying profile: max total weight, max
-  total volume, max simultaneous parcels, and the longest single item that
-  physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light and
-  low-volume yet impossible on a motorbike). A parcel's metrics come from its
-  lines: `quantity ×` the weight/size **snapshotted at checkout**
-  (`OrderItem.weightGramsSnapshot` / `dimensionsSnapshot`, frozen like
-  `titleSnapshot` so catalog edits can't rewrite in-flight parcels), falling
-  back to the live `Product.weightGrams` / `Product.dimensions`
-  (`{ l, w, h }` cm, collected on the seller product form), then to
-  the product category's delivery defaults
-  (`Category.defaultWeightGrams` / `defaultDimensions` — so one setting covers
-  e.g. all refrigerators; editable in the admin category manager and, via the
-  narrow audited `setCategoryShippingDefaults` action, on the delivery-manager
-  portal's "Delivery defaults" page — those two fields only, never names,
-  slugs, or the tree), then to
-  small-parcel constants so unlabeled items still consume capacity. Summed
-  parcel volume is inflated by `PACKING_FACTOR` since real items don't
+  bicycle, motorbike, car, van, truck) has a carrying profile: max total
+  weight, max total volume, max simultaneous parcels, and the longest single
+  item that physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light
+  and low-volume yet impossible on a motorbike). A parcel's metrics come from
+  its lines, resolved per field in this order:
+  1. the values **snapshotted at checkout** (`OrderItem.weightGramsSnapshot` /
+     `dimensionsSnapshot` / `sizeClassSnapshot`, frozen like `titleSnapshot`
+     so catalog edits can't rewrite in-flight parcels);
+  2. the live exact fields (`Product.weightGrams` / `dimensions`, the
+     optional "exact size" inputs on the seller product form);
+  3. the product's **size class** (`Product.sizeClass` — the primary seller
+     input: envelope / small / medium / large / xlarge / oversized, each
+     mapped to representative weight+dimensions in `SIZE_CLASS_PROFILES`);
+  4. the category's delivery defaults (`Category.defaultSizeClass` /
+     `defaultWeightGrams` / `defaultDimensions` — one setting covers e.g. all
+     refrigerators; editable in the admin category manager and, via the
+     narrow audited `setCategoryShippingDefaults` action, on the
+     delivery-manager portal's "Delivery defaults" page);
+  5. small-parcel constants, so unlabeled items still consume capacity.
+
+  Summed parcel volume is inflated by `PACKING_FACTOR` since real items don't
   tessellate. Couriers whose vehicle can't take the parcel — too heavy or too
   long outright, or the driver is already at a weight/volume/parcel limit —
   are skipped. The approved vehicle is copied to `User.courierVehicleType` on
@@ -126,6 +130,21 @@ Two refinements apply under both strategies (`lib/courier-capacity.ts`):
   destination governorate is preferred over everyone else (before distance and
   load), capacity permitting. Orders heading the same way accumulate onto one
   trip instead of fanning out across the fleet one-parcel-per-driver.
+- **Freight** (`xlarge` / `oversized` classes — the Amazon-XL pattern):
+  - **Direct only** — never routed through a Hezalli Point (a point is a
+    corner shop with shelves, not a freight terminal): checkout refuses the
+    PICKUP tier for freight groups (`pickupNotForFreight`) and the seller
+    ship action refuses point routing (`freightDirect`).
+  - **Appointment required** — while scheduling is on
+    (`delivery_window_days` > 0), a freight order must carry a delivery
+    window (`deliveryWindowRequiredFreight`): someone has to be home for a
+    fridge, and a failed truck run costs ten times a failed motorbike run.
+  - **No batching** — a truck run is one or two big items on an appointment,
+    not a parcel round, so freight skips the same-destination bonus.
+  - **`oversized` never auto-assigns** — a sofa needs crew planning; it
+    always goes through manual dispatch (the offer cascade escalates it).
+  - The dispatch board badges freight parcels, and the driver job page tells
+    the courier to bring a helper (two-person delivery).
 
 Ops can always reassign from the dispatch board — capacity gates the automatic
 paths only (same philosophy as the COD credit guard). To keep manual calls

@@ -27,6 +27,7 @@ export default async function AdminCategoriesPage() {
       position: c.position,
       isActive: c.isActive,
       parentId: c.parentId,
+      defaultSizeClass: c.defaultSizeClass,
       defaultWeightGrams: c.defaultWeightGrams,
       defaultDimensionsCm: parseDimensions(c.defaultDimensions),
       productCount: c._count.products,

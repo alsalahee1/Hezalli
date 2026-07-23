@@ -25,6 +25,7 @@ export async function CategoryDefaultsView() {
       name: true,
       icon: true,
       isActive: true,
+      defaultSizeClass: true,
       defaultWeightGrams: true,
       defaultDimensions: true,
       _count: { select: { products: true } },
@@ -72,6 +73,7 @@ export async function CategoryDefaultsView() {
               </div>
               <CategoryDefaultsRow
                 categoryId={c.id}
+                defaultSizeClass={c.defaultSizeClass}
                 defaultWeightGrams={c.defaultWeightGrams}
                 defaultDimensionsCm={parseDimensions(c.defaultDimensions)}
               />

@@ -17,6 +17,7 @@
 // Manual dispatch is deliberately NOT gated: ops can always assign anything to
 // anyone from the dispatch board (same philosophy as lib/cod-guard.ts).
 import { prisma } from "@/lib/prisma";
+import { isFreightClass } from "@/lib/validations/product";
 
 export type VehicleCapacity = {
   maxWeightGrams: number;
@@ -66,7 +67,37 @@ export const VEHICLE_CAPACITY: Record<string, VehicleCapacity> = {
     maxParcels: 60,
     maxItemLongestSideCm: 300,
   },
+  // ~flatbed / box truck: the freight tier (fridges, furniture)
+  truck: {
+    maxWeightGrams: 3_000_000,
+    maxVolumeCm3: 20_000_000,
+    maxParcels: 20,
+    maxItemLongestSideCm: 500,
+  },
 };
+
+// Representative weight/size for each standard package class
+// (lib/validations/product.ts SIZE_CLASSES) — what a seller's two-second
+// picker answer means to the capacity math. Exact product fields override.
+export const SIZE_CLASS_PROFILES: Record<
+  string,
+  { weightGrams: number; dims: DimensionsCm }
+> = {
+  envelope: { weightGrams: 500, dims: { l: 30, w: 25, h: 3 } },
+  small: { weightGrams: 3_000, dims: { l: 35, w: 25, h: 15 } },
+  medium: { weightGrams: 10_000, dims: { l: 55, w: 45, h: 35 } },
+  large: { weightGrams: 25_000, dims: { l: 80, w: 60, h: 60 } },
+  xlarge: { weightGrams: 70_000, dims: { l: 75, w: 75, h: 180 } },
+  oversized: { weightGrams: 200_000, dims: { l: 250, w: 120, h: 100 } },
+};
+
+// Freight classes ship direct (never via a Hezalli Point — nobody lifts a
+// fridge over a shop counter) and require a delivery appointment. "oversized"
+// additionally never auto-assigns: a sofa needs crew planning, so it always
+// goes through manual dispatch. Defined in lib/validations/product.ts
+// (client-safe) so the checkout UI shares the rule; re-exported here for the
+// server-side capacity code that already imports from this module.
+export { isFreightClass };
 
 // Small-parcel assumptions for items with no weight/size anywhere (product or
 // category): roughly a 500 g shoebox.
@@ -86,12 +117,20 @@ export type ParcelMetrics = {
   weightGrams: number;
   volumeCm3: number; // packed volume (PACKING_FACTOR applied)
   longestSideCm: number; // longest single side of any item in the parcel
+  // Any item classed xlarge/oversized: direct-only + appointment-required,
+  // and (freight) exempt from same-destination batching — a truck run is an
+  // appointment, not a parcel round.
+  freight: boolean;
+  // Any item classed oversized: never auto-assigned, manual dispatch only.
+  oversized: boolean;
 };
 
 export const ZERO_METRICS: ParcelMetrics = {
   weightGrams: 0,
   volumeCm3: 0,
   longestSideCm: 0,
+  freight: false,
+  oversized: false,
 };
 
 /**
@@ -148,11 +187,16 @@ export function hasRoomFor(
   );
 }
 
-/** One order line with its resolved shipping attributes (nulls → defaults). */
+/**
+ * One order line with its resolved shipping attributes: exact weight/dims
+ * (null when unknown) plus the resolved size class. Exact values win; a class
+ * fills what's missing via SIZE_CLASS_PROFILES; then small-parcel defaults.
+ */
 export type ItemShipping = {
   quantity: number;
   weightGrams: number | null;
   dims: DimensionsCm | null;
+  sizeClass?: string | null;
 };
 
 /** Combine order lines into one parcel's weight/volume/longest-side. */
@@ -160,32 +204,39 @@ export function metricsOfItems(items: ItemShipping[]): ParcelMetrics {
   let weight = 0;
   let rawVolume = 0;
   let longest = 0;
+  let freight = false;
+  let oversized = false;
   for (const i of items) {
-    weight += i.quantity * (i.weightGrams ?? DEFAULT_ITEM_WEIGHT_GRAMS);
+    const profile = i.sizeClass ? SIZE_CLASS_PROFILES[i.sizeClass] : undefined;
+    const grams =
+      i.weightGrams ?? profile?.weightGrams ?? DEFAULT_ITEM_WEIGHT_GRAMS;
+    const dims = i.dims ?? profile?.dims ?? null;
+    weight += i.quantity * grams;
     rawVolume +=
-      i.quantity *
-      (i.dims ? i.dims.l * i.dims.w * i.dims.h : DEFAULT_ITEM_VOLUME_CM3);
+      i.quantity * (dims ? dims.l * dims.w * dims.h : DEFAULT_ITEM_VOLUME_CM3);
     longest = Math.max(
       longest,
-      i.dims
-        ? Math.max(i.dims.l, i.dims.w, i.dims.h)
-        : DEFAULT_ITEM_LONGEST_SIDE_CM,
+      dims ? Math.max(dims.l, dims.w, dims.h) : DEFAULT_ITEM_LONGEST_SIDE_CM,
     );
+    freight ||= isFreightClass(i.sizeClass);
+    oversized ||= i.sizeClass === "oversized";
   }
   return {
     weightGrams: weight,
     volumeCm3: Math.round(rawVolume * PACKING_FACTOR),
     longestSideCm: longest,
+    freight,
+    oversized,
   };
 }
 
 /**
  * Parcel metrics per sub-order. Each line's weight/size resolves, in order:
- * the checkout snapshot (OrderItem.weightGramsSnapshot/dimensionsSnapshot —
- * frozen so catalog edits don't rewrite in-flight parcels), the live product,
- * the product category's delivery defaults, then small-parcel constants
- * (including when the variant no longer exists). Bulk so the assigner can
- * weigh a whole fleet's in-flight load in two queries.
+ * the checkout snapshot (OrderItem.*Snapshot — frozen so catalog edits don't
+ * rewrite in-flight parcels), the live product, the product's size class
+ * profile, the category's delivery defaults (class, then numbers), then
+ * small-parcel constants (including when the variant no longer exists). Bulk
+ * so the assigner can weigh a whole fleet's in-flight load in two queries.
  */
 export async function subOrderMetrics(
   subOrderIds: string[],
@@ -204,6 +255,7 @@ export async function subOrderMetrics(
       quantity: true,
       weightGramsSnapshot: true,
       dimensionsSnapshot: true,
+      sizeClassSnapshot: true,
     },
   });
   if (items.length === 0) return out;
@@ -215,10 +267,15 @@ export async function subOrderMetrics(
       id: true,
       product: {
         select: {
+          sizeClass: true,
           weightGrams: true,
           dimensions: true,
           category: {
-            select: { defaultWeightGrams: true, defaultDimensions: true },
+            select: {
+              defaultSizeClass: true,
+              defaultWeightGrams: true,
+              defaultDimensions: true,
+            },
           },
         },
       },
@@ -230,10 +287,11 @@ export async function subOrderMetrics(
       return [
         v.id,
         {
-          weightGrams: p.weightGrams ?? p.category.defaultWeightGrams ?? null,
-          dims:
-            parseDimensions(p.dimensions) ??
-            parseDimensions(p.category.defaultDimensions),
+          sizeClass: p.sizeClass ?? p.category.defaultSizeClass ?? null,
+          weightGrams: p.weightGrams,
+          dims: parseDimensions(p.dimensions),
+          categoryWeightGrams: p.category.defaultWeightGrams,
+          categoryDims: parseDimensions(p.category.defaultDimensions),
         },
       ];
     }),
@@ -242,14 +300,30 @@ export async function subOrderMetrics(
   const linesBySubOrder = new Map<string, ItemShipping[]>();
   for (const i of items) {
     const live = shippingByVariant.get(i.variantId) ?? {
+      sizeClass: null,
       weightGrams: null,
       dims: null,
+      categoryWeightGrams: null,
+      categoryDims: null,
     };
+    // Per field: exact (snapshot, then live product) → size-class profile →
+    // category numeric defaults. The class travels along for freight rules.
+    const cls = i.sizeClassSnapshot ?? live.sizeClass;
+    const profile = cls ? SIZE_CLASS_PROFILES[cls] : undefined;
     const lines = linesBySubOrder.get(i.subOrderId) ?? [];
     lines.push({
       quantity: i.quantity,
-      weightGrams: i.weightGramsSnapshot ?? live.weightGrams,
-      dims: parseDimensions(i.dimensionsSnapshot) ?? live.dims,
+      weightGrams:
+        i.weightGramsSnapshot ??
+        live.weightGrams ??
+        profile?.weightGrams ??
+        live.categoryWeightGrams,
+      dims:
+        parseDimensions(i.dimensionsSnapshot) ??
+        live.dims ??
+        profile?.dims ??
+        live.categoryDims,
+      sizeClass: cls,
     });
     linesBySubOrder.set(i.subOrderId, lines);
   }

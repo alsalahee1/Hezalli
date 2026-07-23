@@ -4,23 +4,28 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
 import { setCategoryShippingDefaults } from "@/lib/actions/category";
+import { SIZE_CLASSES } from "@/lib/validations/product";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 // One category row on the delivery-defaults page: weight + L×W×H inputs and a
 // save button. Only the two delivery fields are editable — the rest of the
 // category is read-only here by design (the full manager is admin-only).
 export function CategoryDefaultsRow({
   categoryId,
+  defaultSizeClass,
   defaultWeightGrams,
   defaultDimensionsCm,
 }: {
   categoryId: string;
+  defaultSizeClass: string | null;
   defaultWeightGrams: number | null;
   defaultDimensionsCm: { l: number; w: number; h: number } | null;
 }) {
   const t = useTranslations("AdminCategories");
   const [pending, start] = useTransition();
+  const [sizeClass, setSizeClass] = useState(defaultSizeClass ?? "");
   const [weight, setWeight] = useState(
     defaultWeightGrams == null ? "" : String(defaultWeightGrams),
   );
@@ -44,7 +49,12 @@ export function CategoryDefaultsRow({
         sides[0] > 0 && sides[1] > 0 && sides[2] > 0
           ? { l: sides[0], w: sides[1], h: sides[2] }
           : null;
-      const res = await setCategoryShippingDefaults(categoryId, wNum, dims);
+      const res = await setCategoryShippingDefaults(
+        categoryId,
+        wNum,
+        dims,
+        sizeClass || null,
+      );
       setState(res.ok ? "saved" : "error");
     });
   };
@@ -67,6 +77,19 @@ export function CategoryDefaultsRow({
 
   return (
     <div className="flex flex-wrap items-center gap-2" dir="ltr">
+      <Select
+        value={sizeClass}
+        onChange={(e) => setSizeClass(e.target.value)}
+        className="w-40"
+        aria-label={t("shippingDefaults")}
+      >
+        <option value="">{t("sizeClassNone")}</option>
+        {SIZE_CLASSES.map((c) => (
+          <option key={c} value={c}>
+            {t(`size_${c}`)}
+          </option>
+        ))}
+      </Select>
       <Input
         type="number"
         min={0}

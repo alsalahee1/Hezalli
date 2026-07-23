@@ -10,6 +10,7 @@ import {
   CONDITIONS,
   type OptionGroup,
   type ProductInput,
+  SIZE_CLASSES,
   type VariantInput,
 } from "@/lib/validations/product";
 import {
@@ -33,6 +34,7 @@ export type EditProduct = {
   brandId: string;
   condition: string;
   lowStockThreshold: number;
+  sizeClass: string | null;
   weightGrams: number | null;
   dimensionsCm: { l: number; w: number; h: number } | null;
   status: string;
@@ -106,6 +108,9 @@ export function ProductForm({
       lowStockThreshold: Number(fd.get("lowStockThreshold") ?? 0) || 0,
       weightGrams: weight ? Number(weight) : null,
       dimensionsCm: hasDims ? dims : null,
+      sizeClass:
+        (String(fd.get("sizeClass") ?? "") as ProductInput["sizeClass"]) ||
+        null,
       images,
       variants: variantsRef.current,
       intent,
@@ -277,15 +282,22 @@ export function ProductForm({
         <h2 className="text-lg font-semibold">{t("shipping")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="weightGrams">{t("weight")}</Label>
-            <Input
-              id="weightGrams"
-              name="weightGrams"
-              type="number"
-              min={0}
-              dir="ltr"
-              defaultValue={product?.weightGrams ?? ""}
-            />
+            <Label htmlFor="sizeClass">{t("sizeClass")}</Label>
+            <Select
+              id="sizeClass"
+              name="sizeClass"
+              defaultValue={product?.sizeClass ?? ""}
+            >
+              <option value="">{t("sizeClassNone")}</option>
+              {SIZE_CLASSES.map((c) => (
+                <option key={c} value={c}>
+                  {t(`size_${c}`)}
+                </option>
+              ))}
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              {t("sizeClassHint")}
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="lowStockThreshold">{t("lowStock")}</Label>
@@ -298,43 +310,66 @@ export function ProductForm({
               defaultValue={product?.lowStockThreshold ?? 0}
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="dimL">{t("dimensions")}</Label>
-            <div className="flex items-center gap-2" dir="ltr">
-              {(["dimL", "dimW", "dimH"] as const).map((k, i) => (
-                <Input
-                  key={k}
-                  id={k}
-                  name={k}
-                  type="number"
-                  min={1}
-                  max={1000}
-                  placeholder={t(k)}
-                  className="w-28"
-                  aria-invalid={Boolean(err("dimensionsCm"))}
-                  defaultValue={
-                    product?.dimensionsCm
-                      ? [
-                          product.dimensionsCm.l,
-                          product.dimensionsCm.w,
-                          product.dimensionsCm.h,
-                        ][i]
-                      : ""
-                  }
-                />
-              ))}
-            </div>
-            {err("dimensionsCm") ? (
-              <p className="text-destructive text-xs">
-                {t(err("dimensionsCm")!)}
-              </p>
-            ) : (
-              <p className="text-muted-foreground text-xs">
-                {t("dimensionsHint")}
-              </p>
-            )}
-          </div>
         </div>
+        {/* Exact measurements are optional — they override the size class
+            when a seller actually knows them (spec sheets). */}
+        <details
+          className="rounded-lg border p-3"
+          open={Boolean(product?.weightGrams || product?.dimensionsCm)}
+        >
+          <summary className="cursor-pointer text-sm font-medium">
+            {t("exactSize")}
+          </summary>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="weightGrams">{t("weight")}</Label>
+              <Input
+                id="weightGrams"
+                name="weightGrams"
+                type="number"
+                min={0}
+                dir="ltr"
+                defaultValue={product?.weightGrams ?? ""}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="dimL">{t("dimensions")}</Label>
+              <div className="flex items-center gap-2" dir="ltr">
+                {(["dimL", "dimW", "dimH"] as const).map((k, i) => (
+                  <Input
+                    key={k}
+                    id={k}
+                    name={k}
+                    type="number"
+                    min={1}
+                    max={1000}
+                    placeholder={t(k)}
+                    className="w-24"
+                    aria-invalid={Boolean(err("dimensionsCm"))}
+                    defaultValue={
+                      product?.dimensionsCm
+                        ? [
+                            product.dimensionsCm.l,
+                            product.dimensionsCm.w,
+                            product.dimensionsCm.h,
+                          ][i]
+                        : ""
+                    }
+                  />
+                ))}
+              </div>
+              {err("dimensionsCm") ? (
+                <p className="text-destructive text-xs">
+                  {t(err("dimensionsCm")!)}
+                </p>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  {t("dimensionsHint")}
+                </p>
+              )}
+            </div>
+          </div>
+        </details>
       </section>
 
       <div className="flex flex-wrap gap-3 border-t pt-6">

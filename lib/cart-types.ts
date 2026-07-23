@@ -13,6 +13,9 @@ export type CartLine = {
   compareAtPrice: number | null;
   stock: number;
   quantity: number;
+  // Resolved package class (product's own, else its category default) —
+  // drives the checkout freight rules (no pickup, appointment required).
+  sizeClass: string | null;
 };
 
 // The minimal shape persisted in localStorage for guests.
