@@ -6,7 +6,7 @@ import "server-only";
 
 import { startLink, unlinkChat } from "@/lib/ai/account-link";
 import { formatReplyText, runChannelTurn } from "@/lib/ai/channel";
-import { renderVoice, wantsVoice } from "@/lib/ai/voice-reply";
+import { renderVoice, replyMode, wantsVoice } from "@/lib/ai/voice-reply";
 import { routing } from "@/i18n/routing";
 
 import {
@@ -114,12 +114,15 @@ export async function processTelegramUpdate(
     // Speak the reply when policy says so; text always carries product links.
     let sentVoice = false;
     if (
-      wantsVoice({ isVoiceIn: Boolean(voiceFile), capped: Boolean(capped) })
+      await wantsVoice({
+        isVoiceIn: Boolean(voiceFile),
+        capped: Boolean(capped),
+      })
     ) {
       const ogg = await renderVoice(reply.text, locale);
       if (ogg) sentVoice = await sendTelegramVoice(chatId, ogg);
     }
-    const voiceOnly = process.env.BOT_REPLY_MODE?.toLowerCase() === "voice";
+    const voiceOnly = (await replyMode()) === "voice";
     const sendText = !voiceOnly || !sentVoice || reply.cards.length > 0;
     if (sendText) {
       await sendTelegramMessage(chatId, formatReplyText(reply, locale));

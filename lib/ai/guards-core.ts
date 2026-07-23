@@ -40,11 +40,15 @@ export function monthKey(now: number): string {
  * Slide the hourly window over `prior` timestamps and decide if this request is
  * allowed. Returns the trimmed+updated hit list to persist on the chat row.
  */
-export function checkRate(prior: unknown, now: number): RateResult {
+export function checkRate(
+  prior: unknown,
+  now: number,
+  maxPerHour: number = MAX_PER_HOUR,
+): RateResult {
   const hits = (Array.isArray(prior) ? prior : [])
     .filter((t): t is number => typeof t === "number")
     .filter((t) => now - t < HOUR_MS);
-  if (hits.length >= MAX_PER_HOUR) return { ok: false, hits };
+  if (hits.length >= maxPerHour) return { ok: false, hits };
   hits.push(now);
   return { ok: true, hits };
 }

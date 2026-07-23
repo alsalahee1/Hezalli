@@ -27,6 +27,7 @@ import {
   Shapes,
   ShieldAlert,
   ShoppingBag,
+  Sparkles,
   Star,
   Store,
   Tag,
@@ -106,6 +107,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/pages", key: "pages", icon: ScrollText },
   { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/audit", key: "audit", icon: History },
+  { href: "/admin/assistant", key: "assistant", icon: Sparkles },
   { href: "/admin/settings", key: "settings", icon: Settings },
   { href: "/admin/how", key: "how", icon: BookOpen },
 ];

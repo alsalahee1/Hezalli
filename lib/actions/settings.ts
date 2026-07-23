@@ -5,7 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import type { PlatformSettings } from "@/lib/settings";
+import type { AiSettingKey, PlatformSettings } from "@/lib/settings";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -70,7 +70,6 @@ export type SettingsInput = {
   season_target_deliveries: number;
   cod_wallet_pay_enabled: boolean;
   platform_wallet_email: string;
-  ai_assistant_enabled: boolean;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -273,11 +272,11 @@ export async function savePlatformSettings(
 
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
-  // values are preserved. ai_assistant_avatar is managed by its own action
-  // (saveAssistantAvatar) from the Shadi section of the settings page.
+  // values are preserved. All ai_* keys are managed on the dedicated Admin →
+  // Shadi page (saveAssistantSettings / saveAssistantKey / saveAssistantAvatar).
   const values: Omit<
     PlatformSettings,
-    "wallet_bills_provider" | "delivery_window_days" | "ai_assistant_avatar"
+    "wallet_bills_provider" | "delivery_window_days" | AiSettingKey
   > = {
     platform_name: (input.platform_name || "Hezalli").trim().slice(0, 80),
     platform_logo: (input.platform_logo || "").trim().slice(0, 500),
@@ -340,7 +339,6 @@ export async function savePlatformSettings(
     season_target_deliveries: seasonTarget,
     cod_wallet_pay_enabled: Boolean(input.cod_wallet_pay_enabled),
     platform_wallet_email: platformWalletEmail,
-    ai_assistant_enabled: Boolean(input.ai_assistant_enabled),
   };
 
   await prisma.$transaction(
@@ -402,7 +400,100 @@ export async function saveAssistantKey(apiKey: string | null): Promise<Result> {
   });
 
   const locale = await getLocale();
-  revalidatePath(`/${locale}/admin/settings`);
+  revalidatePath(`/${locale}/admin/assistant`);
+  revalidatePath(`/${locale}`, "layout");
+  return { ok: true };
+}
+
+// --- Shadi's tuning (Admin → Shadi page) ------------------------------------
+// Everything except the API key (saveAssistantKey) and avatar
+// (saveAssistantAvatar). A "" / 0 value means "use the env/default".
+
+export type AssistantSettingsInput = {
+  enabled: boolean;
+  model: string;
+  replyMode: string;
+  ttsVoice: string;
+  ttsStyle: string;
+  maxPerHour: number;
+  dailyCap: number;
+  spendCapUsd: number;
+  telegramEnabled: boolean;
+  whatsappEnabled: boolean;
+};
+
+const REPLY_MODES = ["", "text", "voice", "both", "match"];
+
+export async function saveAssistantSettings(
+  input: AssistantSettingsInput,
+): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+
+  const model = (input.model || "").trim().slice(0, 60);
+  if (model && !/^[a-zA-Z0-9._-]+$/.test(model)) return { error: "badModel" };
+
+  const mode = (input.replyMode || "").trim().toLowerCase();
+  if (!REPLY_MODES.includes(mode)) return { error: "badReplyMode" };
+
+  const voice = (input.ttsVoice || "").trim().slice(0, 40);
+  if (voice && !/^[a-zA-Z ]+$/.test(voice)) return { error: "badVoice" };
+
+  const style = (input.ttsStyle || "").trim().slice(0, 500);
+
+  const maxPerHour = int(input.maxPerHour);
+  const dailyCap = int(input.dailyCap);
+  if (
+    ![maxPerHour, dailyCap].every(
+      (n) => Number.isFinite(n) && n >= 0 && n <= 1_000_000,
+    )
+  )
+    return { error: "badCaps" };
+  const spendCap = money2(input.spendCapUsd);
+  if (!Number.isFinite(spendCap) || spendCap < 0 || spendCap > 1_000_000)
+    return { error: "badCaps" };
+
+  const values: Record<AiSettingKey, string | number | boolean> = {
+    ai_assistant_enabled: Boolean(input.enabled),
+    // Managed by its own action, but part of the AiSettingKey record type —
+    // filtered out below so this save never touches it.
+    ai_assistant_avatar: "",
+    ai_gemini_model: model,
+    ai_reply_mode: mode,
+    ai_tts_voice: voice,
+    ai_tts_style: style,
+    ai_max_per_hour: maxPerHour,
+    ai_daily_cap: dailyCap,
+    ai_spend_cap_usd: spendCap,
+    ai_channel_telegram: Boolean(input.telegramEnabled),
+    ai_channel_whatsapp: Boolean(input.whatsappEnabled),
+  };
+  const keys = (Object.keys(values) as AiSettingKey[]).filter(
+    (k) => k !== "ai_assistant_avatar",
+  );
+
+  await prisma.$transaction(
+    keys.map((key) =>
+      prisma.platformSetting.upsert({
+        where: { key },
+        create: { key, value: values[key] as never },
+        update: { value: values[key] as never },
+      }),
+    ),
+  );
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.assistant",
+      entity: "PlatformSetting",
+      entityId: "assistant",
+      meta: Object.fromEntries(keys.map((k) => [k, values[k]])) as never,
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/assistant`);
   revalidatePath(`/${locale}`, "layout");
   return { ok: true };
 }
@@ -443,7 +534,7 @@ export async function saveAssistantAvatar(url: string | null): Promise<Result> {
   });
 
   const locale = await getLocale();
-  revalidatePath(`/${locale}/admin/settings`);
+  revalidatePath(`/${locale}/admin/assistant`);
   revalidatePath(`/${locale}`, "layout");
   return { ok: true };
 }

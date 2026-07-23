@@ -2,8 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { getAnnouncement } from "@/lib/actions/announcement";
 import { prisma } from "@/lib/prisma";
-import { getPlatformSettings, SETTING_DEFAULTS } from "@/lib/settings";
-import { AiKeyForm } from "@/components/admin/ai-key-form";
+import { getPlatformSettings } from "@/lib/settings";
 import { AnnouncementEditor } from "@/components/admin/announcement-editor";
 import {
   ExchangeRatesForm,
@@ -24,24 +23,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
   const t = await getTranslations("AdminSettings");
-  const [announcement, settings, rateRows, aiKeyRow] = await Promise.all([
+  const [announcement, settings, rateRows] = await Promise.all([
     getAnnouncement(),
     getPlatformSettings(),
     prisma.exchangeRate.findMany({
       select: { currency: true, zone: true, rate: true },
     }),
-    prisma.platformSetting.findUnique({
-      where: { key: "gemini_api_key" },
-      select: { value: true },
-    }),
   ]);
-  // Tell the form only WHERE Shadi's key comes from — never the key itself.
-  const keySource =
-    typeof aiKeyRow?.value === "string" && aiKeyRow.value.trim()
-      ? ("db" as const)
-      : process.env.GEMINI_API_KEY?.trim()
-        ? ("env" as const)
-        : ("none" as const);
   const rates: RateRow[] = MANAGED_RATES.map((m) => ({
     ...m,
     rate: Number(
@@ -57,11 +45,6 @@ export default async function AdminSettingsPage() {
         <p className="text-muted-foreground text-sm">{t("desc")}</p>
       </div>
       <PlatformSettingsForm current={settings} />
-      <AiKeyForm
-        keySource={keySource}
-        avatar={settings.ai_assistant_avatar}
-        defaultAvatar={SETTING_DEFAULTS.ai_assistant_avatar}
-      />
       <ExchangeRatesForm current={rates} />
       <AnnouncementEditor current={announcement} />
     </div>

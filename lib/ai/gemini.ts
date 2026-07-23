@@ -11,9 +11,19 @@ import { getSetting } from "@/lib/settings";
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-// Fast + cheap model, good enough for a storefront assistant. Overridable so
-// the deployment can bump it without a code change.
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+// Fast + cheap model, good enough for a storefront assistant. Admins can
+// override it from the Shadi settings page; the env var is the next fallback.
+const DEFAULT_MODEL = "gemini-2.5-flash";
+
+export async function getGeminiModel(): Promise<string> {
+  try {
+    const m = (await getSetting("ai_gemini_model")).trim();
+    if (m) return m;
+  } catch {
+    // DB hiccup — fall through to env/default.
+  }
+  return process.env.GEMINI_MODEL || DEFAULT_MODEL;
+}
 
 /**
  * Resolve the Gemini API key. The admin-managed platform setting (Admin →
@@ -116,7 +126,7 @@ export async function generateContent(opts: {
   }
 
   const res = await fetch(
-    `${API_BASE}/models/${GEMINI_MODEL}:generateContent`,
+    `${API_BASE}/models/${await getGeminiModel()}:generateContent`,
     {
       method: "POST",
       headers: {

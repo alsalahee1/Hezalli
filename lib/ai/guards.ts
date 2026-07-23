@@ -7,6 +7,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
 
 import type { TokenUsage } from "./gemini";
 import {
@@ -14,6 +15,7 @@ import {
   dayKey,
   estimateCostUsd,
   estimateTtsUsd,
+  MAX_PER_HOUR,
   monthKey,
   SPEND_CAP_USD,
   type GuardReason,
@@ -21,6 +23,39 @@ import {
 
 export { checkRate, estimateCostUsd } from "./guards-core";
 export type { GuardReason, RateResult } from "./guards-core";
+
+// Admin-tunable guard values (Admin → Shadi). A 0/unset setting falls back to
+// the env-derived default from guards-core, so nothing changes until an admin
+// dials in a value.
+export async function getMaxPerHour(): Promise<number> {
+  try {
+    const v = await getSetting("ai_max_per_hour");
+    if (v > 0) return v;
+  } catch {
+    // fall through
+  }
+  return MAX_PER_HOUR;
+}
+
+export async function getDailyCap(): Promise<number> {
+  try {
+    const v = await getSetting("ai_daily_cap");
+    if (v > 0) return v;
+  } catch {
+    // fall through
+  }
+  return DAILY_CAP;
+}
+
+export async function getSpendCapUsd(): Promise<number> {
+  try {
+    const v = await getSetting("ai_spend_cap_usd");
+    if (v > 0) return v;
+  } catch {
+    // fall through
+  }
+  return SPEND_CAP_USD;
+}
 
 /** Check the global daily cap and the monthly spend cap (both read-only). */
 export async function checkGlobalCaps(
@@ -30,10 +65,11 @@ export async function checkGlobalCaps(
     where: { day: dayKey(now) },
     select: { messages: true },
   });
-  if ((today?.messages ?? 0) >= DAILY_CAP)
+  if ((today?.messages ?? 0) >= (await getDailyCap()))
     return { ok: false, reason: "daily" };
 
-  if (SPEND_CAP_USD > 0 && (await monthSpendUsd(now)) >= SPEND_CAP_USD) {
+  const spendCap = await getSpendCapUsd();
+  if (spendCap > 0 && (await monthSpendUsd(now)) >= spendCap) {
     return { ok: false, reason: "spend" };
   }
   return { ok: true };

@@ -1,6 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 
 import { assistantReady } from "@/lib/ai/gemini";
+import { getSetting } from "@/lib/settings";
 import { telegramConfigured } from "@/lib/integrations/telegram";
 import { seenTelegramUpdate } from "@/lib/integrations/telegram-dedup";
 import {
@@ -12,8 +13,13 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
-  // Ack quietly when the bot isn't fully configured so Telegram stops retrying.
-  if (!telegramConfigured() || !(await assistantReady())) {
+  // Ack quietly when the bot isn't fully configured — or the admin switched
+  // the Telegram channel off — so Telegram stops retrying.
+  if (
+    !telegramConfigured() ||
+    !(await assistantReady()) ||
+    !(await getSetting("ai_channel_telegram"))
+  ) {
     return NextResponse.json({ ok: true });
   }
 
