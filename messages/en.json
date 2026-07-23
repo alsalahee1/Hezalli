@@ -2124,7 +2124,10 @@
     "liveTitle": "Live location",
     "liveUpdated": "updating live",
     "pickupReady": "Ready for collection",
-    "pickupBringCode": "Bring your delivery code (shown on your order page) to collect the parcel. Pay there if you chose cash."
+    "pickupBringCode": "Bring your delivery code (shown on your order page) to collect the parcel. Pay there if you chose cash.",
+    "courierTitle": "Your courier",
+    "courierDeliveries": "{count, plural, one {# delivery completed} other {# deliveries completed}}",
+    "courierRatings": "{count, plural, one {# rating} other {# ratings}}"
   },
   "Driver": {
     "how": "How it works",

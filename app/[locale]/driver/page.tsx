@@ -12,7 +12,7 @@ import {
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
-import { courierPerformance } from "@/lib/courier-performance";
+import { syncedCourierPerformance } from "@/lib/courier-performance";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
@@ -77,7 +77,7 @@ export default async function DriverJobsPage() {
     }),
     courierCashSummary(courierId),
     courierCodStatus(courierId),
-    courierPerformance(courierId),
+    syncedCourierPerformance(courierId),
   ]);
 
   const now = new Date();

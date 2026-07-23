@@ -1392,6 +1392,19 @@ model Shipment {
   @@index([atPointId])
 }
 
+// A badge a courier has earned (driver gamification). Awards are permanent —
+// the live rate behind a badge can dip later but the badge stays. badgeId
+// matches the ids in lib/courier-badges.ts; sync + driver notification happen
+// in lib/courier-performance.ts. courierId is a plain id (no FK churn on User).
+model CourierBadgeAward {
+  id        String   @id @default(cuid())
+  courierId String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  @@unique([courierId, badgeId])
+}
+
 // A buyer's rating of the courier who delivered their Hezalli Express parcel.
 // One per shipment (the buyer may update it). Aggregated per courier for the
 // admin fleet view. courierId/buyerId are plain ids (no FK churn on User).

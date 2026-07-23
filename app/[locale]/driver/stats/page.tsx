@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
-import { courierPerformance } from "@/lib/courier-performance";
+import { syncedCourierPerformance } from "@/lib/courier-performance";
 import type { BadgeState } from "@/lib/courier-badges";
 import { StarRating } from "@/components/product/star-rating";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,8 @@ export default async function DriverStatsPage() {
   if (!courierId) return null;
   const t = await getTranslations("Driver");
 
-  const { stats, badges, earnedCount } = await courierPerformance(courierId);
+  const { stats, badges, earnedCount } =
+    await syncedCourierPerformance(courierId);
   const earned = badges.filter((b) => b.earned);
   const next = badges.filter((b) => !b.earned);
 

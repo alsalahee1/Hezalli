@@ -1,12 +1,14 @@
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
-import { CheckCircle2, MapPin, Package, Truck } from "lucide-react";
+import { BadgeCheck, CheckCircle2, MapPin, Package, Truck } from "lucide-react";
 
+import { publicCourierProfile } from "@/lib/courier-performance";
 import { pickupHubForShipment } from "@/lib/point-public";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { QrCode } from "@/components/orders/qr-code";
+import { StarRating } from "@/components/product/star-rating";
 import { TrackingMap } from "@/components/map/tracking-map";
 
 // Public shipment tracking — reachable by anyone holding the tracking number
@@ -35,6 +37,7 @@ export default async function TrackingPage({
           atPointId: true,
           shippedAt: true,
           deliveredAt: true,
+          driverId: true,
           carrier: { select: { name: true } },
           events: {
             orderBy: { createdAt: "asc" },
@@ -114,6 +117,19 @@ export default async function TrackingPage({
   }
 
   const trackUrl = `${SITE_URL}/${locale}/track/${encodeURIComponent(tracking)}`;
+
+  // Courier trust card: the assigned courier's public record (rating,
+  // completed deliveries, earned quality badges — lib/courier-badges.ts).
+  // Coarse facts only, consistent with this page's privacy stance: no name,
+  // no contact. Shown once the courier is en route (or has delivered).
+  const showCourier =
+    shipment.driverId && (shipment.status === "OUT_FOR_DELIVERY" || delivered);
+  const courier = showCourier
+    ? await publicCourierProfile(shipment.driverId!)
+    : null;
+  const tDriver = courier?.badgeIds.length
+    ? await getTranslations("Driver")
+    : null;
 
   return (
     <Shell>
@@ -196,6 +212,42 @@ export default async function TrackingPage({
           </div>
         ) : null}
       </dl>
+
+      {/* Courier trust card — only rendered once there's a record to show. */}
+      {courier && courier.deliveries > 0 ? (
+        <div className="mt-4 rounded-xl border p-4">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            {t("courierTitle")}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            {courier.ratingCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <StarRating rating={courier.ratingAvg} />
+                <span dir="ltr">{courier.ratingAvg}</span>
+                <span className="text-muted-foreground text-xs font-normal">
+                  ({t("courierRatings", { count: courier.ratingCount })})
+                </span>
+              </span>
+            ) : null}
+            <span className="text-muted-foreground">
+              {t("courierDeliveries", { count: courier.deliveries })}
+            </span>
+          </div>
+          {tDriver && courier.badgeIds.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {courier.badgeIds.map((id) => (
+                <span
+                  key={id}
+                  className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-500"
+                >
+                  <BadgeCheck className="size-3" aria-hidden />
+                  {tDriver(`badge_${id}`)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Live courier map — self-hides unless the driver is actively en route. */}
       {shipment.status === "OUT_FOR_DELIVERY" ? (

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { syncedCourierPerformance } from "@/lib/courier-performance";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -59,6 +60,10 @@ export async function rateDelivery(
     },
     update: { stars: n, comment: comment?.trim() || null },
   });
+
+  // This rating may have earned the courier a quality badge (top rated,
+  // 5-star streak) — award + notify. Never fails the buyer's rating.
+  await syncedCourierPerformance(shipment.driverId).catch(() => {});
 
   const locale = await getLocale();
   revalidatePath(`/${locale}/account/orders/${sub.orderId}`);

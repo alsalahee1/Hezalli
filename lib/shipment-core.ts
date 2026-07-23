@@ -12,6 +12,7 @@ import {
   codSettledDigitally,
 } from "@/lib/payment-state";
 import { recordDeliveryLedger } from "@/lib/courier-ledger";
+import { syncedCourierPerformance } from "@/lib/courier-performance";
 import {
   recordPointCounterCod,
   recordPointHandlingFee,
@@ -306,5 +307,11 @@ export async function markSubOrderDelivered(
       ? `✅ تم توصيل طلبك من ${sub.store.name}. أكِّد الاستلام لإتمام الطلب.`
       : `✅ Your order from ${sub.store.name} was delivered. Confirm receipt to complete it.`,
   );
+
+  // Badge check: this delivery may have crossed a milestone or pushed a rate
+  // over its bar — award + congratulate the courier. Never fails the delivery.
+  if (proof?.courierId) {
+    await syncedCourierPerformance(proof.courierId).catch(() => {});
+  }
   return { ok: true };
 }
