@@ -8,6 +8,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 type Size = { w: number; h: number };
+type Rect = { x: number; y: number; w: number; h: number };
+type Handle = "nw" | "ne" | "sw" | "se";
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -19,11 +21,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Crop-before-upload dialog. Self-contained (no third-party cropper): a plain
- * <img> is scaled to "cover" the fixed-aspect frame and can be panned/zoomed;
- * Apply maps the frame back to the image's natural pixels and draws that region
- * to a canvas. Rendered as a portal overlay on document.body so no ancestor's
- * layout/transform affects it. Downscale/WebP re-encode is left to compressImage.
+ * Crop-before-upload dialog. Shows the WHOLE image and overlays a draggable,
+ * corner-resizable crop box (aspect-locked) — so the user frames from any side
+ * directly, no zoom slider. Apply maps the box back to the image's natural
+ * pixels and draws that region to a canvas.
+ *
+ * The image is loaded as a data: URL (not blob:) because the app's CSP allows
+ * `img-src data:` but not `blob:`. Rendered via portal on document.body so no
+ * ancestor layout/transform affects it.
  */
 export function ImageCropModal({
   file,
@@ -39,20 +44,17 @@ export function ImageCropModal({
   const t = useTranslations("Upload");
   const [src, setSrc] = useState("");
   const [nat, setNat] = useState<Size | null>(null);
-  const [vpW, setVpW] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [area, setArea] = useState<Size>({ w: 0, h: 0 });
+  const [box, setBox] = useState<Rect | null>(null);
   const [busy, setBusy] = useState(false);
-  const vpRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(
-    null,
-  );
+  const areaRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{
+    mode: "move" | Handle;
+    sx: number;
+    sy: number;
+    start: Rect;
+  } | null>(null);
 
-  // Load as a data: URL, NOT a blob: object URL — the app's CSP allows
-  // `img-src 'self' data: https:` but not `blob:`, so an <img src="blob:…">
-  // is blocked by the browser and never renders (the bug behind the blank
-  // crop frame). createImageBitmap in compressImage reads the File directly,
-  // which is why upload worked while this preview didn't.
   useEffect(() => {
     const reader = new FileReader();
     reader.onload = () =>
@@ -61,15 +63,16 @@ export function ImageCropModal({
     return () => reader.abort();
   }, [file]);
 
-  // Track the frame's rendered width (its height follows from `aspect`).
   useEffect(() => {
-    const measure = () => setVpW(vpRef.current?.clientWidth ?? 0);
+    const measure = () => {
+      const el = areaRef.current;
+      if (el) setArea({ w: el.clientWidth, h: el.clientHeight });
+    };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [src]);
 
-  // Scroll-lock + Escape while open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -84,58 +87,94 @@ export function ImageCropModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const vpH = vpW / aspect;
-  // At zoom 1 the image just covers the frame; zoom multiplies from there.
-  const baseScale = nat && vpW ? Math.max(vpW / nat.w, vpH / nat.h) : 1;
-  const dispW = nat ? nat.w * baseScale * zoom : 0;
-  const dispH = nat ? nat.h * baseScale * zoom : 0;
+  // Where the whole image sits inside the area ("contain" fit, letterboxed).
+  const imgRect: Rect | null =
+    nat && area.w && area.h
+      ? (() => {
+          const scale = Math.min(area.w / nat.w, area.h / nat.h);
+          const w = nat.w * scale;
+          const h = nat.h * scale;
+          return { x: (area.w - w) / 2, y: (area.h - h) / 2, w, h };
+        })()
+      : null;
 
-  // Keep the image covering the frame — no gaps at the edges.
-  const clamp = useCallback(
-    (p: { x: number; y: number }) => {
-      const mx = Math.max(0, (dispW - vpW) / 2);
-      const my = Math.max(0, (dispH - vpH) / 2);
-      return {
-        x: Math.min(mx, Math.max(-mx, p.x)),
-        y: Math.min(my, Math.max(-my, p.y)),
-      };
+  // Keep the crop box aspect-locked and inside the image.
+  const clampBox = useCallback(
+    (b: Rect): Rect => {
+      if (!imgRect) return b;
+      let w = Math.max(48, Math.min(b.w, imgRect.w));
+      let h = w / aspect;
+      if (h > imgRect.h) {
+        h = imgRect.h;
+        w = h * aspect;
+      }
+      const x = Math.min(Math.max(b.x, imgRect.x), imgRect.x + imgRect.w - w);
+      const y = Math.min(Math.max(b.y, imgRect.y), imgRect.y + imgRect.h - h);
+      return { x, y, w, h };
     },
-    [dispW, dispH, vpW, vpH],
+    [imgRect, aspect],
   );
 
+  // Seed the box (largest aspect-locked rect fitting the image) once we can.
   useEffect(() => {
-    setPos((p) => clamp(p));
-  }, [zoom, clamp]);
+    if (!imgRect || box) return;
+    let w = imgRect.w;
+    let h = w / aspect;
+    if (h > imgRect.h) {
+      h = imgRect.h;
+      w = h * aspect;
+    }
+    setBox({
+      x: imgRect.x + (imgRect.w - w) / 2,
+      y: imgRect.y + (imgRect.h - h) / 2,
+      w,
+      h,
+    });
+  }, [imgRect, box, aspect]);
 
-  const imgLeft = vpW / 2 - dispW / 2 + pos.x;
-  const imgTop = vpH / 2 - dispH / 2 + pos.y;
+  const startDrag = (mode: "move" | Handle) => (e: React.PointerEvent) => {
+    e.stopPropagation();
+    if (!box) return;
+    areaRef.current?.setPointerCapture(e.pointerId);
+    drag.current = { mode, sx: e.clientX, sy: e.clientY, start: { ...box } };
+  };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || !box) return;
+    const dx = e.clientX - d.sx;
+    const dy = e.clientY - d.sy;
+    const s = d.start;
+    if (d.mode === "move") {
+      setBox(clampBox({ ...s, x: s.x + dx, y: s.y + dy }));
+      return;
+    }
+    // Corner resize, aspect-locked, anchored at the opposite corner.
+    const right = s.x + s.w;
+    const bottom = s.y + s.h;
+    let w = d.mode === "se" || d.mode === "ne" ? s.w + dx : s.w - dx; // horizontal drag drives size
+    w = Math.max(48, w);
+    const h = w / aspect;
+    let x = s.x;
+    let y = s.y;
+    if (d.mode === "sw" || d.mode === "nw") x = right - w;
+    if (d.mode === "nw" || d.mode === "ne") y = bottom - h;
+    setBox(clampBox({ x, y, w, h }));
   };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag.current) return;
-    setPos(
-      clamp({
-        x: drag.current.px + (e.clientX - drag.current.x),
-        y: drag.current.py + (e.clientY - drag.current.y),
-      }),
-    );
-  };
+
   const endDrag = () => {
     drag.current = null;
   };
 
   const apply = async () => {
-    if (!nat || !vpW) return;
+    if (!nat || !imgRect || !box) return;
     setBusy(true);
     try {
-      const scale = baseScale * zoom; // displayed px per natural px
-      const sx = Math.max(0, Math.round(-imgLeft / scale));
-      const sy = Math.max(0, Math.round(-imgTop / scale));
-      const sw = Math.min(nat.w - sx, Math.round(vpW / scale));
-      const sh = Math.min(nat.h - sy, Math.round(vpH / scale));
+      const scale = imgRect.w / nat.w; // display px per natural px
+      const sx = Math.max(0, Math.round((box.x - imgRect.x) / scale));
+      const sy = Math.max(0, Math.round((box.y - imgRect.y) / scale));
+      const sw = Math.min(nat.w - sx, Math.round(box.w / scale));
+      const sh = Math.min(nat.h - sy, Math.round(box.h / scale));
       const img = await loadImage(src);
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, sw);
@@ -157,6 +196,13 @@ export function ImageCropModal({
   };
 
   if (typeof document === "undefined") return null;
+
+  const handlePos: Record<Handle, string> = {
+    nw: "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
+    ne: "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
+    sw: "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
+    se: "right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
+  };
 
   return createPortal(
     <div
@@ -183,11 +229,9 @@ export function ImageCropModal({
         </div>
 
         <div
-          ref={vpRef}
-          className="bg-muted relative w-full touch-none overflow-hidden rounded-lg select-none"
-          style={{ aspectRatio: String(aspect) }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
+          ref={areaRef}
+          className="relative h-[52vh] max-h-96 w-full touch-none overflow-hidden rounded-lg bg-black/80 select-none"
+          onPointerMove={onMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
@@ -204,35 +248,49 @@ export function ImageCropModal({
                 })
               }
               className="pointer-events-none absolute max-w-none select-none"
-              style={{
-                left: imgLeft,
-                top: imgTop,
-                width: dispW || undefined,
-                height: dispH || undefined,
-              }}
+              style={
+                imgRect
+                  ? {
+                      left: imgRect.x,
+                      top: imgRect.y,
+                      width: imgRect.w,
+                      height: imgRect.h,
+                    }
+                  : { opacity: 0 }
+              }
             />
+          ) : null}
+
+          {box && imgRect ? (
+            <div
+              className="absolute cursor-move touch-none outline outline-2 outline-white"
+              style={{
+                left: box.x,
+                top: box.y,
+                width: box.w,
+                height: box.h,
+                boxShadow: "0 0 0 9999px rgba(0,0,0,0.5)",
+              }}
+              onPointerDown={startDrag("move")}
+            >
+              {(["nw", "ne", "sw", "se"] as Handle[]).map((c) => (
+                <span
+                  key={c}
+                  onPointerDown={startDrag(c)}
+                  className={`bg-primary absolute size-5 rounded-full border-2 border-white ${handlePos[c]}`}
+                />
+              ))}
+            </div>
           ) : null}
         </div>
 
-        <label className="text-muted-foreground mt-3 flex items-center gap-2 text-xs">
-          {t("zoom")}
-          <input
-            type="range"
-            min={1}
-            max={3}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1"
-            dir="ltr"
-          />
-        </label>
+        <p className="text-muted-foreground mt-2 text-xs">{t("cropHint")}</p>
 
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel} disabled={busy}>
             {t("cropCancel")}
           </Button>
-          <Button onClick={apply} disabled={busy || !nat}>
+          <Button onClick={apply} disabled={busy || !box}>
             {busy ? t("uploading") : t("cropApply")}
           </Button>
         </div>

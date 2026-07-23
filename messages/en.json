@@ -386,6 +386,7 @@
     "cropTitle": "Crop image",
     "cropApply": "Apply",
     "cropCancel": "Cancel",
+    "cropHint": "Drag the box to move it, or drag a corner to resize.",
     "zoom": "Zoom"
   },
   "Auth": {
