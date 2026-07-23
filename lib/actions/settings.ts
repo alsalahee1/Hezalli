@@ -56,6 +56,8 @@ export type SettingsInput = {
   trust_step_deliveries: number;
   trust_step_bonus_usd: number;
   trust_bonus_cap_usd: number;
+  badge_bonus_usd: number;
+  badge_bonus_cap_usd: number;
   cod_wallet_pay_enabled: boolean;
   platform_wallet_email: string;
 };
@@ -206,6 +208,10 @@ export async function savePlatformSettings(
   const trustCap = money2(input.trust_bonus_cap_usd);
   if (![trustBonus, trustCap].every((n) => Number.isFinite(n) && n >= 0))
     return { error: "badCashLimit" };
+  const badgeBonus = money2(input.badge_bonus_usd);
+  const badgeCap = money2(input.badge_bonus_cap_usd);
+  if (![badgeBonus, badgeCap].every((n) => Number.isFinite(n) && n >= 0))
+    return { error: "badCashLimit" };
 
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
@@ -261,6 +267,8 @@ export async function savePlatformSettings(
     trust_step_deliveries: trustStep,
     trust_step_bonus_usd: trustBonus,
     trust_bonus_cap_usd: trustCap,
+    badge_bonus_usd: badgeBonus,
+    badge_bonus_cap_usd: badgeCap,
     cod_wallet_pay_enabled: Boolean(input.cod_wallet_pay_enabled),
     platform_wallet_email: platformWalletEmail,
   };

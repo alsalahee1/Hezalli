@@ -119,6 +119,13 @@ export type PlatformSettings = {
   trust_step_deliveries: number;
   trust_step_bonus_usd: number;
   trust_bonus_cap_usd: number;
+  // Badge bonus (lib/courier-badges.ts): every QUALITY/RELIABILITY badge a
+  // driver has earned (top rated, 5-star streak, first-attempt, on-time,
+  // verified — delivery milestones excluded, volume is already the trust
+  // bonus's job) adds `badge_bonus_usd` to their cash limit, capped at
+  // `badge_bonus_cap_usd`. Set the bonus to 0 to turn the perk off.
+  badge_bonus_usd: number;
+  badge_bonus_cap_usd: number;
   // Doorstep wallet payment for COD orders (docs §39): when on, a buyer can
   // settle a COD order from their HezalliPay balance before handover, so the
   // driver/counter collects nothing. Off hides the pay button and blocks the
@@ -182,6 +189,8 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   trust_step_deliveries: 20,
   trust_step_bonus_usd: 10,
   trust_bonus_cap_usd: 100,
+  badge_bonus_usd: 25,
+  badge_bonus_cap_usd: 100,
   cod_wallet_pay_enabled: true,
   platform_wallet_email: "admin@hezalli.com",
 };

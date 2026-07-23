@@ -73,6 +73,8 @@ export function PlatformSettingsForm({
     trust_step_deliveries: String(current.trust_step_deliveries),
     trust_step_bonus_usd: String(current.trust_step_bonus_usd),
     trust_bonus_cap_usd: String(current.trust_bonus_cap_usd),
+    badge_bonus_usd: String(current.badge_bonus_usd),
+    badge_bonus_cap_usd: String(current.badge_bonus_cap_usd),
     cod_wallet_pay_enabled: current.cod_wallet_pay_enabled,
     platform_wallet_email: current.platform_wallet_email,
   });
@@ -131,6 +133,8 @@ export function PlatformSettingsForm({
         trust_step_deliveries: Number(f.trust_step_deliveries),
         trust_step_bonus_usd: Number(f.trust_step_bonus_usd),
         trust_bonus_cap_usd: Number(f.trust_bonus_cap_usd),
+        badge_bonus_usd: Number(f.badge_bonus_usd),
+        badge_bonus_cap_usd: Number(f.badge_bonus_cap_usd),
         cod_wallet_pay_enabled: f.cod_wallet_pay_enabled,
         platform_wallet_email: f.platform_wallet_email,
       });
@@ -386,6 +390,22 @@ export function PlatformSettingsForm({
             type="number"
             value={f.trust_bonus_cap_usd}
             onChange={(e) => set("trust_bonus_cap_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("badgeBonus")} hint={t("badgeBonusHint")}>
+          <Input
+            type="number"
+            value={f.badge_bonus_usd}
+            onChange={(e) => set("badge_bonus_usd", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("badgeCap")} hint={t("badgeCapHint")}>
+          <Input
+            type="number"
+            value={f.badge_bonus_cap_usd}
+            onChange={(e) => set("badge_bonus_cap_usd", e.target.value)}
             dir="ltr"
           />
         </Field>

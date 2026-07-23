@@ -1709,6 +1709,10 @@
     "trustBonusHint": "USD added to the driver's cash limit per completed step.",
     "trustCap": "Trust bonus cap (USD)",
     "trustCapHint": "Maximum total limit increase a driver can earn from history.",
+    "badgeBonus": "Badge bonus per quality badge (USD)",
+    "badgeBonusHint": "USD added to a driver's cash limit for each earned quality badge (top rated, streak, first-attempt, on-time, verified). 0 = off.",
+    "badgeCap": "Badge bonus cap (USD)",
+    "badgeCapHint": "Maximum total limit increase a driver can earn from badges.",
     "codWalletPay": "Doorstep wallet payment for COD",
     "codWalletPayHint": "Buyers can settle a COD order from their HezalliPay balance before handover — the driver collects nothing.",
     "platformWalletEmail": "Hezalli wallet account (email)",
@@ -2220,7 +2224,7 @@
     "codBlockedOverLimit": "You are holding {amount} of COD cash — over the {limit} limit.",
     "codBlockedHow": "Hand the cash in at any Hezalli Point or the office and new deliveries resume right away.",
     "codNearLimit": "You are holding {amount} of the {limit} COD cash allowed — hand it in soon to keep receiving deliveries.",
-    "codLimitLine": "Your cash limit: {limit} — it grows with every delivery.",
+    "codLimitLine": "Your cash limit: {limit} — it grows with every delivery and every badge.",
     "remitTitle": "Remit by transfer",
     "remitHint": "Send the cash you hold to Hezalli by Jawali, Jaib, Floosak, Kuraimi, or bank — then submit the transfer reference. Your balance settles once staff confirm the money arrived.",
     "remitMethod_JAWALI": "Jawali",
@@ -2315,7 +2319,9 @@
     "badge_on_time_hero": "On-time hero",
     "badgeDesc_on_time_hero": "Deliver 90% of parcels within the promised window (20+ deliveries)",
     "badge_verified_pro": "Trusted hands",
-    "badgeDesc_verified_pro": "Verify the buyer's code or QR on 90% of drop-offs (20+ deliveries)"
+    "badgeDesc_verified_pro": "Verify the buyer's code or QR on 90% of drop-offs (20+ deliveries)",
+    "badgePerkActive": "Your quality badges raise your COD cash limit by {amount}.",
+    "badgePerkHint": "Each quality badge you earn raises your COD cash limit by {amount} (up to {cap})."
   },
   "Dispatch": {
     "title": "Dispatch",

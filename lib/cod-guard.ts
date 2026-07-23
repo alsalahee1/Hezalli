@@ -15,6 +15,9 @@
 //                + trust bonus (every trust_step_deliveries completed
 //                  deliveries add trust_step_bonus_usd, capped at
 //                  trust_bonus_cap_usd)
+//                + badge bonus (every earned quality/reliability badge —
+//                  lib/courier-badges.ts, milestones excluded — adds
+//                  badge_bonus_usd, capped at badge_bonus_cap_usd)
 //   point limit  = point_cash_limit + the point's deposit (1:1)
 // Deposits are optional — a driver with none simply lives on base + history.
 // The age limit stays fixed for everyone: trusted or not, cash must not sit.
@@ -35,6 +38,7 @@ export type CourierCodStatus = {
   deposit: number;
   walletHold: number; // effective pledged collateral, min(hold, balance)
   trustBonus: number;
+  badgeBonus: number; // limit earned from quality badges (lib/courier-badges.ts)
   deliveries: number; // completed deliveries backing the trust bonus
   maxAgeHours: number; // 0 = check off
   oldestUnpaidAt: Date | null; // when the oldest still-unsettled COD was taken
@@ -83,6 +87,38 @@ function trustBonus(deliveries: number, s: PlatformSettings): number {
   const earned =
     Math.floor(deliveries / s.trust_step_deliveries) * s.trust_step_bonus_usd;
   return round2(Math.min(earned, Math.max(0, s.trust_bonus_cap_usd)));
+}
+
+// Quality work earns limit too: each earned non-milestone badge
+// (lib/courier-badges.ts — top rated, 5-star streak, first-attempt, on-time,
+// verified) adds badge_bonus_usd, capped. Milestone badges are excluded —
+// delivery volume already earns limit through the trust bonus above.
+async function badgeBonusByCourier(
+  courierIds: string[],
+  s: PlatformSettings,
+): Promise<Map<string, number>> {
+  if (
+    courierIds.length === 0 ||
+    s.badge_bonus_usd <= 0 ||
+    s.badge_bonus_cap_usd <= 0
+  )
+    return new Map();
+  const grouped = await prisma.courierBadgeAward.groupBy({
+    by: ["courierId"],
+    where: {
+      courierId: { in: courierIds },
+      badgeId: { not: { startsWith: "deliveries_" } },
+    },
+    _count: { _all: true },
+  });
+  return new Map(
+    grouped.map((g) => [
+      g.courierId,
+      round2(
+        Math.min(g._count._all * s.badge_bonus_usd, s.badge_bonus_cap_usd),
+      ),
+    ]),
+  );
 }
 
 type Collateral = { deposit: number; walletHold: number };
@@ -139,7 +175,10 @@ export async function codBlockedCourierIds(
   );
 
   if (limit > 0 && holders.length > 0) {
-    const collateral = await collateralByCourier(holders);
+    const [collateral, badgeBonus] = await Promise.all([
+      collateralByCourier(holders),
+      badgeBonusByCourier(holders, settings),
+    ]);
     for (const id of holders) {
       const c = cash.get(id)!;
       const col = collateral.get(id) ?? { deposit: 0, walletHold: 0 };
@@ -147,7 +186,8 @@ export async function codBlockedCourierIds(
         limit +
         col.deposit +
         col.walletHold +
-        trustBonus(c.deliveries, settings);
+        trustBonus(c.deliveries, settings) +
+        (badgeBonus.get(id) ?? 0);
       if (c.cashOnHand > personal + EPS) blocked.add(id);
     }
   }
@@ -188,9 +228,10 @@ export async function courierCodStatus(
   const baseLimit = settings.driver_cash_limit;
   const maxAgeHours = settings.driver_cod_max_age_hours;
 
-  const [cashMap, collateralMap] = await Promise.all([
+  const [cashMap, collateralMap, badgeBonusMap] = await Promise.all([
     cashByCourier([courierId]),
     collateralByCourier([courierId]),
+    badgeBonusByCourier([courierId], settings),
   ]);
   const cash = cashMap.get(courierId) ?? {
     cashOnHand: 0,
@@ -201,8 +242,11 @@ export async function courierCodStatus(
   const deposit = round2(col.deposit);
   const walletHold = round2(col.walletHold);
   const bonus = trustBonus(cash.deliveries, settings);
+  const badgeBonus = badgeBonusMap.get(courierId) ?? 0;
   const cashLimit =
-    baseLimit > 0 ? round2(baseLimit + deposit + walletHold + bonus) : 0;
+    baseLimit > 0
+      ? round2(baseLimit + deposit + walletHold + bonus + badgeBonus)
+      : 0;
   const base = {
     cashOnHand: round2(cash.cashOnHand),
     cashLimit,
@@ -210,6 +254,7 @@ export async function courierCodStatus(
     deposit,
     walletHold,
     trustBonus: bonus,
+    badgeBonus,
     deliveries: cash.deliveries,
     maxAgeHours,
   };
@@ -394,7 +439,7 @@ export async function codExposureReport(topN = 10): Promise<CodExposureReport> {
     .filter(([, c]) => c.cashOnHand > EPS)
     .map(([id]) => id);
 
-  const [users, old24, old48, oldMax] = await Promise.all([
+  const [users, old24, old48, oldMax, badgeBonus] = await Promise.all([
     prisma.user.findMany({
       where: { id: { in: holders } },
       select: {
@@ -410,6 +455,7 @@ export async function codExposureReport(topN = 10): Promise<CodExposureReport> {
     cutMaxAge
       ? overdueByCourier(holders, cutMaxAge)
       : new Map<string, number>(),
+    badgeBonusByCourier(holders, settings),
   ]);
   const userBy = new Map(users.map((u) => [u.id, u]));
 
@@ -430,7 +476,8 @@ export async function codExposureReport(topN = 10): Promise<CodExposureReport> {
             settings.driver_cash_limit +
               deposit +
               holdEff +
-              trustBonus(c.deliveries, settings),
+              trustBonus(c.deliveries, settings) +
+              (badgeBonus.get(id) ?? 0),
           )
         : 0;
     const settled = c.collected - c.cashOnHand;

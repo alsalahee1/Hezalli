@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import {
   BadgeCheck,
   CalendarClock,
@@ -6,6 +6,7 @@ import {
   PackageCheck,
   Star,
   Trophy,
+  Wallet,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -13,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import { requireCourierId } from "@/lib/authz";
 import { syncedCourierPerformance } from "@/lib/courier-performance";
 import type { BadgeState } from "@/lib/courier-badges";
+import { getPlatformSettings } from "@/lib/settings";
 import { StarRating } from "@/components/product/star-rating";
 import { cn } from "@/lib/utils";
 
@@ -32,10 +34,29 @@ export default async function DriverStatsPage() {
   if (!courierId) return null;
   const t = await getTranslations("Driver");
 
-  const { stats, badges, earnedCount } =
-    await syncedCourierPerformance(courierId);
+  const format = await getFormatter();
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
+
+  const [{ stats, badges, earnedCount }, settings] = await Promise.all([
+    syncedCourierPerformance(courierId),
+    getPlatformSettings(),
+  ]);
   const earned = badges.filter((b) => b.earned);
   const next = badges.filter((b) => !b.earned);
+
+  // Badge → COD limit perk (lib/cod-guard.ts): earned quality badges raise
+  // the driver's cash limit. Surface the running total (or the incentive
+  // while none are earned yet) so the perk actually motivates.
+  const perkOn =
+    settings.badge_bonus_usd > 0 && settings.badge_bonus_cap_usd > 0;
+  const qualityEarned = earned.filter((b) => b.kind !== "milestone").length;
+  const badgeBonus = perkOn
+    ? Math.min(
+        qualityEarned * settings.badge_bonus_usd,
+        settings.badge_bonus_cap_usd,
+      )
+    : 0;
 
   const badgeName = (b: BadgeState) =>
     b.kind === "milestone"
@@ -103,6 +124,21 @@ export default async function DriverStatsPage() {
           </p>
         </div>
       </div>
+
+      {/* COD-limit perk from quality badges */}
+      {perkOn ? (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-3 text-sm">
+          <Wallet className="size-4 shrink-0 text-emerald-600" />
+          <p>
+            {badgeBonus > 0
+              ? t("badgePerkActive", { amount: money(badgeBonus) })
+              : t("badgePerkHint", {
+                  amount: money(settings.badge_bonus_usd),
+                  cap: money(settings.badge_bonus_cap_usd),
+                })}
+          </p>
+        </div>
+      ) : null}
 
       {/* Earned badges */}
       <div>
