@@ -19,10 +19,7 @@ export async function sweepStuckShipments(): Promise<{ flagged: number }> {
     where: {
       status: { in: ["PENDING", "LABEL_CREATED", "PICKED_UP", "IN_TRANSIT"] },
       updatedAt: { lt: cutoff },
-      OR: [
-        { stuckFlaggedAt: null },
-        { stuckFlaggedAt: { lt: realertCutoff } },
-      ],
+      OR: [{ stuckFlaggedAt: null }, { stuckFlaggedAt: { lt: realertCutoff } }],
     },
     orderBy: { updatedAt: "asc" },
     take: BATCH,

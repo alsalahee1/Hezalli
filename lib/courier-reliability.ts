@@ -24,9 +24,7 @@ export async function courierAcceptanceStats(
   ids?: string[],
 ): Promise<Map<string, CourierAcceptance>> {
   if (ids && ids.length === 0) return new Map();
-  const since = new Date(
-    Date.now() - RELIABILITY_WINDOW_DAYS * 86_400_000,
-  );
+  const since = new Date(Date.now() - RELIABILITY_WINDOW_DAYS * 86_400_000);
   const rows = await prisma.shipmentOffer.groupBy({
     by: ["driverId", "status"],
     where: {

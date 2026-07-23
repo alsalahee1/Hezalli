@@ -51,7 +51,9 @@ export function PlatformSettingsForm({
     express_enabled: current.express_enabled,
     express_auto_assign: current.express_auto_assign,
     courier_assign_strategy: current.courier_assign_strategy,
-    courier_offer_timeout_minutes: String(current.courier_offer_timeout_minutes),
+    courier_offer_timeout_minutes: String(
+      current.courier_offer_timeout_minutes,
+    ),
     courier_offer_max_rounds: String(current.courier_offer_max_rounds),
     dispatch_hours_start: String(current.dispatch_hours_start),
     dispatch_hours_end: String(current.dispatch_hours_end),
@@ -409,7 +411,9 @@ export function PlatformSettingsForm({
           <Input
             type="number"
             value={f.courier_offer_timeout_minutes}
-            onChange={(e) => set("courier_offer_timeout_minutes", e.target.value)}
+            onChange={(e) =>
+              set("courier_offer_timeout_minutes", e.target.value)
+            }
             dir="ltr"
           />
         </Field>
@@ -457,7 +461,9 @@ export function PlatformSettingsForm({
           <Input
             type="number"
             value={f.driver_acceptance_min_offers}
-            onChange={(e) => set("driver_acceptance_min_offers", e.target.value)}
+            onChange={(e) =>
+              set("driver_acceptance_min_offers", e.target.value)
+            }
             dir="ltr"
           />
         </Field>

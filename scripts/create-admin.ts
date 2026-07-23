@@ -58,14 +58,15 @@ async function main() {
 
   if (existing) {
     const roles = Array.from(new Set([...existing.roles, "ADMIN"])) as (
-      | "ADMIN"
-      | "BUYER"
+      "ADMIN" | "BUYER"
     )[];
     await prisma.user.update({
       where: { id: existing.id },
       data: { roles: roles as never, passwordHash, isSuspended: false },
     });
-    console.log(`Promoted existing account ${email} to ADMIN and reset its password.`);
+    console.log(
+      `Promoted existing account ${email} to ADMIN and reset its password.`,
+    );
     return;
   }
 
@@ -85,7 +86,10 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error("create-admin failed:", error instanceof Error ? error.message : error);
+    console.error(
+      "create-admin failed:",
+      error instanceof Error ? error.message : error,
+    );
     process.exitCode = 1;
   })
   .finally(async () => {

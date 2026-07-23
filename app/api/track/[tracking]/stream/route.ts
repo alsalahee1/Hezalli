@@ -10,7 +10,11 @@ export const dynamic = "force-dynamic";
 
 function clientIp(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for");
-  return (fwd?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
+  return (
+    fwd?.split(",")[0] ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  ).trim();
 }
 
 // Realtime shipment tracking over Server-Sent Events. The server re-reads the
