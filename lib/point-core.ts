@@ -259,6 +259,13 @@ export async function handoverParcelToDriver(
   });
   if (claimed.count !== 1) return { error: "badState" };
 
+  // Collecting the parcel IS accepting the job — settle any pending offer so
+  // the accept window stops ticking (docs/EXPRESS-DELIVERY.md, offers).
+  await prisma.shipmentOffer.updateMany({
+    where: { shipmentId: parcel.id, driverId: assignee, status: "OFFERED" },
+    data: { status: "ACCEPTED", respondedAt: new Date() },
+  });
+
   if (isOriginHop) {
     // Line-haul departure: custody moves to the transfer driver; the buyer
     // hears again when the destination point receives it.

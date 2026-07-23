@@ -1,33 +1,15 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { requireWalletManagerId } from "@/lib/authz";
-import { UPLOAD_DIR } from "@/lib/storage";
+import { isPrivateKey, storage } from "@/lib/storage";
 
-// Serves files stored by the local storage driver. In production the s3 driver
-// returns bucket URLs directly, so this route is used only with the local
-// driver — but STORAGE_DRIVER=local is the default, so it must enforce access
-// control on sensitive objects itself.
+// Serves stored objects. Public assets are served here only by the local
+// driver (the s3 driver returns CDN URLs); SENSITIVE objects (kyc/proof) are
+// always served here — for BOTH drivers — behind an access check, so they never
+// need a public URL. The s3 driver fetches them with credentials, so the bucket
+// can stay private for those keys.
 export const runtime = "nodejs";
-
-const CONTENT_TYPE: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-};
-
-// Folders that hold sensitive objects and must never be served publicly. Keys
-// are `<folder>/<uploaderId>/<random>.<ext>` (see app/api/upload/route.ts).
-//   - kyc:   regulated identity documents → owner or wallet/admin staff only.
-//   - proof: delivery / payment proof photos → any authenticated user (the
-//            legitimate viewers span the order's parties, which the path alone
-//            can't resolve; the unguessable key remains the cross-user control).
-const OWNER_ONLY = new Set(["kyc"]);
-const AUTHED_ONLY = new Set(["proof"]);
 
 export async function GET(
   _req: Request,
@@ -41,8 +23,8 @@ export async function GET(
 
   const folder = parts[0] ?? "";
   const ownerId = parts[1] ?? "";
-  const isOwnerOnly = OWNER_ONLY.has(folder);
-  const isPrivate = isOwnerOnly || AUTHED_ONLY.has(folder);
+  const isOwnerOnly = folder === "kyc"; // regulated ID docs
+  const isPrivate = isPrivateKey(rel);
 
   if (isPrivate) {
     const session = await auth();
@@ -56,27 +38,16 @@ export async function GET(
     }
   }
 
-  const abs = path.join(UPLOAD_DIR, rel);
-  // Defense in depth against path traversal.
-  if (abs !== UPLOAD_DIR && !abs.startsWith(UPLOAD_DIR + path.sep)) {
-    return new NextResponse("bad request", { status: 400 });
-  }
+  const obj = await storage.getObject(rel);
+  if (!obj) return new NextResponse("not found", { status: 404 });
 
-  try {
-    const buf = await readFile(abs);
-    const type =
-      CONTENT_TYPE[path.extname(abs).toLowerCase()] ??
-      "application/octet-stream";
-    return new NextResponse(buf, {
-      headers: {
-        "Content-Type": type,
-        // Sensitive objects must not be cached by shared/browser caches.
-        "Cache-Control": isPrivate
-          ? "private, no-store"
-          : "public, max-age=31536000, immutable",
-      },
-    });
-  } catch {
-    return new NextResponse("not found", { status: 404 });
-  }
+  return new NextResponse(new Uint8Array(obj.body), {
+    headers: {
+      "Content-Type": obj.contentType,
+      // Sensitive objects must not be cached by shared/browser caches.
+      "Cache-Control": isPrivate
+        ? "private, no-store"
+        : "public, max-age=31536000, immutable",
+    },
+  });
 }

@@ -35,6 +35,13 @@ export type SettingsInput = {
   express_eta_max_days: number;
   express_auto_assign: boolean;
   courier_assign_strategy: "balanced" | "nearest";
+  courier_offer_timeout_minutes: number;
+  courier_offer_max_rounds: number;
+  dispatch_hours_start: number;
+  dispatch_hours_end: number;
+  seller_ship_days: number;
+  driver_min_acceptance_rate: number;
+  driver_acceptance_min_offers: number;
   courier_delivery_fee: number;
   points_enabled: boolean;
   point_handling_fee: number;
@@ -131,6 +138,42 @@ export async function savePlatformSettings(
   if (!Number.isFinite(deliveryFee) || deliveryFee < 0)
     return { error: "badDeliveryFee" };
 
+  // Driver offer window (0 = classic forced assignment) + cascade depth, and
+  // the dispatch working hours (whole hours, 0–23; start == end = 24/7).
+  const offerTimeout = int(input.courier_offer_timeout_minutes);
+  if (!Number.isFinite(offerTimeout) || offerTimeout < 0 || offerTimeout > 1440)
+    return { error: "badOfferTimeout" };
+  const offerRounds = int(input.courier_offer_max_rounds);
+  if (!Number.isFinite(offerRounds) || offerRounds < 1 || offerRounds > 20)
+    return { error: "badOfferRounds" };
+  const dispatchStart = int(input.dispatch_hours_start);
+  const dispatchEnd = int(input.dispatch_hours_end);
+  if (
+    ![dispatchStart, dispatchEnd].every(
+      (h) => Number.isFinite(h) && h >= 0 && h <= 23,
+    )
+  )
+    return { error: "badDispatchHours" };
+
+  // Seller ship-SLA (0 = off) and the driver acceptance gate (rate 0 = off).
+  const shipDays = int(input.seller_ship_days);
+  if (!Number.isFinite(shipDays) || shipDays < 0 || shipDays > 60)
+    return { error: "badDays" };
+  const minAcceptRate = int(input.driver_min_acceptance_rate);
+  if (
+    !Number.isFinite(minAcceptRate) ||
+    minAcceptRate < 0 ||
+    minAcceptRate > 100
+  )
+    return { error: "badAcceptRate" };
+  const minAcceptOffers = int(input.driver_acceptance_min_offers);
+  if (
+    !Number.isFinite(minAcceptOffers) ||
+    minAcceptOffers < 1 ||
+    minAcceptOffers > 1000
+  )
+    return { error: "badAcceptRate" };
+
   // The Hezalli wallet destination for in-app COD remittance. Empty disables
   // the feature; otherwise it must look like an email (the resolver additionally
   // requires it to be an active ADMIN before any money moves).
@@ -197,6 +240,13 @@ export async function savePlatformSettings(
     express_auto_assign: Boolean(input.express_auto_assign),
     courier_assign_strategy:
       input.courier_assign_strategy === "nearest" ? "nearest" : "balanced",
+    courier_offer_timeout_minutes: offerTimeout,
+    courier_offer_max_rounds: offerRounds,
+    dispatch_hours_start: dispatchStart,
+    dispatch_hours_end: dispatchEnd,
+    seller_ship_days: shipDays,
+    driver_min_acceptance_rate: minAcceptRate,
+    driver_acceptance_min_offers: minAcceptOffers,
     courier_delivery_fee: deliveryFee,
     points_enabled: Boolean(input.points_enabled),
     point_handling_fee: pointFee,

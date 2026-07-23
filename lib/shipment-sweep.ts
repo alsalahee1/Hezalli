@@ -1,21 +1,28 @@
 // Stuck-shipment sweep: flags parcels that sat un-moved past the threshold and
-// alerts delivery staff (DELIVERY_MANAGER + ADMIN) once per parcel. The
-// one-shot stuckFlaggedAt guard makes re-runs harmless; a staff status
-// override clears it so a re-stuck parcel alerts again.
+// alerts delivery staff (DELIVERY_MANAGER + ADMIN). stuckFlaggedAt is the
+// last-alerted timestamp: a parcel alerts when first stuck and then again
+// every REALERT_HOURS while still un-moved — an ignored alert must not be the
+// end of the chain (docs/AUDIT-LIFECYCLE-2026-07-22.md GAP-5). A staff status
+// override clears the flag so a re-stuck parcel starts a fresh cycle.
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 
 const STUCK_DAYS = 7;
+const REALERT_HOURS = 48;
 const BATCH = 200;
 
 export async function sweepStuckShipments(): Promise<{ flagged: number }> {
   const cutoff = new Date(Date.now() - STUCK_DAYS * 86_400_000);
+  const realertCutoff = new Date(Date.now() - REALERT_HOURS * 3_600_000);
 
   const stuck = await prisma.shipment.findMany({
     where: {
       status: { in: ["PENDING", "LABEL_CREATED", "PICKED_UP", "IN_TRANSIT"] },
       updatedAt: { lt: cutoff },
-      stuckFlaggedAt: null,
+      OR: [
+        { stuckFlaggedAt: null },
+        { stuckFlaggedAt: { lt: realertCutoff } },
+      ],
     },
     orderBy: { updatedAt: "asc" },
     take: BATCH,
@@ -23,8 +30,9 @@ export async function sweepStuckShipments(): Promise<{ flagged: number }> {
   });
   if (stuck.length === 0) return { flagged: 0 };
 
-  // Flag first (one-shot), then notify — a notify failure must not cause the
-  // next run to re-spam, and updatedAt must not move (it drives stuckness).
+  // Stamp the alert time first, then notify — a notify failure must not cause
+  // the next run to re-spam before REALERT_HOURS, and updatedAt must not move
+  // (it drives stuckness).
   await prisma.shipment.updateMany({
     where: { id: { in: stuck.map((s) => s.id) } },
     data: { stuckFlaggedAt: new Date() },

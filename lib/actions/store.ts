@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { auth } from "@/auth";
+import { requireActiveSeller } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import {
   storeSettingsSchema,
@@ -22,17 +22,15 @@ export async function updateStoreSettings(
   _prev: FormState | undefined,
   formData: FormData,
 ): Promise<FormState> {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return { formError: "notSignedIn" };
-
   // Authoritative ownership check: the store being edited is always the
-  // caller's own store — no id comes from the client.
-  const profile = await prisma.sellerProfile.findUnique({
-    where: { userId },
-    select: { store: { select: { id: true, slug: true } } },
+  // caller's own store — no id comes from the client. requireActiveSeller also
+  // rejects a suspended/deleted seller (a bare session lookup would not).
+  const gate = await requireActiveSeller();
+  if (!gate) return { formError: "notSeller" };
+  const store = await prisma.store.findUnique({
+    where: { id: gate.storeId },
+    select: { id: true, slug: true },
   });
-  const store = profile?.store;
   if (!store) return { formError: "notSeller" };
 
   const parsed = storeSettingsSchema.safeParse({

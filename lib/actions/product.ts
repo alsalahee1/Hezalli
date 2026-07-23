@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { auth } from "@/auth";
+import { requireActiveSeller } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { slugifyWithFallback } from "@/lib/slug";
 import { isOwnStorageUrl } from "@/lib/storage";
@@ -37,16 +37,11 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 export async function saveProduct(input: ProductInput): Promise<SaveResult> {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return { formError: "notSignedIn" };
-
-  const profile = await prisma.sellerProfile.findUnique({
-    where: { userId },
-    select: { store: { select: { id: true } } },
-  });
-  const storeId = profile?.store?.id;
-  if (!storeId) return { formError: "notSeller" };
+  // requireActiveSeller rejects a suspended/deleted seller (a bare session +
+  // profile lookup would not), closing the stale-JWT write window.
+  const gate = await requireActiveSeller();
+  if (!gate) return { formError: "notSeller" };
+  const storeId = gate.storeId;
 
   const publish = input.intent === "publish";
 

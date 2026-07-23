@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { runAssistant, type ChatMessage } from "@/lib/ai/assistant";
 import { checkGlobalCaps } from "@/lib/ai/guards";
 import { geminiConfigured, GeminiError } from "@/lib/ai/gemini";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import { routing } from "@/i18n/routing";
 
 // Best-effort client IP for throttling (behind the platform's proxy).
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   // Gemini requests, so throttle abuse two ways: a per-IP burst limit, plus the
   // same global daily/spend backstop the messaging channels use. Without this a
   // scripted loop can run up an unbounded Gemini bill.
-  if (!rateLimit(`aichat:${clientIp(req)}`, 15, 60_000).ok) {
+  if (!(await rateLimitAsync(`aichat:${clientIp(req)}`, 15, 60_000)).ok) {
     return NextResponse.json({ error: "assistant_busy" }, { status: 429 });
   }
   if (!(await checkGlobalCaps(Date.now())).ok) {

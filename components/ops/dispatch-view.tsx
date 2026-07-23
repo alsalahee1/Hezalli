@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { requireDeliveryManagerId } from "@/lib/authz";
+import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -67,10 +68,17 @@ export async function DispatchView({ base }: { base: string }) {
     getPlatformSettings(),
   ]);
 
+  // Offer acceptance rate (90-day window) so ops can see who actually takes
+  // the jobs they're offered before assigning by hand.
+  const acceptance = await courierAcceptanceStats(couriers.map((c) => c.id));
   const courierOptions = couriers.map((c) => {
     const base = c.name ?? c.id.slice(-6);
     const gov = c.courierLocation?.governorate;
-    return { id: c.id, name: gov ? `${base} · ${gov}` : base };
+    const stats = acceptance.get(c.id);
+    const rate =
+      stats?.rate != null ? `${Math.round(stats.rate * 100)}%` : null;
+    const label = [base, gov, rate].filter(Boolean).join(" · ");
+    return { id: c.id, name: label };
   });
 
   const now = new Date();

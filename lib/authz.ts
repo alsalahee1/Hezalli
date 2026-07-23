@@ -67,6 +67,45 @@ export async function requireSellerStore(): Promise<{
   return { userId: id, storeId: store.id, active: store.status === "ACTIVE" };
 }
 
+// Returns the active seller's ids (user, seller-profile, store) + whether the
+// store is ACTIVE, or null. Unlike a bare session+profile lookup, this rejects
+// a SUSPENDED or soft-deleted user (and a non-seller), so a seller an admin
+// suspends mid-session can't keep writing on a still-valid JWT. Use for seller
+// WRITE paths (products, inventory, store settings, payouts, earnings moves);
+// money-outflow callers must additionally require `active`.
+export async function requireActiveSeller(): Promise<{
+  userId: string;
+  profileId: string;
+  storeId: string;
+  active: boolean;
+} | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      roles: true,
+      isSuspended: true,
+      deletedAt: true,
+      sellerProfile: {
+        select: { id: true, store: { select: { id: true, status: true } } },
+      },
+    },
+  });
+  if (!u || u.isSuspended || u.deletedAt || !u.roles.includes("SELLER")) {
+    return null;
+  }
+  const store = u.sellerProfile?.store;
+  if (!u.sellerProfile || !store) return null;
+  return {
+    userId: id,
+    profileId: u.sellerProfile.id,
+    storeId: store.id,
+    active: store.status === "ACTIVE",
+  };
+}
+
 // Returns the current user's id + their delivery point id, only if they are an
 // active DELIVERY_POINT operator owning an ACTIVE point (checked against the
 // DB). Guards point-operator actions/pages.

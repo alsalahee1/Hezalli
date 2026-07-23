@@ -1,4 +1,4 @@
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import {
   getTrackingSnapshot,
   isTerminalTracking,
@@ -32,7 +32,7 @@ export async function GET(
   { params }: { params: Promise<{ tracking: string }> },
 ) {
   // Throttle new stream connections per IP to blunt tracking-number enumeration.
-  if (!rateLimit(`track-stream:${clientIp(req)}`, 30, 60_000).ok) {
+  if (!(await rateLimitAsync(`track-stream:${clientIp(req)}`, 30, 60_000)).ok) {
     return new Response("rate limited", { status: 429 });
   }
   const { tracking } = await params;
