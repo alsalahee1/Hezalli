@@ -14,12 +14,12 @@ import {
   User,
   Wallet,
 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { formatUsd } from "@/lib/products";
 import { signOutAction } from "@/lib/actions/auth";
+import { useMoney } from "@/components/currency/currency-provider";
 import { Popover } from "@/components/ui/popover";
 
 const MENU_LINKS = [
@@ -53,7 +53,7 @@ export function UserMenu({
   walletBalance?: number;
 }) {
   const t = useTranslations("Header");
-  const locale = useLocale();
+  const fmt = useMoney();
   const [open, setOpen] = useState(false);
 
   // Links that depend on the signed-in user's role. Admins reach the admin
@@ -127,7 +127,7 @@ export function UserMenu({
                 {t("wallet")}
               </span>
               <span className="text-primary text-sm font-semibold" dir="ltr">
-                {formatUsd(walletBalance, locale)}
+                {fmt(walletBalance)}
               </span>
             </Link>
             {roleLinks.length > 0 ? (

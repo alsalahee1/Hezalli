@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { autoCompleteDeliveredOrders } from "@/lib/actions/completion";
@@ -11,6 +11,10 @@ import {
   type OrderTab,
 } from "@/lib/order-status";
 import { Link } from "@/i18n/navigation";
+import {
+  formatMoney,
+  type DisplayCurrencyCode,
+} from "@/lib/currency-constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +31,7 @@ export default async function AccountOrdersPage({
   await autoCompleteDeliveredOrders().catch(() => {});
   const t = await getTranslations("Orders");
   const format = await getFormatter();
+  const locale = await getLocale();
 
   const sp = await searchParams;
   const tab = (ORDER_TABS as readonly string[]).includes(sp.tab ?? "")
@@ -40,6 +45,8 @@ export default async function AccountOrdersPage({
       id: true,
       status: true,
       grandTotal: true,
+      displayCurrency: true,
+      exchangeRate: true,
       createdAt: true,
       subOrders: {
         select: {
@@ -88,8 +95,21 @@ export default async function AccountOrdersPage({
       ? orders
       : orders.filter((o) => statusToTab(o.status) === tab);
 
-  const money = (n: unknown) =>
-    format.number(Number(n), { style: "currency", currency: "USD" });
+  // Each row renders its own checkout-time snapshot (currency + rate frozen
+  // on the order), so totals stay what the buyer actually agreed to pay.
+  const orderMoney = (o: {
+    grandTotal: unknown;
+    displayCurrency: string;
+    exchangeRate: unknown;
+  }) =>
+    formatMoney(
+      Number(o.grandTotal),
+      {
+        code: o.displayCurrency as DisplayCurrencyCode,
+        rate: Number(o.exchangeRate),
+      },
+      locale,
+    );
 
   return (
     <div className="space-y-5">
@@ -183,7 +203,7 @@ export default async function AccountOrdersPage({
                   <span className="text-sm">
                     {t("total")}:{" "}
                     <span className="font-semibold" dir="ltr">
-                      {money(o.grandTotal)}
+                      {orderMoney(o)}
                     </span>
                   </span>
                   <Button asChild size="sm" variant="outline">

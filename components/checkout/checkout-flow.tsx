@@ -71,6 +71,20 @@ export function CheckoutFlow({
   const tWin = useTranslations("DeliveryWindow");
   const locale = useLocale();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
+  const addressGov = addresses.find((a) => a.id === addressId)?.governorate;
+
+  // Convert displayed amounts with the zone rate of the selected delivery
+  // address — the same resolution the server snapshots onto the order, so
+  // the total shown here is exactly what a COD courier will collect.
+  const display =
+    zoneRates && zoneRates.code !== "USD"
+      ? {
+          code: zoneRates.code,
+          rate: zoneRates.byZone[zoneForGovernorate(addressGov)],
+        }
+      : USD_DISPLAY;
+  const fmt = (usd: number) => formatMoney(usd, display, locale);
+
   // Buyer's chosen delivery tier per store; unset stores default to STANDARD.
   const [methodByStore, setMethodByStore] = useState<
     Record<string, ShippingMethod>
@@ -167,7 +181,7 @@ export function CheckoutFlow({
       key: "HEZALLI_BALANCE",
       label: t("hezalliBalance"),
       hint: t("hezalliBalanceHint", {
-        balance: formatUsd(walletBalance, locale),
+        balance: fmt(walletBalance),
       }),
       disabled: !walletAffordable,
     },
@@ -232,19 +246,6 @@ export function CheckoutFlow({
 
   // Nearest points first for the selected delivery address (same-governorate
   // matches lead; the server already filtered out full points).
-  const addressGov = addresses.find((a) => a.id === addressId)?.governorate;
-
-  // Convert summary amounts with the zone rate of the selected delivery
-  // address — the same resolution the server snapshots onto the order, so
-  // the total shown here is exactly what a COD courier will collect.
-  const display =
-    zoneRates && zoneRates.code !== "USD"
-      ? {
-          code: zoneRates.code,
-          rate: zoneRates.byZone[zoneForGovernorate(addressGov)],
-        }
-      : USD_DISPLAY;
-  const fmt = (usd: number) => formatMoney(usd, display, locale);
   const sortedPickupPoints = useMemo(
     () =>
       [...pickupPoints].sort(

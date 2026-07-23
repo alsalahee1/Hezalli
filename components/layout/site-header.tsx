@@ -7,9 +7,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { NavCategory } from "@/lib/categories";
 import type { DisplayCurrencyCode } from "@/lib/currency-constants";
-import { formatUsd } from "@/lib/products";
 import type { ThemeId } from "@/lib/theme-constants";
 import { CartButton } from "@/components/cart/cart-button";
+import { useMoney } from "@/components/currency/currency-provider";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ChatIcon } from "@/components/chat/chat-icon";
@@ -55,6 +55,7 @@ export function SiteHeader({
   const c = useTranslations("Common");
   const th = useTranslations("Theme");
   const locale = useLocale();
+  const fmt = useMoney();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -108,7 +109,7 @@ export function SiteHeader({
               >
                 <Wallet className="size-4 shrink-0" />
                 <span className="hidden sm:inline" dir="ltr">
-                  {formatUsd(walletBalance, locale)}
+                  {fmt(walletBalance)}
                 </span>
               </Link>
               <ChatIcon variant="buyer" />

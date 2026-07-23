@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { HandCoins } from "lucide-react";
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 import { walletHasPin } from "@/lib/wallet-pin";
 import { walletHasPasskey } from "@/lib/webauthn";
@@ -21,7 +23,6 @@ export default async function PayRequestPage({
     redirect(`/${locale}/login?callbackUrl=/${locale}/pay/r/${requestId}`);
   }
   const t = await getTranslations("Wallet");
-  const format = await getFormatter();
 
   const req = await prisma.walletPaymentRequest.findUnique({
     where: { id: requestId },
@@ -70,10 +71,11 @@ export default async function PayRequestPage({
     );
   }
 
-  const amountLabel = format.number(Number(req.amountUsd), {
-    style: "currency",
-    currency: "USD",
-  });
+  const amountLabel = formatMoney(
+    Number(req.amountUsd),
+    await getRequestDisplayCurrency(),
+    locale,
+  );
   const who = requester?.name || requester?.email || "—";
 
   if (req.status !== "PENDING") {
