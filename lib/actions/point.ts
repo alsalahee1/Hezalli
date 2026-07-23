@@ -115,7 +115,11 @@ export async function pointReceiveReturn(
 
 // Counter pickup: the buyer shows their delivery QR/code and takes the
 // parcel. Returns the COD amount the counter must collect (0 for prepaid).
-export async function pointBuyerPickup(code: string): Promise<{
+export async function pointBuyerPickup(
+  code: string,
+  recipientName?: string,
+  photoKey?: string,
+): Promise<{
   ok?: boolean;
   error?: string;
   codDue?: number;
@@ -125,7 +129,16 @@ export async function pointBuyerPickup(code: string): Promise<{
   // Cash-gated: a shelves organizer may not take a buyer's COD money.
   if (!gate || !canHandleCash(gate.access)) return { error: "forbidden" };
   const locale = await getLocale();
-  const res = await buyerPickupAtPoint(gate.pointId, code, locale, gate.userId);
+  const res = await buyerPickupAtPoint(
+    gate.pointId,
+    code,
+    locale,
+    gate.userId,
+    {
+      recipientName: recipientName?.trim().slice(0, 120) || undefined,
+      photoKey: photoKey || undefined,
+    },
+  );
   if (res.ok) {
     await revalidatePoint();
     return res;

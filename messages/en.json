@@ -3077,7 +3077,12 @@
     "day_wed": "Wed",
     "day_thu": "Thu",
     "day_fri": "Fri",
-    "day_sat": "Sat"
+    "day_sat": "Sat",
+    "pickupRecipientLabel": "Who's collecting? (optional)",
+    "pickupRecipientPlaceholder": "Recipient name",
+    "pickupAddPhoto": "Add handover photo",
+    "pickupPhotoAdded": "Photo attached",
+    "pickupUploading": "Uploading…"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

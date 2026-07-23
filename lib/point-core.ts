@@ -506,6 +506,7 @@ export async function buyerPickupAtPoint(
   code: string,
   locale: string,
   actorId?: string,
+  proof?: { recipientName?: string; photoKey?: string },
 ): Promise<{
   ok?: boolean;
   error?: string;
@@ -563,6 +564,11 @@ export async function buyerPickupAtPoint(
     codeVerified: true,
     pickupPointId: pointId,
     actorId,
+    // Optional counter proof (docs §42h): who collected it + a handover photo.
+    // The buyer's delivery code is the primary proof; these are extra evidence
+    // for the moment cash and goods change hands.
+    recipientName: proof?.recipientName,
+    photoKey: proof?.photoKey,
   });
   if (res.error) return res;
   // Where to grab the parcel from — the counter reads this off the scan result.

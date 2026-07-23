@@ -3077,7 +3077,12 @@
     "day_wed": "الأربعاء",
     "day_thu": "الخميس",
     "day_fri": "الجمعة",
-    "day_sat": "السبت"
+    "day_sat": "السبت",
+    "pickupRecipientLabel": "من المستلم؟ (اختياري)",
+    "pickupRecipientPlaceholder": "اسم المستلم",
+    "pickupAddPhoto": "إضافة صورة التسليم",
+    "pickupPhotoAdded": "أُرفقت الصورة",
+    "pickupUploading": "جارٍ الرفع…"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
