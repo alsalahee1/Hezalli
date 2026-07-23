@@ -2075,6 +2075,8 @@
     "err_monthlyLimit": "You've reached this month's transfer limit.",
     "authRequiredNotice": "Set a PIN or enable biometrics to authorize payments.",
     "authSetupLink": "Set up now",
+    "securitySetupTitle": "Set up wallet security",
+    "securityOr": "or",
     "confirmBiometric": "Confirm with biometrics",
     "usePinInstead": "Use PIN instead",
     "useBiometricInstead": "Use biometrics",
