@@ -40,6 +40,7 @@ export type SettingsInput = {
   job_board_enabled: boolean;
   job_board_window_minutes: number;
   job_board_max_active_jobs: number;
+  board_reminder_minutes: number;
   pickup_deadline_hours: number;
   dispatch_hours_start: number;
   dispatch_hours_end: number;
@@ -165,6 +166,14 @@ export async function savePlatformSettings(
   const boardMaxJobs = int(input.job_board_max_active_jobs);
   if (!Number.isFinite(boardMaxJobs) || boardMaxJobs < 0 || boardMaxJobs > 100)
     return { error: "badBoardCap" };
+  // Repeat reminder for unclaimed board jobs (0 = off, max a day).
+  const boardReminder = int(input.board_reminder_minutes);
+  if (
+    !Number.isFinite(boardReminder) ||
+    boardReminder < 0 ||
+    boardReminder > 1440
+  )
+    return { error: "badBoardReminder" };
   // Pickup deadline for accepted-but-never-scanned jobs (0 = off, max a week).
   const pickupDeadline = int(input.pickup_deadline_hours);
   if (
@@ -299,6 +308,7 @@ export async function savePlatformSettings(
     job_board_enabled: Boolean(input.job_board_enabled),
     job_board_window_minutes: boardWindow,
     job_board_max_active_jobs: boardMaxJobs,
+    board_reminder_minutes: boardReminder,
     pickup_deadline_hours: pickupDeadline,
     dispatch_hours_start: dispatchStart,
     dispatch_hours_end: dispatchEnd,

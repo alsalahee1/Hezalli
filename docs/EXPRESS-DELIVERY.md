@@ -75,6 +75,7 @@ All keys live in `PlatformSetting` (see `lib/settings.ts` for defaults).
 | `job_board_enabled` | `false` | Post unassigned parcels on the open driver job board (§4b) — any eligible driver can claim, first tap wins. |
 | `job_board_window_minutes` | `15` | How long a parcel stays board-only before push-offers ALSO start chasing a driver. `0` = both channels at once. |
 | `job_board_max_active_jobs` | `10` | A driver already holding this many in-flight deliveries can't claim more from the board. `0` = no cap. |
+| `board_reminder_minutes` | `60` | While jobs sit unclaimed on the board, re-ping eligible drivers once per this many minutes (one aggregated notification per driver, dispatch hours only). `0` = off. |
 | `pickup_deadline_hours` | `0` | Hours an ACCEPTED job (tapped offer or board claim) may sit without a single scan before the sweep takes it back and re-dispatches it. Forced/manual assignments are exempt. `0` = off. |
 
 Rules worth knowing:
@@ -253,6 +254,12 @@ lands on the board; with no local drivers, everyone active is.
   first sweep after opening posts them (the board's morning wave). Escalated
   parcels remain claimable — a claim clears `assignmentEscalatedAt` just like
   a manual assignment.
+- **Unclaimed jobs keep nudging** (`board_reminder_minutes`, default 60):
+  while parcels sit on the board, eligible couriers are re-pinged once per
+  interval — one aggregated notification per driver, not one per parcel
+  (`Shipment.boardRemindedAt` throttles it). Escalated parcels are included
+  deliberately: with a small fleet where everyone missed the first ping and
+  the cascade ran dry, this is what brings a waking driver back to the board.
 
 ## 5. Operating it — by role
 

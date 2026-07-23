@@ -40,6 +40,7 @@ async function run(req: Request) {
     offersWaved: offers.waved,
     jobsBoarded: offers.boarded,
     jobsReclaimed: offers.reclaimed,
+    boardJobsReminded: offers.remindedJobs,
     sellerSlaReminded: sellerSla.reminded,
     sellerSlaCancelled: sellerSla.cancelled,
   });

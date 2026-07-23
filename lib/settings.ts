@@ -52,6 +52,12 @@ export type PlatformSettings = {
   job_board_enabled: boolean;
   job_board_window_minutes: number;
   job_board_max_active_jobs: number;
+  // Repeat reminder for unclaimed board jobs (small-fleet safety net): while
+  // parcels sit on the board unclaimed, eligible couriers are re-pinged once
+  // per this many minutes — one aggregated notification, not one per parcel —
+  // during dispatch hours. Complements the one-shot "new job" notification a
+  // boarding sends. 0 = off.
+  board_reminder_minutes: number;
   // Pickup deadline (lib/offer-sweep.ts): hours a driver may sit on an
   // ACCEPTED job (a tapped offer or a board claim) without a single scan
   // before the sweep takes it back and re-dispatches. Safe to automate
@@ -194,6 +200,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   job_board_enabled: false,
   job_board_window_minutes: 15,
   job_board_max_active_jobs: 10,
+  board_reminder_minutes: 60,
   pickup_deadline_hours: 0,
   dispatch_hours_start: 8,
   dispatch_hours_end: 21,
