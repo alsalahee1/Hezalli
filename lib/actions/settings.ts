@@ -70,6 +70,7 @@ export type SettingsInput = {
   season_target_deliveries: number;
   cod_wallet_pay_enabled: boolean;
   platform_wallet_email: string;
+  ai_assistant_enabled: boolean;
 };
 
 const int = (n: unknown) => Math.trunc(Number(n));
@@ -338,6 +339,7 @@ export async function savePlatformSettings(
     season_target_deliveries: seasonTarget,
     cod_wallet_pay_enabled: Boolean(input.cod_wallet_pay_enabled),
     platform_wallet_email: platformWalletEmail,
+    ai_assistant_enabled: Boolean(input.ai_assistant_enabled),
   };
 
   await prisma.$transaction(
@@ -357,6 +359,44 @@ export async function savePlatformSettings(
       entity: "PlatformSetting",
       entityId: "platform",
       meta: values as never,
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/settings`);
+  revalidatePath(`/${locale}`, "layout");
+  return { ok: true };
+}
+
+// --- Shadi's Gemini API key ------------------------------------------------
+// Stored as its own PlatformSetting row ("gemini_api_key") — deliberately NOT
+// part of the SettingsInput/PlatformSettings object, so the secret is never
+// echoed back through the settings form or serialized into other pages.
+// lib/ai/gemini.ts reads it, falling back to the GEMINI_API_KEY env var.
+
+export async function saveAssistantKey(apiKey: string | null): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+
+  // null / empty clears the stored key (the env var, if any, takes over).
+  const key = (apiKey ?? "").trim();
+  if (key && (key.length < 20 || key.length > 300 || /\s/.test(key)))
+    return { error: "badKey" };
+
+  await prisma.platformSetting.upsert({
+    where: { key: "gemini_api_key" },
+    create: { key: "gemini_api_key", value: key },
+    update: { value: key },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.ai_key",
+      entity: "PlatformSetting",
+      entityId: "gemini_api_key",
+      // Record that the key changed, never the key itself.
+      meta: { set: Boolean(key) },
     },
   });
 

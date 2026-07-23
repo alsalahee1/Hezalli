@@ -174,6 +174,12 @@ export type PlatformSettings = {
   // (lib/actions/cod-wallet-remit.ts). Identified by email so admins can point
   // it at whichever account should hold platform cash. Must be an active ADMIN.
   platform_wallet_email: string;
+  // Shadi (شادي), the AI assistant. Off hides the site widget and disables the
+  // chat API and messaging channels. The Gemini API key itself is stored as a
+  // separate PlatformSetting row ("gemini_api_key", managed in Admin →
+  // Settings) — deliberately NOT part of this object, so the secret never
+  // rides along when pages pass the settings around. lib/ai/gemini.ts reads it.
+  ai_assistant_enabled: boolean;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -241,6 +247,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   season_target_deliveries: 30,
   cod_wallet_pay_enabled: true,
   platform_wallet_email: "admin@hezalli.com",
+  ai_assistant_enabled: true,
 };
 
 export const SETTING_KEYS = Object.keys(

@@ -6,14 +6,49 @@
 // function-calling loop lives in `lib/ai/assistant.ts`; this file only knows
 // how to send one request and shape the response.
 
+import { prisma } from "@/lib/prisma";
+import { getSetting } from "@/lib/settings";
+
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 // Fast + cheap model, good enough for a storefront assistant. Overridable so
 // the deployment can bump it without a code change.
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-export function geminiConfigured(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY);
+/**
+ * Resolve the Gemini API key. The admin-managed platform setting (Admin →
+ * Settings) wins so the key can be rotated without a redeploy; the
+ * GEMINI_API_KEY environment variable is the fallback. Stored as its own
+ * PlatformSetting row rather than inside getPlatformSettings() so the secret
+ * never rides along when pages pass the settings object around.
+ */
+export async function getGeminiKey(): Promise<string> {
+  try {
+    const row = await prisma.platformSetting.findUnique({
+      where: { key: "gemini_api_key" },
+      select: { value: true },
+    });
+    if (typeof row?.value === "string" && row.value.trim()) {
+      return row.value.trim();
+    }
+  } catch {
+    // DB hiccup — fall through to the environment key so the bot stays up.
+  }
+  return (process.env.GEMINI_API_KEY || "").trim();
+}
+
+export async function geminiConfigured(): Promise<boolean> {
+  return Boolean(await getGeminiKey());
+}
+
+/**
+ * Whether Shadi (شادي) should run at all: the admin toggle is on AND a Gemini
+ * key is available. Gates the site widget, the chat API, and the messaging
+ * channels alike.
+ */
+export async function assistantReady(): Promise<boolean> {
+  if (!(await getSetting("ai_assistant_enabled"))) return false;
+  return geminiConfigured();
 }
 
 /** Error carrying the upstream HTTP status so callers can react (e.g. 429). */
@@ -65,8 +100,8 @@ export async function generateContent(opts: {
   tools?: FunctionDeclaration[];
   signal?: AbortSignal;
 }): Promise<GenerateResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+  const apiKey = await getGeminiKey();
+  if (!apiKey) throw new Error("No Gemini API key configured");
 
   const body: Record<string, unknown> = {
     systemInstruction: { parts: [{ text: opts.system }] },

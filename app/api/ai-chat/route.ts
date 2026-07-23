@@ -4,7 +4,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { runAssistant, type ChatMessage } from "@/lib/ai/assistant";
 import { checkGlobalCaps } from "@/lib/ai/guards";
-import { geminiConfigured, GeminiError } from "@/lib/ai/gemini";
+import { assistantReady, GeminiError } from "@/lib/ai/gemini";
 import { rateLimitAsync } from "@/lib/rate-limit";
 import { routing } from "@/i18n/routing";
 
@@ -38,7 +38,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  if (!geminiConfigured()) {
+  if (!(await assistantReady())) {
     return NextResponse.json(
       { error: "assistant_unavailable" },
       { status: 503 },
