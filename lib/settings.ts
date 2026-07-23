@@ -180,6 +180,10 @@ export type PlatformSettings = {
   // Settings) — deliberately NOT part of this object, so the secret never
   // rides along when pages pass the settings around. lib/ai/gemini.ts reads it.
   ai_assistant_enabled: boolean;
+  // Shadi's face: the image shown on the chat launcher bubble and inside the
+  // widget. A public path or URL; admins change it from Admin → Settings
+  // (upload or reset). Empty falls back to the bundled default.
+  ai_assistant_avatar: string;
 };
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -248,6 +252,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   cod_wallet_pay_enabled: true,
   platform_wallet_email: "admin@hezalli.com",
   ai_assistant_enabled: true,
+  ai_assistant_avatar: "/shadi.jpg",
 };
 
 export const SETTING_KEYS = Object.keys(

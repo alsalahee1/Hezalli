@@ -273,10 +273,11 @@ export async function savePlatformSettings(
 
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
-  // values are preserved.
+  // values are preserved. ai_assistant_avatar is managed by its own action
+  // (saveAssistantAvatar) from the Shadi section of the settings page.
   const values: Omit<
     PlatformSettings,
-    "wallet_bills_provider" | "delivery_window_days"
+    "wallet_bills_provider" | "delivery_window_days" | "ai_assistant_avatar"
   > = {
     platform_name: (input.platform_name || "Hezalli").trim().slice(0, 80),
     platform_logo: (input.platform_logo || "").trim().slice(0, 500),
@@ -397,6 +398,47 @@ export async function saveAssistantKey(apiKey: string | null): Promise<Result> {
       entityId: "gemini_api_key",
       // Record that the key changed, never the key itself.
       meta: { set: Boolean(key) },
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/settings`);
+  revalidatePath(`/${locale}`, "layout");
+  return { ok: true };
+}
+
+// --- Shadi's avatar ---------------------------------------------------------
+// The image on the chat launcher bubble and inside the widget. Admins upload a
+// new one (via /api/upload) or reset to the bundled default.
+
+export async function saveAssistantAvatar(url: string | null): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+
+  // null / empty resets to the bundled default image: deleting the row lets
+  // getSetting() fall back to SETTING_DEFAULTS.ai_assistant_avatar.
+  const value = (url ?? "").trim().slice(0, 500);
+  if (value && !/^(\/|https?:\/\/)/.test(value)) return { error: "badAvatar" };
+
+  if (value) {
+    await prisma.platformSetting.upsert({
+      where: { key: "ai_assistant_avatar" },
+      create: { key: "ai_assistant_avatar", value },
+      update: { value },
+    });
+  } else {
+    await prisma.platformSetting.deleteMany({
+      where: { key: "ai_assistant_avatar" },
+    });
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.ai_avatar",
+      entity: "PlatformSetting",
+      entityId: "ai_assistant_avatar",
+      meta: { url: value },
     },
   });
 

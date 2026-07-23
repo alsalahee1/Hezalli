@@ -7,6 +7,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { getTheme } from "@/lib/theme";
+import { getSetting } from "@/lib/settings";
 import { assistantReady } from "@/lib/ai/gemini";
 import { AiAssistant } from "@/components/ai/ai-assistant";
 
@@ -55,6 +56,8 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   const dir = locale === "ar" ? "rtl" : "ltr";
   const theme = await getTheme();
+  const showShadi = await assistantReady();
+  const shadiAvatar = showShadi ? await getSetting("ai_assistant_avatar") : "";
 
   return (
     <html
@@ -70,7 +73,7 @@ export default async function LocaleLayout({
             not just the storefront — so shoppers, sellers, and drivers can all
             reach it. Hidden when the admin toggle is off or no Gemini key is
             configured (Admin → Settings, or the GEMINI_API_KEY env var). */}
-          {(await assistantReady()) ? <AiAssistant /> : null}
+          {showShadi ? <AiAssistant avatar={shadiAvatar} /> : null}
         </NextIntlClientProvider>
       </body>
     </html>
