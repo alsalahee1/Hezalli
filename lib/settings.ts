@@ -206,6 +206,19 @@ export type PlatformSettings = {
   // ai_assistant_enabled toggle still gates everything.
   ai_channel_telegram: boolean;
   ai_channel_whatsapp: boolean;
+  // ── Persona & behaviour (Admin → Shadi). ──
+  // The bot's editable "role": extra natural-language instructions appended to
+  // the built-in system prompt (personality, tone, dialect, rules, things it
+  // may/may not do). Empty = Shadi's default behaviour only.
+  ai_persona: string;
+  // Custom welcome line shown when the chat widget opens. Empty = the built-in
+  // per-language greeting.
+  ai_greeting: string;
+  // Model creativity, 0 (focused/factual) … 1 (creative). Default 0.3.
+  ai_temperature: number;
+  // Max length of one reply, in Gemini output tokens (~4 chars each).
+  // Default 1024.
+  ai_max_tokens: number;
 };
 
 /** The Shadi keys, managed on their own Admin → Shadi page (not the main
@@ -288,6 +301,10 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   ai_spend_cap_usd: 0,
   ai_channel_telegram: true,
   ai_channel_whatsapp: true,
+  ai_persona: "",
+  ai_greeting: "",
+  ai_temperature: 0.3,
+  ai_max_tokens: 1024,
 };
 
 export const SETTING_KEYS = Object.keys(

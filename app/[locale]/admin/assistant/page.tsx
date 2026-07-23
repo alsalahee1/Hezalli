@@ -79,6 +79,10 @@ export default async function AdminAssistantPage() {
           spendCapUsd: settings.ai_spend_cap_usd,
           telegramEnabled: settings.ai_channel_telegram,
           whatsappEnabled: settings.ai_channel_whatsapp,
+          persona: settings.ai_persona,
+          greeting: settings.ai_greeting,
+          temperature: settings.ai_temperature,
+          maxTokens: settings.ai_max_tokens,
           telegramSource: tgSource,
           telegramUsername:
             typeof tgUsernameRow?.value === "string" ? tgUsernameRow.value : "",

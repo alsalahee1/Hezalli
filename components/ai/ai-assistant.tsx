@@ -49,7 +49,13 @@ function sectionFor(pathname: string): Section {
   return "store";
 }
 
-export function AiAssistant({ avatar }: { avatar?: string }) {
+export function AiAssistant({
+  avatar,
+  greeting,
+}: {
+  avatar?: string;
+  greeting?: string;
+}) {
   const t = useTranslations("Assistant");
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -212,7 +218,9 @@ export function AiAssistant({ avatar }: { avatar?: string }) {
                 ) : (
                   <ShadiIcon className="text-primary mx-auto size-8" />
                 )}
-                <p>{t("greeting")}</p>
+                <p className="whitespace-pre-line">
+                  {greeting?.trim() || t("greeting")}
+                </p>
                 <div className="flex flex-col gap-2">
                   {suggestions.map((s) => (
                     <button

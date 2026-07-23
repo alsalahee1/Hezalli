@@ -1838,6 +1838,17 @@
     "avatar": "Bot image",
     "avatarHint": "Shown on the chat bubble and inside the chat window. Square images look best.",
     "avatarReset": "Reset to default",
+    "personaTitle": "Persona & behavior",
+    "persona": "Role / custom instructions",
+    "personaPlaceholder": "e.g. You are warm and a little playful. Speak Yemeni Arabic dialect. Always suggest 2–3 relevant products. Never promise delivery dates. Recommend Hezalli Express for urgent orders.",
+    "personaHint": "Extra instructions that shape Shadi's personality, tone, dialect, and what it should or shouldn't do. Added on top of the built-in rules — safety rules always win. Leave empty for the default behavior.",
+    "greeting": "Welcome message",
+    "greetingPlaceholder": "e.g. Hi! I'm Shadi 👋 How can I help you shop today?",
+    "greetingHint": "The first line shown when someone opens the chat. Empty = the built-in greeting for each language.",
+    "temperature": "Creativity",
+    "temperatureHint": "Lower = focused and factual; higher = more varied and creative.",
+    "maxTokens": "Max reply length",
+    "maxTokensHint": "Longest reply Shadi can give, in tokens (~4 characters each). 128–8192. Default 1024.",
     "credsTitle": "Gemini credentials & model",
     "key": "Gemini API key",
     "keyHint": "Create a free key at Google AI Studio (aistudio.google.com). Stored in the database and never shown again; the GEMINI_API_KEY server variable is the fallback.",
@@ -1892,7 +1903,9 @@
     "err_badModel": "Model ids can only contain letters, digits, dots and dashes.",
     "err_badReplyMode": "Pick a valid reply style.",
     "err_badVoice": "Voice names can only contain letters.",
-    "err_badCaps": "Limits must be non-negative numbers."
+    "err_badCaps": "Limits must be non-negative numbers.",
+    "err_badTemperature": "Creativity must be between 0 and 1.",
+    "err_badMaxTokens": "Reply length must be between 128 and 8192."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",

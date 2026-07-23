@@ -58,6 +58,7 @@ export default async function LocaleLayout({
   const theme = await getTheme();
   const showShadi = await assistantReady();
   const shadiAvatar = showShadi ? await getSetting("ai_assistant_avatar") : "";
+  const shadiGreeting = showShadi ? await getSetting("ai_greeting") : "";
 
   return (
     <html
@@ -73,7 +74,9 @@ export default async function LocaleLayout({
             not just the storefront — so shoppers, sellers, and drivers can all
             reach it. Hidden when the admin toggle is off or no Gemini key is
             configured (Admin → Settings, or the GEMINI_API_KEY env var). */}
-          {showShadi ? <AiAssistant avatar={shadiAvatar} /> : null}
+          {showShadi ? (
+            <AiAssistant avatar={shadiAvatar} greeting={shadiGreeting} />
+          ) : null}
         </NextIntlClientProvider>
       </body>
     </html>

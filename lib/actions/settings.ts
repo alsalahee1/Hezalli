@@ -423,6 +423,10 @@ export type AssistantSettingsInput = {
   spendCapUsd: number;
   telegramEnabled: boolean;
   whatsappEnabled: boolean;
+  persona: string;
+  greeting: string;
+  temperature: number;
+  maxTokens: number;
 };
 
 const REPLY_MODES = ["", "text", "voice", "both", "match"];
@@ -456,6 +460,17 @@ export async function saveAssistantSettings(
   if (!Number.isFinite(spendCap) || spendCap < 0 || spendCap > 1_000_000)
     return { error: "badCaps" };
 
+  // Persona/role + greeting are free text; temperature and reply length are
+  // clamped to the ranges Gemini accepts.
+  const persona = (input.persona || "").trim().slice(0, 4000);
+  const greeting = (input.greeting || "").trim().slice(0, 600);
+  const temperature = Number(input.temperature);
+  if (!Number.isFinite(temperature) || temperature < 0 || temperature > 1)
+    return { error: "badTemperature" };
+  const maxTokens = int(input.maxTokens);
+  if (!Number.isFinite(maxTokens) || maxTokens < 128 || maxTokens > 8192)
+    return { error: "badMaxTokens" };
+
   const values: Record<AiSettingKey, string | number | boolean> = {
     ai_assistant_enabled: Boolean(input.enabled),
     // Managed by its own action, but part of the AiSettingKey record type —
@@ -470,6 +485,10 @@ export async function saveAssistantSettings(
     ai_spend_cap_usd: spendCap,
     ai_channel_telegram: Boolean(input.telegramEnabled),
     ai_channel_whatsapp: Boolean(input.whatsappEnabled),
+    ai_persona: persona,
+    ai_greeting: greeting,
+    ai_temperature: Math.round(temperature * 100) / 100,
+    ai_max_tokens: maxTokens,
   };
   const keys = (Object.keys(values) as AiSettingKey[]).filter(
     (k) => k !== "ai_assistant_avatar",

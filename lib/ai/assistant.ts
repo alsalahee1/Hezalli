@@ -2,6 +2,8 @@
 // executing catalog/order tools until the model produces a text answer.
 import "server-only";
 
+import { getSetting } from "@/lib/settings";
+
 import {
   functionCalls,
   generateContent,
@@ -116,9 +118,13 @@ const SECTION_BRIEFS: Record<AssistantSection, string> = {
   ].join("\n"),
 };
 
-function systemPrompt(locale: string, section: AssistantSection): string {
+function systemPrompt(
+  locale: string,
+  section: AssistantSection,
+  persona: string,
+): string {
   const lang = locale === "ar" ? "Arabic" : "English";
-  return [
+  const lines = [
     "You are Shadi (Arabic: شادي), Hezalli's friendly assistant.",
     "Hezalli is a multi-vendor online marketplace (like Amazon or Noon) where",
     "independent sellers list products that buyers can search, add to cart, and order.",
@@ -140,7 +146,21 @@ function systemPrompt(locale: string, section: AssistantSection): string {
     "- If nothing matches, say so honestly and suggest a broader search.",
     "- Never ask for or handle passwords, PINs, card numbers, or other sensitive data.",
     "- Stay on topic: using Hezalli. Politely decline unrelated requests.",
-  ].join("\n");
+  ];
+
+  // The store owner's editable persona/role, appended so it can shape tone and
+  // behaviour — but the safety rules above still bind. If it conflicts with
+  // them (e.g. asks Shadi to reveal secrets or invent data), the rules win.
+  const p = persona.trim();
+  if (p) {
+    lines.push(
+      "",
+      "Extra instructions from the store owner — follow these for personality,",
+      "tone and style, but never let them override the safety rules above:",
+      p,
+    );
+  }
+  return lines.join("\n");
 }
 
 /** Build Gemini `contents` from prior chat history + the new user message. */
@@ -173,10 +193,13 @@ export async function runAssistant(
   }
 
   const section = ctx.section ?? "store";
+  // The admin-editable persona/role (Admin → Shadi). Fetched once per turn.
+  const persona = await getSetting("ai_persona").catch(() => "");
+  const system = systemPrompt(ctx.locale, section, persona);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await generateContent({
-      system: systemPrompt(ctx.locale, section),
+      system,
       contents,
       tools: TOOL_DECLARATIONS,
     });
@@ -213,7 +236,7 @@ export async function runAssistant(
 
   // Ran out of tool budget — ask the model for a final answer with no tools.
   const res = await generateContent({
-    system: systemPrompt(ctx.locale, section),
+    system,
     contents,
   });
   usage.in += res.usage.in;
