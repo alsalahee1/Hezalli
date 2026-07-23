@@ -1,16 +1,22 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import {
+  AlertTriangle,
   CalendarClock,
   Inbox,
   PackageCheck,
   RotateCcw,
+  ShoppingBag,
   Truck,
 } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
-import { getSetting } from "@/lib/settings";
+import { getPlatformSettings } from "@/lib/settings";
 import { maxDeliveryAttempts } from "@/lib/point-core";
+import { pointLedgerSummary } from "@/lib/point-ledger";
 import { prisma } from "@/lib/prisma";
+import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
+import { ParcelSearch } from "@/components/point/parcel-search";
 import { RtsButton } from "@/components/point/rts-button";
 
 // The point operator's dashboard: every routed parcel of an in-flight
@@ -20,8 +26,10 @@ export default async function PointDashboardPage() {
   if (!gate) return null;
   const t = await getTranslations("Point");
   const format = await getFormatter();
+  const money = (n: number) =>
+    format.number(n, { style: "currency", currency: "USD" });
 
-  const [parcels, maxAttempts, me, staleDays] = await Promise.all([
+  const [parcels, maxAttempts, me, settings, cash] = await Promise.all([
     prisma.shipment.findMany({
       where: {
         OR: [
@@ -63,10 +71,12 @@ export default async function PointDashboardPage() {
     maxDeliveryAttempts(),
     prisma.deliveryPoint.findUnique({
       where: { id: gate.pointId },
-      select: { capacity: true },
+      select: { capacity: true, depositUsd: true },
     }),
-    getSetting("stale_parcel_days"),
+    getPlatformSettings(),
+    pointLedgerSummary(gate.pointId),
   ]);
+  const staleDays = settings.stale_parcel_days;
 
   // Load vs capacity (held + inbound), same definition as lib/point-select.ts.
   const load = parcels.filter(
@@ -82,6 +92,26 @@ export default async function PointDashboardPage() {
   const ageDays = (d: Date) =>
     Math.floor((Date.now() - d.getTime()) / 86_400_000);
 
+  // COD credit control (lib/cod-guard.ts): the personal cash limit is the
+  // base setting + the hub's deposit. Over it, the hub silently stops
+  // receiving new routing and driver cash-ins — so say it out loud here,
+  // the same way the driver home does.
+  const cashLimit =
+    settings.point_cash_limit > 0
+      ? settings.point_cash_limit + Number(me?.depositUsd ?? 0)
+      : 0;
+  const cashBlocked = cashLimit > 0 && cash.cashOnHand > cashLimit;
+  const cashNearLimit =
+    !cashBlocked && cashLimit > 0 && cash.cashOnHand > 0.8 * cashLimit;
+
+  // Counter pickups waiting for the buyer get their own group with a
+  // days-left countdown against the pickup window (docs §20), so the
+  // operator can nudge or RTS before the expiry notification fires.
+  const isPickupWait = (p: (typeof parcels)[number]) =>
+    p.status === "AT_POINT" &&
+    p.atPointId === gate.pointId &&
+    p.subOrder.shippingMethod === "PICKUP";
+
   const groups = [
     {
       key: "LABEL_CREATED",
@@ -90,11 +120,20 @@ export default async function PointDashboardPage() {
       items: parcels.filter((p) => p.status === "LABEL_CREATED"),
     },
     {
+      key: "PICKUP_WAIT",
+      title: t("awaitingPickup"),
+      icon: ShoppingBag,
+      items: parcels.filter(isPickupWait),
+    },
+    {
       key: "AT_POINT",
       title: t("atPoint"),
       icon: PackageCheck,
       items: parcels.filter(
-        (p) => p.status === "AT_POINT" && p.atPointId === gate.pointId,
+        (p) =>
+          p.status === "AT_POINT" &&
+          p.atPointId === gate.pointId &&
+          !isPickupWait(p),
       ),
     },
     {
@@ -140,6 +179,41 @@ export default async function PointDashboardPage() {
         ) : null}
       </div>
 
+      {cashBlocked ? (
+        <Link
+          href="/point/ledger"
+          className="block rounded-xl border border-red-500/50 bg-red-500/10 p-4"
+        >
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700 dark:text-red-400">
+            <AlertTriangle className="size-4" /> {t("cashBlockedTitle")}
+          </p>
+          <p className="mt-1 text-sm">
+            {t("cashBlockedBody", {
+              amount: money(cash.cashOnHand),
+              limit: money(cashLimit),
+            })}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {t("cashBlockedHow")}
+          </p>
+        </Link>
+      ) : cashNearLimit ? (
+        <Link
+          href="/point/ledger"
+          className="block rounded-xl border border-amber-500/50 bg-amber-500/10 p-4"
+        >
+          <p className="flex items-center gap-1.5 text-sm font-medium text-amber-700 dark:text-amber-500">
+            <AlertTriangle className="size-4" />{" "}
+            {t("cashNearLimit", {
+              amount: money(cash.cashOnHand),
+              limit: money(cashLimit),
+            })}
+          </p>
+        </Link>
+      ) : null}
+
+      <ParcelSearch />
+
       {parcels.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-16 text-center text-sm">
           <PackageCheck className="mx-auto mb-2 size-8 opacity-50" />
@@ -157,78 +231,106 @@ export default async function PointDashboardPage() {
                 </span>
               </h2>
               <ul className="space-y-2">
-                {g.items.map((p) => (
-                  <li key={p.id} className="rounded-xl border p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium" dir="ltr">
-                        {p.trackingNumber}
-                      </span>
-                      {p.shelfCode && p.atPointId === gate.pointId ? (
-                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
-                          {t("shelfBadge", { code: p.shelfCode })}
-                        </span>
+                {g.items.map((p) => {
+                  const pickupDaysLeft =
+                    g.key === "PICKUP_WAIT"
+                      ? settings.pickup_window_days - ageDays(p.updatedAt)
+                      : null;
+                  return (
+                    <li key={p.id} className="rounded-xl border p-3">
+                      <Link href={`/point/parcel/${p.id}`} className="block">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium" dir="ltr">
+                            {p.trackingNumber}
+                          </span>
+                          {p.shelfCode && p.atPointId === gate.pointId ? (
+                            <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
+                              {t("shelfBadge", { code: p.shelfCode })}
+                            </span>
+                          ) : null}
+                          {p.originPointId &&
+                          p.originPointId !== p.deliveryPointId ? (
+                            <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-600">
+                              {t("transferBadge")}
+                            </span>
+                          ) : null}
+                          {p.subOrder.shippingMethod === "PICKUP" &&
+                          g.key !== "PICKUP_WAIT" ? (
+                            <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
+                              {t("pickupBadge")}
+                            </span>
+                          ) : null}
+                          {pickupDaysLeft != null ? (
+                            <span
+                              className={cn(
+                                "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                                pickupDaysLeft <= 0
+                                  ? "bg-red-500/15 text-red-600"
+                                  : pickupDaysLeft <= 2
+                                    ? "bg-amber-500/15 text-amber-600"
+                                    : "bg-muted",
+                              )}
+                            >
+                              {pickupDaysLeft <= 0
+                                ? t("pickupExpired")
+                                : t("pickupDaysLeft", {
+                                    days: pickupDaysLeft,
+                                  })}
+                            </span>
+                          ) : null}
+                          {ageDays(p.updatedAt) >= staleDays &&
+                          g.key !== "PICKUP_WAIT" ? (
+                            <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600">
+                              {t("staleBadge", { days: ageDays(p.updatedAt) })}
+                            </span>
+                          ) : null}
+                          {p.status === "FAILED" ? (
+                            <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-red-600">
+                              {t("failedBadge")}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-0.5 truncate text-sm">
+                          {p.subOrder.store.name} →{" "}
+                          {p.subOrder.order.address.fullName} ·{" "}
+                          {p.subOrder.order.address.city}
+                        </p>
+                        {p.driver ? (
+                          <p className="text-muted-foreground text-xs">
+                            {t("driver")}: {p.driver.name ?? p.driver.email}
+                          </p>
+                        ) : null}
+                        {p.attemptCount > 0 ? (
+                          <p className="text-muted-foreground text-xs">
+                            {t("attempts", {
+                              count: p.attemptCount,
+                              max: maxAttempts,
+                            })}
+                          </p>
+                        ) : null}
+                        {p.redeliverAt ? (
+                          <p className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-500">
+                            <CalendarClock className="size-3.5" />
+                            {t("redeliverOn", {
+                              date: format.dateTime(p.redeliverAt, {
+                                dateStyle: "medium",
+                              }),
+                            })}
+                            {p.redeliverNote ? ` — ${p.redeliverNote}` : null}
+                          </p>
+                        ) : null}
+                      </Link>
+                      {/* Attempt limit reached → offer the terminal RTS scan-less action. */}
+                      {p.status === "RETURNED_TO_POINT" &&
+                      p.attemptCount >= maxAttempts &&
+                      p.trackingNumber ? (
+                        <div className="mt-2">
+                          <RtsButton tracking={p.trackingNumber} />
+                        </div>
                       ) : null}
-                      {p.originPointId &&
-                      p.originPointId !== p.deliveryPointId ? (
-                        <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-600">
-                          {t("transferBadge")}
-                        </span>
-                      ) : null}
-                      {p.subOrder.shippingMethod === "PICKUP" ? (
-                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
-                          {t("pickupBadge")}
-                        </span>
-                      ) : null}
-                      {ageDays(p.updatedAt) >= staleDays ? (
-                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600">
-                          {t("staleBadge", { days: ageDays(p.updatedAt) })}
-                        </span>
-                      ) : null}
-                      {p.status === "FAILED" ? (
-                        <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-red-600">
-                          {t("failedBadge")}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-0.5 truncate text-sm">
-                      {p.subOrder.store.name} →{" "}
-                      {p.subOrder.order.address.fullName} ·{" "}
-                      {p.subOrder.order.address.city}
-                    </p>
-                    {p.driver ? (
-                      <p className="text-muted-foreground text-xs">
-                        {t("driver")}: {p.driver.name ?? p.driver.email}
-                      </p>
-                    ) : null}
-                    {p.attemptCount > 0 ? (
-                      <p className="text-muted-foreground text-xs">
-                        {t("attempts", {
-                          count: p.attemptCount,
-                          max: maxAttempts,
-                        })}
-                      </p>
-                    ) : null}
-                    {p.redeliverAt ? (
-                      <p className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-500">
-                        <CalendarClock className="size-3.5" />
-                        {t("redeliverOn", {
-                          date: format.dateTime(p.redeliverAt, {
-                            dateStyle: "medium",
-                          }),
-                        })}
-                        {p.redeliverNote ? ` — ${p.redeliverNote}` : null}
-                      </p>
-                    ) : null}
-                    {/* Attempt limit reached → offer the terminal RTS scan-less action. */}
-                    {p.status === "RETURNED_TO_POINT" &&
-                    p.attemptCount >= maxAttempts &&
-                    p.trackingNumber ? (
-                      <div className="mt-2">
-                        <RtsButton tracking={p.trackingNumber} />
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))

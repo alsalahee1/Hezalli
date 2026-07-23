@@ -81,7 +81,10 @@ export function NotificationBell({
     await markAllNotificationsRead();
   };
 
-  const seeAllHref = variant === "buyer" ? "/account/notifications" : undefined;
+  const seeAllHref =
+    variant === "buyer" || variant === "point"
+      ? "/account/notifications"
+      : undefined;
 
   return (
     <div className="relative">

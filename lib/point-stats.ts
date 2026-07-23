@@ -21,6 +21,64 @@ export type NetworkSummary = {
   perPoint: PointRow[]; // top hubs by delivered volume in range
 };
 
+export type HubSummary = {
+  delivered: number; // parcels routed via this hub delivered in range
+  pickups: number; // of which collected at the counter
+  rts: number; // returned-to-seller in range
+  feesUsd: number; // handling + transfer fees credited in range
+  successRatePct: number | null; // delivered / (delivered + rts)
+  pickupSharePct: number | null; // pickups / delivered
+};
+
+// One hub's slice of the network numbers — the operator-facing scoreboard
+// (the admin Reports page sees the same figures via networkSummary).
+export async function hubSummary(
+  pointId: string,
+  from: Date,
+  to: Date,
+): Promise<HubSummary> {
+  const [deliveredRows, rts, fees] = await Promise.all([
+    prisma.shipment.findMany({
+      where: {
+        deliveryPointId: pointId,
+        status: "DELIVERED",
+        deliveredAt: { gte: from, lt: to },
+      },
+      select: { subOrder: { select: { shippingMethod: true } } },
+    }),
+    prisma.shipmentEvent.count({
+      where: {
+        status: "RETURNED",
+        createdAt: { gte: from, lt: to },
+        shipment: { deliveryPointId: pointId },
+      },
+    }),
+    prisma.deliveryPointLedgerEntry.aggregate({
+      where: {
+        pointId,
+        type: "HANDLING_FEE",
+        createdAt: { gte: from, lt: to },
+      },
+      _sum: { amountUsd: true },
+    }),
+  ]);
+  const delivered = deliveredRows.length;
+  const pickups = deliveredRows.filter(
+    (d) => d.subOrder.shippingMethod === "PICKUP",
+  ).length;
+  const terminal = delivered + rts;
+  return {
+    delivered,
+    pickups,
+    rts,
+    feesUsd: Math.round(Number(fees._sum.amountUsd ?? 0) * 100) / 100,
+    successRatePct:
+      terminal > 0 ? Math.round((delivered / terminal) * 1000) / 10 : null,
+    pickupSharePct:
+      delivered > 0 ? Math.round((pickups / delivered) * 1000) / 10 : null,
+  };
+}
+
 export async function networkSummary(
   from: Date,
   to: Date,

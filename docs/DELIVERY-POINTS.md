@@ -812,6 +812,55 @@ InPost): a free-text shelf/bin label stamped at the receive scan.
 - [x] i18n (en + ar) + integration tests (stamp→manifest→clear, re-shelve, pickup shows & clears, failed-return re-stamp)
 - [x] This file kept current
 
-## 42. Out of scope
+## 42. v1.24 — Operator app completeness
+
+The backend outgrew the operator's app: hubs had four screens while drivers
+had nine, and several things the platform already enforced (the cash limit,
+the pickup window, sweep notifications) were invisible at the counter. This
+pass closes the gap — UI + read paths only, no new money flows:
+
+1. **History** (`/point/history`): parcels that finished their journey
+   through the hub (DELIVERED / RETURNED, either end of a two-hop), with the
+   fee each booked on this hub's ledger. The dashboard only shows in-flight
+   parcels, and the scan trail is the custody evidence (§4) — operators need
+   to look back.
+2. **Parcel search & detail** (`/point/parcel/[code]`): resolve a tracking
+   number or shipment id (scoped to parcels involving this hub) to a detail
+   page — route, badges, delivery attempts, and the full scan-event
+   timeline. Dashboard and history rows link to it; a search box sits on
+   both pages.
+3. **Cash-limit banner**: the dashboard now shows the driver-style red
+   "new parcels paused" banner when held cash exceeds
+   `point_cash_limit + deposit`, and an amber warning from 80% — instead of
+   the operator discovering the block when a cash-in fails.
+4. **Pickup countdown**: counter-pickup parcels get their own dashboard
+   group with a days-left chip against `pickup_window_days` (amber ≤ 2 days,
+   red when expired) so the operator can act before the sweep does.
+5. **Hub stats** (`/point/stats`): month-navigated scoreboard (delivered,
+   counter pickups, RTS, fees, success rate, pickup share) + all-time
+   totals, via `hubSummary()` in `lib/point-stats.ts` — the hub's slice of
+   the admin Reports numbers.
+6. **Notifications bell**: the point shell header gains the shared
+   `NotificationBell` (new `point` variant routes shipment-id notices to the
+   parcel detail page) — sweep alerts were previously unreachable from the
+   app.
+7. **How it works** (`/point/how`): the operator guide every other role
+   already had, using the shared how-blocks.
+8. **My hub** (`/point/profile`): read-only card of the public directory
+   details, capacity, deposit, and the cash-limit breakdown.
+9. **Tab bar**: History joins the primary tabs; Stats, Statement, My hub,
+   and Guide live in the More sheet.
+
+### Build checklist (v1.24)
+
+- [x] `/point/history` + fee-per-parcel join; `/point/parcel/[code]` detail with events + attempts; `ParcelSearch` box
+- [x] Dashboard: cash-limit banner (red/amber), pickup-wait group with window countdown, rows link to detail
+- [x] `lib/point-stats.ts`: `hubSummary(pointId, from, to)`; `/point/stats` page with month nav
+- [x] `NotificationBell` `point` variant + bell in the point layout header
+- [x] `/point/how` + `/point/profile`; tab bar More sheet
+- [x] i18n (en + ar)
+- [x] This file kept current
+
+## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

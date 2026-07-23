@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, Link } from "@/i18n/navigation";
 import { Forbidden } from "@/components/auth/forbidden";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { PointTabBar } from "@/components/point/point-tab-bar";
 
 // Scope the installable-app metadata to the point section only (same pattern
@@ -84,6 +85,9 @@ export default async function PointLayout({
           >
             <Wallet className="size-5" />
           </Link>
+          {/* Sweep alerts (stale parcel, pickup expiry) land here — without
+              the bell the operator would never see them inside this shell. */}
+          <NotificationBell variant="point" />
           <Link
             href="/point/scan"
             className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
