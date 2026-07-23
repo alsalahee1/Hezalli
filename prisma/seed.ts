@@ -708,11 +708,16 @@ async function main() {
       { key: "courier_assign_strategy", value: "balanced" },
     ],
   });
+  // Launch placeholders — admins manage live rates from the settings page.
+  // YER differs by currency zone (old rial around Sana'a vs. the floating
+  // rial around Aden); DEFAULT is the fallback when the zone is unknown.
   await prisma.exchangeRate.createMany({
     data: [
-      { currency: "YER", rate: 530 },
-      { currency: "SAR", rate: 3.75 },
-      { currency: "AED", rate: 3.67 },
+      { currency: "YER", zone: "DEFAULT", rate: 1650 },
+      { currency: "YER", zone: "NORTH", rate: 530 },
+      { currency: "YER", zone: "SOUTH", rate: 1650 },
+      { currency: "SAR", zone: "DEFAULT", rate: 3.75 },
+      { currency: "AED", zone: "DEFAULT", rate: 3.67 },
     ],
   });
 

@@ -7,7 +7,8 @@ import { notifyBot } from "@/lib/integrations/bot-notify";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
-import { autoAssignShipment } from "@/lib/courier-assign";
+import { subOrderMetric } from "@/lib/courier-capacity";
+import { dispatchShippedParcel } from "@/lib/job-board";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { checkPointRoutable } from "@/lib/point-select";
 import { prisma } from "@/lib/prisma";
@@ -119,6 +120,13 @@ export async function shipSubOrder(
   }
   if (wantedPointId) {
     if (!carrier.platformManaged) return { error: "pointNotAllowed" };
+    // Freight (xlarge/oversized items) is direct-only — a point is a corner
+    // shop with shelves, not a freight terminal. Buyer-committed PICKUP
+    // destinations are exempt (checkout already refuses freight pickup).
+    if (sub.shippingMethod !== "PICKUP") {
+      const metrics = await subOrderMetric(sub.id);
+      if (metrics.freight) return { error: "freightDirect" };
+    }
     // A buyer-chosen pickup point stays routable even if points were later
     // switched off platform-wide — the buyer already paid for that option.
     if (
@@ -244,17 +252,15 @@ export async function shipSubOrder(
     });
   });
 
-  // Hand platform-managed (Hezalli Express) parcels to the least-loaded courier
-  // automatically, when enabled. Best-effort: never blocks the ship action.
-  // Point-routed parcels wait — assignment happens when the point receives
-  // them (lib/point-core.ts).
+  // Hand platform-managed (Hezalli Express) parcels to a courier — the open
+  // job board or an auto-assign push offer, per platform settings. Best-effort:
+  // never blocks the ship action. Point-routed parcels wait — dispatch happens
+  // when the point receives them (lib/point-core.ts).
   if (carrier.platformManaged && shipmentId && !pointId) {
-    if (await getSetting("express_auto_assign")) {
-      try {
-        await autoAssignShipment(shipmentId);
-      } catch {
-        // Auto-assign is a convenience; ops can still assign from dispatch.
-      }
+    try {
+      await dispatchShippedParcel(shipmentId);
+    } catch {
+      // Dispatch is a convenience; ops can still assign from dispatch.
     }
   }
 

@@ -5,7 +5,7 @@
 //
 // Callers (lib/actions/point.ts) are responsible for authorization; pointId
 // here is always the *authenticated* operator's point.
-import { autoAssignShipment } from "@/lib/courier-assign";
+import { dispatchShippedParcel } from "@/lib/job-board";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { settleReturnedSubOrder } from "@/lib/return-core";
@@ -13,7 +13,12 @@ import { sendPushToUser } from "@/lib/push";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
 
-type Result = { ok?: boolean; error?: string };
+type Result = { ok?: boolean; error?: string; reshelved?: boolean };
+
+// The operator's own shelf labels are free text — just trim and cap.
+function cleanShelf(shelf?: string | null): string | null {
+  return shelf?.trim().slice(0, 20) || null;
+}
 
 // Resolve a scanned parcel: a platform-managed shipment routed through this
 // point, by tracking token. Selects everything the transitions below need.
@@ -36,6 +41,7 @@ async function findParcel(pointId: string, tracking: string) {
       redeliverAt: true,
       deliveryPointId: true,
       originPointId: true,
+      atPointId: true,
       deliveryPoint: { select: { name: true } },
       subOrder: {
         select: {
@@ -84,10 +90,27 @@ function buyerNotice(
 export async function receiveParcelAtPoint(
   pointId: string,
   tracking: string,
+  shelf?: string,
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
+  const shelfCode = cleanShelf(shelf);
+  // Re-shelve: a receive scan of a parcel this hub already holds, with a shelf
+  // entered, just moves the label — no custody change, no events.
+  if (
+    shelfCode &&
+    parcel.atPointId === pointId &&
+    (parcel.status === "AT_POINT" || parcel.status === "RETURNED_TO_POINT")
+  ) {
+    const moved = await prisma.shipment.updateMany({
+      where: { id: parcel.id, atPointId: pointId },
+      data: { shelfCode },
+    });
+    return moved.count === 1
+      ? { ok: true, reshelved: true }
+      : { error: "badState" };
+  }
   // Which hop is this? Origin receives the seller drop-off (LABEL_CREATED);
   // the destination receives either the drop-off (single-hop) or the
   // line-haul arrival (IN_TRANSIT with an origin leg).
@@ -105,6 +128,7 @@ export async function receiveParcelAtPoint(
     data: {
       status: "AT_POINT",
       atPointId: pointId,
+      shelfCode,
       ...(isOriginHop ? {} : { driverId: null }),
     },
   });
@@ -185,11 +209,12 @@ export async function receiveParcelAtPoint(
     }),
   ]);
 
-  // Hand it to a courier now, when auto-assign is on. Best-effort. Never for
-  // pickup parcels — the buyer is the last mile.
-  if (!isPickup && (await getSetting("express_auto_assign"))) {
+  // Hand it to a courier now — the open job board or an auto-assign push
+  // offer, per platform settings. Best-effort. Never for pickup parcels — the
+  // buyer is the last mile.
+  if (!isPickup) {
     try {
-      await autoAssignShipment(parcel.id);
+      await dispatchShippedParcel(parcel.id);
     } catch {
       // Ops/point staff can still assign at handover.
     }
@@ -251,6 +276,7 @@ export async function handoverParcelToDriver(
       status: isOriginHop ? "IN_TRANSIT" : "OUT_FOR_DELIVERY",
       driverId: assignee,
       atPointId: null,
+      shelfCode: null,
       // The parcel is now actually going back out — consume any pending
       // redelivery request so it no longer blocks a later RTS and the buyer's
       // "rebooked" flag reflects reality.
@@ -335,6 +361,7 @@ export async function receiveReturnAtPoint(
   pointId: string,
   tracking: string,
   note?: string,
+  shelf?: string,
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
@@ -345,7 +372,11 @@ export async function receiveReturnAtPoint(
 
   const claimed = await prisma.shipment.updateMany({
     where: { id: parcel.id, status: "FAILED" },
-    data: { status: "RETURNED_TO_POINT", atPointId: pointId },
+    data: {
+      status: "RETURNED_TO_POINT",
+      atPointId: pointId,
+      shelfCode: cleanShelf(shelf),
+    },
   });
   if (claimed.count !== 1) return { error: "badState" };
 
@@ -409,7 +440,7 @@ export async function returnParcelToSeller(
 
   const claimed = await prisma.shipment.updateMany({
     where: { id: parcel.id, status: { in: rtsFrom as never } },
-    data: { status: "RETURNED", atPointId: null },
+    data: { status: "RETURNED", atPointId: null, shelfCode: null },
   });
   if (claimed.count !== 1) return { error: "badState" };
 
@@ -464,7 +495,12 @@ export async function buyerPickupAtPoint(
   pointId: string,
   code: string,
   locale: string,
-): Promise<{ ok?: boolean; error?: string; codDue?: number }> {
+): Promise<{
+  ok?: boolean;
+  error?: string;
+  codDue?: number;
+  shelf?: string | null;
+}> {
   const c = code.trim().toUpperCase();
   if (!c) return { error: "notFound" };
 
@@ -478,6 +514,7 @@ export async function buyerPickupAtPoint(
     },
     select: {
       id: true,
+      shelfCode: true,
       subOrder: {
         select: {
           id: true,
@@ -516,7 +553,8 @@ export async function buyerPickupAtPoint(
     pickupPointId: pointId,
   });
   if (res.error) return res;
-  return { ok: true, codDue };
+  // Where to grab the parcel from — the counter reads this off the scan result.
+  return { ok: true, codDue, shelf: shipment.shelfCode };
 }
 
 // ---------------------------------------------------------------------------
@@ -529,6 +567,7 @@ export type ManifestRow = {
   trackingNumber: string;
   city: string | null;
   isCod: boolean;
+  shelf: string | null;
 };
 
 /**
@@ -556,6 +595,7 @@ export async function driverManifestAtPoint(
       trackingNumber: true,
       deliveryPointId: true,
       originPointId: true,
+      shelfCode: true,
       subOrder: {
         select: {
           shippingMethod: true,
@@ -582,6 +622,7 @@ export async function driverManifestAtPoint(
       trackingNumber: r.trackingNumber!,
       city: r.subOrder.order.address?.city ?? null,
       isCod: r.subOrder.order.paymentMethod === "COD",
+      shelf: r.shelfCode,
     }));
 }
 

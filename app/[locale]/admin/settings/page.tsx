@@ -1,18 +1,42 @@
 import { getTranslations } from "next-intl/server";
 
 import { getAnnouncement } from "@/lib/actions/announcement";
+import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { AnnouncementEditor } from "@/components/admin/announcement-editor";
+import {
+  ExchangeRatesForm,
+  type RateRow,
+} from "@/components/admin/exchange-rates-form";
 import { PlatformSettingsForm } from "@/components/admin/platform-settings-form";
+
+// Every rate an admin manages; YER varies by currency zone (DECISIONS.md §3).
+const MANAGED_RATES: Array<Pick<RateRow, "currency" | "zone">> = [
+  { currency: "YER", zone: "NORTH" },
+  { currency: "YER", zone: "SOUTH" },
+  { currency: "YER", zone: "DEFAULT" },
+  { currency: "SAR", zone: "DEFAULT" },
+  { currency: "AED", zone: "DEFAULT" },
+];
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
   const t = await getTranslations("AdminSettings");
-  const [announcement, settings] = await Promise.all([
+  const [announcement, settings, rateRows] = await Promise.all([
     getAnnouncement(),
     getPlatformSettings(),
+    prisma.exchangeRate.findMany({
+      select: { currency: true, zone: true, rate: true },
+    }),
   ]);
+  const rates: RateRow[] = MANAGED_RATES.map((m) => ({
+    ...m,
+    rate: Number(
+      rateRows.find((r) => r.currency === m.currency && r.zone === m.zone)
+        ?.rate ?? 0,
+    ),
+  }));
 
   return (
     <div className="space-y-6">
@@ -21,6 +45,7 @@ export default async function AdminSettingsPage() {
         <p className="text-muted-foreground text-sm">{t("desc")}</p>
       </div>
       <PlatformSettingsForm current={settings} />
+      <ExchangeRatesForm current={rates} />
       <AnnouncementEditor current={announcement} />
     </div>
   );

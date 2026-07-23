@@ -170,6 +170,9 @@ describe("reviewCourierApplication", () => {
       where: { id: applicantId },
     });
     expect(u.roles).toContain("COURIER");
+    // The approved vehicle is copied to the account for capacity-aware
+    // assignment (lib/courier-capacity.ts).
+    expect(u.courierVehicleType).toBe("motorbike");
 
     // Audit trail written.
     const audit = await prisma.auditLog.findFirst({

@@ -21,6 +21,32 @@ export type VariantInput = {
   stock: number;
 };
 
+// Package size in cm, stored as Product.dimensions `{ l, w, h }`. Optional —
+// with weight, it lets dispatch match parcels to delivery-vehicle capacity.
+export type DimensionsCmInput = { l: number; w: number; h: number };
+
+// Standard package sizes — the seller-friendly way to describe an item
+// without a ruler. Each class maps to representative weight/dimensions in
+// lib/courier-capacity.ts (SIZE_CLASS_PROFILES); exact fields override it.
+// "xlarge"/"oversized" are freight: direct-only, appointment-required
+// (docs/EXPRESS-DELIVERY.md §4). Labels live under `SellerProducts.size_*`.
+export const SIZE_CLASSES = [
+  "envelope",
+  "small",
+  "medium",
+  "large",
+  "xlarge",
+  "oversized",
+] as const;
+export type SizeClass = (typeof SIZE_CLASSES)[number];
+
+// Freight classes ship direct (never via a Hezalli Point) and require a
+// delivery appointment; "oversized" additionally never auto-assigns. Lives
+// here (client-safe) so checkout UI can apply the rules too.
+export function isFreightClass(sizeClass: string | null | undefined): boolean {
+  return sizeClass === "xlarge" || sizeClass === "oversized";
+}
+
 export type ProductInput = {
   id?: string;
   titleEn: string;
@@ -31,7 +57,9 @@ export type ProductInput = {
   brandId: string;
   condition: Condition;
   lowStockThreshold: number;
+  sizeClass?: SizeClass | null;
   weightGrams?: number | null;
+  dimensionsCm?: DimensionsCmInput | null;
   images: ProductImageInput[];
   variants: VariantInput[];
   intent: "draft" | "publish";
@@ -47,8 +75,28 @@ export const productScalarsSchema = z.object({
   brandId: z.string().trim(),
   condition: z.enum(CONDITIONS),
   lowStockThreshold: z.coerce.number().int().min(0).max(100000),
+  sizeClass: z.union([z.enum(SIZE_CLASSES), z.null()]).optional(),
   weightGrams: z.union([
     z.coerce.number().int().min(0).max(5_000_000),
     z.null(),
   ]),
+  dimensionsCm: z
+    .union([
+      z.object({
+        l: z.coerce
+          .number()
+          .min(1, "dimensionsInvalid")
+          .max(1000, "dimensionsInvalid"),
+        w: z.coerce
+          .number()
+          .min(1, "dimensionsInvalid")
+          .max(1000, "dimensionsInvalid"),
+        h: z.coerce
+          .number()
+          .min(1, "dimensionsInvalid")
+          .max(1000, "dimensionsInvalid"),
+      }),
+      z.null(),
+    ])
+    .optional(),
 });

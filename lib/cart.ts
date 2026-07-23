@@ -23,6 +23,8 @@ export async function resolveCartLines(
         select: {
           slug: true,
           title: true,
+          sizeClass: true,
+          category: { select: { defaultSizeClass: true } },
           images: {
             orderBy: { position: "asc" },
             take: 1,
@@ -53,6 +55,7 @@ export async function resolveCartLines(
         v.compareAtPrice == null ? null : Number(v.compareAtPrice),
       stock: v.stock,
       quantity: Math.max(1, it.quantity),
+      sizeClass: v.product.sizeClass ?? v.product.category.defaultSizeClass,
     });
   }
   return lines;

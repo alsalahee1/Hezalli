@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getRequestDisplayCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { toCardItem } from "@/lib/products";
 
@@ -33,11 +34,12 @@ export async function GET(req: NextRequest) {
     },
   });
 
+  const display = await getRequestDisplayCurrency();
   const bySlug = new Map(products.map((p) => [p.slug, p]));
   const items = slugs
     .map((s) => bySlug.get(s))
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
-    .map((p) => toCardItem(p, locale));
+    .map((p) => toCardItem(p, locale, display));
 
   return NextResponse.json({ items });
 }

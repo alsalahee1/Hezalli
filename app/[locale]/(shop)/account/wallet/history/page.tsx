@@ -4,6 +4,8 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { Link } from "@/i18n/navigation";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import { abs } from "@/lib/seo";
 import { getSetting } from "@/lib/settings";
 import { getWalletView } from "@/lib/wallet";
@@ -43,8 +45,10 @@ export default async function WalletHistoryPage() {
     getWalletView(userId, 200),
     getSetting("wallet_p2p_enabled"),
   ]);
-  const money = (n: number) =>
-    format.number(n, { style: "currency", currency: "USD" });
+  // Ledger entries are USD of record, rendered in the display currency at
+  // today's rate — same rate for every row, so the list stays coherent.
+  const display = await getRequestDisplayCurrency();
+  const money = (n: number) => formatMoney(n, display, locale);
 
   const myPayUrl = abs(locale, `/pay/u/${userId}`);
 

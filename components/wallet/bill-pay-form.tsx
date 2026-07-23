@@ -9,6 +9,10 @@ import { payBill } from "@/lib/actions/wallet-bills";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
+import {
+  useDisplayCurrency,
+  useMoney,
+} from "@/components/currency/currency-provider";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { WalletAuthField } from "@/components/wallet/wallet-auth-field";
@@ -125,6 +129,8 @@ export function BillPayForm({
   const t = useTranslations("Wallet");
   const locale = useLocale();
   const router = useRouter();
+  const fmt = useMoney();
+  const display = useDisplayCurrency();
   const [selected, setSelected] = useState<BillerOption | null>(null);
   const [account, setAccount] = useState("");
   const [amount, setAmount] = useState("");
@@ -212,6 +218,11 @@ export function BillPayForm({
               placeholder={t("amount")}
               dir="ltr"
             />
+            {display.code !== "USD" && Number(amount) > 0 ? (
+              <p className="text-muted-foreground text-xs" dir="ltr">
+                ≈ {fmt(Number(amount))}
+              </p>
+            ) : null}
             {presets.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {presets.map((n) => (

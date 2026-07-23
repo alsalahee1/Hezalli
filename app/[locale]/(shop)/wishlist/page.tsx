@@ -3,7 +3,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
-import { formatUsd } from "@/lib/products";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 import {
   WishlistGrid,
@@ -13,6 +14,7 @@ import {
 export default async function WishlistPage() {
   const session = await auth();
   const locale = await getLocale();
+  const display = await getRequestDisplayCurrency();
   if (!session?.user?.id) {
     redirect(`/${locale}/login?callbackUrl=/${locale}/wishlist`);
   }
@@ -30,6 +32,8 @@ export default async function WishlistPage() {
           id: true,
           slug: true,
           title: true,
+          sizeClass: true,
+          category: { select: { defaultSizeClass: true } },
           images: {
             orderBy: { position: "asc" },
             take: 1,
@@ -82,6 +86,7 @@ export default async function WishlistPage() {
               : null,
           stock: cheapestInStock.stock,
           quantity: 1,
+          sizeClass: p.sizeClass ?? p.category.defaultSizeClass,
         }
       : null;
 
@@ -90,10 +95,10 @@ export default async function WishlistPage() {
       slug: p.slug,
       title: localizedName(p.title, locale),
       image: p.images[0]?.url ?? null,
-      priceLabel: formatUsd(priceValue, locale),
+      priceLabel: formatMoney(priceValue, display, locale),
       compareAtLabel:
         compareAt != null && compareAt > priceValue
-          ? formatUsd(compareAt, locale)
+          ? formatMoney(compareAt, display, locale)
           : null,
       inStock,
       addLine,

@@ -141,9 +141,35 @@ describe("courier reliability", () => {
       where: { id: busy },
       data: { driverId: solidId },
     });
+    // Send solid's active job to a different governorate: otherwise the
+    // same-destination batching preference (lib/courier-assign.ts) would pull
+    // every new parcel onto solid's trip and mask the load ranking that the
+    // sample-floor test below wants to observe.
+    const elsewhere = await prisma.address.create({
+      data: {
+        userId: fx.buyerId,
+        fullName: "Test Buyer",
+        phone: "770000001",
+        governorate: `RelElse-${Date.now().toString(36)}`,
+        city: "Elsewhere",
+        line1: "Street 2",
+      },
+    });
+    await prisma.order.updateMany({
+      where: { subOrders: { some: { shipment: { id: busy } } } },
+      data: { addressId: elsewhere.id },
+    });
 
     const p = await shippedParcel();
     expect(await autoAssignShipment(p)).toBe(solidId);
+    // Unassign so only `busy` (headed elsewhere) loads solid for the next
+    // test — this parcel shares the new parcel's governorate, and leaving it
+    // would hand solid a same-destination batching win there.
+    await prisma.shipment.update({
+      where: { id: p },
+      data: { driverId: null },
+    });
+    await prisma.shipmentOffer.deleteMany({ where: { shipmentId: p } });
     await setSetting("driver_min_acceptance_rate", 0);
   });
 

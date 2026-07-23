@@ -48,6 +48,14 @@ Implications that ripple through the build:
   exchange rate used, and the resulting local amount, so the amount a courier
   collects (for COD) or a buyer transfers is **fixed at order time** even if
   rates move afterward.
+- The Yemeni rial circulates at **two very different values** — the old rial
+  in the Sana'a-area governorates and the floating (new) rial in the
+  Aden-area governorates — so YER rates are managed per **currency zone**
+  (`NORTH` / `SOUTH`, mapped from the governorate in
+  `lib/currency-constants.ts`), with a `DEFAULT` fallback row. Browsing uses
+  the buyer's default-address zone; the checkout snapshot uses the **delivery
+  address** zone, so a COD courier always collects the amount shown at
+  checkout.
 
 ## 4. Payment methods for launch
 

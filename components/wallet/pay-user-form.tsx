@@ -7,6 +7,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { payUser } from "@/lib/actions/wallet-p2p";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
+import {
+  useDisplayCurrency,
+  useMoney,
+} from "@/components/currency/currency-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WalletAuthField } from "@/components/wallet/wallet-auth-field";
@@ -29,6 +33,8 @@ export function PayUserForm({
   const t = useTranslations("Wallet");
   const locale = useLocale();
   const router = useRouter();
+  const fmt = useMoney();
+  const display = useDisplayCurrency();
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
@@ -85,6 +91,11 @@ export function PayUserForm({
         placeholder={t("payAmount", { balance: formatUsd(balance, locale) })}
         dir="ltr"
       />
+      {display.code !== "USD" && Number(amount) > 0 ? (
+        <p className="text-muted-foreground text-xs" dir="ltr">
+          ≈ {fmt(Number(amount))}
+        </p>
+      ) : null}
       <Input
         value={note}
         onChange={(e) => setNote(e.target.value)}

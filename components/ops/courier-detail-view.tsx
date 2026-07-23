@@ -3,6 +3,11 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
 import { courierCodStatus } from "@/lib/cod-guard";
+import {
+  capacityFor,
+  effectiveVehicleCapacity,
+  subOrderMetrics,
+} from "@/lib/courier-capacity";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { courierRating } from "@/lib/courier-ratings";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +16,7 @@ import { Link } from "@/i18n/navigation";
 import { CourierRemittanceForm } from "@/components/admin/courier-remittance-form";
 import { CourierPayoutForm } from "@/components/admin/courier-payout-form";
 import { CourierOffsetForm } from "@/components/admin/courier-offset-form";
+import { CourierVehicleForm } from "@/components/admin/courier-vehicle-form";
 import { DepositForm } from "@/components/admin/deposit-form";
 
 // Per-courier COD reconciliation: headline cash-on-hand + earnings, a record-a-
@@ -33,12 +39,13 @@ export async function CourierDetailView({
       id: true,
       name: true,
       email: true,
+      courierVehicleType: true,
       fleet: { select: { id: true, name: true } },
     },
   });
   if (!courier) notFound();
 
-  const [summary, rating, cod, entries] = await Promise.all([
+  const [summary, rating, cod, entries, activeParcels] = await Promise.all([
     courierCashSummary(courierId),
     courierRating(courierId),
     courierCodStatus(courierId),
@@ -55,10 +62,30 @@ export async function CourierDetailView({
         createdAt: true,
       },
     }),
+    prisma.shipment.findMany({
+      where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
+      select: { subOrderId: true },
+    }),
   ]);
+
+  // What the driver is carrying right now, in the same terms auto-assignment
+  // uses to decide whether they can take more (lib/courier-capacity.ts).
+  const parcelMetrics = await subOrderMetrics(
+    activeParcels.map((s) => s.subOrderId),
+  );
+  const loadWeightGrams = [...parcelMetrics.values()].reduce(
+    (a, b) => a + b.weightGrams,
+    0,
+  );
+  const capacity = capacityFor(
+    courier.courierVehicleType,
+    await effectiveVehicleCapacity(),
+  );
 
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
+  const kg = (grams: number) =>
+    format.number(grams / 1000, { maximumFractionDigits: 1 });
 
   const stats: { key: string; value: number; accent?: boolean }[] = [
     { key: "cashOnHand", value: summary.cashOnHand, accent: true },
@@ -162,6 +189,32 @@ export async function CourierDetailView({
               />
             </div>
           ) : null}
+        </section>
+
+        {/* Vehicle & carrying capacity (lib/courier-capacity.ts) */}
+        <section className="rounded-xl border p-4 md:col-span-2">
+          <h2 className="mb-1 text-sm font-semibold">{t("vehicleTitle")}</h2>
+          <p className="text-muted-foreground mb-3 text-xs">
+            {t("vehicleHint")}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <CourierVehicleForm
+              courierId={courier.id}
+              vehicleType={courier.courierVehicleType}
+            />
+            <p className="text-muted-foreground text-xs">
+              {t("loadNow", {
+                count: activeParcels.length,
+                kg: kg(loadWeightGrams),
+              })}
+              {capacity
+                ? ` · ${t("capacityLimits", {
+                    maxKg: kg(capacity.maxWeightGrams),
+                    maxParcels: capacity.maxParcels,
+                  })}`
+                : ""}
+            </p>
+          </div>
         </section>
 
         {/* Security deposit & personal COD credit limit (docs §32) */}

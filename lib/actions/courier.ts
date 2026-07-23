@@ -4,7 +4,16 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
+import { codBlockedCourierIds } from "@/lib/cod-guard";
 import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
+import {
+  effectiveVehicleCapacity,
+  hasRoomFor,
+  subOrderMetric,
+  subOrderMetrics,
+  VEHICLE_CAPACITY_SETTING_KEY,
+} from "@/lib/courier-capacity";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { notifyBot } from "@/lib/integrations/bot-notify";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +21,7 @@ import { sendPushToUser } from "@/lib/push";
 import { settleReturnedSubOrder } from "@/lib/return-core";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
+import { VEHICLE_TYPES } from "@/lib/validations/courier";
 import { nearestGovernorate } from "@/lib/yemen-geo";
 
 type Result = { ok?: boolean; error?: string };
@@ -120,6 +130,134 @@ export async function assignCourier(
 
   revalidatePath(`/${locale}/admin/dispatch`);
   revalidatePath(`/${locale}/driver`);
+  return { ok: true };
+}
+
+// Ops sets (or clears) the vehicle a courier drives, which controls how much
+// weight and how many parcels auto-assignment will hand them
+// (lib/courier-capacity.ts). Normally copied from the approved application;
+// this covers vehicle changes and couriers who were granted the role without
+// one. Audited, since it changes who receives work.
+export async function setCourierVehicle(
+  courierId: string,
+  vehicleType: string,
+): Promise<Result> {
+  const adminId = await requireDeliveryManagerId();
+  if (!adminId) return { error: "forbidden" };
+
+  const vehicle = vehicleType.trim();
+  if (vehicle && !(VEHICLE_TYPES as readonly string[]).includes(vehicle)) {
+    return { error: "badVehicle" };
+  }
+
+  const courier = await prisma.user.findFirst({
+    where: { id: courierId, roles: { has: "COURIER" }, deletedAt: null },
+    select: { id: true, courierVehicleType: true },
+  });
+  if (!courier) return { error: "notFound" };
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: courier.id },
+      data: { courierVehicleType: vehicle || null },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "courier.vehicle",
+        entity: "User",
+        entityId: courier.id,
+        meta: {
+          from: courier.courierVehicleType,
+          to: vehicle || null,
+        },
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/couriers/${courier.id}`);
+  revalidatePath(`/${locale}/admin/dispatch`);
+  return { ok: true };
+}
+
+// Ops tune what a vehicle class can carry — the capacity table auto-assignment
+// checks parcels against (lib/courier-capacity.ts). Stored as a
+// PlatformSetting override merged over the code defaults, so passing null
+// reverts the vehicle to the shipped numbers. Inputs are in human units
+// (kg / liters); stored in grams / cm³. Audited, since it changes which
+// drivers receive which parcels.
+export async function setVehicleCapacity(
+  vehicleType: string,
+  capacity: {
+    maxWeightKg: number;
+    maxVolumeLiters: number;
+    maxParcels: number;
+    maxItemLongestSideCm: number;
+  } | null,
+): Promise<Result> {
+  const staffId = await requireDeliveryManagerId();
+  if (!staffId) return { error: "forbidden" };
+  if (!(VEHICLE_TYPES as readonly string[]).includes(vehicleType)) {
+    return { error: "badVehicle" };
+  }
+  const inRange = (v: number, max: number) =>
+    Number.isFinite(v) && v > 0 && v <= max;
+  if (
+    capacity &&
+    !(
+      inRange(capacity.maxWeightKg, 20_000) &&
+      inRange(capacity.maxVolumeLiters, 100_000) &&
+      inRange(capacity.maxParcels, 500) &&
+      inRange(capacity.maxItemLongestSideCm, 2_000)
+    )
+  ) {
+    return { error: "badCapacity" };
+  }
+
+  const row = await prisma.platformSetting.findUnique({
+    where: { key: VEHICLE_CAPACITY_SETTING_KEY },
+    select: { value: true },
+  });
+  const overrides: Record<string, unknown> =
+    typeof row?.value === "object" && row.value !== null
+      ? { ...(row.value as Record<string, unknown>) }
+      : {};
+  const from = overrides[vehicleType] ?? null;
+  const to = capacity
+    ? {
+        maxWeightGrams: Math.round(capacity.maxWeightKg * 1000),
+        maxVolumeCm3: Math.round(capacity.maxVolumeLiters * 1000),
+        maxParcels: Math.round(capacity.maxParcels),
+        maxItemLongestSideCm: Math.round(capacity.maxItemLongestSideCm),
+      }
+    : null;
+  if (to) overrides[vehicleType] = to;
+  else delete overrides[vehicleType];
+
+  await prisma.$transaction([
+    prisma.platformSetting.upsert({
+      where: { key: VEHICLE_CAPACITY_SETTING_KEY },
+      create: {
+        key: VEHICLE_CAPACITY_SETTING_KEY,
+        value: overrides as Prisma.InputJsonValue,
+      },
+      update: { value: overrides as Prisma.InputJsonValue },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: staffId,
+        action: "vehicle.capacity",
+        entity: "PlatformSetting",
+        entityId: VEHICLE_CAPACITY_SETTING_KEY,
+        meta: { vehicleType, from, to } as Prisma.InputJsonValue,
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/delivery-manager/vehicles`);
+  revalidatePath(`/${locale}/admin/couriers`);
   return { ok: true };
 }
 
@@ -270,6 +408,125 @@ export async function courierRespondOffer(
   }
 
   revalidatePath(`/${locale}/driver`);
+  revalidatePath(`/${locale}/admin/dispatch`);
+  return { ok: true };
+}
+
+// Driver claims a parcel off the open job board (docs/EXPRESS-DELIVERY.md
+// §4b): first tap wins, decided by one conditional update on the unassigned
+// row. Claiming is a commitment — it is recorded as an ACCEPTED offer, so it
+// counts toward the driver's acceptance history and, like an accepted push
+// offer, can't be handed back silently (problems go through
+// courierFailDelivery or dispatch). The same eligibility gates as
+// auto-dispatch apply: COD-blocked drivers can't claim, and
+// `job_board_max_active_jobs` caps how many in-flight jobs a driver may hold.
+export async function courierClaimJob(shipmentId: string): Promise<Result> {
+  const courierId = await requireCourierId();
+  if (!courierId) return { error: "forbidden" };
+  const locale = await getLocale();
+
+  const shipment = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+    select: {
+      driverId: true,
+      boardedAt: true,
+      platformManaged: true,
+      status: true,
+      deliveryPointId: true,
+      atPointId: true,
+      subOrderId: true,
+      subOrder: { select: { status: true, shippingMethod: true } },
+    },
+  });
+  const ready =
+    shipment &&
+    shipment.platformManaged &&
+    shipment.boardedAt &&
+    shipment.subOrder?.status === "SHIPPED" &&
+    shipment.subOrder.shippingMethod !== "PICKUP" &&
+    (shipment.deliveryPointId
+      ? shipment.status === "AT_POINT" &&
+        shipment.atPointId === shipment.deliveryPointId
+      : ["PENDING", "LABEL_CREATED", "IN_TRANSIT"].includes(shipment.status));
+  if (!ready) return { error: "notFound" };
+  if (shipment.driverId) return { error: "taken" };
+
+  // Same COD credit gate as auto-dispatch: cash out, no new work.
+  const blocked = await codBlockedCourierIds([courierId]);
+  if (blocked.has(courierId)) return { error: "codBlocked" };
+
+  // Anti-hoarding cap + the physical gate: what the driver already carries.
+  const [driver, active, maxJobs] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: courierId },
+      select: { courierVehicleType: true },
+    }),
+    prisma.shipment.findMany({
+      where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
+      select: { subOrderId: true },
+    }),
+    getSetting("job_board_max_active_jobs"),
+  ]);
+  if (maxJobs > 0 && active.length >= maxJobs) {
+    return { error: "tooManyJobs" };
+  }
+
+  // Vehicle capacity (lib/courier-capacity.ts): the same gate auto-assign
+  // applies — a bicycle courier can't claim a washing machine, or stack more
+  // weight/volume than their vehicle carries. Unknown vehicles pass, like in
+  // auto-assign.
+  const [loadMetrics, parcel, capacityTable] = await Promise.all([
+    subOrderMetrics(active.map((s) => s.subOrderId)),
+    subOrderMetric(shipment.subOrderId),
+    effectiveVehicleCapacity(),
+  ]);
+  let loadWeightGrams = 0;
+  let loadVolumeCm3 = 0;
+  for (const m of loadMetrics.values()) {
+    loadWeightGrams += m.weightGrams;
+    loadVolumeCm3 += m.volumeCm3;
+  }
+  if (
+    !hasRoomFor(
+      {
+        vehicleType: driver?.courierVehicleType ?? null,
+        load: active.length,
+        loadWeightGrams,
+        loadVolumeCm3,
+      },
+      parcel,
+      capacityTable,
+    )
+  ) {
+    return { error: "noCapacity" };
+  }
+
+  // The race decider: whoever flips the unassigned row wins. Clearing the
+  // escalation flag mirrors a manual dispatch assignment — the parcel is no
+  // longer stranded, so a future re-strand may alert staff again.
+  const claimed = await prisma.shipment.updateMany({
+    where: { id: shipmentId, driverId: null },
+    data: { driverId: courierId, assignmentEscalatedAt: null },
+  });
+  if (claimed.count !== 1) return { error: "taken" };
+
+  // Record the claim as an accepted offer so reliability stats and the offer
+  // history read the same for pull and push. Upsert: a driver who earlier
+  // declined this parcel's push offer may still change their mind here.
+  await prisma.shipmentOffer.upsert({
+    where: { shipmentId_driverId: { shipmentId, driverId: courierId } },
+    create: {
+      shipmentId,
+      driverId: courierId,
+      status: "ACCEPTED",
+      respondedAt: new Date(),
+      expiresAt: new Date(),
+    },
+    update: { status: "ACCEPTED", reason: null, respondedAt: new Date() },
+  });
+
+  revalidatePath(`/${locale}/driver`);
+  revalidatePath(`/${locale}/driver/board`);
   revalidatePath(`/${locale}/admin/dispatch`);
   return { ok: true };
 }

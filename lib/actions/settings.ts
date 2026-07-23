@@ -37,6 +37,10 @@ export type SettingsInput = {
   courier_assign_strategy: "balanced" | "nearest";
   courier_offer_timeout_minutes: number;
   courier_offer_max_rounds: number;
+  job_board_enabled: boolean;
+  job_board_window_minutes: number;
+  job_board_max_active_jobs: number;
+  pickup_deadline_hours: number;
   dispatch_hours_start: number;
   dispatch_hours_end: number;
   seller_ship_days: number;
@@ -153,6 +157,22 @@ export async function savePlatformSettings(
   const offerRounds = int(input.courier_offer_max_rounds);
   if (!Number.isFinite(offerRounds) || offerRounds < 1 || offerRounds > 20)
     return { error: "badOfferRounds" };
+  // Job board: the board-only window before push-offers start (0 = both at
+  // once) and the per-driver active-jobs cap for claims (0 = no cap).
+  const boardWindow = int(input.job_board_window_minutes);
+  if (!Number.isFinite(boardWindow) || boardWindow < 0 || boardWindow > 1440)
+    return { error: "badBoardWindow" };
+  const boardMaxJobs = int(input.job_board_max_active_jobs);
+  if (!Number.isFinite(boardMaxJobs) || boardMaxJobs < 0 || boardMaxJobs > 100)
+    return { error: "badBoardCap" };
+  // Pickup deadline for accepted-but-never-scanned jobs (0 = off, max a week).
+  const pickupDeadline = int(input.pickup_deadline_hours);
+  if (
+    !Number.isFinite(pickupDeadline) ||
+    pickupDeadline < 0 ||
+    pickupDeadline > 168
+  )
+    return { error: "badPickupDeadline" };
   const dispatchStart = int(input.dispatch_hours_start);
   const dispatchEnd = int(input.dispatch_hours_end);
   if (
@@ -276,6 +296,10 @@ export async function savePlatformSettings(
       input.courier_assign_strategy === "nearest" ? "nearest" : "balanced",
     courier_offer_timeout_minutes: offerTimeout,
     courier_offer_max_rounds: offerRounds,
+    job_board_enabled: Boolean(input.job_board_enabled),
+    job_board_window_minutes: boardWindow,
+    job_board_max_active_jobs: boardMaxJobs,
+    pickup_deadline_hours: pickupDeadline,
     dispatch_hours_start: dispatchStart,
     dispatch_hours_end: dispatchEnd,
     seller_ship_days: shipDays,
@@ -323,6 +347,69 @@ export async function savePlatformSettings(
       entity: "PlatformSetting",
       entityId: "platform",
       meta: values as never,
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/settings`);
+  revalidatePath(`/${locale}`, "layout");
+  return { ok: true };
+}
+
+// --- Exchange rates (DECISIONS.md §3) -------------------------------------
+// Display rates per currency zone: Yemen's rial trades at very different
+// values in the Sana'a-area (old rial) and Aden-area (new rial) markets, so
+// YER is managed per zone; SAR/AED use the single DEFAULT-zone row.
+
+export type ExchangeRateInput = {
+  currency: "YER" | "SAR" | "AED";
+  zone: "DEFAULT" | "NORTH" | "SOUTH";
+  rate: number;
+};
+
+const RATE_CURRENCIES = ["YER", "SAR", "AED"];
+const RATE_ZONES = ["DEFAULT", "NORTH", "SOUTH"];
+
+export async function saveExchangeRates(
+  rows: ExchangeRateInput[],
+): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+  if (
+    rows.length === 0 ||
+    rows.some(
+      (r) =>
+        !RATE_CURRENCIES.includes(r.currency) ||
+        !RATE_ZONES.includes(r.zone) ||
+        !Number.isFinite(r.rate) ||
+        r.rate <= 0,
+    )
+  ) {
+    return { error: "invalid" };
+  }
+
+  await prisma.$transaction(
+    rows.map((r) =>
+      prisma.exchangeRate.upsert({
+        where: { currency_zone: { currency: r.currency, zone: r.zone } },
+        update: { rate: r.rate, updatedBy: adminId },
+        create: {
+          currency: r.currency,
+          zone: r.zone,
+          rate: r.rate,
+          updatedBy: adminId,
+        },
+      }),
+    ),
+  );
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.exchange_rates",
+      entity: "ExchangeRate",
+      entityId: "rates",
+      meta: rows as never,
     },
   });
 

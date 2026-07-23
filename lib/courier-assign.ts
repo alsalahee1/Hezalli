@@ -7,6 +7,15 @@
 //                 governorate (locality), then least-loaded among those; else
 //                 global least-loaded. Ops can always reassign from dispatch.
 //
+// Two refinements apply under both strategies (lib/courier-capacity.ts):
+//   - Capacity: couriers whose vehicle can't take the parcel — too heavy, too
+//     bulky, or too long for the vehicle, or the driver is already at their
+//     weight/volume/parcel limit — are skipped. If nobody fits, the parcel
+//     stays unassigned for dispatch.
+//   - Batching: a courier already carrying a parcel to the same destination
+//     governorate is preferred over everyone else, so orders heading the same
+//     way ride on one trip instead of fanning out across the fleet.
+//
 // The hand-off is an OFFER, not an order (docs/EXPRESS-DELIVERY.md): the
 // chosen driver gets `courier_offer_timeout_minutes` to accept (a tap, or
 // implicitly their first scan) or decline. A declined/expired offer cascades
@@ -18,6 +27,15 @@
 // the morning wave instead of pinging sleeping drivers.
 import { codBlockedCourierIds } from "@/lib/cod-guard";
 import { QUALITY_BADGE_IDS } from "@/lib/courier-badges";
+import {
+  effectiveVehicleCapacity,
+  hasRoomFor,
+  type ParcelMetrics,
+  subOrderMetric,
+  subOrderMetrics,
+  type VehicleCapacity,
+  ZERO_METRICS,
+} from "@/lib/courier-capacity";
 import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
 import { notify } from "@/lib/notify";
@@ -44,9 +62,13 @@ export function offerOpenStatuses(
     ? ["AT_POINT", "RETURNED_TO_POINT"]
     : ["PENDING", "LABEL_CREATED", "IN_TRANSIT"];
 }
-type CourierLoad = {
+
+export type CourierLoad = {
   id: string;
   load: number;
+  loadWeightGrams: number;
+  loadVolumeCm3: number;
+  vehicleType: string | null;
   // 90-day offer acceptance rate (1 with no history — a new driver starts
   // trusted). Breaks ranking ties after load; the hard gate is applied before
   // ranking (see activeCouriersWithLoad).
@@ -58,6 +80,9 @@ type CourierLoad = {
   governorate: string | null;
   lat: number | null;
   lng: number | null;
+  // Destination governorates of the parcels this courier is carrying now —
+  // the batching signal ("they're already driving there").
+  activeGovernorates: ReadonlySet<string>;
 };
 
 async function activeCouriersWithLoad(
@@ -67,6 +92,7 @@ async function activeCouriersWithLoad(
     where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
     select: {
       id: true,
+      courierVehicleType: true,
       courierLocation: { select: { governorate: true, lat: true, lng: true } },
     },
   });
@@ -100,13 +126,23 @@ async function activeCouriersWithLoad(
     if (eligible.length === 0) return [];
   }
 
+  // In-flight parcels with their destination and weight, so a driver's load is
+  // known in kilos, liters, and destinations — not just a count.
   const ids = eligible.map((c) => c.id);
-  const [loads, awards] = await Promise.all([
-    prisma.shipment.groupBy({
-      by: ["driverId"],
+  const [active, awards] = await Promise.all([
+    prisma.shipment.findMany({
       where: { driverId: { in: ids }, subOrder: { status: "SHIPPED" } },
-      _count: { _all: true },
+      select: {
+        driverId: true,
+        subOrderId: true,
+        subOrder: {
+          select: {
+            order: { select: { address: { select: { governorate: true } } } },
+          },
+        },
+      },
     }),
+    // Quality-badge counts for priority dispatch (tie-break only).
     settings.badge_priority_dispatch
       ? prisma.courierBadgeAward.groupBy({
           by: ["courierId"],
@@ -118,17 +154,46 @@ async function activeCouriersWithLoad(
         })
       : [],
   ]);
-  const loadBy = new Map(loads.map((l) => [l.driverId, l._count._all]));
   const badgesBy = new Map(awards.map((a) => [a.courierId, a._count._all]));
-  return eligible.map((c) => ({
-    id: c.id,
-    load: loadBy.get(c.id) ?? 0,
-    rate: stats.get(c.id)?.rate ?? 1,
-    badges: badgesBy.get(c.id) ?? 0,
-    governorate: c.courierLocation?.governorate ?? null,
-    lat: c.courierLocation?.lat ?? null,
-    lng: c.courierLocation?.lng ?? null,
-  }));
+  const metrics = await subOrderMetrics(active.map((s) => s.subOrderId));
+
+  const byDriver = new Map<
+    string,
+    { load: number; weight: number; volume: number; govs: Set<string> }
+  >();
+  for (const s of active) {
+    if (!s.driverId) continue;
+    const cur = byDriver.get(s.driverId) ?? {
+      load: 0,
+      weight: 0,
+      volume: 0,
+      govs: new Set<string>(),
+    };
+    cur.load += 1;
+    const m = metrics.get(s.subOrderId) ?? ZERO_METRICS;
+    cur.weight += m.weightGrams;
+    cur.volume += m.volumeCm3;
+    const gov = s.subOrder?.order.address?.governorate;
+    if (gov) cur.govs.add(gov);
+    byDriver.set(s.driverId, cur);
+  }
+
+  return eligible.map((c) => {
+    const cur = byDriver.get(c.id);
+    return {
+      id: c.id,
+      load: cur?.load ?? 0,
+      loadWeightGrams: cur?.weight ?? 0,
+      loadVolumeCm3: cur?.volume ?? 0,
+      vehicleType: c.courierVehicleType,
+      rate: stats.get(c.id)?.rate ?? 1,
+      badges: badgesBy.get(c.id) ?? 0,
+      governorate: c.courierLocation?.governorate ?? null,
+      lat: c.courierLocation?.lat ?? null,
+      lng: c.courierLocation?.lng ?? null,
+      activeGovernorates: cur?.govs ?? new Set<string>(),
+    };
+  });
 }
 
 // Fewest active jobs wins; ties go to the driver with more quality badges,
@@ -149,30 +214,61 @@ export async function pickLeastLoadedCourierId(): Promise<string | null> {
   return leastLoaded(await activeCouriersWithLoad());
 }
 
+export type ParcelInfo = {
+  destGovernorate: string | null;
+  destCoords?: { lat: number | null; lng: number | null } | null;
+  metrics?: ParcelMetrics;
+};
+
 /**
- * Choose a courier for a parcel. With "nearest": rank by true distance when the
- * destination has pinned coordinates and couriers have shared theirs; else by
- * destination-governorate locality; else global least-loaded. "balanced" always
- * uses global least-loaded.
+ * Pure ranking core of pickCourierForShipment, exported for tests.
+ *
+ * 1. Drop couriers without room for the parcel (vehicle weight/volume/parcel
+ *    limits, and its longest item must physically fit the vehicle).
+ * 2. Prefer a courier already delivering to the destination governorate
+ *    (batching) — they're making that trip anyway, capacity permitting.
+ * 3. Within that, the strategy's usual order: distance (nearest) or load,
+ *    with quality-badge holders, then the more reliable driver, winning ties.
  */
-export async function pickCourierForShipment(
-  destGovernorate: string | null,
+export function pickFrom(
+  list: CourierLoad[],
   strategy: AssignStrategy,
-  destCoords?: { lat: number | null; lng: number | null } | null,
-  excludeIds?: ReadonlySet<string>,
-): Promise<string | null> {
-  const all = await activeCouriersWithLoad(excludeIds);
-  if (all.length === 0) return null;
+  parcel: ParcelInfo,
+  capacityTable?: Record<string, VehicleCapacity>,
+): string | null {
+  const metrics = parcel.metrics ?? ZERO_METRICS;
+  // Oversized freight (sofas, wardrobes) never auto-assigns: it needs crew
+  // planning, so it always goes through manual dispatch (the null triggers
+  // the same escalation path as "nobody eligible").
+  if (metrics.oversized) return null;
+  const capable = list.filter((c) => hasRoomFor(c, metrics, capacityTable));
+  if (capable.length === 0) return null;
+
+  const gov = parcel.destGovernorate;
+  // Freight is appointment-bound — a truck run is one or two big items, not a
+  // parcel round — so it doesn't ride the same-destination batching bonus.
+  const batched = (c: CourierLoad) =>
+    !metrics.freight && gov && c.activeGovernorates.has(gov) ? 0 : 1;
+  const best = (candidates: CourierLoad[]) =>
+    [...candidates].sort(
+      (a, b) =>
+        batched(a) - batched(b) ||
+        a.load - b.load ||
+        b.badges - a.badges ||
+        b.rate - a.rate ||
+        a.id.localeCompare(b.id),
+    )[0].id;
 
   if (strategy === "nearest") {
     // 1. True point-to-point distance, when both sides have coordinates.
-    if (destCoords?.lat != null && destCoords.lng != null) {
-      const withCoords = all.filter((c) => c.lat != null && c.lng != null);
+    const dLat = parcel.destCoords?.lat;
+    const dLng = parcel.destCoords?.lng;
+    if (dLat != null && dLng != null) {
+      const withCoords = capable.filter((c) => c.lat != null && c.lng != null);
       if (withCoords.length > 0) {
-        const dLat = destCoords.lat;
-        const dLng = destCoords.lng;
         return [...withCoords].sort(
           (a, b) =>
+            batched(a) - batched(b) ||
             haversineKm(dLat, dLng, a.lat!, a.lng!) -
               haversineKm(dLat, dLng, b.lat!, b.lng!) ||
             a.load - b.load ||
@@ -183,12 +279,39 @@ export async function pickCourierForShipment(
       }
     }
     // 2. Governorate locality.
-    if (destGovernorate) {
-      const local = all.filter((c) => c.governorate === destGovernorate);
-      if (local.length > 0) return leastLoaded(local);
+    if (gov) {
+      const local = capable.filter((c) => c.governorate === gov);
+      if (local.length > 0) return best(local);
     }
   }
-  return leastLoaded(all);
+  return best(capable);
+}
+
+/**
+ * Choose a courier for a parcel. With "nearest": rank by true distance when the
+ * destination has pinned coordinates and couriers have shared theirs; else by
+ * destination-governorate locality; else global least-loaded. "balanced" always
+ * uses global least-loaded. Both strategies filter by vehicle capacity and
+ * prefer a courier already headed to the destination governorate (see
+ * pickFrom). `excludeIds` drops drivers who already declined this parcel's
+ * offer. Null when no eligible courier can take the parcel.
+ */
+export async function pickCourierForShipment(
+  destGovernorate: string | null,
+  strategy: AssignStrategy,
+  destCoords?: { lat: number | null; lng: number | null } | null,
+  parcelMetrics?: ParcelMetrics,
+  excludeIds?: ReadonlySet<string>,
+): Promise<string | null> {
+  const all = await activeCouriersWithLoad(excludeIds);
+  if (all.length === 0) return null;
+  const capacityTable = await effectiveVehicleCapacity();
+  return pickFrom(
+    all,
+    strategy,
+    { destGovernorate, destCoords, metrics: parcelMetrics },
+    capacityTable,
+  );
 }
 
 /**
@@ -206,6 +329,7 @@ export async function autoAssignShipment(
     where: { id: shipmentId },
     select: {
       driverId: true,
+      subOrderId: true,
       offers: { select: { driverId: true } },
       subOrder: {
         select: {
@@ -233,10 +357,12 @@ export async function autoAssignShipment(
 
   const declined = new Set(shipment.offers.map((o) => o.driverId));
   const addr = shipment.subOrder?.order.address;
+  const metrics = await subOrderMetric(shipment.subOrderId);
   const driverId = await pickCourierForShipment(
     addr?.governorate ?? null,
     settings.courier_assign_strategy === "nearest" ? "nearest" : "balanced",
     addr ? { lat: addr.lat, lng: addr.lng } : null,
+    metrics,
     declined,
   );
   if (!driverId) return null;

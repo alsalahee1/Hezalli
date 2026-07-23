@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ShoppingCart } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
-import { formatUsd } from "@/lib/products";
 import { cn } from "@/lib/utils";
+import { useMoney } from "@/components/currency/currency-provider";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
@@ -14,7 +14,7 @@ import { useCart } from "./cart-provider";
 
 export function CartButton() {
   const t = useTranslations("Cart");
-  const locale = useLocale();
+  const fmt = useMoney();
   const { lines, count } = useCart();
   const [open, setOpen] = useState(false);
   const { mounted, shown } = useMountTransition(open, 200);
@@ -87,7 +87,7 @@ export function CartButton() {
                         {l.title}
                       </span>
                       <span className="text-muted-foreground text-xs">
-                        {l.quantity} × {formatUsd(l.price, locale)}
+                        {l.quantity} × {fmt(l.price)}
                       </span>
                     </span>
                   </Link>
@@ -97,7 +97,7 @@ export function CartButton() {
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t("subtotal")}</span>
                   <span className="font-semibold" dir="ltr">
-                    {formatUsd(subtotal, locale)}
+                    {fmt(subtotal)}
                   </span>
                 </div>
                 <Button

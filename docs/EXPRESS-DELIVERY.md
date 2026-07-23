@@ -72,6 +72,10 @@ All keys live in `PlatformSetting` (see `lib/settings.ts` for defaults).
 | `seller_ship_days` | `5` | Unshipped CONFIRMED/PROCESSING sub-orders auto-cancel (paid buyers refunded) after this many days; seller warned a day before. `0` = off. |
 | `driver_min_acceptance_rate` | `0` | Drivers under this 90-day offer-acceptance percent (with ≥ `driver_acceptance_min_offers` answers) stop getting auto-offers. `0` = off. |
 | `driver_acceptance_min_offers` | `10` | Answered-offer sample a driver needs before the acceptance gate applies. |
+| `job_board_enabled` | `false` | Post unassigned parcels on the open driver job board (§4b) — any eligible driver can claim, first tap wins. |
+| `job_board_window_minutes` | `15` | How long a parcel stays board-only before push-offers ALSO start chasing a driver. `0` = both channels at once. |
+| `job_board_max_active_jobs` | `10` | A driver already holding this many in-flight deliveries can't claim more from the board. `0` = no cap. |
+| `pickup_deadline_hours` | `0` | Hours an ACCEPTED job (tapped offer or board claim) may sit without a single scan before the sweep takes it back and re-dispatches it. Forced/manual assignments are exempt. `0` = off. |
 
 Rules worth knowing:
 
@@ -96,7 +100,66 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
      least-loaded.
   3. **Balanced** — otherwise global least-loaded.
 
-Ops can always reassign from the dispatch board.
+Two refinements apply under both strategies (`lib/courier-capacity.ts`):
+
+- **Vehicle capacity** — each vehicle from the courier application (foot,
+  bicycle, motorbike, car, van, truck) has a carrying profile: max total
+  weight, max total volume, max simultaneous parcels, and the longest single
+  item that physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light
+  and low-volume yet impossible on a motorbike). The shipped numbers are code
+  defaults; delivery staff can tune any vehicle live (no deploy) from the
+  delivery-manager portal's **Vehicle capacity** page — overrides are stored
+  in the `vehicle_capacity` platform setting, merged field-by-field over the
+  defaults (`effectiveVehicleCapacity`), audited via the
+  `setVehicleCapacity` action, and resettable per vehicle. A parcel's metrics
+  come from its lines, resolved per field in this order:
+  1. the values **snapshotted at checkout** (`OrderItem.weightGramsSnapshot` /
+     `dimensionsSnapshot` / `sizeClassSnapshot`, frozen like `titleSnapshot`
+     so catalog edits can't rewrite in-flight parcels);
+  2. the live exact fields (`Product.weightGrams` / `dimensions`, the
+     optional "exact size" inputs on the seller product form);
+  3. the product's **size class** (`Product.sizeClass` — the primary seller
+     input: envelope / small / medium / large / xlarge / oversized, each
+     mapped to representative weight+dimensions in `SIZE_CLASS_PROFILES`);
+  4. the category's delivery defaults (`Category.defaultSizeClass` /
+     `defaultWeightGrams` / `defaultDimensions` — one setting covers e.g. all
+     refrigerators; editable in the admin category manager and, via the
+     narrow audited `setCategoryShippingDefaults` action, on the
+     delivery-manager portal's "Delivery defaults" page);
+  5. small-parcel constants, so unlabeled items still consume capacity.
+
+  Summed parcel volume is inflated by `PACKING_FACTOR` since real items don't
+  tessellate. Couriers whose vehicle can't take the parcel — too heavy or too
+  long outright, or the driver is already at a weight/volume/parcel limit —
+  are skipped. The approved vehicle is copied to `User.courierVehicleType` on
+  application approval; couriers without one (granted the role manually) are
+  unconstrained, matching the pre-capacity behavior. If **no** active courier
+  can carry a parcel it stays unassigned and dispatch routes it manually.
+- **Batching** — a courier already carrying an in-flight parcel to the same
+  destination governorate is preferred over everyone else (before distance and
+  load), capacity permitting. Orders heading the same way accumulate onto one
+  trip instead of fanning out across the fleet one-parcel-per-driver.
+- **Freight** (`xlarge` / `oversized` classes — the Amazon-XL pattern):
+  - **Direct only** — never routed through a Hezalli Point (a point is a
+    corner shop with shelves, not a freight terminal): checkout refuses the
+    PICKUP tier for freight groups (`pickupNotForFreight`) and the seller
+    ship action refuses point routing (`freightDirect`).
+  - **Appointment required** — while scheduling is on
+    (`delivery_window_days` > 0), a freight order must carry a delivery
+    window (`deliveryWindowRequiredFreight`): someone has to be home for a
+    fridge, and a failed truck run costs ten times a failed motorbike run.
+  - **No batching** — a truck run is one or two big items on an appointment,
+    not a parcel round, so freight skips the same-destination bonus.
+  - **`oversized` never auto-assigns** — a sofa needs crew planning; it
+    always goes through manual dispatch (the offer cascade escalates it).
+  - The dispatch board badges freight parcels, and the driver job page tells
+    the courier to bring a helper (two-person delivery).
+
+Ops can always reassign from the dispatch board — capacity gates the automatic
+paths only (same philosophy as the COD credit guard). To keep manual calls
+informed, the dispatch board shows each parcel's weight and each courier's
+vehicle + current load in the assign pickers, and a courier's vehicle can be
+changed (audited, `setCourierVehicle`) from their admin detail page.
 
 ## 4a. Job offers — consent, clocks, cascade
 
@@ -128,6 +191,18 @@ clocks pause, and the first sweep after opening runs the **morning wave**,
 offering out everything that accumulated overnight. Nobody is pinged at 3 AM,
 and no offer silently expires while the fleet sleeps.
 
+**Pickup deadline** (`pickup_deadline_hours`, off by default): accepting is a
+commitment, but only a scan proves the parcel changed hands. A driver who
+tapped accept (or claimed off the board, §4b) and still hasn't made a single
+scan after the deadline loses the job automatically: the sweep expires their
+offer (`reason: pickup_timeout`), releases the parcel, notifies them, and
+re-dispatches — the cascade moves it to the next courier (their expired row
+excludes them), and with the board on it reappears there too. Only untouched
+parcels qualify (the same `offerOpenStatuses` rule as declines), so a driver
+who already collected the parcel can never lose it in software while holding
+it physically. Forced and manual assignments carry no accepted-offer row and
+are exempt — ops decisions stay with ops.
+
 **Reliability** (`lib/courier-reliability.ts`): every answered offer feeds a
 90-day acceptance rate per driver. Ties in ranking go to the more reliable
 driver, the dispatch board shows the rate next to each courier, and with
@@ -140,6 +215,44 @@ every 24h (aggregated) during dispatch hours, and the stuck-parcel sweep
 re-alerts every 48h while a parcel stays un-moved. The related seller-side
 clock lives in `lib/seller-sla.ts`: unshipped sub-orders warn the seller at
 `seller_ship_days − 1` and auto-cancel (refund-if-paid) at the deadline.
+
+## 4b. The open job board — pull dispatch
+
+With `job_board_enabled` on (`lib/job-board.ts`), dispatch flips from push to
+**pull-first**: instead of the platform picking one driver, a shipped parcel
+is posted on an open board (`/driver/board`) that every eligible courier can
+browse. Each card shows what a driver weighs before committing — destination
+city + governorate, parcel size (piece count), the COD amount to collect (or
+"prepaid"), **their delivery fee**, the scheduled window, and the distance
+when both sides have shared coordinates — but **not** the buyer's name, phone,
+or street address; those stay private until the job is claimed. Local drivers
+(shared location in the destination governorate) are notified when a parcel
+lands on the board; with no local drivers, everyone active is.
+
+- **Claiming** (`courierClaimJob`) is first-tap-wins: one conditional update
+  on the unassigned row, so a race has exactly one winner and the loser sees
+  "taken". A claim is recorded as an `ACCEPTED` `ShipmentOffer`, so pull and
+  push feed the same reliability history — and like an accepted push offer it
+  is a commitment: no silent hand-backs, problems go through
+  `courierFailDelivery` or dispatch.
+- **The same gates as auto-dispatch apply.** COD-blocked drivers
+  (`lib/cod-guard.ts`) can browse but not claim;
+  `job_board_max_active_jobs` caps how many in-flight jobs a driver may hold
+  before claiming more (anti-hoarding, anti-cherry-picking); and the vehicle
+  capacity check (`lib/courier-capacity.ts` — weight, volume, parcel count,
+  longest item) gates claims exactly like auto-assign. The board shows each
+  parcel's approximate weight and marks jobs that don't fit the driver's
+  vehicle instead of offering a claim the server would refuse.
+- **The push cascade is the safety net, not a rival.** A parcel unclaimed
+  after `job_board_window_minutes` gets push-offers from the sweep exactly as
+  §4a describes — and stays claimable the whole time, since both paths simply
+  set `Shipment.driverId` on the unassigned row. With `express_auto_assign`
+  off the platform runs pull-only: parcels stay on the board until claimed or
+  manually dispatched.
+- **Dispatch hours are respected**: night parcels queue un-boarded and the
+  first sweep after opening posts them (the board's morning wave). Escalated
+  parcels remain claimable — a claim clears `assignmentEscalatedAt` just like
+  a manual assignment.
 
 ## 5. Operating it — by role
 

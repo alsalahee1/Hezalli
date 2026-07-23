@@ -19,7 +19,7 @@ import {
   type ManifestRow,
 } from "@/lib/point-core";
 
-type Result = { ok?: boolean; error?: string };
+type Result = { ok?: boolean; error?: string; reshelved?: boolean };
 
 async function revalidatePoint() {
   const locale = await getLocale();
@@ -28,11 +28,16 @@ async function revalidatePoint() {
   revalidatePath(`/${locale}/admin/dispatch`);
 }
 
-// Seller drop-off scan: the point takes custody of an announced parcel.
-export async function pointReceiveParcel(tracking: string): Promise<Result> {
+// Seller drop-off scan: the point takes custody of an announced parcel,
+// optionally noting which shelf it was put on. Scanning a parcel the hub
+// already holds with a shelf entered just re-shelves it.
+export async function pointReceiveParcel(
+  tracking: string,
+  shelf?: string,
+): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await receiveParcelAtPoint(gate.pointId, tracking);
+  const res = await receiveParcelAtPoint(gate.pointId, tracking, shelf);
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -80,19 +85,23 @@ export async function pointHandoverManifest(
 export async function pointReceiveReturn(
   tracking: string,
   note?: string,
+  shelf?: string,
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await receiveReturnAtPoint(gate.pointId, tracking, note);
+  const res = await receiveReturnAtPoint(gate.pointId, tracking, note, shelf);
   if (res.ok) await revalidatePoint();
   return res;
 }
 
 // Counter pickup: the buyer shows their delivery QR/code and takes the
 // parcel. Returns the COD amount the counter must collect (0 for prepaid).
-export async function pointBuyerPickup(
-  code: string,
-): Promise<{ ok?: boolean; error?: string; codDue?: number }> {
+export async function pointBuyerPickup(code: string): Promise<{
+  ok?: boolean;
+  error?: string;
+  codDue?: number;
+  shelf?: string | null;
+}> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
   const locale = await getLocale();
