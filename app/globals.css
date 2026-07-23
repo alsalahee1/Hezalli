@@ -203,8 +203,10 @@
    screen — leaving just the balance card, stats/actions, and the wallet's own
    bottom tab bar. Desktop (md and up) is unaffected. */
 @media (max-width: 767px) {
+  /* Hide the storefront chrome — but NOT the wallet's own app header, which is
+     also a <header> and opts out with [data-app-header]. */
   body:has([data-native-wallet]) [data-announcement],
-  body:has([data-native-wallet]) header,
+  body:has([data-native-wallet]) header:not([data-app-header]),
   body:has([data-native-wallet]) footer,
   body:has([data-native-wallet]) [data-account-heading],
   body:has([data-native-wallet]) [data-account-nav] {
