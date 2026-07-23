@@ -26,6 +26,28 @@ export async function getGeminiModel(): Promise<string> {
 }
 
 /**
+ * Admin-tunable reply creativity + length (Admin → Shadi). Both are clamped to
+ * safe ranges; on any DB hiccup we fall back to the built-in defaults.
+ */
+async function getGenerationConfig(): Promise<{
+  temperature: number;
+  maxOutputTokens: number;
+}> {
+  let temperature = 0.3;
+  let maxOutputTokens = 1024;
+  try {
+    const t = await getSetting("ai_temperature");
+    if (Number.isFinite(t)) temperature = Math.min(1, Math.max(0, t));
+    const m = await getSetting("ai_max_tokens");
+    if (Number.isFinite(m) && m > 0)
+      maxOutputTokens = Math.min(8192, Math.max(128, Math.trunc(m)));
+  } catch {
+    // Keep the defaults.
+  }
+  return { temperature, maxOutputTokens };
+}
+
+/**
  * Resolve the Gemini API key. The admin-managed platform setting (Admin →
  * Settings) wins so the key can be rotated without a redeploy; the
  * GEMINI_API_KEY environment variable is the fallback. Stored as its own
@@ -116,10 +138,7 @@ export async function generateContent(opts: {
   const body: Record<string, unknown> = {
     systemInstruction: { parts: [{ text: opts.system }] },
     contents: opts.contents,
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 1024,
-    },
+    generationConfig: await getGenerationConfig(),
   };
   if (opts.tools?.length) {
     body.tools = [{ functionDeclarations: opts.tools }];

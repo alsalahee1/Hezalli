@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { KeyRound, MessageCircle, Mic, Shield } from "lucide-react";
+import { KeyRound, MessageCircle, Mic, Shield, Wand2 } from "lucide-react";
 
 import {
   connectTelegram,
@@ -46,6 +46,10 @@ export type AssistantCurrent = {
   telegramSource: "db" | "env" | "none";
   telegramUsername: string;
   whatsappConfigured: boolean;
+  persona: string;
+  greeting: string;
+  temperature: number;
+  maxTokens: number;
 };
 
 export type AssistantUsage = {
@@ -82,6 +86,10 @@ export function AssistantSettings({
     spendCapUsd: String(current.spendCapUsd || ""),
     telegramEnabled: current.telegramEnabled,
     whatsappEnabled: current.whatsappEnabled,
+    persona: current.persona,
+    greeting: current.greeting,
+    temperature: String(current.temperature),
+    maxTokens: String(current.maxTokens),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
@@ -111,6 +119,10 @@ export function AssistantSettings({
         maxPerHour: Number(f.maxPerHour) || 0,
         dailyCap: Number(f.dailyCap) || 0,
         spendCapUsd: Number(f.spendCapUsd) || 0,
+        persona: f.persona,
+        greeting: f.greeting,
+        temperature: Number(f.temperature),
+        maxTokens: Number(f.maxTokens),
         telegramEnabled: f.telegramEnabled,
         whatsappEnabled: f.whatsappEnabled,
       }),
@@ -228,6 +240,71 @@ export function AssistantSettings({
               {t("keyRemove")}
             </Button>
           ) : null}
+        </div>
+      </section>
+
+      {/* ── Persona & behaviour (the bot's "role") ── */}
+      <section className="space-y-4 rounded-lg border p-5">
+        <SectionTitle icon={Wand2} title={t("personaTitle")} />
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">{t("persona")}</span>
+          <textarea
+            value={f.persona}
+            onChange={(e) => set("persona", e.target.value)}
+            rows={6}
+            maxLength={4000}
+            placeholder={t("personaPlaceholder")}
+            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+          />
+          <span className="text-muted-foreground block text-xs">
+            {t("personaHint")}
+          </span>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">{t("greeting")}</span>
+          <textarea
+            value={f.greeting}
+            onChange={(e) => set("greeting", e.target.value)}
+            rows={2}
+            maxLength={600}
+            placeholder={t("greetingPlaceholder")}
+            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+          />
+          <span className="text-muted-foreground block text-xs">
+            {t("greetingHint")}
+          </span>
+        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium">
+              {t("temperature")}: {f.temperature}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={f.temperature}
+              onChange={(e) => set("temperature", e.target.value)}
+              className="accent-primary w-full"
+            />
+            <span className="text-muted-foreground block text-xs">
+              {t("temperatureHint")}
+            </span>
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium">{t("maxTokens")}</span>
+            <Input
+              type="number"
+              dir="ltr"
+              value={f.maxTokens}
+              onChange={(e) => set("maxTokens", e.target.value)}
+              placeholder="1024"
+            />
+            <span className="text-muted-foreground block text-xs">
+              {t("maxTokensHint")}
+            </span>
+          </label>
         </div>
       </section>
 
