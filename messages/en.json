@@ -3095,7 +3095,19 @@
     "pickupRecipientPlaceholder": "Recipient name",
     "pickupAddPhoto": "Add handover photo",
     "pickupPhotoAdded": "Photo attached",
-    "pickupUploading": "Uploading…"
+    "pickupUploading": "Uploading…",
+    "receiptLink": "Receipt",
+    "receiptPrint": "Print",
+    "receiptTitle": "Pickup receipt",
+    "receiptStore": "Store",
+    "receiptTracking": "Tracking",
+    "receiptDate": "Collected",
+    "receiptCodCollected": "Cash collected",
+    "receiptPrepaid": "Prepaid — no payment due",
+    "receiptDelivered": "Handed to the customer",
+    "receiptFooter": "Collected via {locale} Point",
+    "receiptNotFound": "No collected parcel matches that code at this point.",
+    "receiptBack": "Back to scan"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

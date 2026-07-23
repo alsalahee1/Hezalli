@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, Keyboard, XCircle } from "lucide-react";
+import { Camera, CheckCircle2, Keyboard, Receipt, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -13,7 +13,7 @@ import {
   pointReceiveReturn,
 } from "@/lib/actions/point";
 import type { ManifestRow } from "@/lib/point-core";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,9 @@ type Feedback = {
   text: string;
   code: string;
   at: number;
+  // Buyer delivery code for a successful pickup → offers a "print receipt"
+  // link on that feedback row (docs §42i).
+  receipt?: string;
 };
 
 // The point counter's scan station: pick what the scan MEANS (seller drop-off,
@@ -102,8 +105,10 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
     void loadManifest(id);
   };
 
-  const push = (ok: boolean, text: string, code: string) =>
-    setFeed((f) => [{ ok, text, code, at: Date.now() }, ...f].slice(0, 8));
+  const push = (ok: boolean, text: string, code: string, receipt?: string) =>
+    setFeed((f) =>
+      [{ ok, text, code, at: Date.now(), receipt }, ...f].slice(0, 8),
+    );
 
   // Clear the per-pickup proof fields after a collection completes.
   const resetPickupProof = () => {
@@ -171,6 +176,7 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
               ? `${t("shelfBadge", { code: res.shelf })} — ${base}`
               : base,
             code,
+            code, // enables the "print receipt" link for this pickup
           );
           resetPickupProof();
           router.refresh();
@@ -543,6 +549,14 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
                 <XCircle className="size-4 shrink-0 text-red-600" />
               )}
               <span className="min-w-0 flex-1 truncate">{f.text}</span>
+              {f.receipt ? (
+                <Link
+                  href={`/point/receipt/${encodeURIComponent(f.receipt)}`}
+                  className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium"
+                >
+                  <Receipt className="size-3.5" /> {t("receiptLink")}
+                </Link>
+              ) : null}
               <span className="text-muted-foreground text-xs" dir="ltr">
                 {f.code}
               </span>

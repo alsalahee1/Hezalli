@@ -3095,7 +3095,19 @@
     "pickupRecipientPlaceholder": "اسم المستلم",
     "pickupAddPhoto": "إضافة صورة التسليم",
     "pickupPhotoAdded": "أُرفقت الصورة",
-    "pickupUploading": "جارٍ الرفع…"
+    "pickupUploading": "جارٍ الرفع…",
+    "receiptLink": "إيصال",
+    "receiptPrint": "طباعة",
+    "receiptTitle": "إيصال استلام",
+    "receiptStore": "المتجر",
+    "receiptTracking": "التتبع",
+    "receiptDate": "تاريخ الاستلام",
+    "receiptCodCollected": "المبلغ المحصّل",
+    "receiptPrepaid": "مدفوع مسبقًا — لا مبلغ مستحق",
+    "receiptDelivered": "سُلّم إلى العميل",
+    "receiptFooter": "تم الاستلام عبر نقطة {locale}",
+    "receiptNotFound": "لا يوجد طرد مُستلم بهذا الرمز في هذه النقطة.",
+    "receiptBack": "العودة للمسح"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
