@@ -7,6 +7,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { requestTopUp } from "@/lib/actions/wallet-topup";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
+import {
+  useDisplayCurrency,
+  useMoney,
+} from "@/components/currency/currency-provider";
 import { WALLET_OPEN_TOPUP } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +24,8 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
   const tp = useTranslations("Payment");
   const locale = useLocale();
   const router = useRouter();
+  const fmt = useMoney();
+  const display = useDisplayCurrency();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method>("LOCAL_WALLET");
@@ -99,6 +105,11 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
               ))}
             </select>
           </div>
+          {display.code !== "USD" && Number(amount) > 0 ? (
+            <p className="text-muted-foreground text-xs" dir="ltr">
+              ≈ {fmt(Number(amount))}
+            </p>
+          ) : null}
           {presets.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {presets.map((n) => (

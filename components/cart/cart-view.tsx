@@ -2,17 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, Store as StoreIcon, Trash2 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
-import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { useMoney } from "@/components/currency/currency-provider";
 
 import { useCart, type CartNotice } from "./cart-provider";
 
 export function CartView() {
   const t = useTranslations("Cart");
-  const locale = useLocale();
+  const fmt = useMoney();
   const {
     lines,
     saved,
@@ -178,7 +178,7 @@ export function CartView() {
                         </p>
                       ) : null}
                       <p className="mt-1 font-semibold" dir="ltr">
-                        {formatUsd(l.price, locale)}
+                        {fmt(l.price)}
                       </p>
                       {oos ? (
                         <p className="text-destructive text-xs font-medium">
@@ -262,7 +262,7 @@ export function CartView() {
                       {l.title}
                     </Link>
                     <p className="font-semibold" dir="ltr">
-                      {formatUsd(l.price, locale)}
+                      {fmt(l.price)}
                     </p>
                     {l.stock <= 0 ? (
                       <p className="text-destructive text-xs">
@@ -302,11 +302,11 @@ export function CartView() {
           <span className="text-muted-foreground">
             {t("selectedItems", { count: selectedCount })}
           </span>
-          <span dir="ltr">{formatUsd(total, locale)}</span>
+          <span dir="ltr">{fmt(total)}</span>
         </div>
         <div className="mt-3 flex justify-between border-t pt-3 font-semibold">
           <span>{t("total")}</span>
-          <span dir="ltr">{formatUsd(total, locale)}</span>
+          <span dir="ltr">{fmt(total)}</span>
         </div>
         <Button
           className="mt-4 w-full"

@@ -7,6 +7,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { requestWithdrawal } from "@/lib/actions/wallet-withdrawal";
 import { formatUsd } from "@/lib/products";
 import { useRouter } from "@/i18n/navigation";
+import {
+  useDisplayCurrency,
+  useMoney,
+} from "@/components/currency/currency-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
@@ -29,6 +33,8 @@ export function WalletWithdrawForm({
   const t = useTranslations("Wallet");
   const locale = useLocale();
   const router = useRouter();
+  const fmt = useMoney();
+  const display = useDisplayCurrency();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [pending, start] = useTransition();
@@ -76,6 +82,11 @@ export function WalletWithdrawForm({
             dir="ltr"
             className="sm:w-56"
           />
+          {display.code !== "USD" && Number(amount) > 0 ? (
+            <p className="text-muted-foreground text-xs" dir="ltr">
+              ≈ {fmt(Number(amount))}
+            </p>
+          ) : null}
           <p className="text-muted-foreground text-xs">
             {t("withdrawMin", { min: formatUsd(min, locale) })}
           </p>

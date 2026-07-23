@@ -14,6 +14,7 @@ import {
   type RawSearchParams,
 } from "@/lib/listing";
 import { prisma } from "@/lib/prisma";
+import { type DisplayCurrency } from "@/lib/currency-constants";
 import { toCardItem, type ProductCardItem } from "@/lib/products";
 
 // Product-only text expression. MUST stay byte-identical to the expression in the
@@ -215,7 +216,7 @@ async function pageProductIds(
 export async function getListing(
   sp: RawSearchParams,
   locale: string,
-  opts: { categorySlug?: string } = {},
+  opts: { categorySlug?: string; display?: DisplayCurrency } = {},
 ): Promise<ListingResult> {
   const params = parseListingParams(sp);
   if (opts.categorySlug) params.category = opts.categorySlug;
@@ -250,7 +251,7 @@ export async function getListing(
   const items = pageIds
     .map((id) => byId.get(id))
     .filter((c): c is (typeof cards)[number] => Boolean(c))
-    .map((m) => toCardItem(m, locale));
+    .map((m) => toCardItem(m, locale, opts.display));
 
   return { items, total, page, totalPages, facets, params };
 }

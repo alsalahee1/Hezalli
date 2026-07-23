@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { getRequestDisplayCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { toCardItem } from "@/lib/products";
 import { ProductCard } from "@/components/product/product-card";
@@ -7,6 +8,7 @@ import { ProductCard } from "@/components/product/product-card";
 export default async function DealsPage() {
   const t = await getTranslations("Deals");
   const locale = await getLocale();
+  const display = await getRequestDisplayCurrency();
   const now = new Date();
 
   const activeDiscount = {
@@ -51,7 +53,7 @@ export default async function DealsPage() {
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {rows.map((p) => (
-            <ProductCard key={p.id} item={toCardItem(p, locale)} />
+            <ProductCard key={p.id} item={toCardItem(p, locale, display)} />
           ))}
         </div>
       )}

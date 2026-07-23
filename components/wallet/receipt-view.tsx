@@ -1,6 +1,8 @@
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import { getSetting } from "@/lib/settings";
 import { billerName } from "@/lib/wallet-billers";
 import type { ReceiptData } from "@/lib/wallet-receipt";
@@ -61,8 +63,11 @@ export async function ReceiptView({ receipt }: { receipt: ReceiptData }) {
   const locale = await getLocale();
   const platform = await getSetting("platform_name");
 
+  // A receipt is a record of a USD ledger transaction, so USD stays the
+  // authoritative figure; a converted line at today's rate is added below.
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
+  const display = await getRequestDisplayCurrency();
   const StatusIcon = STATUS_ICON[receipt.status];
   const isBill =
     receipt.type === "BILL_PAYMENT" ||
@@ -85,6 +90,11 @@ export async function ReceiptView({ receipt }: { receipt: ReceiptData }) {
           {receipt.direction === "in" ? "+" : "−"}
           {money(receipt.amountUsd)}
         </p>
+        {display.code !== "USD" ? (
+          <p className="text-muted-foreground text-sm" dir="ltr">
+            ≈ {formatMoney(receipt.amountUsd, display, locale)}
+          </p>
+        ) : null}
         <span
           className={`inline-flex items-center gap-1.5 text-sm font-medium ${
             STATUS_COLOR[receipt.status]

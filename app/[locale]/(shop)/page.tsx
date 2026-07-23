@@ -8,6 +8,8 @@ import {
 } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { type DisplayCurrency } from "@/lib/currency-constants";
 import { getWalletView } from "@/lib/wallet";
 import { localizedName } from "@/lib/categories";
 import { getFlashSales } from "@/lib/flash";
@@ -47,21 +49,21 @@ const STRIP_TTL = 120; // seconds
 const BEST_SELLERS_TTL = 300; // seconds
 
 const featuredItems = unstable_cache(
-  async (locale: string) => {
+  async (locale: string, display: DisplayCurrency) => {
     const rows = await prisma.product.findMany({
       where: { status: "ACTIVE", isFeatured: true },
       orderBy: { updatedAt: "desc" },
       take: 10,
       select: CARD_SELECT,
     });
-    return rows.map((r) => toCardItem(r, locale));
+    return rows.map((r) => toCardItem(r, locale, display));
   },
   ["home-featured"],
   { revalidate: STRIP_TTL, tags: ["home-strips"] },
 );
 
 const dealsItems = unstable_cache(
-  async (locale: string) => {
+  async (locale: string, display: DisplayCurrency) => {
     const rows = await prisma.product.findMany({
       where: {
         status: "ACTIVE",
@@ -71,28 +73,28 @@ const dealsItems = unstable_cache(
       take: 10,
       select: CARD_SELECT,
     });
-    return rows.map((r) => toCardItem(r, locale));
+    return rows.map((r) => toCardItem(r, locale, display));
   },
   ["home-deals"],
   { revalidate: STRIP_TTL, tags: ["home-strips"] },
 );
 
 const newArrivalsItems = unstable_cache(
-  async (locale: string) => {
+  async (locale: string, display: DisplayCurrency) => {
     const rows = await prisma.product.findMany({
       where: { status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: CARD_SELECT,
     });
-    return rows.map((r) => toCardItem(r, locale));
+    return rows.map((r) => toCardItem(r, locale, display));
   },
   ["home-new-arrivals"],
   { revalidate: STRIP_TTL, tags: ["home-strips"] },
 );
 
 const bestSellersItems = unstable_cache(
-  async (locale: string) => {
+  async (locale: string, display: DisplayCurrency) => {
     const TAKE = 10;
     // Real sales first (completed orders), then fill with top-rated products.
     const sold = await prisma.orderItem.groupBy({
@@ -137,14 +139,14 @@ const bestSellersItems = unstable_cache(
     const order = new Map(bestIds.map((id, i) => [id, i]));
     return products
       .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-      .map((p) => toCardItem(p, locale));
+      .map((p) => toCardItem(p, locale, display));
   },
   ["home-best-sellers"],
   { revalidate: BEST_SELLERS_TTL, tags: ["home-strips"] },
 );
 
 const categoryStripsData = unstable_cache(
-  async (locale: string) => {
+  async (locale: string, display: DisplayCurrency) => {
     const cats = await prisma.category.findMany({
       where: { parentId: null, isActive: true },
       orderBy: { position: "asc" },
@@ -162,7 +164,7 @@ const categoryStripsData = unstable_cache(
             take: 5,
             select: CARD_SELECT,
           })
-        ).map((r) => toCardItem(r, locale)),
+        ).map((r) => toCardItem(r, locale, display)),
       })),
     );
   },
@@ -330,7 +332,7 @@ async function FlashHomeSection() {
 
 async function FeaturedSection({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const items = await featuredItems(locale);
+  const items = await featuredItems(locale, await getRequestDisplayCurrency());
   if (items.length === 0) return null;
   return <ProductStrip title={t("featured")} items={items} />;
 }
@@ -340,7 +342,7 @@ async function DealsSection({ locale }: { locale: string }) {
   return (
     <ProductStrip
       title={t("deals")}
-      items={await dealsItems(locale)}
+      items={await dealsItems(locale, await getRequestDisplayCurrency())}
       seeAllHref="/deals"
       seeAllLabel={t("seeAll")}
     />
@@ -352,7 +354,7 @@ async function NewArrivalsSection({ locale }: { locale: string }) {
   return (
     <ProductStrip
       title={t("newArrivals")}
-      items={await newArrivalsItems(locale)}
+      items={await newArrivalsItems(locale, await getRequestDisplayCurrency())}
       seeAllHref="/search?sort=newest"
       seeAllLabel={t("seeAll")}
     />
@@ -364,7 +366,7 @@ async function BestSellersSection({ locale }: { locale: string }) {
   return (
     <ProductStrip
       title={t("bestSellers")}
-      items={await bestSellersItems(locale)}
+      items={await bestSellersItems(locale, await getRequestDisplayCurrency())}
       seeAllHref="/search?sort=best_selling"
       seeAllLabel={t("seeAll")}
     />
@@ -373,7 +375,10 @@ async function BestSellersSection({ locale }: { locale: string }) {
 
 async function CategoryStrips({ locale }: { locale: string }) {
   const t = await getTranslations("Home");
-  const strips = await categoryStripsData(locale);
+  const strips = await categoryStripsData(
+    locale,
+    await getRequestDisplayCurrency(),
+  );
   return (
     <>
       {strips.map((s) => (
@@ -399,7 +404,8 @@ async function RecentlyViewedSection({ locale }: { locale: string }) {
       take: 10,
       select: { product: { select: CARD_SELECT } },
     });
-    initial = rows.map((r) => toCardItem(r.product, locale));
+    const display = await getRequestDisplayCurrency();
+    initial = rows.map((r) => toCardItem(r.product, locale, display));
   }
   return <RecentlyViewed initial={initial} />;
 }

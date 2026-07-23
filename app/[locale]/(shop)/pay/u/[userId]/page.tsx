@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 import { getWalletView } from "@/lib/wallet";
 import { walletHasPin } from "@/lib/wallet-pin";
@@ -22,7 +24,6 @@ export default async function PayUserPage({
     redirect(`/${locale}/login?callbackUrl=/${locale}/pay/u/${userId}`);
   }
   const t = await getTranslations("Wallet");
-  const format = await getFormatter();
 
   const recipient = await prisma.user.findUnique({
     where: { id: userId },
@@ -66,6 +67,7 @@ export default async function PayUserPage({
 
   const name = recipient.name || recipient.email || "—";
   const { balance } = await getWalletView(session.user.id, 0);
+  const display = await getRequestDisplayCurrency();
   const [hasPin, hasPasskey] = await Promise.all([
     walletHasPin(session.user.id),
     walletHasPasskey(session.user.id),
@@ -79,10 +81,7 @@ export default async function PayUserPage({
       </div>
       <p className="text-muted-foreground text-center text-xs">
         {t("payFromBalance", {
-          balance: format.number(balance, {
-            style: "currency",
-            currency: "USD",
-          }),
+          balance: formatMoney(balance, display, locale),
         })}
       </p>
       <PayUserForm

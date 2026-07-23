@@ -6,15 +6,17 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import type { NavCategory } from "@/lib/categories";
-import { formatUsd } from "@/lib/products";
+import type { DisplayCurrencyCode } from "@/lib/currency-constants";
 import type { ThemeId } from "@/lib/theme-constants";
 import { CartButton } from "@/components/cart/cart-button";
+import { useMoney } from "@/components/currency/currency-provider";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ChatIcon } from "@/components/chat/chat-icon";
 import { Button } from "@/components/ui/button";
 
 import { CategoryNav } from "./category-nav";
+import { CurrencySwitcher } from "./currency-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { Logo } from "./logo";
 import { SearchBar } from "./search-bar";
@@ -36,6 +38,7 @@ export function SiteHeader({
   walletBalance = 0,
   categories = [],
   theme = "default",
+  displayCurrency = "USD",
 }: {
   user?: HeaderUser | null;
   isSeller?: boolean;
@@ -46,11 +49,13 @@ export function SiteHeader({
   walletBalance?: number;
   categories?: NavCategory[];
   theme?: ThemeId;
+  displayCurrency?: DisplayCurrencyCode;
 }) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
   const th = useTranslations("Theme");
   const locale = useLocale();
+  const fmt = useMoney();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -77,6 +82,10 @@ export function SiteHeader({
           {/* Desktop only — hidden on mobile to keep the header uncluttered. */}
           <div className="hidden items-center gap-2 md:flex">
             <ThemeSwitcher initialTheme={theme} />
+            <CurrencySwitcher
+              initialCurrency={displayCurrency}
+              locale={locale}
+            />
             <LanguageSwitcher />
           </div>
           <Button
@@ -100,7 +109,7 @@ export function SiteHeader({
               >
                 <Wallet className="size-4 shrink-0" />
                 <span className="hidden sm:inline" dir="ltr">
-                  {formatUsd(walletBalance, locale)}
+                  {fmt(walletBalance)}
                 </span>
               </Link>
               <ChatIcon variant="buyer" />
@@ -146,6 +155,15 @@ export function SiteHeader({
               {th("label")}
             </span>
             <ThemeSwitcher initialTheme={theme} />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm font-medium">
+              {c("currency")}
+            </span>
+            <CurrencySwitcher
+              initialCurrency={displayCurrency}
+              locale={locale}
+            />
           </div>
         </div>
       ) : null}

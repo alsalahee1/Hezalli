@@ -1,8 +1,12 @@
 import { CheckCircle2 } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
-import { getFormatter, getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import {
+  formatMoney,
+  type DisplayCurrencyCode,
+} from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -23,6 +27,8 @@ export default async function CheckoutSuccessPage({
     select: {
       id: true,
       grandTotal: true,
+      displayCurrency: true,
+      exchangeRate: true,
       createdAt: true,
       subOrders: {
         select: {
@@ -35,7 +41,6 @@ export default async function CheckoutSuccessPage({
   if (!order) notFound();
 
   const t = await getTranslations("Checkout");
-  const format = await getFormatter();
   const itemCount = order.subOrders.reduce((n, s) => n + s._count.items, 0);
 
   return (
@@ -62,10 +67,14 @@ export default async function CheckoutSuccessPage({
         <div className="mt-1 flex justify-between font-semibold">
           <span>{t("grandTotal")}</span>
           <span dir="ltr">
-            {format.number(Number(order.grandTotal), {
-              style: "currency",
-              currency: "USD",
-            })}
+            {formatMoney(
+              Number(order.grandTotal),
+              {
+                code: order.displayCurrency as DisplayCurrencyCode,
+                rate: Number(order.exchangeRate),
+              },
+              locale,
+            )}
           </span>
         </div>
       </div>
