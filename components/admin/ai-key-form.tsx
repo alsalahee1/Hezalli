@@ -4,17 +4,26 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 
-import { saveAssistantKey } from "@/lib/actions/settings";
+import { saveAssistantAvatar, saveAssistantKey } from "@/lib/actions/settings";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImageUploader } from "@/components/upload/image-uploader";
 
 /**
  * Admin manager for Shadi's Gemini API key. The stored key is never echoed
  * back to the browser — the server only tells us WHERE the active key comes
  * from (saved in the database, the env var fallback, or nowhere).
  */
-export function AiKeyForm({ keySource }: { keySource: "db" | "env" | "none" }) {
+export function AiKeyForm({
+  keySource,
+  avatar,
+  defaultAvatar,
+}: {
+  keySource: "db" | "env" | "none";
+  avatar: string;
+  defaultAvatar: string;
+}) {
   const t = useTranslations("AdminSettings");
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -31,6 +40,18 @@ export function AiKeyForm({ keySource }: { keySource: "db" | "env" | "none" }) {
       else {
         setDone(true);
         setKey("");
+        router.refresh();
+      }
+    });
+
+  const setAvatar = (url: string | null) =>
+    start(async () => {
+      setErr(null);
+      setDone(false);
+      const res = await saveAssistantAvatar(url);
+      if (res.error) setErr(res.error);
+      else {
+        setDone(true);
         router.refresh();
       }
     });
@@ -53,6 +74,34 @@ export function AiKeyForm({ keySource }: { keySource: "db" | "env" | "none" }) {
       </div>
 
       <p className={`text-sm ${status.tone}`}>{status.text}</p>
+
+      <div className="space-y-1.5">
+        <span className="text-sm font-medium">{t("aiAvatar")}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="bg-muted size-16 shrink-0 overflow-hidden rounded-full border">
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatar} alt="" className="size-full object-cover" />
+            ) : null}
+          </div>
+          <ImageUploader
+            folder="avatars"
+            onUploaded={(url) => setAvatar(url)}
+          />
+          {avatar && avatar !== defaultAvatar ? (
+            <Button
+              variant="outline"
+              onClick={() => setAvatar(null)}
+              disabled={pending}
+            >
+              {t("aiAvatarReset")}
+            </Button>
+          ) : null}
+        </div>
+        <span className="text-muted-foreground block text-xs">
+          {t("aiAvatarHint")}
+        </span>
+      </div>
 
       <label className="block space-y-1.5">
         <span className="text-sm font-medium">{t("aiKey")}</span>

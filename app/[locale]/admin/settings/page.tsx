@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { getAnnouncement } from "@/lib/actions/announcement";
 import { prisma } from "@/lib/prisma";
-import { getPlatformSettings } from "@/lib/settings";
+import { getPlatformSettings, SETTING_DEFAULTS } from "@/lib/settings";
 import { AiKeyForm } from "@/components/admin/ai-key-form";
 import { AnnouncementEditor } from "@/components/admin/announcement-editor";
 import {
@@ -57,7 +57,11 @@ export default async function AdminSettingsPage() {
         <p className="text-muted-foreground text-sm">{t("desc")}</p>
       </div>
       <PlatformSettingsForm current={settings} />
-      <AiKeyForm keySource={keySource} />
+      <AiKeyForm
+        keySource={keySource}
+        avatar={settings.ai_assistant_avatar}
+        defaultAvatar={SETTING_DEFAULTS.ai_assistant_avatar}
+      />
       <ExchangeRatesForm current={rates} />
       <AnnouncementEditor current={announcement} />
     </div>

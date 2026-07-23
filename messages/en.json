@@ -1802,7 +1802,11 @@
     "aiKeyStatusDb": "A key is saved here — Shadi is using it.",
     "aiKeyStatusEnv": "No key saved here — Shadi is using the server's GEMINI_API_KEY variable.",
     "aiKeyStatusNone": "No key configured — Shadi stays hidden until you add one.",
+    "aiAvatar": "Bot image",
+    "aiAvatarHint": "Shown on the chat bubble and inside the chat window. Square images look best.",
+    "aiAvatarReset": "Reset to default",
     "err_badKey": "That doesn't look like a valid API key.",
+    "err_badAvatar": "The image must be an uploaded file or a valid URL.",
     "err_badCashLimit": "Enter valid COD credit-control limits.",
     "err_badSeason": "Enter a valid season: name, start and end dates in order, and a target of at least 1.",
     "err_badWalletEmail": "Enter a valid email for the Hezalli wallet account."

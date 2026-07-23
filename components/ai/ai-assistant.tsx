@@ -27,7 +27,7 @@ type Message = {
   cards?: ProductCard[];
 };
 
-export function AiAssistant() {
+export function AiAssistant({ avatar }: { avatar?: string }) {
   const t = useTranslations("Assistant");
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -111,11 +111,18 @@ export function AiAssistant() {
         className={cn(
           // Sit above the mobile bottom tab bar (~4rem tall) on phones, drop
           // back to the normal corner offset once the tab bar hides at `md`.
-          "bg-primary text-primary-foreground fixed bottom-20 z-50 flex size-14 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:bottom-4",
+          "bg-primary text-primary-foreground fixed bottom-20 z-50 flex size-14 items-center justify-center overflow-hidden rounded-full shadow-lg transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:bottom-4",
           isRtl ? "left-4" : "right-4",
         )}
       >
-        {open ? <X className="size-6" /> : <Sparkles className="size-6" />}
+        {open ? (
+          <X className="size-6" />
+        ) : avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatar} alt="" className="size-full object-cover" />
+        ) : (
+          <Sparkles className="size-6" />
+        )}
       </button>
 
       {/* Panel */}
@@ -130,7 +137,16 @@ export function AiAssistant() {
         >
           {/* Header */}
           <div className="bg-primary text-primary-foreground flex items-center gap-2 px-4 py-3">
-            <Bot className="size-5" />
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatar}
+                alt=""
+                className="border-primary-foreground/30 size-8 shrink-0 rounded-full border bg-white object-cover"
+              />
+            ) : (
+              <Bot className="size-5" />
+            )}
             <div className="flex-1">
               <p className="text-sm leading-tight font-semibold">
                 {t("title")}
@@ -156,7 +172,16 @@ export function AiAssistant() {
           >
             {messages.length === 0 && (
               <div className="text-muted-foreground space-y-3 py-4 text-center text-sm">
-                <Sparkles className="text-primary mx-auto size-8" />
+                {avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatar}
+                    alt=""
+                    className="border-primary/20 mx-auto size-14 rounded-full border object-cover"
+                  />
+                ) : (
+                  <Sparkles className="text-primary mx-auto size-8" />
+                )}
                 <p>{t("greeting")}</p>
                 <div className="flex flex-col gap-2">
                   {suggestions.map((s) => (
