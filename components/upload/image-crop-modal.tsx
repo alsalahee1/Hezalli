@@ -1,56 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Cropper from "react-easy-crop";
-import type { Area } from "react-easy-crop";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
-// Draw the selected crop rectangle (in the image's natural pixels, as
-// react-easy-crop reports it) onto a canvas and export it. Downscale/WebP
-// re-encoding is left to compressImage afterwards, so this keeps full crop
-// resolution.
-async function cropToBlob(src: string, area: Area): Promise<Blob> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+type Size = { w: number; h: number };
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
     const el = new Image();
     el.onload = () => resolve(el);
     el.onerror = () => reject(new Error("load failed"));
     el.src = src;
   });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(area.width));
-  canvas.height = Math.max(1, Math.round(area.height));
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas unsupported");
-  ctx.drawImage(
-    img,
-    area.x,
-    area.y,
-    area.width,
-    area.height,
-    0,
-    0,
-    canvas.width,
-    canvas.height,
-  );
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("encode failed"))),
-      "image/webp",
-      0.92,
-    ),
-  );
 }
 
-// Crop-before-upload dialog: pan + zoom the picked image within a fixed-aspect
-// frame, then hand the cropped bytes back to the uploader (which resizes and
-// uploads). Rendered as a plain portal overlay — NOT the shared Modal — because
-// react-easy-crop measures its container with getBoundingClientRect, and the
-// Modal's transform/scale animation makes that measurement wrong (the image
-// scales to nothing and shows black). A static, untransformed container fixes it.
+/**
+ * Crop-before-upload dialog. Self-contained (no third-party cropper): a plain
+ * <img> is scaled to "cover" the fixed-aspect frame and can be panned/zoomed;
+ * Apply maps the frame back to the image's natural pixels and draws that region
+ * to a canvas. Rendered as a portal overlay on document.body so no ancestor's
+ * layout/transform affects it. Downscale/WebP re-encode is left to compressImage.
+ */
 export function ImageCropModal({
   file,
   aspect,
@@ -64,10 +38,15 @@ export function ImageCropModal({
 }) {
   const t = useTranslations("Upload");
   const [src, setSrc] = useState("");
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [nat, setNat] = useState<Size | null>(null);
+  const [vpW, setVpW] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [areaPixels, setAreaPixels] = useState<Area | null>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
   const [busy, setBusy] = useState(false);
+  const vpRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -75,7 +54,15 @@ export function ImageCropModal({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // Lock background scroll + close on Escape while open.
+  // Track the frame's rendered width (its height follows from `aspect`).
+  useEffect(() => {
+    const measure = () => setVpW(vpRef.current?.clientWidth ?? 0);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [src]);
+
+  // Scroll-lock + Escape while open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -90,15 +77,73 @@ export function ImageCropModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onComplete = useCallback((_area: Area, px: Area) => {
-    setAreaPixels(px);
-  }, []);
+  const vpH = vpW / aspect;
+  // At zoom 1 the image just covers the frame; zoom multiplies from there.
+  const baseScale = nat && vpW ? Math.max(vpW / nat.w, vpH / nat.h) : 1;
+  const dispW = nat ? nat.w * baseScale * zoom : 0;
+  const dispH = nat ? nat.h * baseScale * zoom : 0;
+
+  // Keep the image covering the frame — no gaps at the edges.
+  const clamp = useCallback(
+    (p: { x: number; y: number }) => {
+      const mx = Math.max(0, (dispW - vpW) / 2);
+      const my = Math.max(0, (dispH - vpH) / 2);
+      return {
+        x: Math.min(mx, Math.max(-mx, p.x)),
+        y: Math.min(my, Math.max(-my, p.y)),
+      };
+    },
+    [dispW, dispH, vpW, vpH],
+  );
+
+  useEffect(() => {
+    setPos((p) => clamp(p));
+  }, [zoom, clamp]);
+
+  const imgLeft = vpW / 2 - dispW / 2 + pos.x;
+  const imgTop = vpH / 2 - dispH / 2 + pos.y;
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    setPos(
+      clamp({
+        x: drag.current.px + (e.clientX - drag.current.x),
+        y: drag.current.py + (e.clientY - drag.current.y),
+      }),
+    );
+  };
+  const endDrag = () => {
+    drag.current = null;
+  };
 
   const apply = async () => {
-    if (!areaPixels) return;
+    if (!nat || !vpW) return;
     setBusy(true);
     try {
-      onCropped(await cropToBlob(src, areaPixels));
+      const scale = baseScale * zoom; // displayed px per natural px
+      const sx = Math.max(0, Math.round(-imgLeft / scale));
+      const sy = Math.max(0, Math.round(-imgTop / scale));
+      const sw = Math.min(nat.w - sx, Math.round(vpW / scale));
+      const sh = Math.min(nat.h - sy, Math.round(vpH / scale));
+      const img = await loadImage(src);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, sw);
+      canvas.height = Math.max(1, sh);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas unsupported");
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("encode failed"))),
+          "image/webp",
+          0.92,
+        ),
+      );
+      onCropped(blob);
     } finally {
       setBusy(false);
     }
@@ -130,16 +175,34 @@ export function ImageCropModal({
           </button>
         </div>
 
-        <div className="relative h-72 w-full overflow-hidden rounded-lg bg-black">
+        <div
+          ref={vpRef}
+          className="bg-muted relative w-full touch-none overflow-hidden rounded-lg select-none"
+          style={{ aspectRatio: String(aspect) }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
           {src ? (
-            <Cropper
-              image={src}
-              crop={crop}
-              zoom={zoom}
-              aspect={aspect}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={onComplete}
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              onLoad={(e) =>
+                setNat({
+                  w: e.currentTarget.naturalWidth,
+                  h: e.currentTarget.naturalHeight,
+                })
+              }
+              className="pointer-events-none absolute max-w-none select-none"
+              style={{
+                left: imgLeft,
+                top: imgTop,
+                width: dispW || undefined,
+                height: dispH || undefined,
+              }}
             />
           ) : null}
         </div>
@@ -162,7 +225,7 @@ export function ImageCropModal({
           <Button variant="ghost" onClick={onCancel} disabled={busy}>
             {t("cropCancel")}
           </Button>
-          <Button onClick={apply} disabled={busy || !areaPixels}>
+          <Button onClick={apply} disabled={busy || !nat}>
             {busy ? t("uploading") : t("cropApply")}
           </Button>
         </div>
