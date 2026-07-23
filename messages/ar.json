@@ -43,6 +43,7 @@
     "wishlist": "المفضلة",
     "becomeSeller": "بِع على هزلي",
     "sellerCenter": "مركز البائع",
+    "dashboard": "لوحة التحكم",
     "adminPanel": "لوحة الإدارة",
     "fleetPortal": "بوابة الأسطول",
     "wallet": "المحفظة",
@@ -515,6 +516,11 @@
     "books": "الكتب والقرطاسية",
     "sports": "الرياضة والهواء الطلق",
     "automotive": "السيارات والأدوات"
+  },
+  "QuickNav": {
+    "store": "المتجر",
+    "wallet": "المحفظة",
+    "dashboard": "لوحة التحكم"
   },
   "Footer": {
     "how": "كيف يعمل هزلي",

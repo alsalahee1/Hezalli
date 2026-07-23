@@ -220,6 +220,7 @@ export function DashboardShell({
   const { nav, primary, ns, titleKey, base } = VARIANTS[variant];
   const t = useTranslations(ns);
   const c = useTranslations("Common");
+  const q = useTranslations("QuickNav");
   const a11y = useTranslations("A11y");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -319,11 +320,24 @@ export function DashboardShell({
             <NotificationBell
               variant={variant === "seller" ? "seller" : "admin"}
             />
+            {/* Quick hops out of the dashboard: the user's HezalliPay wallet
+                and the storefront — reachable from every panel screen. */}
+            <Link
+              href="/account/wallet"
+              aria-label={q("wallet")}
+              title={q("wallet")}
+              className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+            >
+              <Wallet className="size-5" />
+            </Link>
             <Link
               href="/"
-              className="text-muted-foreground hover:text-foreground text-sm hover:underline"
+              aria-label={q("store")}
+              title={q("store")}
+              className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors"
             >
-              Hezalli
+              <Store className="size-5" />
+              <span className="hidden sm:inline">{q("store")}</span>
             </Link>
           </div>
         </div>

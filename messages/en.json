@@ -43,6 +43,7 @@
     "wishlist": "Wishlist",
     "becomeSeller": "Sell on Hezalli",
     "sellerCenter": "Seller Center",
+    "dashboard": "Dashboard",
     "adminPanel": "Admin panel",
     "fleetPortal": "Fleet portal",
     "wallet": "Wallet",
@@ -515,6 +516,11 @@
     "books": "Books & Stationery",
     "sports": "Sports & Outdoors",
     "automotive": "Automotive & Tools"
+  },
+  "QuickNav": {
+    "store": "Storefront",
+    "wallet": "Wallet",
+    "dashboard": "Dashboard"
   },
   "Footer": {
     "how": "How it works",

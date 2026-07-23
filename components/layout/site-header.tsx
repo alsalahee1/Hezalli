@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, Store, User, Wallet, X } from "lucide-react";
+import { LayoutDashboard, Menu, Store, User, Wallet, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { dashboardHref } from "@/lib/dashboard-href";
 import type { NavCategory } from "@/lib/categories";
 import type { DisplayCurrencyCode } from "@/lib/currency-constants";
 import type { ThemeId } from "@/lib/theme-constants";
@@ -58,6 +59,16 @@ export function SiteHeader({
   const fmt = useMoney();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // The user's own panel, by role priority. Skipped for plain sellers — the
+  // Seller Center button next to it already IS their dashboard link.
+  const dash = dashboardHref({
+    isAdmin,
+    isSeller,
+    isCourier,
+    isPointOperator,
+    isFleetOwner,
+  });
+
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
       <div className="yemeni-trim yemeni:block hidden" aria-hidden />
@@ -99,6 +110,19 @@ export function SiteHeader({
               {isSeller ? t("sellerCenter") : t("becomeSeller")}
             </Link>
           </Button>
+          {user && dash !== "/seller" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="hidden sm:inline-flex"
+            >
+              <Link href={dash}>
+                <LayoutDashboard className="size-4" />
+                {t("dashboard")}
+              </Link>
+            </Button>
+          ) : null}
           {user ? (
             <>
               <Link
