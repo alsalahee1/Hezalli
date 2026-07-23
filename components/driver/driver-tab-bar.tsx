@@ -1,6 +1,13 @@
 "use client";
 
-import { BookOpen, ClipboardList, QrCode, Trophy, Wallet } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  History,
+  QrCode,
+  Trophy,
+  Wallet,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CenterTabBar } from "@/components/layout/center-tab-bar";
@@ -21,6 +28,7 @@ export function DriverTabBar() {
       responsive={false}
       primary={[
         { href: "/driver", label: t("jobs"), icon: ClipboardList, exact: true },
+        { href: "/driver/history", label: t("history"), icon: History },
         { href: "/driver/scan", label: t("scan"), icon: QrCode },
         { href: "/driver/ledger", label: t("ledger"), icon: Wallet },
         { href: "/driver/stats", label: t("statsTab"), icon: Trophy },
