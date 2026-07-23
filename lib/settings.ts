@@ -181,10 +181,36 @@ export type PlatformSettings = {
   // rides along when pages pass the settings around. lib/ai/gemini.ts reads it.
   ai_assistant_enabled: boolean;
   // Shadi's face: the image shown on the chat launcher bubble and inside the
-  // widget. A public path or URL; admins change it from Admin → Settings
+  // widget. A public path or URL; admins change it from Admin → Shadi
   // (upload or reset). Empty falls back to the bundled default.
   ai_assistant_avatar: string;
+  // ── Shadi tuning (Admin → Shadi page). For every "" / 0 value the runtime
+  // falls back to the matching env var, then to the built-in default — so a
+  // fresh install behaves exactly as before an admin touches anything. ──
+  // Gemini chat model id (fallback: GEMINI_MODEL env → gemini-2.5-flash).
+  ai_gemini_model: string;
+  // Messaging-channel reply style: "text" | "voice" | "both" | "match"
+  // (fallback: BOT_REPLY_MODE env → text). Voice notes are always understood.
+  ai_reply_mode: string;
+  // Gemini TTS prebuilt voice name (fallback: BOT_TTS_VOICE env → Leda).
+  ai_tts_voice: string;
+  // Natural-language delivery cue prepended to TTS text (fallback:
+  // BOT_TTS_STYLE env → per-locale default).
+  ai_tts_style: string;
+  // Cost/abuse guard overrides. 0 = use the env/default value
+  // (BOT_MAX_PER_HOUR → 60, BOT_DAILY_CAP → 3000, BOT_SPEND_CAP_USD → off).
+  ai_max_per_hour: number;
+  ai_daily_cap: number;
+  ai_spend_cap_usd: number;
+  // Per-channel switches for the messaging bots. The master
+  // ai_assistant_enabled toggle still gates everything.
+  ai_channel_telegram: boolean;
+  ai_channel_whatsapp: boolean;
 };
+
+/** The Shadi keys, managed on their own Admin → Shadi page (not the main
+ * platform-settings form). */
+export type AiSettingKey = Extract<keyof PlatformSettings, `ai_${string}`>;
 
 export const SETTING_DEFAULTS: PlatformSettings = {
   platform_name: "Hezalli",
@@ -253,6 +279,15 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   platform_wallet_email: "admin@hezalli.com",
   ai_assistant_enabled: true,
   ai_assistant_avatar: "/shadi.jpg",
+  ai_gemini_model: "",
+  ai_reply_mode: "",
+  ai_tts_voice: "",
+  ai_tts_style: "",
+  ai_max_per_hour: 0,
+  ai_daily_cap: 0,
+  ai_spend_cap_usd: 0,
+  ai_channel_telegram: true,
+  ai_channel_whatsapp: true,
 };
 
 export const SETTING_KEYS = Object.keys(

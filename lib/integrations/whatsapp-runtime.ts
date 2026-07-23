@@ -5,7 +5,7 @@
 import "server-only";
 
 import { formatReplyText, runChannelTurn } from "@/lib/ai/channel";
-import { renderVoice, wantsVoice } from "@/lib/ai/voice-reply";
+import { renderVoice, replyMode, wantsVoice } from "@/lib/ai/voice-reply";
 import { routing } from "@/i18n/routing";
 
 import { seenEventId } from "./dedupe";
@@ -72,11 +72,13 @@ async function handleMessage(m: WaMessage): Promise<void> {
     });
 
     let sentVoice = false;
-    if (wantsVoice({ isVoiceIn: Boolean(media), capped: Boolean(capped) })) {
+    if (
+      await wantsVoice({ isVoiceIn: Boolean(media), capped: Boolean(capped) })
+    ) {
       const ogg = await renderVoice(reply.text, locale);
       if (ogg) sentVoice = await sendWhatsAppVoice(from, ogg);
     }
-    const voiceOnly = process.env.BOT_REPLY_MODE?.toLowerCase() === "voice";
+    const voiceOnly = (await replyMode()) === "voice";
     const sendText = !voiceOnly || !sentVoice || reply.cards.length > 0;
     if (sendText) await sendWhatsAppText(from, formatReplyText(reply, locale));
   } catch (err) {

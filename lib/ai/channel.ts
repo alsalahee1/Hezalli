@@ -15,6 +15,7 @@ import {
 import {
   checkGlobalCaps,
   checkRate,
+  getMaxPerHour,
   recordDailyUsage,
   type GuardReason,
 } from "./guards";
@@ -87,7 +88,7 @@ export async function runChannelTurn(opts: {
   });
 
   // ── Guard 1: per-user hourly rate limit ──
-  const rate = checkRate(existing?.rateHits, now);
+  const rate = checkRate(existing?.rateHits, now, await getMaxPerHour());
   if (!rate.ok) {
     // Still record the attempt against the window so the limit actually holds.
     await prisma.botConversation.upsert({
