@@ -130,8 +130,8 @@ describe("wallet PIN (Step 19.9)", () => {
     });
     // Even with the correct current PIN, a locked wallet won't change its PIN —
     // the change endpoint is not a lockout bypass.
-    expect((await setWalletPin({ pin: "2222", currentPin: "1111" })).error).toBe(
-      "wrongCurrentPin",
-    );
+    expect(
+      (await setWalletPin({ pin: "2222", currentPin: "1111" })).error,
+    ).toBe("wrongCurrentPin");
   });
 });

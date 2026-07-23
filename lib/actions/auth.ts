@@ -145,7 +145,9 @@ export async function registerUser(
   formData: FormData,
 ): Promise<AuthFormState> {
   // Throttle account-creation abuse: at most 5 per IP per 15 minutes.
-  if (!(await rateLimitAsync(`register:${await clientIp()}`, 5, 15 * 60_000)).ok) {
+  if (
+    !(await rateLimitAsync(`register:${await clientIp()}`, 5, 15 * 60_000)).ok
+  ) {
     return { formError: "tooManyAttempts" };
   }
 

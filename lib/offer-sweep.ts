@@ -5,10 +5,7 @@
 // dispatch was closed (or fell through a race). Outside dispatch hours it
 // does nothing at all: offer clocks pause overnight instead of expiring while
 // the drivers sleep.
-import {
-  cascadeShipmentOffer,
-  offerOpenStatuses,
-} from "@/lib/courier-assign";
+import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
@@ -108,7 +105,12 @@ export async function sweepCourierOffers(): Promise<{
         ],
       },
       take: BATCH,
-      select: { id: true, status: true, atPointId: true, deliveryPointId: true },
+      select: {
+        id: true,
+        status: true,
+        atPointId: true,
+        deliveryPointId: true,
+      },
     });
     for (const s of queued) {
       // Prisma can't compare two columns in `where`; do the "at destination"

@@ -1,6 +1,13 @@
 "use client";
 
-import { BookOpen, ClipboardList, History, QrCode, Wallet } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  History,
+  QrCode,
+  Trophy,
+  Wallet,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -31,6 +38,7 @@ export function DriverTabBar() {
   ];
   const right: Tab[] = [
     { href: "/driver/ledger", label: t("ledger"), icon: Wallet },
+    { href: "/driver/stats", label: t("statsTab"), icon: Trophy },
     { href: "/driver/how", label: t("how"), icon: BookOpen },
   ];
   const scanActive =

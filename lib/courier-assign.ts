@@ -36,7 +36,9 @@ export type AssignStrategy = "balanced" | "nearest";
  */
 export function offerOpenStatuses(
   deliveryPointId: string | null,
-): ("PENDING" | "LABEL_CREATED" | "IN_TRANSIT" | "AT_POINT" | "RETURNED_TO_POINT")[] {
+): (
+  "PENDING" | "LABEL_CREATED" | "IN_TRANSIT" | "AT_POINT" | "RETURNED_TO_POINT"
+)[] {
   return deliveryPointId
     ? ["AT_POINT", "RETURNED_TO_POINT"]
     : ["PENDING", "LABEL_CREATED", "IN_TRANSIT"];

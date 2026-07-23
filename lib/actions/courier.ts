@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
-import {
-  cascadeShipmentOffer,
-  offerOpenStatuses,
-} from "@/lib/courier-assign";
+import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import { notifyBot } from "@/lib/integrations/bot-notify";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";

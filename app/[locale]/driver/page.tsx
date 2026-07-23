@@ -5,12 +5,14 @@ import {
   Clock,
   MapPin,
   PackageCheck,
+  Trophy,
   Wallet,
 } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
+import { courierPerformance } from "@/lib/courier-performance";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
@@ -20,6 +22,7 @@ import { LocationShare } from "@/components/driver/location-share";
 import { OfferActions } from "@/components/driver/offer-actions";
 import { PushToggle } from "@/components/driver/push-toggle";
 import { QrCode } from "@/components/orders/qr-code";
+import { StarRating } from "@/components/product/star-rating";
 import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
 export default async function DriverJobsPage() {
@@ -32,7 +35,7 @@ export default async function DriverJobsPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [rawJobs, settings, location, cash, cod] = await Promise.all([
+  const [rawJobs, settings, location, cash, cod, perf] = await Promise.all([
     prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
       select: {
@@ -74,6 +77,7 @@ export default async function DriverJobsPage() {
     }),
     courierCashSummary(courierId),
     courierCodStatus(courierId),
+    courierPerformance(courierId),
   ]);
 
   const now = new Date();
@@ -172,6 +176,34 @@ export default async function DriverJobsPage() {
       </details>
 
       <LocationShare currentGovernorate={location?.governorate ?? null} />
+
+      {/* Performance & badges: the driver's own scoreboard → /driver/stats.
+          Volume AND quality both count (lib/courier-badges.ts). */}
+      <Link
+        href="/driver/stats"
+        className="hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4"
+      >
+        <span className="rounded-full bg-amber-500/15 p-2 text-amber-600 dark:text-amber-500">
+          <Trophy className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{t("statsTitle")}</p>
+          <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs">
+            {perf.stats.ratingCount > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <StarRating rating={perf.stats.ratingAvg} size={12} />
+                <span dir="ltr">{perf.stats.ratingAvg}</span>
+              </span>
+            ) : null}
+            <span>
+              {t("statDeliveriesCount", { count: perf.stats.deliveries })}
+            </span>
+            <span>·</span>
+            <span>{t("badgesEarnedCount", { count: perf.earnedCount })}</span>
+          </p>
+        </div>
+        <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
+      </Link>
 
       <div>
         <h1 className="text-lg font-semibold">{t("myJobs")}</h1>

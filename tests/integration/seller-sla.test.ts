@@ -92,7 +92,10 @@ describe("seller ship-SLA sweep", () => {
     });
     expect(order.status).toBe("CANCELLED");
     const buyerNote = await prisma.notification.findFirst({
-      where: { userId: fx.buyerId, data: { path: ["orderId"], equals: orderId } },
+      where: {
+        userId: fx.buyerId,
+        data: { path: ["orderId"], equals: orderId },
+      },
     });
     expect(buyerNote).toBeTruthy();
   });
