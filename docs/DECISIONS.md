@@ -5,7 +5,7 @@
 > decision changes, update it here **and** in `ARCHITECTURE.md` / `DATABASE.md`
 > in the same commit.
 
-_Last updated: 2026-07-14._
+_Last updated: 2026-07-23._
 
 ---
 
@@ -149,6 +149,11 @@ be added without a migration.
 - **Name:** **Hezalli** (confirmed).
 - **Domain:** **www.hezalli.com** (configured for production in Phase 16;
   `NEXT_PUBLIC_APP_URL` points here in production).
+- **Assistant bot name:** **Shadi (شادي)** (confirmed). Any assistant /
+  support / auto-reply bot the platform ships (see Phase 17.7 auto-reply chat
+  and Phase 17.11) presents itself as **"شادي"** in Arabic and **"Shadi"** in
+  English — in chat UI, notifications, and email signatures alike. The name
+  goes through the translation files like every other user-facing string.
 
 ## 11. MVP cut-line
 
@@ -171,7 +176,7 @@ phase still ships and is verified on its own before moving to the next.
 | 7 | Seller onboarding | Automatic to sell; KYC gates payouts only |
 | 8 | Product listing | Instant publish, moderate after |
 | 9 | Categories | 10 top-level (tree, admin-editable) |
-| 10 | Brand / domain | Hezalli / www.hezalli.com |
+| 10 | Brand / domain | Hezalli / www.hezalli.com; assistant bot named **Shadi (شادي)** |
 | 11 | MVP cut-line | Full build (phases 1–17) |
 
 ---
