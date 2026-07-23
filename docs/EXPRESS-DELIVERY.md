@@ -102,8 +102,13 @@ Two refinements apply under both strategies (`lib/courier-capacity.ts`):
   bicycle, motorbike, car, van, truck) has a carrying profile: max total
   weight, max total volume, max simultaneous parcels, and the longest single
   item that physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light
-  and low-volume yet impossible on a motorbike). A parcel's metrics come from
-  its lines, resolved per field in this order:
+  and low-volume yet impossible on a motorbike). The shipped numbers are code
+  defaults; delivery staff can tune any vehicle live (no deploy) from the
+  delivery-manager portal's **Vehicle capacity** page — overrides are stored
+  in the `vehicle_capacity` platform setting, merged field-by-field over the
+  defaults (`effectiveVehicleCapacity`), audited via the
+  `setVehicleCapacity` action, and resettable per vehicle. A parcel's metrics
+  come from its lines, resolved per field in this order:
   1. the values **snapshotted at checkout** (`OrderItem.weightGramsSnapshot` /
      `dimensionsSnapshot` / `sizeClassSnapshot`, frozen like `titleSnapshot`
      so catalog edits can't rewrite in-flight parcels);
