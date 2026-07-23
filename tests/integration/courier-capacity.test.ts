@@ -161,7 +161,14 @@ describe("capacity-aware courier assignment", () => {
         basePrice: 10,
         status: "ACTIVE",
         weightGrams: 29_000,
-        variants: { create: { sku: `heavy-${Date.now().toString(36)}`, name: "H", price: 10, stock: 5 } },
+        variants: {
+          create: {
+            sku: `heavy-${Date.now().toString(36)}`,
+            name: "H",
+            price: 10,
+            stock: 5,
+          },
+        },
       },
       include: { variants: true },
     });
