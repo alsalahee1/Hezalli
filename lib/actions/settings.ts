@@ -1,9 +1,12 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
+import { getTelegramToken, telegramApi } from "@/lib/integrations/telegram";
 import { prisma } from "@/lib/prisma";
 import type { AiSettingKey, PlatformSettings } from "@/lib/settings";
 
@@ -496,6 +499,112 @@ export async function saveAssistantSettings(
   revalidatePath(`/${locale}/admin/assistant`);
   revalidatePath(`/${locale}`, "layout");
   return { ok: true };
+}
+
+// --- Telegram connection (Admin → Shadi) -------------------------------------
+// Pasting a BotFather token connects the bot end-to-end: the token is verified
+// with getMe, a fresh webhook secret is generated, Telegram's webhook is
+// pointed at /api/telegram/webhook, and everything is stored in PlatformSetting
+// rows (kept out of getPlatformSettings, like the Gemini key). Passing null
+// disconnects: the webhook is removed (best-effort) and the rows are cleared.
+
+const TELEGRAM_KEYS = [
+  "telegram_bot_token",
+  "telegram_webhook_secret",
+  "telegram_bot_username",
+];
+
+export async function connectTelegram(
+  botToken: string | null,
+): Promise<Result & { username?: string }> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+  const locale = await getLocale();
+
+  if (botToken === null) {
+    try {
+      const active = await getTelegramToken();
+      if (active) await telegramApi(active, "deleteWebhook");
+    } catch {
+      // Best-effort — clearing the rows below disables the bot regardless.
+    }
+    await prisma.platformSetting.deleteMany({
+      where: { key: { in: TELEGRAM_KEYS } },
+    });
+    await prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "settings.telegram_disconnect",
+        entity: "PlatformSetting",
+        entityId: "telegram_bot_token",
+        meta: {},
+      },
+    });
+    revalidatePath(`/${locale}/admin/assistant`);
+    return { ok: true };
+  }
+
+  const token = botToken.trim();
+  if (!/^\d+:[A-Za-z0-9_-]{25,}$/.test(token))
+    return { error: "badTokenFormat" };
+
+  // Telegram only delivers webhooks over public HTTPS.
+  const base = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/+$/, "");
+  if (!base.startsWith("https://")) return { error: "noAppUrl" };
+
+  // Verify the token really works and learn the bot's @username.
+  let username = "";
+  try {
+    const me = await telegramApi(token, "getMe");
+    username = String(
+      (me.result as { username?: string } | undefined)?.username ?? "",
+    );
+  } catch {
+    return { error: "badToken" };
+  }
+
+  // Point Telegram at our webhook with a fresh secret (fail-closed check in
+  // the route). drop_pending_updates avoids replaying a backlog on connect.
+  const secret = randomBytes(24).toString("hex");
+  try {
+    await telegramApi(token, "setWebhook", {
+      url: `${base}/api/telegram/webhook`,
+      secret_token: secret,
+      allowed_updates: ["message", "edited_message"],
+      drop_pending_updates: true,
+    });
+  } catch {
+    return { error: "webhookFailed" };
+  }
+
+  const rows: Array<[string, string]> = [
+    ["telegram_bot_token", token],
+    ["telegram_webhook_secret", secret],
+    ["telegram_bot_username", username],
+  ];
+  await prisma.$transaction(
+    rows.map(([key, value]) =>
+      prisma.platformSetting.upsert({
+        where: { key },
+        create: { key, value },
+        update: { value },
+      }),
+    ),
+  );
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.telegram_connect",
+      entity: "PlatformSetting",
+      entityId: "telegram_bot_token",
+      // Record the bot identity, never the token or secret.
+      meta: { username },
+    },
+  });
+
+  revalidatePath(`/${locale}/admin/assistant`);
+  return { ok: true, username };
 }
 
 // --- Shadi's avatar ---------------------------------------------------------

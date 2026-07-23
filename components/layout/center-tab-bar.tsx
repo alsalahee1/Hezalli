@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { MoreHorizontal, X } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -11,7 +10,13 @@ import { useMountTransition } from "@/components/ui/use-mount-transition";
 export type CenterTab = {
   href: string;
   label: string;
-  icon: LucideIcon;
+  // Any lucide icon, or a custom glyph like ShadiIcon — anything accepting
+  // SVG-ish presentational props.
+  icon: React.ComponentType<{
+    className?: string;
+    strokeWidth?: number | string;
+    "aria-hidden"?: boolean;
+  }>;
   /** Match the href exactly instead of as a path prefix (for section roots). */
   exact?: boolean;
 };

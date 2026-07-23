@@ -2,7 +2,10 @@ import { after, NextResponse, type NextRequest } from "next/server";
 
 import { assistantReady } from "@/lib/ai/gemini";
 import { getSetting } from "@/lib/settings";
-import { telegramConfigured } from "@/lib/integrations/telegram";
+import {
+  getTelegramWebhookSecret,
+  telegramConfigured,
+} from "@/lib/integrations/telegram";
 import { seenTelegramUpdate } from "@/lib/integrations/telegram-dedup";
 import {
   processTelegramUpdate,
@@ -16,7 +19,7 @@ export async function POST(req: NextRequest) {
   // Ack quietly when the bot isn't fully configured — or the admin switched
   // the Telegram channel off — so Telegram stops retrying.
   if (
-    !telegramConfigured() ||
+    !(await telegramConfigured()) ||
     !(await assistantReady()) ||
     !(await getSetting("ai_channel_telegram"))
   ) {
@@ -27,7 +30,8 @@ export async function POST(req: NextRequest) {
   // bot MUST have a webhook secret set, and every update must present it —
   // otherwise an anonymous POST would be processed as a genuine Telegram update
   // (letting an attacker impersonate a linked user or burn the AI budget).
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  // The secret is set by the Admin → Shadi connect flow (env var fallback).
+  const secret = await getTelegramWebhookSecret();
   if (
     !secret ||
     req.headers.get("x-telegram-bot-api-secret-token") !== secret

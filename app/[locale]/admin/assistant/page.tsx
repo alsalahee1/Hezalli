@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { getDailyCap, getSpendCapUsd, monthSpendUsd } from "@/lib/ai/guards";
 import { dayKey, monthKey } from "@/lib/ai/guards-core";
-import { telegramConfigured } from "@/lib/integrations/telegram";
+import { telegramTokenSource } from "@/lib/integrations/telegram";
 import { whatsappConfigured } from "@/lib/integrations/whatsapp";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings, SETTING_DEFAULTS } from "@/lib/settings";
@@ -16,25 +16,39 @@ export default async function AdminAssistantPage() {
   const t = await getTranslations("AdminAssistant");
   const now = Date.now();
 
-  const [settings, aiKeyRow, today, monthRows, spend, dailyCap, spendCap] =
-    await Promise.all([
-      getPlatformSettings(),
-      prisma.platformSetting.findUnique({
-        where: { key: "gemini_api_key" },
-        select: { value: true },
-      }),
-      prisma.botDailyUsage.findUnique({
-        where: { day: dayKey(now) },
-        select: { messages: true },
-      }),
-      prisma.botDailyUsage.findMany({
-        where: { day: { startsWith: monthKey(now) } },
-        select: { messages: true },
-      }),
-      monthSpendUsd(now),
-      getDailyCap(),
-      getSpendCapUsd(),
-    ]);
+  const [
+    settings,
+    aiKeyRow,
+    today,
+    monthRows,
+    spend,
+    dailyCap,
+    spendCap,
+    tgSource,
+    tgUsernameRow,
+  ] = await Promise.all([
+    getPlatformSettings(),
+    prisma.platformSetting.findUnique({
+      where: { key: "gemini_api_key" },
+      select: { value: true },
+    }),
+    prisma.botDailyUsage.findUnique({
+      where: { day: dayKey(now) },
+      select: { messages: true },
+    }),
+    prisma.botDailyUsage.findMany({
+      where: { day: { startsWith: monthKey(now) } },
+      select: { messages: true },
+    }),
+    monthSpendUsd(now),
+    getDailyCap(),
+    getSpendCapUsd(),
+    telegramTokenSource(),
+    prisma.platformSetting.findUnique({
+      where: { key: "telegram_bot_username" },
+      select: { value: true },
+    }),
+  ]);
 
   // Tell the client only WHERE the key comes from — never the key itself.
   const keySource =
@@ -65,7 +79,9 @@ export default async function AdminAssistantPage() {
           spendCapUsd: settings.ai_spend_cap_usd,
           telegramEnabled: settings.ai_channel_telegram,
           whatsappEnabled: settings.ai_channel_whatsapp,
-          telegramConfigured: telegramConfigured(),
+          telegramSource: tgSource,
+          telegramUsername:
+            typeof tgUsernameRow?.value === "string" ? tgUsernameRow.value : "",
           whatsappConfigured: whatsappConfigured(),
         }}
         usage={{

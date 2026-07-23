@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   HandCoins,
@@ -27,7 +26,6 @@ import {
   Shapes,
   ShieldAlert,
   ShoppingBag,
-  Sparkles,
   Star,
   Store,
   Tag,
@@ -42,12 +40,17 @@ import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { ShadiIcon } from "@/components/ai/shadi-icon";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ChatIcon } from "@/components/chat/chat-icon";
 import { CenterTabBar } from "@/components/layout/center-tab-bar";
 
-type NavItem = { href: string; key: string; icon: LucideIcon };
+type NavItem = {
+  href: string;
+  key: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
 
 // The four destinations that get their own tab on the phone bottom bar; the
 // rest of the sidebar stays reachable through the bar's "More" sheet.
@@ -107,7 +110,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/pages", key: "pages", icon: ScrollText },
   { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/audit", key: "audit", icon: History },
-  { href: "/admin/assistant", key: "assistant", icon: Sparkles },
+  { href: "/admin/assistant", key: "assistant", icon: ShadiIcon },
   { href: "/admin/settings", key: "settings", icon: Settings },
   { href: "/admin/how", key: "how", icon: BookOpen },
 ];

@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { KeyRound, MessageCircle, Mic, Shield, Sparkles } from "lucide-react";
+import { KeyRound, MessageCircle, Mic, Shield } from "lucide-react";
 
 import {
+  connectTelegram,
   saveAssistantAvatar,
   saveAssistantKey,
   saveAssistantSettings,
@@ -13,6 +14,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/upload/image-uploader";
+import { ShadiIcon } from "@/components/ai/shadi-icon";
 
 // Gemini prebuilt TTS voices worth offering; "" = keep the server default.
 const VOICES = [
@@ -41,7 +43,8 @@ export type AssistantCurrent = {
   spendCapUsd: number;
   telegramEnabled: boolean;
   whatsappEnabled: boolean;
-  telegramConfigured: boolean;
+  telegramSource: "db" | "env" | "none";
+  telegramUsername: string;
   whatsappConfigured: boolean;
 };
 
@@ -66,6 +69,7 @@ export function AssistantSettings({
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [key, setKey] = useState("");
+  const [tgToken, setTgToken] = useState("");
 
   const [f, setF] = useState({
     enabled: current.enabled,
@@ -123,7 +127,7 @@ export function AssistantSettings({
     <div className="space-y-6">
       {/* ── Status & identity ── */}
       <section className="space-y-4 rounded-lg border p-5">
-        <SectionTitle icon={Sparkles} title={t("statusTitle")} />
+        <SectionTitle icon={ShadiIcon} title={t("statusTitle")} />
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -231,16 +235,62 @@ export function AssistantSettings({
       <section className="space-y-3 rounded-lg border p-5">
         <SectionTitle icon={MessageCircle} title={t("channelsTitle")} />
         <p className="text-muted-foreground text-sm">{t("channelsDesc")}</p>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="size-4"
-            checked={f.telegramEnabled}
-            onChange={(e) => set("telegramEnabled", e.target.checked)}
-          />
-          {t("telegram")}
-          <StatusBadge ok={current.telegramConfigured} t={t} />
-        </label>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="size-4"
+              checked={f.telegramEnabled}
+              onChange={(e) => set("telegramEnabled", e.target.checked)}
+            />
+            {t("telegram")}
+            <StatusBadge ok={current.telegramSource !== "none"} t={t} />
+            {current.telegramSource === "db" && current.telegramUsername ? (
+              <span className="text-muted-foreground text-xs" dir="ltr">
+                @{current.telegramUsername}
+              </span>
+            ) : null}
+          </label>
+          {current.telegramSource === "db" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => run(() => connectTelegram(null))}
+              disabled={pending}
+            >
+              {t("tgDisconnect")}
+            </Button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                type="password"
+                dir="ltr"
+                autoComplete="off"
+                value={tgToken}
+                onChange={(e) => setTgToken(e.target.value)}
+                placeholder="123456789:AA…"
+                className="max-w-xs"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  run(async () => {
+                    const res = await connectTelegram(tgToken);
+                    if (!res.error) setTgToken("");
+                    return res;
+                  })
+                }
+                disabled={pending || !tgToken.trim()}
+              >
+                {t("tgConnect")}
+              </Button>
+              <span className="text-muted-foreground block w-full text-xs">
+                {t("tgTokenHint")}
+              </span>
+            </div>
+          )}
+        </div>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -384,7 +434,7 @@ function SectionTitle({
   icon: Icon,
   title,
 }: {
-  icon: typeof Sparkles;
+  icon: React.ComponentType<{ className?: string }>;
   title: string;
 }) {
   return (
