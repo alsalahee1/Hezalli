@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { getDailyCap, getSpendCapUsd, monthSpendUsd } from "@/lib/ai/guards";
 import { dayKey, monthKey } from "@/lib/ai/guards-core";
+import { DEFAULT_INTRO, LOCKED_RULES_PREVIEW } from "@/lib/ai/prompt-defaults";
 import { telegramTokenSource } from "@/lib/integrations/telegram";
 import { whatsappConfigured } from "@/lib/integrations/whatsapp";
 import { prisma } from "@/lib/prisma";
@@ -79,6 +80,9 @@ export default async function AdminAssistantPage() {
           spendCapUsd: settings.ai_spend_cap_usd,
           telegramEnabled: settings.ai_channel_telegram,
           whatsappEnabled: settings.ai_channel_whatsapp,
+          intro: settings.ai_intro,
+          defaultIntro: DEFAULT_INTRO,
+          lockedRules: LOCKED_RULES_PREVIEW,
           persona: settings.ai_persona,
           greeting: settings.ai_greeting,
           temperature: settings.ai_temperature,

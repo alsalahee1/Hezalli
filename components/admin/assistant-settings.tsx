@@ -46,6 +46,9 @@ export type AssistantCurrent = {
   telegramSource: "db" | "env" | "none";
   telegramUsername: string;
   whatsappConfigured: boolean;
+  intro: string;
+  defaultIntro: string;
+  lockedRules: string;
   persona: string;
   greeting: string;
   temperature: number;
@@ -86,6 +89,9 @@ export function AssistantSettings({
     spendCapUsd: String(current.spendCapUsd || ""),
     telegramEnabled: current.telegramEnabled,
     whatsappEnabled: current.whatsappEnabled,
+    // Show the effective intro so it's editable in place; empty override means
+    // "use the default", so seed the box with the default text.
+    intro: current.intro || current.defaultIntro,
     persona: current.persona,
     greeting: current.greeting,
     temperature: String(current.temperature),
@@ -119,6 +125,7 @@ export function AssistantSettings({
         maxPerHour: Number(f.maxPerHour) || 0,
         dailyCap: Number(f.dailyCap) || 0,
         spendCapUsd: Number(f.spendCapUsd) || 0,
+        intro: f.intro,
         persona: f.persona,
         greeting: f.greeting,
         temperature: Number(f.temperature),
@@ -246,6 +253,46 @@ export function AssistantSettings({
       {/* ── Persona & behaviour (the bot's "role") ── */}
       <section className="space-y-4 rounded-lg border p-5">
         <SectionTitle icon={Wand2} title={t("personaTitle")} />
+
+        {/* Base intro — the editable half of "Layer 1". */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{t("intro")}</span>
+            {f.intro.trim() !== current.defaultIntro.trim() ? (
+              <button
+                type="button"
+                onClick={() => set("intro", current.defaultIntro)}
+                className="text-primary text-xs hover:underline"
+              >
+                {t("introReset")}
+              </button>
+            ) : null}
+          </div>
+          <textarea
+            value={f.intro}
+            onChange={(e) => set("intro", e.target.value)}
+            rows={5}
+            maxLength={2000}
+            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+          />
+          <span className="text-muted-foreground block text-xs">
+            {t("introHint")}
+          </span>
+        </div>
+
+        {/* Locked rules — read-only, always applied. */}
+        <details className="rounded-md border">
+          <summary className="text-muted-foreground cursor-pointer px-3 py-2 text-sm font-medium">
+            {t("lockedTitle")}
+          </summary>
+          <div className="space-y-2 border-t px-3 py-2">
+            <p className="text-muted-foreground text-xs">{t("lockedHint")}</p>
+            <pre className="bg-muted/40 text-muted-foreground max-h-56 overflow-auto rounded-md p-3 text-xs whitespace-pre-wrap">
+              {current.lockedRules}
+            </pre>
+          </div>
+        </details>
+
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{t("persona")}</span>
           <textarea
