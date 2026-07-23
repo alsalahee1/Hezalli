@@ -137,6 +137,16 @@ enum DeliveryOutcome {
   FAILED
 }
 
+// Lifecycle of a delivery job offered to a courier (docs/EXPRESS-DELIVERY.md).
+// OFFERED → ACCEPTED (tap or first scan) | REJECTED (declined with a reason)
+// | EXPIRED (no answer within the window, or ops reassigned manually).
+enum ShipmentOfferStatus {
+  OFFERED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 // Entries in a courier's cash + earnings ledger (see CourierLedgerEntry).
 enum CourierLedgerType {
   COD_COLLECTED // + COD cash the driver took from the buyer on delivery
@@ -860,6 +870,9 @@ model SubOrder {
   sellerNet      Decimal        @default(0) @db.Decimal(12, 2)
   completedAt    DateTime?
   autoCompleteAt DateTime?
+  // One-shot guard for the seller ship-SLA sweep (lib/seller-sla.ts): when the
+  // seller was warned that this sub-order is about to auto-cancel unshipped.
+  sellerSlaRemindedAt DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -1352,6 +1365,11 @@ model Shipment {
   // alerted that this parcel sat un-moved past the threshold. Cleared on any
   // staff status override so a re-stuck parcel alerts again.
   stuckFlaggedAt   DateTime?
+  // One-shot guard for dispatch escalation: set when auto-assignment ran out
+  // of couriers (everyone declined / timed out / none eligible) and staff
+  // were alerted. Cleared by a manual ops assignment so a re-stranded parcel
+  // can alert again.
+  assignmentEscalatedAt DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   // How many doorstep attempts the courier has made (failed + the final one).
@@ -1364,6 +1382,7 @@ model Shipment {
   deliveryPoint   DeliveryPoint?  @relation(fields: [deliveryPointId], references: [id])
   events          ShipmentEvent[]
   attempts        DeliveryAttempt[]
+  offers          ShipmentOffer[]
   deliveryRating  DeliveryRating?
 
   @@index([driverId])
@@ -1408,6 +1427,29 @@ model DeliveryAttempt {
   shipment      Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
   @@index([shipmentId])
+}
+
+// A delivery job offered to a courier, awaiting their consent
+// (docs/EXPRESS-DELIVERY.md). Auto-assignment OFFERS a parcel instead of
+// forcing it: the driver accepts (tap, or implicitly on their first scan) or
+// declines with a reason; no answer within the window expires it and the
+// parcel cascades to the next courier. One row per (shipment, driver) — this
+// is also the exclusion list that stops a parcel bouncing back to a courier
+// who already said no.
+model ShipmentOffer {
+  id          String              @id @default(cuid())
+  shipmentId  String
+  driverId    String // the courier offered the job (plain id; no FK churn on User)
+  status      ShipmentOfferStatus @default(OFFERED)
+  reason      String? // REJECTED: too_far | off_duty | too_many_jobs | other
+  expiresAt   DateTime // unanswered past this = EXPIRED (swept during dispatch hours)
+  respondedAt DateTime?
+  createdAt   DateTime            @default(now())
+  shipment    Shipment            @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([shipmentId, driverId])
+  @@index([driverId, status])
+  @@index([status, expiresAt])
 }
 
 model ShipmentEvent {

@@ -17,6 +17,7 @@ import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocationShare } from "@/components/driver/location-share";
+import { OfferActions } from "@/components/driver/offer-actions";
 import { PushToggle } from "@/components/driver/push-toggle";
 import { QrCode } from "@/components/orders/qr-code";
 import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
@@ -38,6 +39,12 @@ export default async function DriverJobsPage() {
         id: true,
         status: true,
         shippedAt: true,
+        // A live offer means this job is only PROPOSED — the card grows
+        // accept/decline controls until the driver answers (or first-scans).
+        offers: {
+          where: { driverId: courierId, status: "OFFERED" },
+          select: { expiresAt: true },
+        },
         subOrder: {
           select: {
             shippingMethod: true,
@@ -184,7 +191,11 @@ export default async function DriverJobsPage() {
             <li key={j.id}>
               <Link
                 href={`/driver/job/${j.id}`}
-                className="hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4"
+                className={cn(
+                  "hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4",
+                  j.offers.length > 0 &&
+                    "rounded-b-none border-amber-500/50 bg-amber-500/5",
+                )}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -231,6 +242,12 @@ export default async function DriverJobsPage() {
                 </div>
                 <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
               </Link>
+              {j.offers.length > 0 ? (
+                <OfferActions
+                  shipmentId={j.id}
+                  expiresAt={j.offers[0].expiresAt}
+                />
+              ) : null}
             </li>
           ))}
         </ul>

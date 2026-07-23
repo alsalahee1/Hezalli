@@ -31,6 +31,14 @@ beforeAll(async () => {
     create: { key: "courier_assign_strategy", value: "nearest" },
     update: { value: "nearest" },
   });
+  // Pin dispatch to 24/7 so assignment runs at any wall-clock time.
+  for (const key of ["dispatch_hours_start", "dispatch_hours_end"]) {
+    await prisma.platformSetting.upsert({
+      where: { key },
+      create: { key, value: 0 },
+      update: { value: 0 },
+    });
+  }
 
   const uniq = Date.now().toString(36);
   const near = await prisma.user.create({
@@ -61,6 +69,11 @@ afterAll(async () => {
       data: { value: savedStrategy as never },
     });
   }
+  await prisma.platformSetting
+    .deleteMany({
+      where: { key: { in: ["dispatch_hours_start", "dispatch_hours_end"] } },
+    })
+    .catch(() => {});
   await prisma.courierLocation
     .deleteMany({ where: { userId: { in: userIds } } })
     .catch(() => {});
