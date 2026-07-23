@@ -7,6 +7,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { getTheme } from "@/lib/theme";
+import { AiAssistant } from "@/components/ai/ai-assistant";
 
 import "../globals.css";
 
@@ -64,6 +65,10 @@ export default async function LocaleLayout({
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <NextIntlClientProvider messages={messages}>
           {children}
+          {/* Shadi (شادي), the AI assistant, floats on every page of the site —
+            not just the storefront — so shoppers, sellers, and drivers can all
+            reach it. Hidden entirely when the Gemini key isn't configured. */}
+          {process.env.GEMINI_API_KEY ? <AiAssistant /> : null}
         </NextIntlClientProvider>
       </body>
     </html>

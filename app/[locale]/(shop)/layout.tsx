@@ -10,7 +10,6 @@ import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 import { getTheme } from "@/lib/theme";
 import type { Locale } from "@/i18n/routing";
-import { AiAssistant } from "@/components/ai/ai-assistant";
 import { CartProvider } from "@/components/cart/cart-provider";
 import { CurrencyProvider } from "@/components/currency/currency-provider";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
@@ -122,7 +121,7 @@ export default async function ShopLayout({
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             aria-hidden
           />
-          {process.env.GEMINI_API_KEY ? <AiAssistant /> : null}
+          {/* Shadi, the AI assistant, is mounted globally in the locale layout. */}
           <MobileTabBar wishlistCount={wishlistCount} />
         </div>
       </CartProvider>
