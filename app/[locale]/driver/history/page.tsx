@@ -94,7 +94,9 @@ export default async function DriverHistoryPage() {
                     </span>
                     {s.deliveredAt ? (
                       <span className="text-muted-foreground text-xs" dir="ltr">
-                        {format.dateTime(s.deliveredAt, { dateStyle: "medium" })}
+                        {format.dateTime(s.deliveredAt, {
+                          dateStyle: "medium",
+                        })}
                       </span>
                     ) : null}
                   </div>
