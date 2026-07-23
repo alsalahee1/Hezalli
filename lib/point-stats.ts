@@ -21,6 +21,143 @@ export type NetworkSummary = {
   perPoint: PointRow[]; // top hubs by delivered volume in range
 };
 
+export type HubDaySummary = {
+  received: number; // parcels scanned in at the counter since `since`
+  handedOver: number; // parcels handed to drivers (last-mile + line-haul)
+  cashTakenUsd: number; // counter COD + driver cash-ins
+  feesUsd: number; // handling/transfer fees credited
+};
+
+// The counter's end-of-day card: what moved through the hub since `since`
+// (normally today's midnight). Money comes from the hub-keyed ledger
+// (exact); parcel movements come from scan events, attributed by the hub
+// name the scans stamp as the event location, scoped to shipments that
+// involve this hub.
+export async function hubDaySummary(
+  pointId: string,
+  since: Date,
+): Promise<HubDaySummary> {
+  const point = await prisma.deliveryPoint.findUnique({
+    where: { id: pointId },
+    select: { name: true },
+  });
+  if (!point)
+    return { received: 0, handedOver: 0, cashTakenUsd: 0, feesUsd: 0 };
+
+  const [received, handedLastMile, handedTransfer, cash, fees] =
+    await Promise.all([
+      prisma.shipmentEvent.count({
+        where: {
+          createdAt: { gte: since },
+          status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
+          location: point.name,
+          shipment: {
+            OR: [{ deliveryPointId: pointId }, { originPointId: pointId }],
+          },
+        },
+      }),
+      prisma.shipmentEvent.count({
+        where: {
+          createdAt: { gte: since },
+          status: "PICKED_UP",
+          location: point.name,
+          shipment: { deliveryPointId: pointId },
+        },
+      }),
+      // Line-haul departures log IN_TRANSIT with no location; the origin
+      // route field scopes them to this hub.
+      prisma.shipmentEvent.count({
+        where: {
+          createdAt: { gte: since },
+          status: "IN_TRANSIT",
+          shipment: { originPointId: pointId },
+        },
+      }),
+      prisma.deliveryPointLedgerEntry.aggregate({
+        where: {
+          pointId,
+          type: { in: ["COD_COLLECTED", "DRIVER_CASH_IN"] },
+          createdAt: { gte: since },
+        },
+        _sum: { amountUsd: true },
+      }),
+      prisma.deliveryPointLedgerEntry.aggregate({
+        where: {
+          pointId,
+          type: "HANDLING_FEE",
+          createdAt: { gte: since },
+        },
+        _sum: { amountUsd: true },
+      }),
+    ]);
+
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  return {
+    received,
+    handedOver: handedLastMile + handedTransfer,
+    cashTakenUsd: round2(Number(cash._sum.amountUsd ?? 0)),
+    feesUsd: round2(Number(fees._sum.amountUsd ?? 0)),
+  };
+}
+
+export type HubSummary = {
+  delivered: number; // parcels routed via this hub delivered in range
+  pickups: number; // of which collected at the counter
+  rts: number; // returned-to-seller in range
+  feesUsd: number; // handling + transfer fees credited in range
+  successRatePct: number | null; // delivered / (delivered + rts)
+  pickupSharePct: number | null; // pickups / delivered
+};
+
+// One hub's slice of the network numbers — the operator-facing scoreboard
+// (the admin Reports page sees the same figures via networkSummary).
+export async function hubSummary(
+  pointId: string,
+  from: Date,
+  to: Date,
+): Promise<HubSummary> {
+  const [deliveredRows, rts, fees] = await Promise.all([
+    prisma.shipment.findMany({
+      where: {
+        deliveryPointId: pointId,
+        status: "DELIVERED",
+        deliveredAt: { gte: from, lt: to },
+      },
+      select: { subOrder: { select: { shippingMethod: true } } },
+    }),
+    prisma.shipmentEvent.count({
+      where: {
+        status: "RETURNED",
+        createdAt: { gte: from, lt: to },
+        shipment: { deliveryPointId: pointId },
+      },
+    }),
+    prisma.deliveryPointLedgerEntry.aggregate({
+      where: {
+        pointId,
+        type: "HANDLING_FEE",
+        createdAt: { gte: from, lt: to },
+      },
+      _sum: { amountUsd: true },
+    }),
+  ]);
+  const delivered = deliveredRows.length;
+  const pickups = deliveredRows.filter(
+    (d) => d.subOrder.shippingMethod === "PICKUP",
+  ).length;
+  const terminal = delivered + rts;
+  return {
+    delivered,
+    pickups,
+    rts,
+    feesUsd: Math.round(Number(fees._sum.amountUsd ?? 0) * 100) / 100,
+    successRatePct:
+      terminal > 0 ? Math.round((delivered / terminal) * 1000) / 10 : null,
+    pickupSharePct:
+      delivered > 0 ? Math.round((pickups / delivered) * 1000) / 10 : null,
+  };
+}
+
 export async function networkSummary(
   from: Date,
   to: Date,

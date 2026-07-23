@@ -812,6 +812,112 @@ InPost): a free-text shelf/bin label stamped at the receive scan.
 - [x] i18n (en + ar) + integration tests (stamp→manifest→clear, re-shelve, pickup shows & clears, failed-return re-stamp)
 - [x] This file kept current
 
-## 42. Out of scope
+## 42. v1.24 — Operator app completeness
+
+The backend outgrew the operator's app: hubs had four screens while drivers
+had nine, and several things the platform already enforced (the cash limit,
+the pickup window, sweep notifications) were invisible at the counter. This
+pass closes the gap — UI + read paths only, no new money flows:
+
+1. **History** (`/point/history`): parcels that finished their journey
+   through the hub (DELIVERED / RETURNED, either end of a two-hop), with the
+   fee each booked on this hub's ledger. The dashboard only shows in-flight
+   parcels, and the scan trail is the custody evidence (§4) — operators need
+   to look back.
+2. **Parcel search & detail** (`/point/parcel/[code]`): resolve a tracking
+   number or shipment id (scoped to parcels involving this hub) to a detail
+   page — route, badges, delivery attempts, and the full scan-event
+   timeline. Dashboard and history rows link to it; a search box sits on
+   both pages.
+3. **Cash-limit banner**: the dashboard now shows the driver-style red
+   "new parcels paused" banner when held cash exceeds
+   `point_cash_limit + deposit`, and an amber warning from 80% — instead of
+   the operator discovering the block when a cash-in fails.
+4. **Pickup countdown**: counter-pickup parcels get their own dashboard
+   group with a days-left chip against `pickup_window_days` (amber ≤ 2 days,
+   red when expired) so the operator can act before the sweep does.
+5. **Hub stats** (`/point/stats`): month-navigated scoreboard (delivered,
+   counter pickups, RTS, fees, success rate, pickup share) + all-time
+   totals, via `hubSummary()` in `lib/point-stats.ts` — the hub's slice of
+   the admin Reports numbers.
+6. **Notifications bell**: the point shell header gains the shared
+   `NotificationBell` (new `point` variant routes shipment-id notices to the
+   parcel detail page) — sweep alerts were previously unreachable from the
+   app.
+7. **How it works** (`/point/how`): the operator guide every other role
+   already had, using the shared how-blocks.
+8. **My hub** (`/point/profile`): read-only card of the public directory
+   details, capacity, deposit, and the cash-limit breakdown.
+9. **Tab bar**: History joins the primary tabs; Stats, Statement, My hub,
+   and Guide live in the More sheet.
+
+### Build checklist (v1.24)
+
+- [x] `/point/history` + fee-per-parcel join; `/point/parcel/[code]` detail with events + attempts; `ParcelSearch` box
+- [x] Dashboard: cash-limit banner (red/amber), pickup-wait group with window countdown, rows link to detail
+- [x] `lib/point-stats.ts`: `hubSummary(pointId, from, to)`; `/point/stats` page with month nav
+- [x] `NotificationBell` `point` variant + bell in the point layout header
+- [x] `/point/how` + `/point/profile`; tab bar More sheet
+- [x] i18n (en + ar)
+- [x] This file kept current
+
+## 42b. v1.25 — Counter polish
+
+Rounding out the v1.24 app for real counter volume:
+
+1. **Pagination** on `/point/history` and the ledger entry list (50 per
+   page, newer/older links) — the fixed take-50 stops silently hiding the
+   tail.
+2. **End-of-day card** on the dashboard: received / handed over / cash
+   taken / fees since midnight, via `hubDaySummary()` in
+   `lib/point-stats.ts` (money from the hub-keyed ledger; parcel movements
+   from the scan events the hub's own scans stamp).
+3. **Buyer-name search**: the parcel search now also resolves the name a
+   customer gives at the counter — a contains-match over this hub's parcels
+   with a result list when it's ambiguous.
+
+### Build checklist (v1.25)
+
+- [x] History + ledger pagination (page param, one-row lookahead)
+- [x] `hubDaySummary()` + dashboard today tiles + test
+- [x] Buyer-name fallback on `/point/parcel/[code]` + widened search copy
+- [x] i18n (en + ar)
+- [x] This file kept current
+
+## 42c. v1.26 — Hub vacation mode
+
+A shop closes for Eid, a family trip, a renovation — until now the only
+lever was an admin suspension. Now the operator pauses themselves
+(`DeliveryPoint.pausedAt`, toggled from `/point/profile` via
+`setPointPaused`, audited `point.pause`):
+
+- **No NEW routing while paused** — the checkout pickup picker, the seller
+  drop-off/origin pickers, and the server re-check (`point-select`) all
+  treat a paused hub like a suspended one, and it disappears from the
+  public `/points` directory.
+- **The counter keeps working** — parcels already announced are still
+  accepted at the desk, held parcels stay collectible (buyer pickups,
+  driver manifests), and committed PICKUP orders still ship to the hub:
+  exactly the capacity-gate exemptions, reused.
+- **Visible everywhere it matters** — an amber banner on the hub dashboard
+  (linking to the resume switch), the loud/quiet toggle card on the profile
+  page, and an "on break" chip on the admin/delivery-manager network list.
+  Only the operator can lift their own pause; admin suspension remains a
+  separate, staff-owned lever.
+
+### Build checklist (v1.26)
+
+- [x] `DeliveryPoint.pausedAt` + migration
+- [x] `point-select` (picker + server re-check) and `point-public`
+      (directory) exclude paused hubs; pickup-hub card on the track page
+      unaffected (the parcel is already there)
+- [x] `setPointPaused` (operator-gated, audited) + profile toggle +
+      dashboard banner + admin list chip
+- [x] i18n (en + ar) + integration test (`point-pause.test.ts`: pause →
+      unroutable + hidden, committed pickup still ships and scans, resume
+      restores, non-operator refused)
+- [x] This file kept current
+
+## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

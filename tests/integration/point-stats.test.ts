@@ -20,7 +20,7 @@ import {
   pointReturnToSeller,
 } from "@/lib/actions/point";
 import { shipSubOrder } from "@/lib/actions/shipment";
-import { networkSummary } from "@/lib/point-stats";
+import { hubDaySummary, hubSummary, networkSummary } from "@/lib/point-stats";
 import { prisma } from "@/lib/prisma";
 import { makeFixture } from "./factory";
 
@@ -119,5 +119,33 @@ describe("networkSummary", () => {
     const row = after.perPoint.find((p) => p.pointId === pointId);
     expect(row?.delivered).toBeGreaterThanOrEqual(1);
     expect(row?.feesUsd).toBeGreaterThanOrEqual(0.5);
+
+    // The operator-facing slice (docs §42) agrees with the network view:
+    // this hub is scoped, so the counts are exact, not lower bounds.
+    const hub = await hubSummary(pointId, from, to);
+    expect(hub.delivered).toBe(1);
+    expect(hub.pickups).toBe(1);
+    expect(hub.rts).toBe(1);
+    expect(hub.feesUsd).toBeGreaterThanOrEqual(0.5);
+    expect(hub.successRatePct).toBe(50);
+    expect(hub.pickupSharePct).toBe(100);
+    // Out of range → empty.
+    const past = await hubSummary(
+      pointId,
+      new Date(Date.now() - 7_200_000),
+      from,
+    );
+    expect(past.delivered).toBe(0);
+    expect(past.rts).toBe(0);
+    expect(past.feesUsd).toBe(0);
+    expect(past.successRatePct).toBeNull();
+
+    // The end-of-day card: both receive scans landed as events at this hub,
+    // the counter pickup took COD cash and booked the handling fee.
+    const day = await hubDaySummary(pointId, from);
+    expect(day.received).toBe(2);
+    expect(day.handedOver).toBe(0);
+    expect(day.cashTakenUsd).toBeGreaterThan(0);
+    expect(day.feesUsd).toBeGreaterThanOrEqual(0.5);
   });
 });

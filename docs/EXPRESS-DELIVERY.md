@@ -162,6 +162,15 @@ informed, the dispatch board shows each parcel's weight and each courier's
 vehicle + current load in the assign pickers, and a courier's vehicle can be
 changed (audited, `setCourierVehicle`) from their admin detail page.
 
+**Vacation mode.** A driver can pause new work themselves
+(`User.courierPausedAt`, toggled from the driver home via
+`setCourierPaused`, audited `courier.pause`): while paused they are skipped
+by every automatic path — assignment/offer candidates, board notifications,
+and board claims (`paused` error) — but jobs they already carry stay theirs
+to finish, and manual dispatch can still assign (the same escape hatch as
+the COD guard). The home page shows a loud amber card while paused so a
+quiet phone is never a mystery.
+
 ## 4a. Job offers — consent, clocks, cascade
 
 Auto-assignment **offers** the parcel to the chosen driver instead of forcing
@@ -339,6 +348,7 @@ get chased before the promise is missed.
 | Governorate mapping | `tests/unit/yemen-geo.test.ts` |
 | Courier dispatch + delivery (COD) | `tests/integration/courier.test.ts` |
 | Auto-assignment (balanced / nearest) | `tests/integration/courier-assign.test.ts`, `tests/integration/courier-nearest.test.ts` |
+| Vacation mode (pause skips auto paths) | `tests/integration/courier-pause.test.ts` |
 
 Run: `npm run test:unit` (no DB) and `npm run test:integration` (needs Postgres;
 CI provisions one).

@@ -89,7 +89,13 @@ async function activeCouriersWithLoad(
   excludeIds?: ReadonlySet<string>,
 ): Promise<CourierLoad[]> {
   let couriers = await prisma.user.findMany({
-    where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
+    where: {
+      roles: { has: "COURIER" },
+      isSuspended: false,
+      deletedAt: null,
+      // Vacation mode: paused drivers get no automatic work of any kind.
+      courierPausedAt: null,
+    },
     select: {
       id: true,
       courierVehicleType: true,

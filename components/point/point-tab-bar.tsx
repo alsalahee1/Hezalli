@@ -1,6 +1,15 @@
 "use client";
 
-import { Package, QrCode, Wallet } from "lucide-react";
+import {
+  CircleHelp,
+  FileText,
+  History,
+  Package,
+  QrCode,
+  Store,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CenterTabBar } from "@/components/layout/center-tab-bar";
@@ -11,15 +20,24 @@ import { CenterTabBar } from "@/components/layout/center-tab-bar";
  */
 export function PointTabBar() {
   const t = useTranslations("Point");
+  const tCommon = useTranslations("Common");
 
   return (
     <CenterTabBar
       ariaLabel={t("appName")}
       responsive={false}
+      moreLabel={tCommon("more")}
       primary={[
         { href: "/point", label: t("parcels"), icon: Package, exact: true },
         { href: "/point/scan", label: t("scan"), icon: QrCode },
         { href: "/point/ledger", label: t("ledger"), icon: Wallet },
+        { href: "/point/history", label: t("history"), icon: History },
+      ]}
+      moreItems={[
+        { href: "/point/stats", label: t("statsTab"), icon: TrendingUp },
+        { href: "/point/statement", label: t("stmtTitle"), icon: FileText },
+        { href: "/point/profile", label: t("profileTab"), icon: Store },
+        { href: "/point/how", label: t("howTab"), icon: CircleHelp },
       ]}
     />
   );

@@ -62,15 +62,16 @@ async function loadByPoint(pointIds: string[]): Promise<Map<string, number>> {
 }
 
 /**
- * ACTIVE points that can accept NEW routing (not full), ordered for a picker:
- * destination-governorate matches first, then least-loaded, then name. Pass
- * no governorate to get the same list ordered globally by load.
+ * ACTIVE points that can accept NEW routing (not full, not on a vacation
+ * pause), ordered for a picker: destination-governorate matches first, then
+ * least-loaded, then name. Pass no governorate to get the same list ordered
+ * globally by load.
  */
 export async function listRoutablePoints(
   destGovernorate?: string | null,
 ): Promise<RoutablePoint[]> {
   const points = await prisma.deliveryPoint.findMany({
-    where: { status: "ACTIVE" },
+    where: { status: "ACTIVE", pausedAt: null },
     select: {
       id: true,
       name: true,
@@ -105,7 +106,9 @@ export async function checkPointRoutable(
   pointId: string,
 ): Promise<PointRoutability> {
   const point = await prisma.deliveryPoint.findFirst({
-    where: { id: pointId, status: "ACTIVE" },
+    // A paused hub (vacation mode) is unavailable for NEW routing, exactly
+    // like a suspended one; committed pickups bypass this check upstream.
+    where: { id: pointId, status: "ACTIVE", pausedAt: null },
     select: { id: true, capacity: true },
   });
   if (!point) return "unavailable";

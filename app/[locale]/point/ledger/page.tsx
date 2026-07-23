@@ -12,23 +12,33 @@ import { PayoutRequestForm } from "@/components/point/payout-request-form";
 import { RemitClaimForm } from "@/components/ops/remit-claim-form";
 import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
 
+const PAGE_SIZE = 50;
+
 // The operator's earnings: handling fees accrued, payouts received, the
 // balance Hezalli still owes them — and a request-payout flow (docs §22).
-export default async function PointLedgerPage() {
+export default async function PointLedgerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const t = await getTranslations("Point");
   const format = await getFormatter();
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [summary, entries, couriers, payoutRequests, pendingClaim] =
+  const [summary, entryRows, couriers, payoutRequests, pendingClaim] =
     await Promise.all([
       pointLedgerSummary(gate.pointId),
+      // One row past the page so "older entries" only shows when it has some.
       prisma.deliveryPointLedgerEntry.findMany({
         where: { pointId: gate.pointId },
         orderBy: { createdAt: "desc" },
-        take: 50,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE + 1,
         select: {
           id: true,
           type: true,
@@ -63,6 +73,8 @@ export default async function PointLedgerPage() {
         select: { amountUsd: true, method: true, reference: true },
       }),
     ]);
+  const hasMore = entryRows.length > PAGE_SIZE;
+  const entries = entryRows.slice(0, PAGE_SIZE);
   const hasOpen = payoutRequests.some(
     (r) => r.status === "REQUESTED" || r.status === "APPROVED",
   );
@@ -201,7 +213,7 @@ export default async function PointLedgerPage() {
 
       {entries.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-12 text-center text-sm">
-          {t("noEntries")}
+          {page > 1 ? t("noMoreEntries") : t("noEntries")}
         </div>
       ) : (
         <ul className="divide-y rounded-xl border">
@@ -228,6 +240,29 @@ export default async function PointLedgerPage() {
           ))}
         </ul>
       )}
+
+      {page > 1 || hasMore ? (
+        <div className="flex items-center justify-between">
+          {page > 1 ? (
+            <Link
+              href={`/point/ledger?page=${page - 1}`}
+              className="text-primary text-sm font-medium hover:underline"
+            >
+              {t("prevPage")}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {hasMore ? (
+            <Link
+              href={`/point/ledger?page=${page + 1}`}
+              className="text-primary text-sm font-medium hover:underline"
+            >
+              {t("nextPage")}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

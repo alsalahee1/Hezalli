@@ -47,6 +47,7 @@ export function ClaimButton({ shipmentId }: { shipmentId: string }) {
               "tooManyJobs",
               "noCapacity",
               "notFound",
+              "paused",
             ].includes(err)
               ? `err_claim_${err}`
               : "boardError",

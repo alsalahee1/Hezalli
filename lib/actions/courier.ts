@@ -53,6 +53,33 @@ export async function updateCourierLocation(
   return { ok: true, governorate };
 }
 
+// Vacation mode: the driver pauses NEW work — automatic assignment, offers,
+// board pings, and board claims all skip them while paused. Jobs they
+// already carry stay theirs to finish, and ops can still assign manually
+// (same escape hatch as the COD guard). Self-service both ways.
+export async function setCourierPaused(paused: boolean): Promise<Result> {
+  const courierId = await requireCourierId();
+  if (!courierId) return { error: "forbidden" };
+
+  await prisma.user.update({
+    where: { id: courierId },
+    data: { courierPausedAt: paused ? new Date() : null },
+  });
+  await prisma.auditLog.create({
+    data: {
+      actorId: courierId,
+      action: "courier.pause",
+      entity: "User",
+      entityId: courierId,
+      meta: { paused },
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/driver`);
+  return { ok: true };
+}
+
 // Ops assigns (or reassigns / unassigns) a Hezalli Express shipment to a
 // courier. Pass an empty driverId to unassign.
 export async function assignCourier(
@@ -459,7 +486,7 @@ export async function courierClaimJob(shipmentId: string): Promise<Result> {
   const [driver, active, maxJobs] = await Promise.all([
     prisma.user.findUnique({
       where: { id: courierId },
-      select: { courierVehicleType: true },
+      select: { courierVehicleType: true, courierPausedAt: true },
     }),
     prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
@@ -467,6 +494,8 @@ export async function courierClaimJob(shipmentId: string): Promise<Result> {
     }),
     getSetting("job_board_max_active_jobs"),
   ]);
+  // Vacation mode: paused means no NEW work — resume from the home page first.
+  if (driver?.courierPausedAt) return { error: "paused" };
   if (maxJobs > 0 && active.length >= maxJobs) {
     return { error: "tooManyJobs" };
   }

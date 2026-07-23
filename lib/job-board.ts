@@ -114,7 +114,13 @@ export async function boardShipment(shipmentId: string): Promise<boolean> {
   const dest = shipment.subOrder.order.address;
   try {
     const couriers = await prisma.user.findMany({
-      where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
+      where: {
+        roles: { has: "COURIER" },
+        isSuspended: false,
+        deletedAt: null,
+        // Paused drivers asked for quiet — no board pings either.
+        courierPausedAt: null,
+      },
       select: {
         id: true,
         locale: true,
