@@ -3167,7 +3167,20 @@
     "payout_REJECTED": "مرفوض",
     "err_badState": "عولج الطلب مسبقًا.",
     "err_notFound": "الطلب غير موجود.",
-    "paused": "في استراحة"
+    "paused": "في استراحة",
+    "staffHeading": "فريق العمل",
+    "staffNone": "لا يوجد موظفون في هذه النقطة.",
+    "staffOwner": "المالك",
+    "staffRole_MANAGER": "مدير المحل",
+    "staffRole_CASHIER": "كاشير",
+    "staffRole_COLLECTOR": "محصّل النقود",
+    "staffRole_ORGANIZER": "منظّم الرفوف",
+    "staffActive": "نشط",
+    "staffPaused": "موقوف",
+    "staffSince": "منذ {date}",
+    "staffDeactivate": "إيقاف",
+    "staffReactivate": "إعادة التفعيل",
+    "staffErr": "تعذر التحديث — حاول مجددًا."
   },
   "DeliveryProof": {
     "title": "إثبات التسليم",
