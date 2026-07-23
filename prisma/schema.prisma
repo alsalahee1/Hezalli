@@ -238,6 +238,10 @@ model User {
   image             String?
   roles             Role[]    @default([BUYER])
   locale            String    @default("ar")
+  // Home governorate chosen at signup (optional). Sets the buyer's default
+  // currency zone — which Yemeni rial prices show in — before they've added a
+  // shipping address (lib/currency.ts). Not a shipping address itself.
+  homeGovernorate   String?
   notificationPrefs Json?
   isSuspended       Boolean   @default(false)
   deletedAt         DateTime?

@@ -123,15 +123,23 @@ export async function getDisplayCurrency(
 ): Promise<DisplayCurrency> {
   const code = await getDisplayCurrencyCode();
   if (code === "USD") return USD_DISPLAY;
-  // Explicit rial-market pick wins; otherwise infer from the default address.
+  // Explicit rial-market pick wins over everything.
   const preferred = await getPreferredZone();
   if (preferred) return getRateFor(code, null, preferred);
-  const address = userId
-    ? await prisma.address.findFirst({
-        where: { userId },
-        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-        select: { governorate: true },
-      })
-    : null;
-  return getRateFor(code, address?.governorate);
+  if (userId) {
+    // Otherwise the buyer's home governorate (chosen at signup) sets the
+    // default market; then the default shipping address; then the fallback.
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { homeGovernorate: true },
+    });
+    if (user?.homeGovernorate) return getRateFor(code, user.homeGovernorate);
+    const address = await prisma.address.findFirst({
+      where: { userId },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      select: { governorate: true },
+    });
+    return getRateFor(code, address?.governorate);
+  }
+  return getRateFor(code, null);
 }

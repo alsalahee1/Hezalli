@@ -1,15 +1,19 @@
 "use client";
 
 import { useActionState } from "react";
-import { useTranslations } from "next-intl";
+
+import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { registerUser, type AuthFormState } from "@/lib/actions/auth";
+import { GOVERNORATES } from "@/lib/yemen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export function RegisterForm({ refCode }: { refCode?: string }) {
   const t = useTranslations("Auth");
+  const locale = useLocale();
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
     registerUser,
     {},
@@ -93,6 +97,38 @@ export function RegisterForm({ refCode }: { refCode?: string }) {
         {state.errors?.confirmPassword ? (
           <p className="text-destructive text-xs">
             {t(state.errors.confirmPassword)}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Optional — sets which Yemeni rial prices show in by default, before a
+          shipping address exists. Skippable; the buyer can switch anytime. */}
+      <div className="space-y-1.5">
+        <label htmlFor="homeGovernorate" className="text-sm font-medium">
+          {t("homeGovernorate")}{" "}
+          <span className="text-muted-foreground font-normal">
+            {t("optional")}
+          </span>
+        </label>
+        <Select
+          id="homeGovernorate"
+          name="homeGovernorate"
+          defaultValue=""
+          aria-invalid={Boolean(state.errors?.homeGovernorate)}
+        >
+          <option value="">{t("selectGovernorate")}</option>
+          {GOVERNORATES.map((g) => (
+            <option key={g.value} value={g.value}>
+              {locale === "ar" ? g.ar : g.en}
+            </option>
+          ))}
+        </Select>
+        <p className="text-muted-foreground text-xs">
+          {t("homeGovernorateHint")}
+        </p>
+        {state.errors?.homeGovernorate ? (
+          <p className="text-destructive text-xs">
+            {t(state.errors.homeGovernorate)}
           </p>
         ) : null}
       </div>
