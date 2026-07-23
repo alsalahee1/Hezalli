@@ -99,16 +99,6 @@ export function SiteHeader({
             />
             <LanguageSwitcher />
           </div>
-          {/* Mobile: prices in rial or dollars is an everyday decision here,
-              so the YER⇄USD pair stays one tap away instead of living only
-              inside the menu (where SAR/AED remain available). */}
-          <div className="md:hidden">
-            <CurrencySwitcher
-              initialCurrency={displayCurrency}
-              locale={locale}
-              variant="toggle"
-            />
-          </div>
           <Button
             variant="ghost"
             size="sm"
