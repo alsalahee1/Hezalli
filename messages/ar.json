@@ -2075,6 +2075,8 @@
     "err_monthlyLimit": "لقد بلغت حد التحويل الشهري.",
     "authRequiredNotice": "عيّن رمزاً أو فعّل البصمة لتأكيد المدفوعات.",
     "authSetupLink": "الإعداد الآن",
+    "securitySetupTitle": "إعداد أمان المحفظة",
+    "securityOr": "أو",
     "confirmBiometric": "التأكيد بالبصمة",
     "usePinInstead": "استخدم الرمز بدلاً من ذلك",
     "useBiometricInstead": "استخدم البصمة",

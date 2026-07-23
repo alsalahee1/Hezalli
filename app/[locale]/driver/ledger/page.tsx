@@ -13,6 +13,7 @@ import { WalletHoldForm } from "@/components/driver/wallet-hold-form";
 import { RemitToWalletForm } from "@/components/driver/remit-to-wallet-form";
 import { RemitClaimForm } from "@/components/ops/remit-claim-form";
 import { MoveEarningsToWallet } from "@/components/wallet/move-earnings-to-wallet";
+import { WalletSecurityDialog } from "@/components/wallet/wallet-security-dialog";
 
 // The driver's cash & earnings ledger (docs §30): the same headline figures
 // as the driver home, plus the entries behind them.
@@ -80,9 +81,10 @@ export default async function DriverLedgerPage() {
           front — the individual forms also link out, but this makes it findable
           before the driver hits a wall inside a form. */}
       {!hasPin && passkeys === 0 ? (
-        <Link
-          href="/account/security"
-          className="flex items-center gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 transition-colors hover:border-amber-500/70"
+        <WalletSecurityDialog
+          hasPin={hasPin}
+          hasPasskey={passkeys > 0}
+          className="flex w-full items-center gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-4 text-start transition-colors hover:border-amber-500/70"
         >
           <span className="rounded-full bg-amber-500/15 p-2 text-amber-600 dark:text-amber-500">
             <ShieldAlert className="size-5" aria-hidden />
@@ -98,7 +100,7 @@ export default async function DriverLedgerPage() {
           <span className="text-primary shrink-0 text-sm font-medium">
             {t("pinSetupCta")}
           </span>
-        </Link>
+        </WalletSecurityDialog>
       ) : null}
 
       <div className="grid grid-cols-2 gap-3">
