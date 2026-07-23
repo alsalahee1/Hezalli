@@ -90,6 +90,92 @@ export default async function PointParcelPage({
     : null;
 
   if (!shipment) {
+    // No tracking/id match — try the name the customer actually gives the
+    // counter: the buyer on the parcel, across this hub's parcels.
+    const matches =
+      q.length >= 2
+        ? await prisma.shipment.findMany({
+            where: {
+              OR: [
+                { deliveryPointId: gate.pointId },
+                { originPointId: gate.pointId },
+                { atPointId: gate.pointId },
+              ],
+              subOrder: {
+                order: {
+                  address: {
+                    fullName: { contains: q, mode: "insensitive" },
+                  },
+                },
+              },
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 10,
+            select: {
+              id: true,
+              trackingNumber: true,
+              status: true,
+              updatedAt: true,
+              subOrder: {
+                select: {
+                  store: { select: { name: true } },
+                  order: {
+                    select: {
+                      address: { select: { fullName: true, city: true } },
+                    },
+                  },
+                },
+              },
+            },
+          })
+        : [];
+
+    if (matches.length > 0) {
+      return (
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-lg font-semibold">{t("searchResultsTitle")}</h1>
+            <p className="text-muted-foreground text-sm">
+              {t("searchResultsFor", { query: q })}
+            </p>
+          </div>
+          <ul className="space-y-2">
+            {matches.map((m) => (
+              <li key={m.id}>
+                <Link
+                  href={`/point/parcel/${m.id}`}
+                  className="hover:border-primary/50 block rounded-xl border p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium" dir="ltr">
+                      {m.trackingNumber ?? m.id.slice(-8).toUpperCase()}
+                    </span>
+                    <span className="bg-muted rounded px-1.5 py-0.5 text-[11px] font-medium">
+                      {tShip(`shipStatus_${m.status}`)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 truncate text-sm">
+                    {m.subOrder.store.name} →{" "}
+                    {m.subOrder.order.address.fullName} ·{" "}
+                    {m.subOrder.order.address.city}
+                  </p>
+                  <p className="text-muted-foreground text-xs" dir="ltr">
+                    {format.dateTime(m.updatedAt, { dateStyle: "medium" })}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/point/history"
+            className="text-muted-foreground hover:text-foreground block text-center text-sm"
+          >
+            {t("back")}
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4 py-10 text-center">
         <PackageX className="text-muted-foreground mx-auto size-10" />

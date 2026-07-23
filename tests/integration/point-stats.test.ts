@@ -20,7 +20,7 @@ import {
   pointReturnToSeller,
 } from "@/lib/actions/point";
 import { shipSubOrder } from "@/lib/actions/shipment";
-import { hubSummary, networkSummary } from "@/lib/point-stats";
+import { hubDaySummary, hubSummary, networkSummary } from "@/lib/point-stats";
 import { prisma } from "@/lib/prisma";
 import { makeFixture } from "./factory";
 
@@ -139,5 +139,13 @@ describe("networkSummary", () => {
     expect(past.rts).toBe(0);
     expect(past.feesUsd).toBe(0);
     expect(past.successRatePct).toBeNull();
+
+    // The end-of-day card: both receive scans landed as events at this hub,
+    // the counter pickup took COD cash and booked the handling fee.
+    const day = await hubDaySummary(pointId, from);
+    expect(day.received).toBe(2);
+    expect(day.handedOver).toBe(0);
+    expect(day.cashTakenUsd).toBeGreaterThan(0);
+    expect(day.feesUsd).toBeGreaterThanOrEqual(0.5);
   });
 });

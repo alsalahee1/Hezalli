@@ -2427,7 +2427,15 @@
     "leaderboardTitle": "Top couriers this week",
     "leaderboardEmpty": "No deliveries this week yet — be the first on the board!",
     "leaderboardYou": "You",
-    "leaderboardMyRank": "Your rank: #{rank} with {count, plural, one {# delivery} other {# deliveries}} this week"
+    "leaderboardMyRank": "Your rank: #{rank} with {count, plural, one {# delivery} other {# deliveries}} this week",
+    "pausedTitle": "You're on a break",
+    "pausedBody": "No new deliveries will be offered until you resume. Jobs you already carry are still yours to finish.",
+    "pauseTitle": "Take a break",
+    "pauseBody": "Pause new deliveries while you're away — current jobs stay with you, and you can resume anytime.",
+    "pauseBtn": "Pause",
+    "resumeBtn": "Resume deliveries",
+    "pauseError": "Could not update — try again.",
+    "err_claim_paused": "You're on a break — resume deliveries from your home page first."
   },
   "Dispatch": {
     "title": "Dispatch",
@@ -2830,10 +2838,10 @@
     "noHistory": "No completed parcels yet.",
     "historyFee": "Fee earned",
     "back": "Back",
-    "searchPlaceholder": "Search by tracking number",
+    "searchPlaceholder": "Search tracking number or buyer name",
     "searchGo": "Find",
     "parcelNotFoundTitle": "Parcel not found",
-    "parcelNotFoundBody": "No parcel with that tracking number has been routed through your hub.",
+    "parcelNotFoundBody": "No parcel with that tracking number or buyer name has been routed through your hub.",
     "attemptsTitle": "Delivery attempts",
     "timelineTitle": "Timeline",
     "awaitingPickup": "Awaiting buyer pickup",
@@ -2864,7 +2872,17 @@
     "profileLimitLine": "{base} base + {deposit} deposit = {limit} of COD cash your hub may hold before new routing pauses.",
     "profileCashNow": "Cash on hand right now: {amount}",
     "profileEditHint": "These details are managed by Hezalli — contact support to change your name, address, phone, or capacity.",
-    "howTab": "Guide"
+    "howTab": "Guide",
+    "todayTitle": "Today at your hub",
+    "todayReceived": "Received",
+    "todayHanded": "Handed over",
+    "todayCash": "Cash taken",
+    "todayFees": "Fees",
+    "searchResultsTitle": "Search results",
+    "searchResultsFor": "Parcels for “{query}” at your hub.",
+    "prevPage": "Newer",
+    "nextPage": "Older",
+    "noMoreEntries": "Nothing further back."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

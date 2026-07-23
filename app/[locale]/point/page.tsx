@@ -13,6 +13,7 @@ import { requireDeliveryPoint } from "@/lib/authz";
 import { getPlatformSettings } from "@/lib/settings";
 import { maxDeliveryAttempts } from "@/lib/point-core";
 import { pointLedgerSummary } from "@/lib/point-ledger";
+import { hubDaySummary } from "@/lib/point-stats";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,10 @@ export default async function PointDashboardPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [parcels, maxAttempts, me, settings, cash] = await Promise.all([
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const [parcels, maxAttempts, me, settings, cash, today] = await Promise.all([
     prisma.shipment.findMany({
       where: {
         OR: [
@@ -75,6 +79,7 @@ export default async function PointDashboardPage() {
     }),
     getPlatformSettings(),
     pointLedgerSummary(gate.pointId),
+    hubDaySummary(gate.pointId, startOfDay),
   ]);
   const staleDays = settings.stale_parcel_days;
 
@@ -211,6 +216,47 @@ export default async function PointDashboardPage() {
           </p>
         </Link>
       ) : null}
+
+      {/* End-of-day reconciliation: what moved through the counter today. */}
+      <section className="space-y-2">
+        <h2 className="text-muted-foreground text-sm font-semibold">
+          {t("todayTitle")}
+        </h2>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="rounded-xl border p-2.5">
+            <p className="text-muted-foreground text-[11px] font-medium">
+              {t("todayReceived")}
+            </p>
+            <p className="mt-0.5 font-semibold" dir="ltr">
+              {today.received}
+            </p>
+          </div>
+          <div className="rounded-xl border p-2.5">
+            <p className="text-muted-foreground text-[11px] font-medium">
+              {t("todayHanded")}
+            </p>
+            <p className="mt-0.5 font-semibold" dir="ltr">
+              {today.handedOver}
+            </p>
+          </div>
+          <div className="rounded-xl border p-2.5">
+            <p className="text-muted-foreground text-[11px] font-medium">
+              {t("todayCash")}
+            </p>
+            <p className="mt-0.5 font-semibold" dir="ltr">
+              {money(today.cashTakenUsd)}
+            </p>
+          </div>
+          <div className="rounded-xl border p-2.5">
+            <p className="text-muted-foreground text-[11px] font-medium">
+              {t("todayFees")}
+            </p>
+            <p className="mt-0.5 font-semibold" dir="ltr">
+              {money(today.feesUsd)}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <ParcelSearch />
 

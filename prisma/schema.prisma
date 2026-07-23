@@ -283,6 +283,11 @@ model User {
   // match parcel weight/count to what the vehicle can carry
   // (lib/courier-capacity.ts). Null = unknown → treated as unconstrained.
   courierVehicleType String?
+  // Vacation mode: while set, the courier gets NO new work from any automatic
+  // path (assignment, offers, board pings, board claims) — jobs they already
+  // carry stay theirs, and manual dispatch can still assign. Self-service
+  // toggle from the driver app; null = active.
+  courierPausedAt  DateTime?
   // Fleet-partner tier: a courier may belong to a fleet (fleetId); a user may
   // also OWN one fleet (ownedFleet), which grants the read-only fleet portal.
   fleetId          String?

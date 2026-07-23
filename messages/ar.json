@@ -2427,7 +2427,15 @@
     "leaderboardTitle": "أفضل المندوبين هذا الأسبوع",
     "leaderboardEmpty": "لا توصيلات هذا الأسبوع بعد — كن أول من يتصدّر!",
     "leaderboardYou": "أنت",
-    "leaderboardMyRank": "ترتيبك: #{rank} بواقع {count, plural, one {توصيلة واحدة} two {توصيلتين} few {# توصيلات} many {# توصيلة} other {# توصيلة}} هذا الأسبوع"
+    "leaderboardMyRank": "ترتيبك: #{rank} بواقع {count, plural, one {توصيلة واحدة} two {توصيلتين} few {# توصيلات} many {# توصيلة} other {# توصيلة}} هذا الأسبوع",
+    "pausedTitle": "أنت في استراحة",
+    "pausedBody": "لن تُعرض عليك توصيلات جديدة حتى تستأنف. الطلبات التي بحوزتك تبقى لك لإكمالها.",
+    "pauseTitle": "خذ استراحة",
+    "pauseBody": "أوقف التوصيلات الجديدة أثناء غيابك — تبقى مهامك الحالية معك ويمكنك الاستئناف في أي وقت.",
+    "pauseBtn": "إيقاف مؤقت",
+    "resumeBtn": "استئناف التوصيلات",
+    "pauseError": "تعذر التحديث — حاول مجددًا.",
+    "err_claim_paused": "أنت في استراحة — استأنف التوصيلات من صفحتك الرئيسية أولًا."
   },
   "Dispatch": {
     "title": "التوزيع",
@@ -2830,10 +2838,10 @@
     "noHistory": "لا توجد طرود مكتملة بعد.",
     "historyFee": "الرسوم المكتسبة",
     "back": "رجوع",
-    "searchPlaceholder": "ابحث برقم التتبع",
+    "searchPlaceholder": "ابحث برقم التتبع أو اسم المشتري",
     "searchGo": "بحث",
     "parcelNotFoundTitle": "الطرد غير موجود",
-    "parcelNotFoundBody": "لا يوجد طرد بهذا الرقم مرّ عبر نقطتك.",
+    "parcelNotFoundBody": "لا يوجد طرد بهذا الرقم أو الاسم مرّ عبر نقطتك.",
     "attemptsTitle": "محاولات التوصيل",
     "timelineTitle": "الخط الزمني",
     "awaitingPickup": "بانتظار استلام المشتري",
@@ -2864,7 +2872,17 @@
     "profileLimitLine": "{base} أساسي + {deposit} تأمين = {limit} الحد الأقصى لنقد الدفع عند الاستلام قبل إيقاف التوجيه الجديد.",
     "profileCashNow": "النقد بحوزتك الآن: {amount}",
     "profileEditHint": "تُدار هذه البيانات من قبل هزلي — تواصل مع الدعم لتغيير الاسم أو العنوان أو الهاتف أو السعة.",
-    "howTab": "الدليل"
+    "howTab": "الدليل",
+    "todayTitle": "اليوم في نقطتك",
+    "todayReceived": "استُلم",
+    "todayHanded": "سُلّم",
+    "todayCash": "نقد محصّل",
+    "todayFees": "رسوم",
+    "searchResultsTitle": "نتائج البحث",
+    "searchResultsFor": "طرود «{query}» في نقطتك.",
+    "prevPage": "الأحدث",
+    "nextPage": "الأقدم",
+    "noMoreEntries": "لا يوجد المزيد."
   },
   "PointApply": {
     "title": "كن نقطة هزلي",

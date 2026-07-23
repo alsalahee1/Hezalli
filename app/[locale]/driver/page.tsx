@@ -22,6 +22,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocationShare } from "@/components/driver/location-share";
 import { OfferActions } from "@/components/driver/offer-actions";
+import { PauseToggle } from "@/components/driver/pause-toggle";
 import { PushToggle } from "@/components/driver/push-toggle";
 import { QrCode } from "@/components/orders/qr-code";
 import { StarRating } from "@/components/product/star-rating";
@@ -37,7 +38,7 @@ export default async function DriverJobsPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [rawJobs, settings, location, cash, cod, perf, boardRows] =
+  const [rawJobs, settings, location, cash, cod, perf, boardRows, me] =
     await Promise.all([
       prisma.shipment.findMany({
         where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
@@ -86,6 +87,10 @@ export default async function DriverJobsPage() {
         where: openBoardWhere(),
         take: 100,
         select: { status: true, deliveryPointId: true, atPointId: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: courierId },
+        select: { courierPausedAt: true },
       }),
     ]);
   const boardCount = boardRows.filter(boardReadyAtPoint).length;
@@ -138,6 +143,10 @@ export default async function DriverJobsPage() {
         </Link>
       ) : null}
       <PushToggle />
+
+      {/* Vacation mode: pause/resume new work. Loud while paused so the
+          driver never wonders why offers stopped. */}
+      <PauseToggle paused={me?.courierPausedAt != null} />
 
       {/* Open job board teaser (docs/EXPRESS-DELIVERY.md §4b): how many
           unassigned parcels are up for grabs right now → /driver/board. */}

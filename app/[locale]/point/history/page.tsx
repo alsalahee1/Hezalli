@@ -12,22 +12,32 @@ import { ParcelSearch } from "@/components/point/parcel-search";
 // drop off that list, so this is the only place the operator can look back —
 // which matters, because the scan trail is the custody evidence when a parcel
 // is disputed (docs/DELIVERY-POINTS.md §4).
-export default async function PointHistoryPage() {
+const PAGE_SIZE = 50;
+
+export default async function PointHistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const t = await getTranslations("Point");
   const tShip = await getTranslations("Orders");
   const format = await getFormatter();
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const shipments = await prisma.shipment.findMany({
+  // Fetch one row past the page so "next" only shows when it has content.
+  const rows = await prisma.shipment.findMany({
     where: {
       OR: [{ deliveryPointId: gate.pointId }, { originPointId: gate.pointId }],
       status: { in: ["DELIVERED", "RETURNED"] },
     },
     orderBy: { updatedAt: "desc" },
-    take: 50,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE + 1,
     select: {
       id: true,
       status: true,
@@ -47,6 +57,8 @@ export default async function PointHistoryPage() {
       },
     },
   });
+  const hasMore = rows.length > PAGE_SIZE;
+  const shipments = rows.slice(0, PAGE_SIZE);
 
   // The fee each parcel booked on THIS hub's ledger (handling or transfer
   // leg — both land as HANDLING_FEE rows keyed by shipment).
@@ -77,7 +89,7 @@ export default async function PointHistoryPage() {
       {shipments.length === 0 ? (
         <div className="text-muted-foreground rounded-xl border border-dashed py-16 text-center text-sm">
           <PackageCheck className="mx-auto mb-2 size-8 opacity-50" />
-          {t("noHistory")}
+          {page > 1 ? t("noMoreEntries") : t("noHistory")}
         </div>
       ) : (
         <ul className="space-y-3">
@@ -137,6 +149,29 @@ export default async function PointHistoryPage() {
           })}
         </ul>
       )}
+
+      {page > 1 || hasMore ? (
+        <div className="flex items-center justify-between">
+          {page > 1 ? (
+            <Link
+              href={`/point/history?page=${page - 1}`}
+              className="text-primary text-sm font-medium hover:underline"
+            >
+              {t("prevPage")}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {hasMore ? (
+            <Link
+              href={`/point/history?page=${page + 1}`}
+              className="text-primary text-sm font-medium hover:underline"
+            >
+              {t("nextPage")}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

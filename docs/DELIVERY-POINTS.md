@@ -861,6 +861,29 @@ pass closes the gap — UI + read paths only, no new money flows:
 - [x] i18n (en + ar)
 - [x] This file kept current
 
+## 42b. v1.25 — Counter polish
+
+Rounding out the v1.24 app for real counter volume:
+
+1. **Pagination** on `/point/history` and the ledger entry list (50 per
+   page, newer/older links) — the fixed take-50 stops silently hiding the
+   tail.
+2. **End-of-day card** on the dashboard: received / handed over / cash
+   taken / fees since midnight, via `hubDaySummary()` in
+   `lib/point-stats.ts` (money from the hub-keyed ledger; parcel movements
+   from the scan events the hub's own scans stamp).
+3. **Buyer-name search**: the parcel search now also resolves the name a
+   customer gives at the counter — a contains-match over this hub's parcels
+   with a result list when it's ambiguous.
+
+### Build checklist (v1.25)
+
+- [x] History + ledger pagination (page param, one-row lookahead)
+- [x] `hubDaySummary()` + dashboard today tiles + test
+- [x] Buyer-name fallback on `/point/parcel/[code]` + widened search copy
+- [x] i18n (en + ar)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs
