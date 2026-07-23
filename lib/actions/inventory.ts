@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { auth } from "@/auth";
+import { requireActiveSeller } from "@/lib/authz";
 import { notifyWishlistWatchers } from "@/lib/alerts";
 import { prisma } from "@/lib/prisma";
 import { slugifyWithFallback } from "@/lib/slug";
@@ -12,14 +12,9 @@ import { slugifyWithFallback } from "@/lib/slug";
 export type ActionResult = { ok?: boolean; error?: string };
 
 async function sellerStoreId(): Promise<string | null> {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return null;
-  const profile = await prisma.sellerProfile.findUnique({
-    where: { userId },
-    select: { store: { select: { id: true } } },
-  });
-  return profile?.store?.id ?? null;
+  // Rejects suspended/deleted sellers (a bare session lookup would not).
+  const gate = await requireActiveSeller();
+  return gate?.storeId ?? null;
 }
 
 async function revalidate() {

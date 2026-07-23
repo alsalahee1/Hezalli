@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import { getTrackingSnapshot } from "@/lib/track";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ export async function GET(
   { params }: { params: Promise<{ tracking: string }> },
 ) {
   // Throttle enumeration of tracking numbers (which map to buyer PII/location).
-  if (!rateLimit(`track:${clientIp(req)}`, 60, 60_000).ok) {
+  if (!(await rateLimitAsync(`track:${clientIp(req)}`, 60, 60_000)).ok) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
   const { tracking } = await params;
