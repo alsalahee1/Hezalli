@@ -427,8 +427,9 @@ export type AssistantSettingsInput = {
   whatsappEnabled: boolean;
   defaultBot: string;
   intro: string;
-  persona: string;
-  greeting: string;
+  // Per-character persona/greeting, keyed by bot id (e.g. { shadi, jumana }).
+  personas: Record<string, string>;
+  greetings: Record<string, string>;
   temperature: number;
   maxTokens: number;
 };
@@ -466,11 +467,20 @@ export async function saveAssistantSettings(
 
   // Base intro is free text; storing it verbatim would freeze the wording even
   // if we later improve DEFAULT_INTRO, so an unchanged/blank intro normalises to
-  // "" (= use the default). Persona/greeting are free text too.
+  // "" (= use the default). Personas/greetings are per-character free text.
   const introRaw = (input.intro || "").trim().slice(0, 2000);
   const intro = introRaw === DEFAULT_INTRO.trim() ? "" : introRaw;
-  const persona = (input.persona || "").trim().slice(0, 4000);
-  const greeting = (input.greeting || "").trim().slice(0, 600);
+  const botText: Array<[AiSettingKey, string]> = [];
+  for (const id of Object.keys(BOTS) as BotId[]) {
+    botText.push([
+      BOTS[id].personaKey,
+      (input.personas?.[id] || "").trim().slice(0, 4000),
+    ]);
+    botText.push([
+      BOTS[id].greetingKey,
+      (input.greetings?.[id] || "").trim().slice(0, 600),
+    ]);
+  }
   const temperature = Number(input.temperature);
   if (!Number.isFinite(temperature) || temperature < 0 || temperature > 1)
     return { error: "badTemperature" };
@@ -480,43 +490,35 @@ export async function saveAssistantSettings(
 
   const defaultBot = isBotId(input.defaultBot) ? input.defaultBot : "shadi";
 
-  const values: Record<AiSettingKey, string | number | boolean> = {
-    ai_assistant_enabled: Boolean(input.enabled),
-    // Avatars are managed by their own action (saveAssistantAvatar), but are
-    // part of the AiSettingKey record type — filtered out below so this save
-    // never touches them.
-    ai_assistant_avatar: "",
-    ai_avatar_jumana: "",
-    ai_default_bot: defaultBot,
-    ai_gemini_model: model,
-    ai_reply_mode: mode,
-    ai_tts_voice: voice,
-    ai_tts_style: style,
-    ai_max_per_hour: maxPerHour,
-    ai_daily_cap: dailyCap,
-    ai_spend_cap_usd: spendCap,
-    ai_channel_telegram: Boolean(input.telegramEnabled),
-    ai_channel_whatsapp: Boolean(input.whatsappEnabled),
-    ai_intro: intro,
-    ai_persona: persona,
-    ai_greeting: greeting,
-    ai_temperature: Math.round(temperature * 100) / 100,
-    ai_max_tokens: maxTokens,
-  };
-  const AVATAR_KEYS: AiSettingKey[] = [
-    "ai_assistant_avatar",
-    "ai_avatar_jumana",
+  // Shared keys written by this action. Avatars have their own action; the
+  // per-character persona/greeting keys are written from `botText` below.
+  const shared: Array<[AiSettingKey, string | number | boolean]> = [
+    ["ai_assistant_enabled", Boolean(input.enabled)],
+    ["ai_default_bot", defaultBot],
+    ["ai_gemini_model", model],
+    ["ai_reply_mode", mode],
+    ["ai_tts_voice", voice],
+    ["ai_tts_style", style],
+    ["ai_max_per_hour", maxPerHour],
+    ["ai_daily_cap", dailyCap],
+    ["ai_spend_cap_usd", spendCap],
+    ["ai_channel_telegram", Boolean(input.telegramEnabled)],
+    ["ai_channel_whatsapp", Boolean(input.whatsappEnabled)],
+    ["ai_intro", intro],
+    ["ai_temperature", Math.round(temperature * 100) / 100],
+    ["ai_max_tokens", maxTokens],
   ];
-  const keys = (Object.keys(values) as AiSettingKey[]).filter(
-    (k) => !AVATAR_KEYS.includes(k),
-  );
+  const entries: Array<[AiSettingKey, string | number | boolean]> = [
+    ...shared,
+    ...botText,
+  ];
 
   await prisma.$transaction(
-    keys.map((key) =>
+    entries.map(([key, value]) =>
       prisma.platformSetting.upsert({
         where: { key },
-        create: { key, value: values[key] as never },
-        update: { value: values[key] as never },
+        create: { key, value: value as never },
+        update: { value: value as never },
       }),
     ),
   );
@@ -527,7 +529,7 @@ export async function saveAssistantSettings(
       action: "settings.assistant",
       entity: "PlatformSetting",
       entityId: "assistant",
-      meta: Object.fromEntries(keys.map((k) => [k, values[k]])) as never,
+      meta: Object.fromEntries(entries) as never,
     },
   });
 

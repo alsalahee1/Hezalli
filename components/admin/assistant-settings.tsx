@@ -35,6 +35,8 @@ export type BotCard = {
   name: string;
   avatar: string;
   defaultAvatar: string;
+  persona: string;
+  greeting: string;
 };
 
 export type AssistantCurrent = {
@@ -57,8 +59,6 @@ export type AssistantCurrent = {
   intro: string;
   defaultIntro: string;
   lockedRules: string;
-  persona: string;
-  greeting: string;
   temperature: number;
   maxTokens: number;
 };
@@ -101,13 +101,26 @@ export function AssistantSettings({
     // Show the effective intro so it's editable in place; empty override means
     // "use the default", so seed the box with the default text.
     intro: current.intro || current.defaultIntro,
-    persona: current.persona,
-    greeting: current.greeting,
+    // Per-character persona/greeting keyed by bot id.
+    personas: Object.fromEntries(
+      current.bots.map((b) => [b.id, b.persona]),
+    ) as Record<string, string>,
+    greetings: Object.fromEntries(
+      current.bots.map((b) => [b.id, b.greeting]),
+    ) as Record<string, string>,
     temperature: String(current.temperature),
     maxTokens: String(current.maxTokens),
   });
   const set = (k: keyof typeof f, v: string | boolean) => {
     setF((s) => ({ ...s, [k]: v }));
+    setDone(false);
+  };
+  const setBotText = (
+    field: "personas" | "greetings",
+    botId: string,
+    v: string,
+  ) => {
+    setF((s) => ({ ...s, [field]: { ...s[field], [botId]: v } }));
     setDone(false);
   };
 
@@ -135,8 +148,8 @@ export function AssistantSettings({
         dailyCap: Number(f.dailyCap) || 0,
         spendCapUsd: Number(f.spendCapUsd) || 0,
         intro: f.intro,
-        persona: f.persona,
-        greeting: f.greeting,
+        personas: f.personas,
+        greetings: f.greetings,
         temperature: Number(f.temperature),
         maxTokens: Number(f.maxTokens),
         telegramEnabled: f.telegramEnabled,
@@ -332,34 +345,52 @@ export function AssistantSettings({
           </div>
         </details>
 
-        <label className="block space-y-1.5">
-          <span className="text-sm font-medium">{t("persona")}</span>
-          <textarea
-            value={f.persona}
-            onChange={(e) => set("persona", e.target.value)}
-            rows={6}
-            maxLength={4000}
-            placeholder={t("personaPlaceholder")}
-            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-          />
-          <span className="text-muted-foreground block text-xs">
-            {t("personaHint")}
-          </span>
-        </label>
-        <label className="block space-y-1.5">
-          <span className="text-sm font-medium">{t("greeting")}</span>
-          <textarea
-            value={f.greeting}
-            onChange={(e) => set("greeting", e.target.value)}
-            rows={2}
-            maxLength={600}
-            placeholder={t("greetingPlaceholder")}
-            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-          />
-          <span className="text-muted-foreground block text-xs">
-            {t("greetingHint")}
-          </span>
-        </label>
+        {/* Persona + greeting are per-character. */}
+        <p className="text-muted-foreground text-xs">{t("perBotHint")}</p>
+        {current.bots.map((bot) => (
+          <div key={bot.id} className="space-y-3 rounded-lg border p-3">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <span className="bg-muted size-6 shrink-0 overflow-hidden rounded-full border">
+                {bot.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={bot.avatar}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                ) : null}
+              </span>
+              {bot.name}
+            </p>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium">{t("persona")}</span>
+              <textarea
+                value={f.personas[bot.id] ?? ""}
+                onChange={(e) => setBotText("personas", bot.id, e.target.value)}
+                rows={5}
+                maxLength={4000}
+                placeholder={t("personaPlaceholder")}
+                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium">{t("greeting")}</span>
+              <textarea
+                value={f.greetings[bot.id] ?? ""}
+                onChange={(e) =>
+                  setBotText("greetings", bot.id, e.target.value)
+                }
+                rows={2}
+                maxLength={600}
+                placeholder={t("greetingPlaceholder")}
+                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+        ))}
+        <span className="text-muted-foreground block text-xs">
+          {t("personaHint")}
+        </span>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5">
             <span className="text-sm font-medium">
