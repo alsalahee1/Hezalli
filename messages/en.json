@@ -2019,6 +2019,7 @@
     "empty": "No points activity yet — earn points on your next purchase."
   },
   "Wallet": {
+    "appName": "HezalliPay",
     "balance": "Wallet balance",
     "subtitle": "Your HezalliPay balance. Refunds land here instantly.",
     "frozen": "Your wallet is on hold. Please contact support.",
