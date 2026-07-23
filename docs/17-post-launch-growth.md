@@ -10,10 +10,11 @@
 | **17.4 Recommendations** | "Customers also bought", personalized home sections (simple co-purchase + category affinity — no ML needed at first) | Opus 4.8 / High | New |
 | **17.5 Multi-language completion** | If launched single-language: full i18n + RTL now; translate catalog fields | Sonnet 5 / Medium | New |
 | **17.6 Mobile app** | React Native/Expo app reusing your API; push notifications; app-store publishing | Opus 4.8 / High | New (it's a mini-project: plan → build → ship, several sessions) |
-| **17.7 Seller tools** | Bulk product import (CSV), sales analytics, auto-reply chat, vacation mode | Sonnet 5 / Medium | New |
+| **17.7 Seller tools** | Bulk product import (CSV), sales analytics, auto-reply chat (auto-replies are signed by **Shadi / شادي**, the platform assistant — see DECISIONS.md §10), vacation mode | Sonnet 5 / Medium | New |
 | **17.8 Marketing automations** | Abandoned-cart emails, back-in-stock alerts, price-drop alerts for wishlist items, newsletter | Sonnet 5 / Medium | New |
 | **17.9 Loyalty** | Points per purchase, redeem as discount; referral program | Opus 4.8 / High (money math) | New |
 | **17.10 Scale-ups** | Redis caching layer, read replicas, queue system (background jobs), image CDN tuning — *only when traffic demands it* | Opus 4.8 / High | New |
+| **17.11 Shadi (شادي) assistant bot** | The platform assistant, named **Shadi (شادي)** per DECISIONS.md §10: a chat widget that answers buyer questions (order status, shipping, returns, payment methods) and guides sellers, in Arabic and English; appears as "شادي" / "Shadi" with its own avatar in the chat UI; hands off to human support / admin when it can't help | Opus 4.8 / High | New |
 
 **New-session prompt template for any item:**
 
