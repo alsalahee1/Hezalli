@@ -49,6 +49,17 @@ export default async function PointsDirectoryPage({
                     <p className="flex items-center gap-1.5 font-medium">
                       <Store className="text-muted-foreground size-4 shrink-0" />
                       {p.name}
+                      {p.openNow !== null ? (
+                        <span
+                          className={
+                            p.openNow
+                              ? "ms-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                              : "bg-muted text-muted-foreground ms-auto rounded-full px-2 py-0.5 text-xs font-medium"
+                          }
+                        >
+                          {p.openNow ? t("openNow") : t("closedNow")}
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-muted-foreground mt-1 text-sm">
                       {p.addressLine}, {p.city}

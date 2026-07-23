@@ -3061,7 +3061,23 @@
     "actReceived": "{count} received",
     "actHanded": "{count} handed over",
     "actPickups": "{count} pickups",
-    "actReturns": "{count} returns"
+    "actReturns": "{count} returns",
+    "hoursTitle": "Opening hours",
+    "hoursHint": "Shown to customers on the public points directory. Times are local (Yemen).",
+    "hoursOpen": "Open",
+    "hoursClosed": "Closed",
+    "hoursSave": "Save hours",
+    "hoursSaved": "Saved",
+    "hoursError": "Couldn't save — check the times.",
+    "hoursOpenNow": "Open now",
+    "hoursClosedNow": "Closed now",
+    "day_sun": "Sun",
+    "day_mon": "Mon",
+    "day_tue": "Tue",
+    "day_wed": "Wed",
+    "day_thu": "Thu",
+    "day_fri": "Fri",
+    "day_sat": "Sat"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -3212,7 +3228,9 @@
     "subtitle": "Partner shops where you can collect your orders — or drop parcels as a seller. Free pickup, no waiting for a courier.",
     "empty": "No points yet — the network is growing. Check back soon.",
     "becomeHint": "Run a shop with spare shelf space?",
-    "becomeLink": "Become a Hezalli Point"
+    "becomeLink": "Become a Hezalli Point",
+    "openNow": "Open",
+    "closedNow": "Closed"
   },
   "DeliveryAnalytics": {
     "title": "Delivery performance",

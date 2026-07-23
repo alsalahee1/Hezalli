@@ -3061,7 +3061,23 @@
     "actReceived": "{count} استُلمت",
     "actHanded": "{count} سُلّمت",
     "actPickups": "{count} تسليم للعميل",
-    "actReturns": "{count} مرتجعات"
+    "actReturns": "{count} مرتجعات",
+    "hoursTitle": "ساعات العمل",
+    "hoursHint": "تظهر للعملاء في دليل النقاط العام. الأوقات بالتوقيت المحلي (اليمن).",
+    "hoursOpen": "مفتوح",
+    "hoursClosed": "مغلق",
+    "hoursSave": "حفظ الساعات",
+    "hoursSaved": "تم الحفظ",
+    "hoursError": "تعذر الحفظ — تحقق من الأوقات.",
+    "hoursOpenNow": "مفتوح الآن",
+    "hoursClosedNow": "مغلق الآن",
+    "day_sun": "الأحد",
+    "day_mon": "الإثنين",
+    "day_tue": "الثلاثاء",
+    "day_wed": "الأربعاء",
+    "day_thu": "الخميس",
+    "day_fri": "الجمعة",
+    "day_sat": "السبت"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
@@ -3212,7 +3228,9 @@
     "subtitle": "متاجر شريكة تستلم منها طلباتك — أو تسلّم فيها طرودك كبائع. استلام مجاني دون انتظار مندوب.",
     "empty": "لا توجد نقاط بعد — الشبكة تنمو. عد قريبًا.",
     "becomeHint": "تدير متجرًا لديه مساحة فارغة؟",
-    "becomeLink": "كن نقطة هزلي"
+    "becomeLink": "كن نقطة هزلي",
+    "openNow": "مفتوح",
+    "closedNow": "مغلق"
   },
   "DeliveryAnalytics": {
     "title": "أداء التوصيل",
