@@ -5,6 +5,7 @@ import { Store as StoreIcon, Zap } from "lucide-react";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { getRequestDisplayCurrency } from "@/lib/currency";
 import { getFlashPricesFor } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { toCardItem } from "@/lib/products";
@@ -40,7 +41,7 @@ async function getProduct(slug: string) {
       images: { orderBy: { position: "asc" } },
       variants: { where: { isActive: true }, orderBy: { sku: "asc" } },
       brand: { select: { name: true, slug: true } },
-      category: { select: { name: true, slug: true } },
+      category: { select: { name: true, slug: true, defaultSizeClass: true } },
       store: {
         select: {
           name: true,
@@ -94,6 +95,8 @@ export default async function ProductPage({
   void prisma.product
     .update({ where: { id: product.id }, data: { views: { increment: 1 } } })
     .catch(() => {});
+
+  const display = await getRequestDisplayCurrency();
 
   // Track recently-viewed for signed-in users (guests are tracked client-side).
   const session = await auth();
@@ -376,6 +379,7 @@ export default async function ProductPage({
               storeId: product.storeId,
               storeName: product.store.name,
               storeSlug: product.store.slug,
+              sizeClass: product.sizeClass ?? product.category.defaultSizeClass,
             }}
           />
 
@@ -449,7 +453,7 @@ export default async function ProductPage({
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {coBought.map((p) => (
-              <ProductCard key={p.id} item={toCardItem(p, locale)} />
+              <ProductCard key={p.id} item={toCardItem(p, locale, display)} />
             ))}
           </div>
         </section>
@@ -463,7 +467,7 @@ export default async function ProductPage({
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {related.map((p) => (
-              <ProductCard key={p.id} item={toCardItem(p, locale)} />
+              <ProductCard key={p.id} item={toCardItem(p, locale, display)} />
             ))}
           </div>
         </section>

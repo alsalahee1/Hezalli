@@ -8,9 +8,9 @@ import {
   getPasskeyAssertion,
 } from "@/lib/webauthn-client";
 import type { WalletAuth } from "@/lib/wallet-step-auth";
-import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WalletSecurityDialog } from "@/components/wallet/wallet-security-dialog";
 
 // The single authorization control used by every wallet outflow form. Offers
 // biometric (passkey) as the fast path with the PIN as fallback, and hands the
@@ -81,12 +81,13 @@ export function WalletAuthField({
     return (
       <div className="space-y-1.5 rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-xs text-amber-700 dark:text-amber-400">
         <p>{t("authRequiredNotice")}</p>
-        <Link
-          href="/account/security"
+        <WalletSecurityDialog
+          hasPin={hasPin}
+          hasPasskey={hasPasskey}
           className="inline-flex font-semibold underline underline-offset-2"
         >
           {t("authSetupLink")}
-        </Link>
+        </WalletSecurityDialog>
       </div>
     );
   }

@@ -5,6 +5,7 @@ import {
   Clock,
   MapPin,
   PackageCheck,
+  PackageSearch,
   Trophy,
   Wallet,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { syncedCourierPerformance } from "@/lib/courier-performance";
+import { boardReadyAtPoint, openBoardWhere } from "@/lib/job-board";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 import { dueBy as computeDueBy, slaState, slaWeight } from "@/lib/sla";
@@ -35,50 +37,58 @@ export default async function DriverJobsPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [rawJobs, settings, location, cash, cod, perf] = await Promise.all([
-    prisma.shipment.findMany({
-      where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
-      select: {
-        id: true,
-        status: true,
-        shippedAt: true,
-        // A live offer means this job is only PROPOSED — the card grows
-        // accept/decline controls until the driver answers (or first-scans).
-        offers: {
-          where: { driverId: courierId, status: "OFFERED" },
-          select: { expiresAt: true },
-        },
-        subOrder: {
-          select: {
-            shippingMethod: true,
-            store: { select: { name: true } },
-            order: {
-              select: {
-                id: true,
-                deliveryDate: true,
-                deliverySlot: true,
-                address: {
-                  select: {
-                    fullName: true,
-                    city: true,
-                    governorate: true,
+  const [rawJobs, settings, location, cash, cod, perf, boardRows] =
+    await Promise.all([
+      prisma.shipment.findMany({
+        where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
+        select: {
+          id: true,
+          status: true,
+          shippedAt: true,
+          // A live offer means this job is only PROPOSED — the card grows
+          // accept/decline controls until the driver answers (or first-scans).
+          offers: {
+            where: { driverId: courierId, status: "OFFERED" },
+            select: { expiresAt: true },
+          },
+          subOrder: {
+            select: {
+              shippingMethod: true,
+              store: { select: { name: true } },
+              order: {
+                select: {
+                  id: true,
+                  deliveryDate: true,
+                  deliverySlot: true,
+                  address: {
+                    select: {
+                      fullName: true,
+                      city: true,
+                      governorate: true,
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-    }),
-    getPlatformSettings(),
-    prisma.courierLocation.findUnique({
-      where: { userId: courierId },
-      select: { governorate: true },
-    }),
-    courierCashSummary(courierId),
-    courierCodStatus(courierId),
-    syncedCourierPerformance(courierId),
-  ]);
+      }),
+      getPlatformSettings(),
+      prisma.courierLocation.findUnique({
+        where: { userId: courierId },
+        select: { governorate: true },
+      }),
+      courierCashSummary(courierId),
+      courierCodStatus(courierId),
+      syncedCourierPerformance(courierId),
+      // Open, claimable board parcels — for the "job board" teaser card.
+      prisma.shipment.findMany({
+        where: openBoardWhere(),
+        take: 100,
+        select: { status: true, deliveryPointId: true, atPointId: true },
+      }),
+    ]);
+  const boardCount = boardRows.filter(boardReadyAtPoint).length;
 
   const now = new Date();
   const jobs = rawJobs
@@ -128,6 +138,29 @@ export default async function DriverJobsPage() {
         </Link>
       ) : null}
       <PushToggle />
+
+      {/* Open job board teaser (docs/EXPRESS-DELIVERY.md §4b): how many
+          unassigned parcels are up for grabs right now → /driver/board. */}
+      {settings.job_board_enabled ? (
+        <Link
+          href="/driver/board"
+          className={cn(
+            "hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4",
+            boardCount > 0 && "border-primary/50 bg-primary/5",
+          )}
+        >
+          <span className="bg-primary/10 text-primary rounded-full p-2">
+            <PackageSearch className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">{t("boardCard")}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              {t("boardCount", { count: boardCount })}
+            </p>
+          </div>
+          <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
+        </Link>
+      ) : null}
 
       {/* COD credit control (lib/cod-guard.ts): blocked drivers see WHY they
           get no new work and how to fix it; near-limit drivers get a heads-up

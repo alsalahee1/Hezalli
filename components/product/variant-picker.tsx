@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-import { formatUsd } from "@/lib/products";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/components/cart/cart-provider";
+import { useMoney } from "@/components/currency/currency-provider";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +26,9 @@ export type PickerProduct = {
   storeId: string;
   storeName: string;
   storeSlug: string;
+  // Resolved package class (product's own, else category default) — carried
+  // on the cart line for the checkout freight rules.
+  sizeClass: string | null;
 };
 
 const OPTION_LABELS: Record<string, { en: string; ar: string }> = {
@@ -43,6 +46,7 @@ export function VariantPicker({
 }) {
   const t = useTranslations("Product");
   const locale = useLocale();
+  const fmt = useMoney();
   const cart = useCart();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -126,6 +130,7 @@ export function VariantPicker({
           compareAtPrice: current.compareAtPrice ?? null,
           stock: current.stock,
           quantity: clampedQty,
+          sizeClass: product.sizeClass,
         },
         clampedQty,
       );
@@ -138,11 +143,11 @@ export function VariantPicker({
     <div className="flex flex-col gap-5">
       {/* Price */}
       <div className="flex flex-wrap items-baseline gap-3" dir="ltr">
-        <span className="text-3xl font-bold">{formatUsd(price, locale)}</span>
+        <span className="text-3xl font-bold">{fmt(price)}</span>
         {compareAt ? (
           <>
             <span className="text-muted-foreground text-lg line-through">
-              {formatUsd(compareAt, locale)}
+              {fmt(compareAt)}
             </span>
             <span className="bg-destructive rounded px-1.5 py-0.5 text-sm font-semibold text-white">
               -{pctOff}%

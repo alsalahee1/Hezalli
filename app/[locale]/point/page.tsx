@@ -39,6 +39,7 @@ export default async function PointDashboardPage() {
         originPointId: true,
         deliveryPointId: true,
         atPointId: true,
+        shelfCode: true,
         attemptCount: true,
         redeliverAt: true,
         redeliverNote: true,
@@ -162,6 +163,11 @@ export default async function PointDashboardPage() {
                       <span className="font-medium" dir="ltr">
                         {p.trackingNumber}
                       </span>
+                      {p.shelfCode && p.atPointId === gate.pointId ? (
+                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-600">
+                          {t("shelfBadge", { code: p.shelfCode })}
+                        </span>
+                      ) : null}
                       {p.originPointId &&
                       p.originPointId !== p.deliveryPointId ? (
                         <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-600">

@@ -3,6 +3,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { CheckCircle2, MapPin, Phone, Store } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
+import { subOrderMetric } from "@/lib/courier-capacity";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
 import { storage } from "@/lib/storage";
@@ -29,6 +30,7 @@ export default async function DriverJobPage({
     where: { id: shipmentId, driverId: courierId },
     select: {
       id: true,
+      subOrderId: true,
       status: true,
       trackingNumber: true,
       deliveryCode: true,
@@ -73,6 +75,7 @@ export default async function DriverJobPage({
   if (!shipment || !shipment.subOrder) notFound();
 
   const sub = shipment.subOrder;
+  const metrics = await subOrderMetric(shipment.subOrderId);
   const a = sub.order.address;
   const done = sub.status !== "SHIPPED";
   // A COD order the buyer already paid from their wallet (docs §39) is
@@ -106,6 +109,17 @@ export default async function DriverJobPage({
           {tShip(`shipStatus_${shipment.status}`)}
         </p>
       </div>
+
+      {/* Freight jobs (fridges, furniture): heavy — bring a helper, and the
+          buyer expects delivery in their chosen window. */}
+      {metrics.freight ? (
+        <div className="rounded-lg border border-violet-500/40 bg-violet-500/10 p-3 text-sm">
+          <p className="font-medium text-violet-700 dark:text-violet-400">
+            {t("freightJob", { kg: Math.round(metrics.weightGrams / 1000) })}
+          </p>
+          <p className="text-muted-foreground text-xs">{t("freightHint")}</p>
+        </div>
+      ) : null}
 
       {/* Pickup point + buyer's requested redelivery day, when applicable. */}
       {shipment.deliveryPoint ? (

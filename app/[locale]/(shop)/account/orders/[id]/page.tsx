@@ -3,6 +3,10 @@ import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ArrowLeft, ExternalLink, Printer, Truck } from "lucide-react";
 
 import { auth } from "@/auth";
+import {
+  formatMoney,
+  type DisplayCurrencyCode,
+} from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 import { STATUS_BADGE, canBuyerCancel } from "@/lib/order-status";
 import { codSettledDigitally } from "@/lib/payment-state";
@@ -110,7 +114,15 @@ export default async function OrderDetailPage({
     ]),
   );
 
-  const money = (n: unknown) =>
+  // Render money with the currency + rate frozen onto this order at checkout
+  // (DECISIONS.md §3) — the exact local amount a COD courier collects, immune
+  // to later rate moves. Older orders snapshot USD/1 and render as before.
+  const snapshot = {
+    code: order.displayCurrency as DisplayCurrencyCode,
+    rate: Number(order.exchangeRate),
+  };
+  const money = (n: unknown) => formatMoney(Number(n), snapshot, locale);
+  const usd = (n: unknown) =>
     format.number(Number(n), { style: "currency", currency: "USD" });
 
   // Doorstep digital payment (docs §39): a COD order is wallet-payable while
@@ -584,6 +596,11 @@ export default async function OrderDetailPage({
               <span>{t("total")}</span>
               <span dir="ltr">{money(order.grandTotal)}</span>
             </div>
+            {snapshot.code !== "USD" ? (
+              <div className="text-muted-foreground flex justify-end text-xs">
+                <span dir="ltr">≈ {usd(order.grandTotal)}</span>
+              </div>
+            ) : null}
           </div>
         </section>
       </div>

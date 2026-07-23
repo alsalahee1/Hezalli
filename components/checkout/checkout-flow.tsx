@@ -16,6 +16,13 @@ import type { CartLine } from "@/lib/cart-types";
 import { DELIVERY_SLOTS, deliveryWindowBounds } from "@/lib/delivery-slots";
 import type { ShippingMethod, StoreShipOptions } from "@/lib/shipping";
 import { capRedemption, pointsToUsd } from "@/lib/loyalty-shared";
+import type { ZoneRates } from "@/lib/currency";
+import {
+  formatMoney,
+  USD_DISPLAY,
+  zoneForGovernorate,
+} from "@/lib/currency-constants";
+import { isFreightClass } from "@/lib/validations/product";
 import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -46,6 +53,7 @@ export function CheckoutFlow({
   walletBalance = 0,
   pickupPoints = [],
   scheduleDays = 0,
+  zoneRates,
 }: {
   lines: CartLine[];
   addresses: CheckoutAddress[];
@@ -56,11 +64,28 @@ export function CheckoutFlow({
   pickupPoints?: PickupPointOption[];
   // Days ahead a buyer may schedule an Express delivery window; 0 = off.
   scheduleDays?: number;
+  // Display-currency rates per currency zone; the summary converts with the
+  // rate of the selected delivery address so it matches the order snapshot.
+  zoneRates?: ZoneRates;
 }) {
   const t = useTranslations("Checkout");
   const tWin = useTranslations("DeliveryWindow");
   const locale = useLocale();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
+  const addressGov = addresses.find((a) => a.id === addressId)?.governorate;
+
+  // Convert displayed amounts with the zone rate of the selected delivery
+  // address — the same resolution the server snapshots onto the order, so
+  // the total shown here is exactly what a COD courier will collect.
+  const display =
+    zoneRates && zoneRates.code !== "USD"
+      ? {
+          code: zoneRates.code,
+          rate: zoneRates.byZone[zoneForGovernorate(addressGov)],
+        }
+      : USD_DISPLAY;
+  const fmt = (usd: number) => formatMoney(usd, display, locale);
+
   // Buyer's chosen delivery tier per store; unset stores default to STANDARD.
   const [methodByStore, setMethodByStore] = useState<
     Record<string, ShippingMethod>
@@ -102,7 +127,11 @@ export function CheckoutFlow({
       const itemsTotal = g.lines.reduce((s, l) => s + l.price * l.quantity, 0);
       const o = opts[g.storeId];
       const express = o?.express ?? null;
-      const pickup = o?.pickup && pickupPoints.length > 0 ? o.pickup : null;
+      // Freight (xlarge/oversized items) is delivered direct — point pickup
+      // isn't offered for a group containing one (the server enforces too).
+      const freight = g.lines.some((l) => isFreightClass(l.sizeClass));
+      const pickup =
+        !freight && o?.pickup && pickupPoints.length > 0 ? o.pickup : null;
       const wanted = methodByStore[g.storeId] ?? "STANDARD";
       const selectedMethod: ShippingMethod =
         wanted === "EXPRESS" && express
@@ -122,6 +151,7 @@ export function CheckoutFlow({
         standard: o?.standard ?? null,
         express,
         pickup,
+        freight,
         selectedMethod,
         shipping: option?.fee ?? 0,
       };
@@ -157,7 +187,7 @@ export function CheckoutFlow({
       key: "HEZALLI_BALANCE",
       label: t("hezalliBalance"),
       hint: t("hezalliBalanceHint", {
-        balance: formatUsd(walletBalance, locale),
+        balance: fmt(walletBalance),
       }),
       disabled: !walletAffordable,
     },
@@ -214,15 +244,17 @@ export function CheckoutFlow({
   };
 
   const anyPickup = groups.some((g) => g.selectedMethod === "PICKUP");
-  // The scheduled-window picker is offered only when a group ships Express and
-  // scheduling is enabled (delivery_window_days > 0).
+  // The scheduled-window picker is offered when a group ships Express — and
+  // REQUIRED when the cart holds freight (someone must be home for a fridge)
+  // — while scheduling is enabled (delivery_window_days > 0).
   const anyExpress = groups.some((g) => g.selectedMethod === "EXPRESS");
+  const anyFreight = groups.some((g) => g.freight);
   const scheduleBounds = deliveryWindowBounds(scheduleDays);
-  const canSchedule = anyExpress && !!scheduleBounds;
+  const canSchedule = (anyExpress || anyFreight) && !!scheduleBounds;
+  const freightNeedsWindow = anyFreight && !!scheduleBounds;
 
   // Nearest points first for the selected delivery address (same-governorate
   // matches lead; the server already filtered out full points).
-  const addressGov = addresses.find((a) => a.id === addressId)?.governorate;
   const sortedPickupPoints = useMemo(
     () =>
       [...pickupPoints].sort(
@@ -241,6 +273,10 @@ export function CheckoutFlow({
     }
     if (anyPickup && !pickupPointId) {
       setError("pickupPointRequired");
+      return;
+    }
+    if (freightNeedsWindow && !(deliveryDate && deliverySlot)) {
+      setError("deliveryWindowRequiredFreight");
       return;
     }
     setPlacing(true);
@@ -359,7 +395,7 @@ export function CheckoutFlow({
                     {t("free")}
                   </span>
                 ) : (
-                  <span dir="ltr">{formatUsd(fee, locale)}</span>
+                  <span dir="ltr">{fmt(fee)}</span>
                 );
               const eta = (o: { etaMinDays: number; etaMaxDays: number }) =>
                 t("etaDays", { min: o.etaMinDays, max: o.etaMaxDays });
@@ -494,14 +530,17 @@ export function CheckoutFlow({
               </div>
             ) : null}
 
-            {/* Optional scheduled delivery window (Express only). */}
+            {/* Scheduled delivery window: optional for Express, required for
+                freight (big items are delivered by appointment). */}
             {canSchedule ? (
               <div className="space-y-2 rounded-md border border-violet-500/40 bg-violet-500/5 p-3">
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   <CalendarClock className="size-4" /> {t("scheduleLabel")}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {t("scheduleHint")}
+                  {freightNeedsWindow
+                    ? t("scheduleRequiredFreight")
+                    : t("scheduleHint")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <input
@@ -635,7 +674,7 @@ export function CheckoutFlow({
                 <span>
                   {t("redeemPoints", {
                     points,
-                    usd: formatUsd(pointsToUsd(points), locale),
+                    usd: fmt(pointsToUsd(points)),
                   })}
                 </span>
               </label>
@@ -656,35 +695,40 @@ export function CheckoutFlow({
               <span className="text-muted-foreground line-clamp-1">
                 {l.quantity} × {l.title}
               </span>
-              <span dir="ltr">{formatUsd(l.price * l.quantity, locale)}</span>
+              <span dir="ltr">{fmt(l.price * l.quantity)}</span>
             </div>
           ))}
         </div>
         <div className="mt-3 space-y-1 border-t pt-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("itemsTotal")}</span>
-            <span dir="ltr">{formatUsd(itemsTotal, locale)}</span>
+            <span dir="ltr">{fmt(itemsTotal)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("shippingTotal")}</span>
-            <span dir="ltr">{formatUsd(shippingTotal, locale)}</span>
+            <span dir="ltr">{fmt(shippingTotal)}</span>
           </div>
           {discount > 0 ? (
             <div className="flex justify-between text-emerald-600">
               <span>{t("discount")}</span>
-              <span dir="ltr">−{formatUsd(discount, locale)}</span>
+              <span dir="ltr">−{fmt(discount)}</span>
             </div>
           ) : null}
           {redeem.discountUsd > 0 ? (
             <div className="flex justify-between text-emerald-600">
               <span>{t("pointsDiscount", { points: redeem.pointsUsed })}</span>
-              <span dir="ltr">−{formatUsd(redeem.discountUsd, locale)}</span>
+              <span dir="ltr">−{fmt(redeem.discountUsd)}</span>
             </div>
           ) : null}
           <div className="flex justify-between border-t pt-1 text-base font-semibold">
             <span>{t("grandTotal")}</span>
-            <span dir="ltr">{formatUsd(grandTotal, locale)}</span>
+            <span dir="ltr">{fmt(grandTotal)}</span>
           </div>
+          {display.code !== "USD" ? (
+            <div className="text-muted-foreground flex justify-end text-xs">
+              <span dir="ltr">≈ {formatUsd(grandTotal, locale)}</span>
+            </div>
+          ) : null}
         </div>
         {error ? (
           <p className="text-destructive mt-3 text-sm">{t(`err_${error}`)}</p>

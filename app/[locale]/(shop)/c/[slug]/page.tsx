@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
 import { localizedName } from "@/lib/categories";
+import { getRequestDisplayCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { getListing } from "@/lib/search";
 import { ProductListingView } from "@/components/shop/product-listing-view";
@@ -39,7 +40,10 @@ export default async function CategoryPage({
   if (!category || !category.isActive) notFound();
 
   const locale = await getLocale();
-  const result = await getListing(sp, locale, { categorySlug: slug });
+  const result = await getListing(sp, locale, {
+    categorySlug: slug,
+    display: await getRequestDisplayCurrency(),
+  });
 
   return (
     <ProductListingView

@@ -4,6 +4,8 @@ import { Wallet } from "lucide-react";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
+import { getRequestDisplayCurrency } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency-constants";
 import { getSetting } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { getWalletId, getWalletStats, getWalletView } from "@/lib/wallet";
@@ -48,7 +50,11 @@ export default async function WalletPage() {
   // History moved to its own screen (/account/wallet/history); the overview
   // only needs the balance and frozen flag here.
   const { balance, frozen } = await getWalletView(userId, 0);
-  const money = (n: number) =>
+  // The ledger is USD of record; amounts render converted to the buyer's
+  // display currency (their zone's rate), like everywhere else in the shop.
+  const display = await getRequestDisplayCurrency();
+  const money = (n: number) => formatMoney(n, display, locale);
+  const usd = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
   // Top-up + cash-out controls and any in-flight requests.
@@ -142,6 +148,11 @@ export default async function WalletPage() {
           <p className="text-2xl font-semibold" dir="ltr">
             {money(balance)}
           </p>
+          {display.code !== "USD" ? (
+            <p className="text-muted-foreground text-sm" dir="ltr">
+              ≈ {usd(balance)}
+            </p>
+          ) : null}
           <p className="text-muted-foreground text-xs">{t("subtitle")}</p>
         </div>
       </div>

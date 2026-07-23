@@ -7,9 +7,11 @@ import {
   Package,
   RotateCcw,
   Route,
+  Weight,
 } from "lucide-react";
 
 import { requireDeliveryManagerId } from "@/lib/authz";
+import { subOrderMetrics } from "@/lib/courier-capacity";
 import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
@@ -43,6 +45,7 @@ export async function DispatchView({ base }: { base: string }) {
         attemptCount: true,
         subOrder: {
           select: {
+            id: true,
             shippingMethod: true,
             order: {
               select: {
@@ -62,23 +65,46 @@ export async function DispatchView({ base }: { base: string }) {
       select: {
         id: true,
         name: true,
+        courierVehicleType: true,
         courierLocation: { select: { governorate: true } },
       },
     }),
     getPlatformSettings(),
   ]);
 
-  // Offer acceptance rate (90-day window) so ops can see who actually takes
-  // the jobs they're offered before assigning by hand.
+  // Parcel weights (the same numbers capacity-aware auto-assignment uses),
+  // both per row and summed per assigned courier, plus each driver's 90-day
+  // offer acceptance rate — so the pickers show what a driver is carrying and
+  // whether they actually take the jobs they're offered.
+  const metricsBySubOrder = await subOrderMetrics(
+    shipments.map((s) => s.subOrder.id),
+  );
   const acceptance = await courierAcceptanceStats(couriers.map((c) => c.id));
+  const kg = (grams: number) =>
+    format.number(grams / 1000, { maximumFractionDigits: 1 });
+  const loadByDriver = new Map<string, { count: number; grams: number }>();
+  for (const s of shipments) {
+    if (!s.driverId) continue;
+    const cur = loadByDriver.get(s.driverId) ?? { count: 0, grams: 0 };
+    cur.count += 1;
+    cur.grams += metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0;
+    loadByDriver.set(s.driverId, cur);
+  }
+
+  const tCouriers = await getTranslations("AdminCouriers");
   const courierOptions = couriers.map((c) => {
-    const base = c.name ?? c.id.slice(-6);
-    const gov = c.courierLocation?.governorate;
+    const load = loadByDriver.get(c.id);
     const stats = acceptance.get(c.id);
-    const rate =
-      stats?.rate != null ? `${Math.round(stats.rate * 100)}%` : null;
-    const label = [base, gov, rate].filter(Boolean).join(" · ");
-    return { id: c.id, name: label };
+    const parts = [
+      c.name ?? c.id.slice(-6),
+      c.courierLocation?.governorate,
+      c.courierVehicleType
+        ? tCouriers(`vehicle_${c.courierVehicleType}`)
+        : null,
+      load ? t("optionLoad", { count: load.count, kg: kg(load.grams) }) : null,
+      stats?.rate != null ? `${Math.round(stats.rate * 100)}%` : null,
+    ].filter(Boolean);
+    return { id: c.id, name: parts.join(" · ") };
   });
 
   const now = new Date();
@@ -214,6 +240,19 @@ export async function DispatchView({ base }: { base: string }) {
                   {s.trackingNumber ? (
                     <span className="ms-2 font-mono" dir="ltr">
                       {s.trackingNumber}
+                    </span>
+                  ) : null}
+                  <span className="ms-2 inline-flex items-center gap-1">
+                    <Weight className="size-3.5" />
+                    {t("parcelWeight", {
+                      kg: kg(
+                        metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0,
+                      ),
+                    })}
+                  </span>
+                  {metricsBySubOrder.get(s.subOrder.id)?.freight ? (
+                    <span className="ms-2 rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
+                      {t("freightBadge")}
                     </span>
                   ) : null}
                 </p>
