@@ -90,7 +90,26 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
      least-loaded.
   3. **Balanced** — otherwise global least-loaded.
 
-Ops can always reassign from the dispatch board.
+Two refinements apply under both strategies (`lib/courier-capacity.ts`):
+
+- **Vehicle capacity** — each vehicle from the courier application (foot,
+  bicycle, motorbike, car, van) has a carrying profile: a max total weight and
+  a max number of simultaneous parcels (`VEHICLE_CAPACITY`). A parcel's weight
+  is the sum of its lines' `quantity × Product.weightGrams` (unlabeled items
+  count as `DEFAULT_ITEM_WEIGHT_GRAMS` so they still consume capacity).
+  Couriers whose vehicle can't take the parcel — too heavy outright, or the
+  driver is already at their weight/parcel limit — are skipped. The approved
+  vehicle is copied to `User.courierVehicleType` on application approval;
+  couriers without one (granted the role manually) are unconstrained, matching
+  the pre-capacity behavior. If **no** active courier can carry a parcel it
+  stays unassigned and dispatch routes it manually.
+- **Batching** — a courier already carrying an in-flight parcel to the same
+  destination governorate is preferred over everyone else (before distance and
+  load), capacity permitting. Orders heading the same way accumulate onto one
+  trip instead of fanning out across the fleet one-parcel-per-driver.
+
+Ops can always reassign from the dispatch board — capacity gates the automatic
+paths only (same philosophy as the COD credit guard).
 
 ## 5. Operating it — by role
 

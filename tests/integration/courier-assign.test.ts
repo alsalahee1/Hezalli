@@ -1,4 +1,5 @@
-// Exercises courier auto-assignment (least-loaded balancing) against Postgres.
+// Exercises courier auto-assignment (least-loaded balancing + same-destination
+// batching) against Postgres.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
@@ -15,6 +16,13 @@ const extraUserIds: string[] = [];
 beforeAll(async () => {
   fx = await makeFixture();
   const uniq = Date.now().toString(36);
+  // A governorate only this suite delivers to, so the batching preference
+  // (courier already headed there wins) is deterministic against whatever
+  // else is in the shared database.
+  await prisma.address.update({
+    where: { id: fx.addressId },
+    data: { governorate: `AssignGov-${uniq}` },
+  });
   const a = await prisma.user.create({
     data: { email: `ca-${uniq}@t.local`, roles: ["COURIER"], locale: "en" },
   });
@@ -71,14 +79,16 @@ async function minCourierLoad(): Promise<number> {
 }
 
 describe("courier auto-assignment", () => {
-  it("assigns a least-loaded courier, never a busier one", async () => {
-    // A carries an active parcel; B carries none, so A must not be chosen.
+  it("batches onto the courier already delivering to the same destination", async () => {
+    // A carries an active parcel to this suite's governorate; the next parcel
+    // heads the same way, so it rides with A even though idle couriers exist.
+    // (With different destinations, least-loaded balancing applies instead —
+    // covered by the pickFrom unit tests.)
     await shippedParcel(courierA);
     const p = await shippedParcel();
 
     const chosen = await autoAssignShipment(p);
-    expect(chosen).toBeTruthy();
-    expect(chosen).not.toBe(courierA);
+    expect(chosen).toBe(courierA);
 
     const after = await prisma.shipment.findUnique({
       where: { id: p },

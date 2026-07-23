@@ -268,6 +268,11 @@ model User {
   // Security deposit Hezalli holds from this courier (docs §32). Optional —
   // raises the driver's COD cash limit 1:1. Set by admins only, audited.
   courierDepositUsd Decimal @default(0) @db.Decimal(12, 2)
+  // The vehicle this courier drives (motorbike | car | bicycle | van | foot),
+  // copied from their approved CourierApplication. Auto-assignment uses it to
+  // match parcel weight/count to what the vehicle can carry
+  // (lib/courier-capacity.ts). Null = unknown → treated as unconstrained.
+  courierVehicleType String?
   // Fleet-partner tier: a courier may belong to a fleet (fleetId); a user may
   // also OWN one fleet (ownedFleet), which grants the read-only fleet portal.
   fleetId          String?
