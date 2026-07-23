@@ -41,7 +41,13 @@ export function ClaimButton({ shipmentId }: { shipmentId: string }) {
       {err ? (
         <p className="text-destructive mt-1.5 text-center text-xs">
           {t(
-            ["taken", "codBlocked", "tooManyJobs", "notFound"].includes(err)
+            [
+              "taken",
+              "codBlocked",
+              "tooManyJobs",
+              "noCapacity",
+              "notFound",
+            ].includes(err)
               ? `err_claim_${err}`
               : "boardError",
           )}

@@ -7,10 +7,12 @@ import {
   PackageSearch,
   Route,
   Store,
+  Weight,
 } from "lucide-react";
 
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
+import { hasRoomFor, subOrderMetrics } from "@/lib/courier-capacity";
 import { boardReadyAtPoint, openBoardWhere } from "@/lib/job-board";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -33,52 +35,83 @@ export default async function DriverBoardPage() {
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });
 
-  const [settings, rawJobs, location, cod] = await Promise.all([
-    getPlatformSettings(),
-    prisma.shipment.findMany({
-      where: openBoardWhere(),
-      orderBy: { boardedAt: "asc" },
-      take: 100,
-      select: {
-        id: true,
-        status: true,
-        boardedAt: true,
-        deliveryPointId: true,
-        atPointId: true,
-        deliveryPoint: { select: { name: true, city: true } },
-        subOrder: {
-          select: {
-            itemsTotal: true,
-            shippingTotal: true,
-            discountTotal: true,
-            store: { select: { name: true } },
-            items: { select: { quantity: true } },
-            order: {
-              select: {
-                paymentMethod: true,
-                deliveryDate: true,
-                deliverySlot: true,
-                payment: { select: { status: true, confirmedBy: true } },
-                address: {
-                  select: {
-                    city: true,
-                    governorate: true,
-                    lat: true,
-                    lng: true,
+  const [settings, rawJobs, location, cod, driver, activeShipments] =
+    await Promise.all([
+      getPlatformSettings(),
+      prisma.shipment.findMany({
+        where: openBoardWhere(),
+        orderBy: { boardedAt: "asc" },
+        take: 100,
+        select: {
+          id: true,
+          status: true,
+          boardedAt: true,
+          deliveryPointId: true,
+          atPointId: true,
+          subOrderId: true,
+          deliveryPoint: { select: { name: true, city: true } },
+          subOrder: {
+            select: {
+              itemsTotal: true,
+              shippingTotal: true,
+              discountTotal: true,
+              store: { select: { name: true } },
+              items: { select: { quantity: true } },
+              order: {
+                select: {
+                  paymentMethod: true,
+                  deliveryDate: true,
+                  deliverySlot: true,
+                  payment: { select: { status: true, confirmedBy: true } },
+                  address: {
+                    select: {
+                      city: true,
+                      governorate: true,
+                      lat: true,
+                      lng: true,
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-    }),
-    prisma.courierLocation.findUnique({
-      where: { userId: courierId },
-      select: { governorate: true, lat: true, lng: true },
-    }),
-    courierCodStatus(courierId),
+      }),
+      prisma.courierLocation.findUnique({
+        where: { userId: courierId },
+        select: { governorate: true, lat: true, lng: true },
+      }),
+      courierCodStatus(courierId),
+      prisma.user.findUnique({
+        where: { id: courierId },
+        select: { courierVehicleType: true },
+      }),
+      prisma.shipment.findMany({
+        where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
+        select: { subOrderId: true },
+      }),
+    ]);
+
+  // The physical side (lib/courier-capacity.ts): each parcel's weight/volume,
+  // and whether it still fits on this driver's vehicle on top of what they
+  // already carry — mirrors the claim action's gate so the button never
+  // promises a claim the server will refuse.
+  const [parcelMetrics, loadMetrics] = await Promise.all([
+    subOrderMetrics(rawJobs.map((j) => j.subOrderId)),
+    subOrderMetrics(activeShipments.map((s) => s.subOrderId)),
   ]);
+  let loadWeightGrams = 0;
+  let loadVolumeCm3 = 0;
+  for (const m of loadMetrics.values()) {
+    loadWeightGrams += m.weightGrams;
+    loadVolumeCm3 += m.volumeCm3;
+  }
+  const me = {
+    vehicleType: driver?.courierVehicleType ?? null,
+    load: activeShipments.length,
+    loadWeightGrams,
+    loadVolumeCm3,
+  };
 
   const jobs = rawJobs
     .filter(boardReadyAtPoint)
@@ -91,10 +124,13 @@ export default async function DriverBoardPage() {
       const codDue =
         j.subOrder.order.paymentMethod === "COD" &&
         !codSettledDigitally(j.subOrder.order);
+      const metrics = parcelMetrics.get(j.subOrderId);
       return {
         ...j,
         km,
         codDue,
+        weightKg: metrics ? metrics.weightGrams / 1000 : null,
+        fits: metrics ? hasRoomFor(me, metrics) : true,
         codAmount:
           Number(j.subOrder.itemsTotal) +
           Number(j.subOrder.shippingTotal) -
@@ -182,6 +218,16 @@ export default async function DriverBoardPage() {
                       <Package className="size-3" />
                       {t("boardItems", { count: j.pieces })}
                     </span>
+                    {j.weightKg != null ? (
+                      <span className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded px-1.5 py-0.5">
+                        <Weight className="size-3" />
+                        {t("boardWeight", {
+                          kg: format.number(j.weightKg, {
+                            maximumFractionDigits: 1,
+                          }),
+                        })}
+                      </span>
+                    ) : null}
                     <span className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-500">
                       <Banknote className="size-3" />
                       {t("boardFee", {
@@ -213,7 +259,13 @@ export default async function DriverBoardPage() {
                     />
                   ) : null}
 
-                  {cod.blocked ? null : <ClaimButton shipmentId={j.id} />}
+                  {cod.blocked ? null : j.fits ? (
+                    <ClaimButton shipmentId={j.id} />
+                  ) : (
+                    <p className="text-muted-foreground rounded-full border border-dashed px-3 py-2 text-center text-xs">
+                      {t("boardNoFit")}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

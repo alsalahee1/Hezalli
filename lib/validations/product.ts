@@ -59,9 +59,18 @@ export const productScalarsSchema = z.object({
   dimensionsCm: z
     .union([
       z.object({
-        l: z.coerce.number().min(1, "dimensionsInvalid").max(1000, "dimensionsInvalid"),
-        w: z.coerce.number().min(1, "dimensionsInvalid").max(1000, "dimensionsInvalid"),
-        h: z.coerce.number().min(1, "dimensionsInvalid").max(1000, "dimensionsInvalid"),
+        l: z.coerce
+          .number()
+          .min(1, "dimensionsInvalid")
+          .max(1000, "dimensionsInvalid"),
+        w: z.coerce
+          .number()
+          .min(1, "dimensionsInvalid")
+          .max(1000, "dimensionsInvalid"),
+        h: z.coerce
+          .number()
+          .min(1, "dimensionsInvalid")
+          .max(1000, "dimensionsInvalid"),
       }),
       z.null(),
     ])

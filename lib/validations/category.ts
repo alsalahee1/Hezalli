@@ -29,7 +29,11 @@ export const categorySchema = z.object({
   // Delivery defaults: typical unit weight/size for products in this
   // category, used for courier capacity when a product has none of its own.
   defaultWeightGrams: z.union([
-    z.coerce.number().int().min(0, "weightInvalid").max(5_000_000, "weightInvalid"),
+    z.coerce
+      .number()
+      .int()
+      .min(0, "weightInvalid")
+      .max(5_000_000, "weightInvalid"),
     z.null(),
   ]),
   defaultDimensionsCm: z.union([

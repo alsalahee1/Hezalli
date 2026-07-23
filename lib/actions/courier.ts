@@ -6,6 +6,11 @@ import { getLocale } from "next-intl/server";
 import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
 import { codBlockedCourierIds } from "@/lib/cod-guard";
 import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
+import {
+  hasRoomFor,
+  subOrderMetric,
+  subOrderMetrics,
+} from "@/lib/courier-capacity";
 import { notifyBot } from "@/lib/integrations/bot-notify";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -346,6 +351,7 @@ export async function courierClaimJob(shipmentId: string): Promise<Result> {
       status: true,
       deliveryPointId: true,
       atPointId: true,
+      subOrderId: true,
       subOrder: { select: { status: true, shippingMethod: true } },
     },
   });
@@ -366,13 +372,46 @@ export async function courierClaimJob(shipmentId: string): Promise<Result> {
   const blocked = await codBlockedCourierIds([courierId]);
   if (blocked.has(courierId)) return { error: "codBlocked" };
 
-  // Anti-hoarding: a driver already carrying the cap can't stack more claims.
-  const maxJobs = await getSetting("job_board_max_active_jobs");
-  if (maxJobs > 0) {
-    const active = await prisma.shipment.count({
+  // Anti-hoarding cap + the physical gate: what the driver already carries.
+  const [driver, active, maxJobs] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: courierId },
+      select: { courierVehicleType: true },
+    }),
+    prisma.shipment.findMany({
       where: { driverId: courierId, subOrder: { status: "SHIPPED" } },
-    });
-    if (active >= maxJobs) return { error: "tooManyJobs" };
+      select: { subOrderId: true },
+    }),
+    getSetting("job_board_max_active_jobs"),
+  ]);
+  if (maxJobs > 0 && active.length >= maxJobs) {
+    return { error: "tooManyJobs" };
+  }
+
+  // Vehicle capacity (lib/courier-capacity.ts): the same gate auto-assign
+  // applies — a bicycle courier can't claim a washing machine, or stack more
+  // weight/volume than their vehicle carries. Unknown vehicles pass, like in
+  // auto-assign.
+  const loadMetrics = await subOrderMetrics(active.map((s) => s.subOrderId));
+  let loadWeightGrams = 0;
+  let loadVolumeCm3 = 0;
+  for (const m of loadMetrics.values()) {
+    loadWeightGrams += m.weightGrams;
+    loadVolumeCm3 += m.volumeCm3;
+  }
+  const parcel = await subOrderMetric(shipment.subOrderId);
+  if (
+    !hasRoomFor(
+      {
+        vehicleType: driver?.courierVehicleType ?? null,
+        load: active.length,
+        loadWeightGrams,
+        loadVolumeCm3,
+      },
+      parcel,
+    )
+  ) {
+    return { error: "noCapacity" };
   }
 
   // The race decider: whoever flips the unassigned row wins. Clearing the

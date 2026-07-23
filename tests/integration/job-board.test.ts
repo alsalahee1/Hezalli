@@ -215,6 +215,39 @@ describe("open job board", () => {
     await prisma.courierLedgerEntry.delete({ where: { id: entry.id } });
   });
 
+  it("a parcel too heavy for the driver's vehicle can't be claimed", async () => {
+    const p = await shippedParcel();
+    await dispatchShippedParcel(p);
+    // A 100 kg parcel vs. a bicycle (15 kg max) — same gate as auto-assign.
+    const { subOrderId } = await prisma.shipment.findUniqueOrThrow({
+      where: { id: p },
+      select: { subOrderId: true },
+    });
+    await prisma.orderItem.updateMany({
+      where: { subOrderId },
+      data: { weightGramsSnapshot: 100_000 },
+    });
+    await prisma.user.update({
+      where: { id: driverA },
+      data: { courierVehicleType: "bicycle" },
+    });
+
+    as(driverA);
+    expect(await courierClaimJob(p)).toEqual({ error: "noCapacity" });
+    expect((await shipmentOf(p)).driverId).toBeNull();
+
+    // A van takes it fine.
+    await prisma.user.update({
+      where: { id: driverA },
+      data: { courierVehicleType: "van" },
+    });
+    expect(await courierClaimJob(p)).toEqual({ ok: true });
+    await prisma.user.update({
+      where: { id: driverA },
+      data: { courierVehicleType: null },
+    });
+  });
+
   it("the active-jobs cap blocks hoarding", async () => {
     // A fresh driver — the cap counts ALL active jobs, including ones the
     // other suite drivers claimed in earlier tests.

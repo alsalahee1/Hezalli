@@ -196,9 +196,13 @@ lands on the board; with no local drivers, everyone active is.
   is a commitment: no silent hand-backs, problems go through
   `courierFailDelivery` or dispatch.
 - **The same gates as auto-dispatch apply.** COD-blocked drivers
-  (`lib/cod-guard.ts`) can browse but not claim, and
+  (`lib/cod-guard.ts`) can browse but not claim;
   `job_board_max_active_jobs` caps how many in-flight jobs a driver may hold
-  before claiming more (anti-hoarding, anti-cherry-picking).
+  before claiming more (anti-hoarding, anti-cherry-picking); and the vehicle
+  capacity check (`lib/courier-capacity.ts` — weight, volume, parcel count,
+  longest item) gates claims exactly like auto-assign. The board shows each
+  parcel's approximate weight and marks jobs that don't fit the driver's
+  vehicle instead of offering a claim the server would refuse.
 - **The push cascade is the safety net, not a rival.** A parcel unclaimed
   after `job_board_window_minutes` gets push-offers from the sweep exactly as
   §4a describes — and stays claimable the whole time, since both paths simply
