@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Truck } from "lucide-react";
+import { Store, Truck, Wallet } from "lucide-react";
 
 import type { Metadata } from "next";
 
@@ -27,6 +27,7 @@ export default async function FleetLayout({
     select: { name: true },
   });
   const t = await getTranslations("Fleet");
+  const q = await getTranslations("QuickNav");
 
   return (
     <div className="bg-background mx-auto flex min-h-screen max-w-3xl flex-col">
@@ -35,6 +36,26 @@ export default async function FleetLayout({
           <Truck className="text-primary size-5" />{" "}
           {fleet?.name ?? t("appName")}
         </Link>
+        {/* Quick hops out of the fleet shell — storefront and wallet, matching
+            the driver/point/seller/admin shells. */}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/account/wallet"
+            aria-label={q("wallet")}
+            title={q("wallet")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <Wallet className="size-5" />
+          </Link>
+          <Link
+            href="/"
+            aria-label={q("store")}
+            title={q("store")}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-9 items-center justify-center rounded-full transition-colors"
+          >
+            <Store className="size-5" />
+          </Link>
+        </div>
       </header>
       <main className="flex-1 px-4 py-4">{children}</main>
     </div>
