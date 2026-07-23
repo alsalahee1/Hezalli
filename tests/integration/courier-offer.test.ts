@@ -236,6 +236,7 @@ describe("driver job offers", () => {
     expect(await sweepCourierOffers()).toEqual({
       expired: 0,
       waved: 0,
+      boarded: 0,
       reescalated: 0,
     });
 

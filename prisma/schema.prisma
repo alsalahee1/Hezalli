@@ -1370,6 +1370,12 @@ model Shipment {
   // were alerted. Cleared by a manual ops assignment so a re-stranded parcel
   // can alert again.
   assignmentEscalatedAt DateTime?
+  // When the parcel was posted on the open driver job board (lib/job-board.ts):
+  // any eligible courier may claim it, first tap wins. Stays set for the
+  // parcel's lifetime — the board only shows currently-unassigned parcels, and
+  // the offer sweep uses this timestamp to start push-offers once the
+  // board-only window lapses.
+  boardedAt       DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   // How many doorstep attempts the courier has made (failed + the final one).

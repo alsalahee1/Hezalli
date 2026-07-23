@@ -72,6 +72,9 @@ All keys live in `PlatformSetting` (see `lib/settings.ts` for defaults).
 | `seller_ship_days` | `5` | Unshipped CONFIRMED/PROCESSING sub-orders auto-cancel (paid buyers refunded) after this many days; seller warned a day before. `0` = off. |
 | `driver_min_acceptance_rate` | `0` | Drivers under this 90-day offer-acceptance percent (with ≥ `driver_acceptance_min_offers` answers) stop getting auto-offers. `0` = off. |
 | `driver_acceptance_min_offers` | `10` | Answered-offer sample a driver needs before the acceptance gate applies. |
+| `job_board_enabled` | `false` | Post unassigned parcels on the open driver job board (§4b) — any eligible driver can claim, first tap wins. |
+| `job_board_window_minutes` | `15` | How long a parcel stays board-only before push-offers ALSO start chasing a driver. `0` = both channels at once. |
+| `job_board_max_active_jobs` | `10` | A driver already holding this many in-flight deliveries can't claim more from the board. `0` = no cap. |
 
 Rules worth knowing:
 
@@ -140,6 +143,40 @@ every 24h (aggregated) during dispatch hours, and the stuck-parcel sweep
 re-alerts every 48h while a parcel stays un-moved. The related seller-side
 clock lives in `lib/seller-sla.ts`: unshipped sub-orders warn the seller at
 `seller_ship_days − 1` and auto-cancel (refund-if-paid) at the deadline.
+
+## 4b. The open job board — pull dispatch
+
+With `job_board_enabled` on (`lib/job-board.ts`), dispatch flips from push to
+**pull-first**: instead of the platform picking one driver, a shipped parcel
+is posted on an open board (`/driver/board`) that every eligible courier can
+browse. Each card shows what a driver weighs before committing — destination
+city + governorate, parcel size (piece count), the COD amount to collect (or
+"prepaid"), **their delivery fee**, the scheduled window, and the distance
+when both sides have shared coordinates — but **not** the buyer's name, phone,
+or street address; those stay private until the job is claimed. Local drivers
+(shared location in the destination governorate) are notified when a parcel
+lands on the board; with no local drivers, everyone active is.
+
+- **Claiming** (`courierClaimJob`) is first-tap-wins: one conditional update
+  on the unassigned row, so a race has exactly one winner and the loser sees
+  "taken". A claim is recorded as an `ACCEPTED` `ShipmentOffer`, so pull and
+  push feed the same reliability history — and like an accepted push offer it
+  is a commitment: no silent hand-backs, problems go through
+  `courierFailDelivery` or dispatch.
+- **The same gates as auto-dispatch apply.** COD-blocked drivers
+  (`lib/cod-guard.ts`) can browse but not claim, and
+  `job_board_max_active_jobs` caps how many in-flight jobs a driver may hold
+  before claiming more (anti-hoarding, anti-cherry-picking).
+- **The push cascade is the safety net, not a rival.** A parcel unclaimed
+  after `job_board_window_minutes` gets push-offers from the sweep exactly as
+  §4a describes — and stays claimable the whole time, since both paths simply
+  set `Shipment.driverId` on the unassigned row. With `express_auto_assign`
+  off the platform runs pull-only: parcels stay on the board until claimed or
+  manually dispatched.
+- **Dispatch hours are respected**: night parcels queue un-boarded and the
+  first sweep after opening posts them (the board's morning wave). Escalated
+  parcels remain claimable — a claim clears `assignmentEscalatedAt` just like
+  a manual assignment.
 
 ## 5. Operating it — by role
 
