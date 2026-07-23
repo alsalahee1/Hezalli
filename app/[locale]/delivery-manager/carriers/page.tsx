@@ -11,7 +11,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DeliveryManagerCarriersPage() {
-  if (!(await requireDeliveryScope("FLEET"))) return <Forbidden />;
+  if (!(await requireDeliveryScope("NETWORK"))) return <Forbidden />;
   const t = await getTranslations("AdminCarriers");
   const carriers = await prisma.carrier.findMany({
     orderBy: { name: "asc" },

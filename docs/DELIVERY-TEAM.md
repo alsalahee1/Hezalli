@@ -15,10 +15,10 @@ desks* they may work:
 | Desk (`DeliveryScope`) | Owns | Pages |
 | --- | --- | --- |
 | `DISPATCH` | live routing & tracking of parcels | dispatch board, scan, shipments, CSV export |
-| `FLEET` | drivers & who moves parcels | couriers, fleets, carriers, vehicles, courier applications |
+| `FLEET` | Hezalli's own drivers & vehicles | couriers, fleets, vehicles, courier applications |
 | `POINTS` | partner point centers | points, point staff, point applications |
 | `SETTLEMENT` | money **in** from drivers & centers | cash exposure, remittances, courier/point ledgers, payouts, deposits |
-| `NETWORK` | delivery config | shipping zones, category delivery defaults |
+| `NETWORK` | delivery config | shipping zones, category delivery defaults, carriers |
 
 **Empty `deliveryScopes` = "Head of Delivery": every desk.** This keeps every
 pre-existing `DELIVERY_MANAGER` account (which has no scopes) at full access,

@@ -673,10 +673,10 @@
     "scope_SETTLEMENT": "Settlement & payments",
     "scope_NETWORK": "Network & config",
     "scopeDesc_DISPATCH": "Dispatch board, scan station, and shipments.",
-    "scopeDesc_FLEET": "Drivers, fleets, carriers, and vehicles.",
+    "scopeDesc_FLEET": "Drivers, fleets, and vehicles.",
     "scopeDesc_POINTS": "Partner point centers, their staff and applications.",
     "scopeDesc_SETTLEMENT": "Cash, remittances, and payouts from drivers & points.",
-    "scopeDesc_NETWORK": "Shipping zones and category delivery defaults.",
+    "scopeDesc_NETWORK": "Shipping zones, delivery defaults, and carriers.",
     "err_forbidden": "Not allowed.",
     "err_emailRequired": "Enter an email.",
     "err_userNotFound": "No user found with that email."

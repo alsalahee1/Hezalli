@@ -51,11 +51,11 @@ export const NAV_KEY_SCOPE: Record<string, DeliveryScope | null> = {
   shipments: "DISPATCH",
   couriers: "FLEET",
   fleets: "FLEET",
-  carriers: "FLEET",
   vehicleCapacity: "FLEET",
   points: "POINTS",
   cash: "SETTLEMENT",
   remittances: "SETTLEMENT",
+  carriers: "NETWORK",
   shippingZones: "NETWORK",
   deliveryDefaults: "NETWORK",
 };

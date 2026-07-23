@@ -16,7 +16,7 @@ export async function saveCarrier(input: {
   trackingUrl?: string;
   platformManaged?: boolean;
 }): Promise<Result> {
-  const adminId = await requireDeliveryScope("FLEET");
+  const adminId = await requireDeliveryScope("NETWORK");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -43,7 +43,7 @@ export async function saveCarrier(input: {
 
 // Delete a carrier; detach it from any existing shipments first.
 export async function deleteCarrier(id: string): Promise<Result> {
-  const adminId = await requireDeliveryScope("FLEET");
+  const adminId = await requireDeliveryScope("NETWORK");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
