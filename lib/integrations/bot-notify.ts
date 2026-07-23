@@ -28,7 +28,7 @@ export async function notifyBot(userId: string, text: string): Promise<void> {
     await Promise.all(
       chats.map(async (c) => {
         try {
-          if (c.platform === "telegram" && tg.telegramConfigured()) {
+          if (c.platform === "telegram" && (await tg.telegramConfigured())) {
             await tg.sendTelegramMessage(c.chatId, text);
           } else if (c.platform === "whatsapp" && wa.whatsappConfigured()) {
             await wa.sendWhatsAppText(c.chatId, text);

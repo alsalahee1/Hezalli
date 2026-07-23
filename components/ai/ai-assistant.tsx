@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, Send, Sparkles, Star, X } from "lucide-react";
+import { Bot, Loader2, Send, Star, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
+import { ShadiIcon } from "@/components/ai/shadi-icon";
 
 type ProductCard = {
   slug: string;
@@ -150,7 +151,7 @@ export function AiAssistant({ avatar }: { avatar?: string }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatar} alt="" className="size-full object-cover" />
         ) : (
-          <Sparkles className="size-6" />
+          <ShadiIcon className="size-6" />
         )}
       </button>
 
@@ -209,7 +210,7 @@ export function AiAssistant({ avatar }: { avatar?: string }) {
                     className="border-primary/20 mx-auto size-14 rounded-full border object-cover"
                   />
                 ) : (
-                  <Sparkles className="text-primary mx-auto size-8" />
+                  <ShadiIcon className="text-primary mx-auto size-8" />
                 )}
                 <p>{t("greeting")}</p>
                 <div className="flex flex-col gap-2">
