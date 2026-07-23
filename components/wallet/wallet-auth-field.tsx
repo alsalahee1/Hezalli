@@ -8,6 +8,7 @@ import {
   getPasskeyAssertion,
 } from "@/lib/webauthn-client";
 import type { WalletAuth } from "@/lib/wallet-step-auth";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -72,12 +73,21 @@ export function WalletAuthField({
   const btnClass = fullWidth ? "w-full" : "";
   const errKey = localErr ?? error;
 
-  // Neither method available yet — prompt the user to set one up first.
+  // Neither method available yet — prompt the user to set one up first, and
+  // link straight to the security screen where PIN + biometrics live (the
+  // notice can't do anything on its own, so without this the user is told to
+  // "set a PIN" with no way to get there).
   if (!hasPin && !canBiometric) {
     return (
-      <p className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-xs text-amber-700 dark:text-amber-400">
-        {t("authRequiredNotice")}
-      </p>
+      <div className="space-y-1.5 rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-xs text-amber-700 dark:text-amber-400">
+        <p>{t("authRequiredNotice")}</p>
+        <Link
+          href="/account/security"
+          className="inline-flex font-semibold underline underline-offset-2"
+        >
+          {t("authSetupLink")}
+        </Link>
+      </div>
     );
   }
 
