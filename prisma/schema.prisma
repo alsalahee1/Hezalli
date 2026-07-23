@@ -1414,6 +1414,10 @@ model Shipment {
   // the offer sweep uses this timestamp to start push-offers once the
   // board-only window lapses.
   boardedAt       DateTime?
+  // When couriers were last re-pinged about this parcel sitting unclaimed on
+  // the board (lib/job-board.ts remindOpenBoardJobs) — throttles the repeat
+  // reminder to once per board_reminder_minutes instead of every sweep run.
+  boardRemindedAt DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   // How many doorstep attempts the courier has made (failed + the final one).

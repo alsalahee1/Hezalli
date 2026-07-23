@@ -58,6 +58,7 @@ export function PlatformSettingsForm({
     job_board_enabled: current.job_board_enabled,
     job_board_window_minutes: String(current.job_board_window_minutes),
     job_board_max_active_jobs: String(current.job_board_max_active_jobs),
+    board_reminder_minutes: String(current.board_reminder_minutes),
     pickup_deadline_hours: String(current.pickup_deadline_hours),
     dispatch_hours_start: String(current.dispatch_hours_start),
     dispatch_hours_end: String(current.dispatch_hours_end),
@@ -127,6 +128,7 @@ export function PlatformSettingsForm({
         job_board_enabled: f.job_board_enabled,
         job_board_window_minutes: Number(f.job_board_window_minutes),
         job_board_max_active_jobs: Number(f.job_board_max_active_jobs),
+        board_reminder_minutes: Number(f.board_reminder_minutes),
         pickup_deadline_hours: Number(f.pickup_deadline_hours),
         dispatch_hours_start: Number(f.dispatch_hours_start),
         dispatch_hours_end: Number(f.dispatch_hours_end),
@@ -518,6 +520,14 @@ export function PlatformSettingsForm({
             type="number"
             value={f.job_board_max_active_jobs}
             onChange={(e) => set("job_board_max_active_jobs", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("boardReminder")} hint={t("boardReminderHint")}>
+          <Input
+            type="number"
+            value={f.board_reminder_minutes}
+            onChange={(e) => set("board_reminder_minutes", e.target.value)}
             dir="ltr"
           />
         </Field>

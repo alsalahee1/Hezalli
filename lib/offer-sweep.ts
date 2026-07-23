@@ -7,7 +7,7 @@
 // the drivers sleep.
 import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
-import { boardShipment } from "@/lib/job-board";
+import { boardShipment, remindOpenBoardJobs } from "@/lib/job-board";
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -22,13 +22,21 @@ export async function sweepCourierOffers(): Promise<{
   reclaimed: number;
   waved: number;
   boarded: number;
+  remindedJobs: number;
   reescalated: number;
 }> {
   const settings = await getPlatformSettings();
   if (
     !isDispatchOpen(settings.dispatch_hours_start, settings.dispatch_hours_end)
   ) {
-    return { expired: 0, reclaimed: 0, waved: 0, boarded: 0, reescalated: 0 };
+    return {
+      expired: 0,
+      reclaimed: 0,
+      waved: 0,
+      boarded: 0,
+      remindedJobs: 0,
+      reescalated: 0,
+    };
   }
 
   // 1. Expire lapsed offers and move those parcels to the next courier.
@@ -247,6 +255,19 @@ export async function sweepCourierOffers(): Promise<{
     }
   }
 
+  // 2b. Board reminder (docs/EXPRESS-DELIVERY.md §4b): parcels still sitting
+  // unclaimed on the board re-ping eligible couriers once per
+  // `board_reminder_minutes` — one aggregated notification per driver. The
+  // small-fleet safety net: with one or two couriers who all missed the first
+  // ping (and the cascade run dry), this is the nudge that gets a waking
+  // driver back to the board.
+  let remindedJobs = 0;
+  if (settings.job_board_enabled && settings.board_reminder_minutes > 0) {
+    remindedJobs = await remindOpenBoardJobs(
+      settings.board_reminder_minutes,
+    ).catch(() => 0);
+  }
+
   // 3. Re-escalate: parcels flagged for manual dispatch that are STILL
   // unassigned after REESCALATE_HOURS get one aggregated re-alert (and the
   // flag re-stamped so the next one is another day out). Manual assignment
@@ -294,5 +315,12 @@ export async function sweepCourierOffers(): Promise<{
     );
   }
 
-  return { expired, reclaimed, waved, boarded, reescalated: stale.length };
+  return {
+    expired,
+    reclaimed,
+    waved,
+    boarded,
+    remindedJobs,
+    reescalated: stale.length,
+  };
 }

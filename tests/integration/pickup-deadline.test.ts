@@ -33,6 +33,7 @@ const extraUserIds: string[] = [];
 
 const settingKeys = [
   "pickup_deadline_hours",
+  "board_reminder_minutes",
   "job_board_enabled",
   "job_board_window_minutes",
   "job_board_max_active_jobs",
@@ -64,6 +65,7 @@ beforeAll(async () => {
   extraUserIds.push(a.id, b.id);
 
   await setSetting("pickup_deadline_hours", 4);
+  await setSetting("board_reminder_minutes", 0);
   await setSetting("job_board_enabled", true);
   await setSetting("job_board_window_minutes", 15);
   await setSetting("job_board_max_active_jobs", 0);

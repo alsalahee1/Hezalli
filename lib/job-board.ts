@@ -149,6 +149,77 @@ export async function boardShipment(shipmentId: string): Promise<boolean> {
 }
 
 /**
+ * Repeat reminder for unclaimed board jobs (the small-fleet safety net): when
+ * parcels have sat on the board longer than `reminderMinutes` since they were
+ * posted (or last reminded), re-ping eligible couriers — ONE aggregated
+ * notification per driver, however many parcels are waiting, so a slow
+ * morning never turns into notification spam. Escalated parcels are included
+ * on purpose: a cascade that ran dry is exactly when a waking driver's claim
+ * matters most. Returns how many parcels were covered by this round.
+ */
+export async function remindOpenBoardJobs(
+  reminderMinutes: number,
+): Promise<number> {
+  const cutoff = new Date(Date.now() - reminderMinutes * 60_000);
+  const rows = await prisma.shipment.findMany({
+    where: {
+      AND: [
+        openBoardWhere(),
+        { boardedAt: { lt: cutoff } },
+        {
+          OR: [{ boardRemindedAt: null }, { boardRemindedAt: { lt: cutoff } }],
+        },
+      ],
+    },
+    take: 100,
+    select: {
+      id: true,
+      status: true,
+      deliveryPointId: true,
+      atPointId: true,
+    },
+  });
+  const due = rows.filter(boardReadyAtPoint);
+  if (due.length === 0) return 0;
+
+  // Stamp first, then notify — a notify failure must not re-spam next run.
+  await prisma.shipment.updateMany({
+    where: { id: { in: due.map((s) => s.id) } },
+    data: { boardRemindedAt: new Date() },
+  });
+
+  const couriers = await prisma.user.findMany({
+    where: { roles: { has: "COURIER" }, isSuspended: false, deletedAt: null },
+    select: { id: true, locale: true },
+  });
+  const blocked = await codBlockedCourierIds(couriers.map((c) => c.id));
+  const eligible = couriers.filter((c) => !blocked.has(c.id));
+  const count = due.length;
+  await Promise.all(
+    eligible.map((c) => {
+      const ar = c.locale === "ar";
+      return notify({
+        userId: c.id,
+        type: "SHIPMENT",
+        title: ar
+          ? "مهام ما زالت بانتظارك في لوحة المهام"
+          : "Jobs still waiting on the board",
+        body: ar
+          ? count === 1
+            ? "ما زالت مهمة توصيل بانتظار من يقبلها — الأسبق يأخذها."
+            : `ما زالت ${count} مهمة توصيل بانتظار من يقبلها — الأسبق يأخذها.`
+          : count === 1
+            ? "A delivery job is still waiting on the board — first to claim it takes it."
+            : `${count} delivery jobs are still waiting on the board — first to claim takes them.`,
+        link: "/driver/board",
+        email: false,
+      }).catch(() => {});
+    }),
+  );
+  return count;
+}
+
+/**
  * Entry point for "a platform parcel just became ready for a doorstep
  * courier" (the ship action for direct parcels, the destination point's
  * receive scan for routed ones). Routes by mode:

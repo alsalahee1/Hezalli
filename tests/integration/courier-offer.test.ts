@@ -238,6 +238,7 @@ describe("driver job offers", () => {
       reclaimed: 0,
       waved: 0,
       boarded: 0,
+      remindedJobs: 0,
       reescalated: 0,
     });
 

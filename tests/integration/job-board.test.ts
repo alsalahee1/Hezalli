@@ -34,6 +34,7 @@ const settingKeys = [
   "job_board_enabled",
   "job_board_window_minutes",
   "job_board_max_active_jobs",
+  "board_reminder_minutes",
   "courier_offer_timeout_minutes",
   "courier_offer_max_rounds",
   "dispatch_hours_start",
@@ -65,6 +66,7 @@ beforeAll(async () => {
   await setSetting("job_board_enabled", true);
   await setSetting("job_board_window_minutes", 15);
   await setSetting("job_board_max_active_jobs", 0);
+  await setSetting("board_reminder_minutes", 0); // reminder tests turn it on
   await setSetting("courier_offer_timeout_minutes", 30);
   await setSetting("courier_offer_max_rounds", 2);
   await setSetting("dispatch_hours_start", 0); // 24/7 unless a test overrides
@@ -312,6 +314,43 @@ describe("open job board", () => {
       0,
     );
     await setSetting("express_auto_assign", true);
+  });
+
+  it("unclaimed board jobs re-ping drivers once per reminder interval", async () => {
+    await setSetting("board_reminder_minutes", 30);
+    const p = await shippedParcel();
+    await dispatchShippedParcel(p);
+    // Backdate the posting so the parcel is overdue for its first reminder.
+    await prisma.shipment.update({
+      where: { id: p },
+      data: { boardedAt: new Date(Date.now() - 31 * 60_000) },
+    });
+    // Keep the parcel board-only: a push offer would assign it and hide it.
+    await setSetting("express_auto_assign", false);
+
+    const first = await sweepCourierOffers();
+    expect(first.remindedJobs).toBeGreaterThanOrEqual(1);
+    const after = await prisma.shipment.findUniqueOrThrow({
+      where: { id: p },
+      select: { boardRemindedAt: true, driverId: true },
+    });
+    expect(after.boardRemindedAt).toBeTruthy();
+    expect(after.driverId).toBeNull(); // a reminder never assigns
+    expect(
+      await prisma.notification.count({
+        where: {
+          userId: { in: [driverA, driverB] },
+          title: { contains: "still waiting" },
+        },
+      }),
+    ).toBeGreaterThanOrEqual(2);
+
+    // Throttled: the very next sweep stays quiet until the interval passes.
+    const second = await sweepCourierOffers();
+    expect(second.remindedJobs).toBe(0);
+
+    await setSetting("express_auto_assign", true);
+    await setSetting("board_reminder_minutes", 0);
   });
 
   it("night parcels queue; the first sweep after opening boards them", async () => {
