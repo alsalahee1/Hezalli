@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { GOVERNORATE_VALUES } from "@/lib/yemen";
+
 // Validation schemas for the auth forms. Error messages are stable KEYS (not
 // prose) that the client forms translate through the `Auth` i18n namespace, so
 // validation runs on the server (server actions) while wording stays localized.
@@ -14,12 +16,26 @@ const emailField = z
   .toLowerCase()
   .pipe(z.email("emailInvalid"));
 
+// Optional home governorate: a blank submission (the buyer skipped the field)
+// normalizes to undefined; any non-empty value must be a real governorate.
+const homeGovernorateField = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v ? v : undefined))
+  .refine(
+    (v) =>
+      v === undefined || (GOVERNORATE_VALUES as readonly string[]).includes(v),
+    "governorateInvalid",
+  );
+
 export const registerSchema = z
   .object({
     name: z.string().trim().min(2, "nameShort").max(80, "nameLong"),
     email: emailField,
     password: z.string().min(8, "passwordShort").max(100, "passwordLong"),
     confirmPassword: z.string(),
+    homeGovernorate: homeGovernorateField,
     acceptTerms: z.literal(true, { error: "termsRequired" }),
   })
   .refine((data) => data.password === data.confirmPassword, {

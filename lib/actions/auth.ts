@@ -156,11 +156,12 @@ export async function registerUser(
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
+    homeGovernorate: formData.get("homeGovernorate"),
     acceptTerms: formData.get("acceptTerms") === "on",
   });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
-  const { name, email, password } = parsed.data;
+  const { name, email, password, homeGovernorate } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { errors: { email: "emailTaken" } };
@@ -186,6 +187,7 @@ export async function registerUser(
       passwordHash,
       roles: ["BUYER"],
       locale,
+      homeGovernorate: homeGovernorate ?? null,
       referralCode: generateReferralCode(),
       referredById,
     },
