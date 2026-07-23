@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 
 import { cn } from "@/lib/utils";
@@ -17,15 +17,28 @@ const LABELS: Record<DisplayCurrencyCode, { ar: string; en: string }> = {
   AED: { ar: "د.إ", en: "AED" },
 };
 
+// The everyday pair for Yemeni buyers. The compact variant shows only these
+// two; SAR/AED stay reachable from the full variant (mobile menu / desktop).
+const TOGGLE_PAIR: readonly DisplayCurrencyCode[] = ["YER", "USD"];
+
 export function CurrencySwitcher({
   initialCurrency,
   locale,
+  variant = "full",
 }: {
   initialCurrency: DisplayCurrencyCode;
   locale: string;
+  // "toggle" = compact one-tap YER⇄USD pair for the always-visible mobile
+  // header row; "full" = all four display currencies.
+  variant?: "full" | "toggle";
 }) {
   const router = useRouter();
   const [current, setCurrent] = useState(initialCurrency);
+
+  // The header renders several switcher instances (desktop row, mobile row,
+  // mobile menu). After one of them sets the cookie and refreshes, the server
+  // re-renders with a new initialCurrency — adopt it so they stay in sync.
+  useEffect(() => setCurrent(initialCurrency), [initialCurrency]);
 
   const switchTo = (next: DisplayCurrencyCode) => {
     if (next === current) return;
@@ -35,9 +48,11 @@ export function CurrencySwitcher({
     router.refresh();
   };
 
+  const codes = variant === "toggle" ? TOGGLE_PAIR : DISPLAY_CURRENCIES;
+
   return (
     <div className="flex items-center overflow-hidden rounded-md border text-xs font-medium">
-      {DISPLAY_CURRENCIES.map((code) => (
+      {codes.map((code) => (
         <button
           key={code}
           type="button"
