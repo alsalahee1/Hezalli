@@ -39,6 +39,7 @@ async function run(req: Request) {
     offersExpired: offers.expired,
     offersWaved: offers.waved,
     jobsBoarded: offers.boarded,
+    jobsReclaimed: offers.reclaimed,
     sellerSlaReminded: sellerSla.reminded,
     sellerSlaCancelled: sellerSla.cancelled,
   });

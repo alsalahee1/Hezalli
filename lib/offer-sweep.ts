@@ -19,6 +19,7 @@ const REESCALATE_HOURS = 24;
 
 export async function sweepCourierOffers(): Promise<{
   expired: number;
+  reclaimed: number;
   waved: number;
   boarded: number;
   reescalated: number;
@@ -27,7 +28,7 @@ export async function sweepCourierOffers(): Promise<{
   if (
     !isDispatchOpen(settings.dispatch_hours_start, settings.dispatch_hours_end)
   ) {
-    return { expired: 0, waved: 0, boarded: 0, reescalated: 0 };
+    return { expired: 0, reclaimed: 0, waved: 0, boarded: 0, reescalated: 0 };
   }
 
   // 1. Expire lapsed offers and move those parcels to the next courier.
@@ -82,6 +83,104 @@ export async function sweepCourierOffers(): Promise<{
     if (!released) continue;
     expired += 1;
     await cascadeShipmentOffer(offer.shipmentId).catch(() => {});
+  }
+
+  // 1b. Pickup deadline (docs/EXPRESS-DELIVERY.md §4a): a driver who ACCEPTED
+  // a job — tapped the offer or claimed it off the board — but still hasn't
+  // made a single scan after `pickup_deadline_hours` loses it automatically.
+  // Safe to automate precisely because no scan means the physical parcel was
+  // never in their hands: only parcels still in the untouched statuses
+  // (offerOpenStatuses) are taken back, the same rule that gates declines and
+  // offer expiry. Forced and manual assignments have no accepted-offer row and
+  // are exempt — ops decisions stay ops'. 0 turns the deadline off.
+  let reclaimed = 0;
+  if (settings.pickup_deadline_hours > 0) {
+    const overdue = await prisma.shipmentOffer.findMany({
+      where: {
+        status: "ACCEPTED",
+        respondedAt: {
+          lt: new Date(Date.now() - settings.pickup_deadline_hours * 3_600_000),
+        },
+        shipment: {
+          // Broad untouched-status filter so long-delivered jobs don't fill
+          // the batch; the exact per-shape rule is applied per row below.
+          status: {
+            in: [
+              "PENDING",
+              "LABEL_CREATED",
+              "IN_TRANSIT",
+              "AT_POINT",
+              "RETURNED_TO_POINT",
+            ],
+          },
+          subOrder: { status: "SHIPPED" },
+        },
+      },
+      take: BATCH,
+      select: {
+        id: true,
+        shipmentId: true,
+        driverId: true,
+        shipment: {
+          select: { status: true, driverId: true, deliveryPointId: true },
+        },
+      },
+    });
+    for (const offer of overdue) {
+      const openStatuses = offerOpenStatuses(offer.shipment.deliveryPointId);
+      // A scan of any kind, or an ops reassignment, means hands off — the
+      // deadline only reclaims jobs the driver never physically started.
+      if (
+        !(openStatuses as string[]).includes(offer.shipment.status) ||
+        offer.shipment.driverId !== offer.driverId
+      ) {
+        continue;
+      }
+      const released = await prisma.$transaction(async (tx) => {
+        const o = await tx.shipmentOffer.updateMany({
+          where: { id: offer.id, status: "ACCEPTED" },
+          data: { status: "EXPIRED", reason: "pickup_timeout" },
+        });
+        if (o.count !== 1) return false;
+        const s = await tx.shipment.updateMany({
+          where: {
+            id: offer.shipmentId,
+            driverId: offer.driverId,
+            status: { in: openStatuses },
+          },
+          data: { driverId: null },
+        });
+        return s.count === 1;
+      });
+      if (!released) continue;
+      reclaimed += 1;
+
+      // Tell the driver why the job vanished from their list.
+      const driver = await prisma.user.findUnique({
+        where: { id: offer.driverId },
+        select: { locale: true },
+      });
+      const ar = driver?.locale === "ar";
+      await notify({
+        userId: offer.driverId,
+        type: "SHIPMENT",
+        title: ar
+          ? "سُحبت توصيلة لعدم الاستلام"
+          : "A delivery was taken back — pickup deadline",
+        body: ar
+          ? `لم تستلم الطرد خلال ${settings.pickup_deadline_hours} ساعة من قبولك المهمة، فأُعيد توزيعها.`
+          : `You didn't collect the parcel within ${settings.pickup_deadline_hours} hours of accepting the job, so it was re-dispatched.`,
+        link: "/driver",
+      }).catch(() => {});
+
+      // Move the parcel along. The reclaimed driver's EXPIRED row excludes
+      // them from the cascade; with the board on, the parcel reappears there
+      // automatically (it is unassigned again and boardedAt is still set). In
+      // pull-only mode (auto-assign off) the board is the whole re-dispatch.
+      if (settings.express_auto_assign) {
+        await cascadeShipmentOffer(offer.shipmentId).catch(() => {});
+      }
+    }
   }
 
   // 2. Morning wave: unassigned, in-flight, platform parcels with no open
@@ -195,5 +294,5 @@ export async function sweepCourierOffers(): Promise<{
     );
   }
 
-  return { expired, waved, boarded, reescalated: stale.length };
+  return { expired, reclaimed, waved, boarded, reescalated: stale.length };
 }

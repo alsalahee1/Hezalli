@@ -52,6 +52,14 @@ export type PlatformSettings = {
   job_board_enabled: boolean;
   job_board_window_minutes: number;
   job_board_max_active_jobs: number;
+  // Pickup deadline (lib/offer-sweep.ts): hours a driver may sit on an
+  // ACCEPTED job (a tapped offer or a board claim) without a single scan
+  // before the sweep takes it back and re-dispatches. Safe to automate
+  // precisely because no scan means the driver never touched the physical
+  // parcel. Forced and manual assignments (no accepted-offer row) are exempt —
+  // ops decisions stay ops'. 0 = off. The clock only advances toward action
+  // during dispatch hours, like every other offer clock.
+  pickup_deadline_hours: number;
   // Dispatch working hours, platform local time (Asia/Aden, UTC+3). Outside
   // the window nothing is auto-offered and offer clocks pause; parcels queued
   // overnight go out in the first sweep after opening. start == end = 24/7.
@@ -167,6 +175,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   job_board_enabled: false,
   job_board_window_minutes: 15,
   job_board_max_active_jobs: 10,
+  pickup_deadline_hours: 0,
   dispatch_hours_start: 8,
   dispatch_hours_end: 21,
   seller_ship_days: 5,

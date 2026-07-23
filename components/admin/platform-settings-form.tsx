@@ -58,6 +58,7 @@ export function PlatformSettingsForm({
     job_board_enabled: current.job_board_enabled,
     job_board_window_minutes: String(current.job_board_window_minutes),
     job_board_max_active_jobs: String(current.job_board_max_active_jobs),
+    pickup_deadline_hours: String(current.pickup_deadline_hours),
     dispatch_hours_start: String(current.dispatch_hours_start),
     dispatch_hours_end: String(current.dispatch_hours_end),
     seller_ship_days: String(current.seller_ship_days),
@@ -119,6 +120,7 @@ export function PlatformSettingsForm({
         job_board_enabled: f.job_board_enabled,
         job_board_window_minutes: Number(f.job_board_window_minutes),
         job_board_max_active_jobs: Number(f.job_board_max_active_jobs),
+        pickup_deadline_hours: Number(f.pickup_deadline_hours),
         dispatch_hours_start: Number(f.dispatch_hours_start),
         dispatch_hours_end: Number(f.dispatch_hours_end),
         seller_ship_days: Number(f.seller_ship_days),
@@ -444,6 +446,14 @@ export function PlatformSettingsForm({
             type="number"
             value={f.job_board_max_active_jobs}
             onChange={(e) => set("job_board_max_active_jobs", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("pickupDeadline")} hint={t("pickupDeadlineHint")}>
+          <Input
+            type="number"
+            value={f.pickup_deadline_hours}
+            onChange={(e) => set("pickup_deadline_hours", e.target.value)}
             dir="ltr"
           />
         </Field>
