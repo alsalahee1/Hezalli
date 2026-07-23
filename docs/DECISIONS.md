@@ -149,11 +149,14 @@ be added without a migration.
 - **Name:** **Hezalli** (confirmed).
 - **Domain:** **www.hezalli.com** (configured for production in Phase 16;
   `NEXT_PUBLIC_APP_URL` points here in production).
-- **Assistant bot name:** **Shadi (شادي)** (confirmed). Any assistant /
-  support / auto-reply bot the platform ships (see Phase 17.7 auto-reply chat
-  and Phase 17.11) presents itself as **"شادي"** in Arabic and **"Shadi"** in
-  English — in chat UI, notifications, and email signatures alike. The name
-  goes through the translation files like every other user-facing string.
+- **Assistant bot name:** **Shadi (شادي)** (confirmed). The platform's AI
+  assistant — the on-site chat widget (`components/ai/ai-assistant.tsx` +
+  `lib/ai/assistant.ts`) and the Telegram bot
+  (`lib/integrations/telegram-runtime.ts`) — presents itself as **"شادي"** in
+  Arabic and **"Shadi"** in English, in chat UI, notifications, and email
+  signatures alike. Any future assistant / support / auto-reply surface uses
+  the same name, and it goes through the translation files like every other
+  user-facing string.
 
 ## 11. MVP cut-line
 
