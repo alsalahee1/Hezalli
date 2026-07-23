@@ -303,6 +303,9 @@ model OrderItem {
   unitPrice   Decimal @db.Decimal(12,2)             // USD
   quantity    Int
   lineTotal   Decimal @db.Decimal(12,2)
+  // shipping snapshot at purchase time — courier capacity math
+  weightGramsSnapshot Int?
+  dimensionsSnapshot  Json?                         // { l, w, h } cm
   subOrder    SubOrder @relation(fields: [subOrderId], references: [id])
 }
 

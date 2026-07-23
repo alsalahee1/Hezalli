@@ -18,6 +18,9 @@ export type CategoryFormData = {
   position: number;
   isActive: boolean;
   parentId: string | null;
+  // Delivery defaults for courier capacity (lib/courier-capacity.ts).
+  defaultWeightGrams: number | null;
+  defaultDimensionsCm: { l: number; w: number; h: number } | null;
 };
 
 export function CategoryForm({
@@ -142,6 +145,55 @@ export function CategoryForm({
             <p className="text-destructive text-xs">{t(err("position")!)}</p>
           ) : null}
         </div>
+      </div>
+
+      {/* Delivery defaults: typical weight/size for products in this
+          category, used for courier capacity when a product has none. */}
+      <div className="space-y-1.5">
+        <Label htmlFor="defaultWeightGrams">{t("shippingDefaults")}</Label>
+        <div className="flex flex-wrap items-center gap-2" dir="ltr">
+          <Input
+            id="defaultWeightGrams"
+            name="defaultWeightGrams"
+            type="number"
+            min={0}
+            placeholder={t("defaultWeight")}
+            className="w-36"
+            defaultValue={category?.defaultWeightGrams ?? ""}
+            aria-invalid={Boolean(err("defaultWeightGrams"))}
+          />
+          {(["dimL", "dimW", "dimH"] as const).map((k, i) => (
+            <Input
+              key={k}
+              id={k}
+              name={k}
+              type="number"
+              min={1}
+              max={1000}
+              placeholder={t(k)}
+              className="w-24"
+              aria-invalid={Boolean(err("defaultDimensionsCm"))}
+              defaultValue={
+                category?.defaultDimensionsCm
+                  ? [
+                      category.defaultDimensionsCm.l,
+                      category.defaultDimensionsCm.w,
+                      category.defaultDimensionsCm.h,
+                    ][i]
+                  : ""
+              }
+            />
+          ))}
+        </div>
+        {err("defaultWeightGrams") || err("defaultDimensionsCm") ? (
+          <p className="text-destructive text-xs">
+            {t(err("defaultWeightGrams") ?? err("defaultDimensionsCm")!)}
+          </p>
+        ) : (
+          <p className="text-muted-foreground text-xs">
+            {t("shippingDefaultsHint")}
+          </p>
+        )}
       </div>
 
       <label className="flex items-center gap-2 text-sm">

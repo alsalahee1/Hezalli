@@ -112,7 +112,7 @@ export async function reviewCourierApplication(
 
   const application = await prisma.courierApplication.findUnique({
     where: { id: applicationId },
-    select: { id: true, status: true, userId: true },
+    select: { id: true, status: true, userId: true, vehicleType: true },
   });
   // Only act on requests still awaiting a decision (idempotent against double
   // clicks / stale forms).
@@ -131,7 +131,12 @@ export async function reviewCourierApplication(
     await prisma.$transaction([
       prisma.user.update({
         where: { id: application.userId },
-        data: { roles: { set: roles } },
+        // The approved vehicle rides along so auto-assignment can match
+        // parcels to what it can carry (lib/courier-capacity.ts).
+        data: {
+          roles: { set: roles },
+          courierVehicleType: application.vehicleType,
+        },
       }),
       prisma.courierApplication.update({
         where: { id: applicationId },

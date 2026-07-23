@@ -96,7 +96,39 @@ assigned automatically (`lib/courier-assign.ts`, best-effort, race-guarded):
      least-loaded.
   3. **Balanced** — otherwise global least-loaded.
 
-Ops can always reassign from the dispatch board.
+Two refinements apply under both strategies (`lib/courier-capacity.ts`):
+
+- **Vehicle capacity** — each vehicle from the courier application (foot,
+  bicycle, motorbike, car, van) has a carrying profile: max total weight, max
+  total volume, max simultaneous parcels, and the longest single item that
+  physically fits (`VEHICLE_CAPACITY` — a 2 m curtain rod is light and
+  low-volume yet impossible on a motorbike). A parcel's metrics come from its
+  lines: `quantity ×` the weight/size **snapshotted at checkout**
+  (`OrderItem.weightGramsSnapshot` / `dimensionsSnapshot`, frozen like
+  `titleSnapshot` so catalog edits can't rewrite in-flight parcels), falling
+  back to the live `Product.weightGrams` / `Product.dimensions`
+  (`{ l, w, h }` cm, collected on the seller product form), then to
+  the product category's delivery defaults
+  (`Category.defaultWeightGrams` / `defaultDimensions`, admin-set in the
+  category manager — so one setting covers e.g. all refrigerators), then to
+  small-parcel constants so unlabeled items still consume capacity. Summed
+  parcel volume is inflated by `PACKING_FACTOR` since real items don't
+  tessellate. Couriers whose vehicle can't take the parcel — too heavy or too
+  long outright, or the driver is already at a weight/volume/parcel limit —
+  are skipped. The approved vehicle is copied to `User.courierVehicleType` on
+  application approval; couriers without one (granted the role manually) are
+  unconstrained, matching the pre-capacity behavior. If **no** active courier
+  can carry a parcel it stays unassigned and dispatch routes it manually.
+- **Batching** — a courier already carrying an in-flight parcel to the same
+  destination governorate is preferred over everyone else (before distance and
+  load), capacity permitting. Orders heading the same way accumulate onto one
+  trip instead of fanning out across the fleet one-parcel-per-driver.
+
+Ops can always reassign from the dispatch board — capacity gates the automatic
+paths only (same philosophy as the COD credit guard). To keep manual calls
+informed, the dispatch board shows each parcel's weight and each courier's
+vehicle + current load in the assign pickers, and a courier's vehicle can be
+changed (audited, `setCourierVehicle`) from their admin detail page.
 
 ## 4a. Job offers — consent, clocks, cascade
 
