@@ -2,7 +2,9 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import {
   AlertTriangle,
   CalendarClock,
+  ChevronRight,
   Inbox,
+  Map,
   PackageCheck,
   RotateCcw,
   ShoppingBag,
@@ -232,6 +234,27 @@ export default async function PointDashboardPage() {
           </p>
         </Link>
       ) : null}
+
+      {/* Center-layout guide: how to lay the counter out and run it — the
+          standard floor plan, shelf codes, and stations. Kept as a quiet
+          link (not a dismissible banner) so it's always one tap away. */}
+      <Link
+        href="/point/layout"
+        className="hover:bg-muted/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+          <Map className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">
+            {t("layoutCalloutTitle")}
+          </span>
+          <span className="text-muted-foreground block truncate text-xs">
+            {t("layoutCalloutBody")}
+          </span>
+        </span>
+        <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+      </Link>
 
       {/* End-of-day reconciliation: what moved through the counter today. */}
       <section className="space-y-2">
