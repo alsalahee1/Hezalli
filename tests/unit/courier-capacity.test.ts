@@ -10,10 +10,13 @@ import {
   DEFAULT_ITEM_VOLUME_CM3,
   DEFAULT_ITEM_WEIGHT_GRAMS,
   hasRoomFor,
+  isFreightClass,
+  mergeVehicleCapacity,
   metricsOfItems,
   PACKING_FACTOR,
   type ParcelMetrics,
   parseDimensions,
+  SIZE_CLASS_PROFILES,
   VEHICLE_CAPACITY,
 } from "@/lib/courier-capacity";
 
@@ -33,12 +36,19 @@ function courier(over: Partial<CourierLoad> & { id: string }): CourierLoad {
 }
 
 function parcel(over: Partial<ParcelMetrics> = {}): ParcelMetrics {
-  return { weightGrams: 0, volumeCm3: 0, longestSideCm: 0, ...over };
+  return {
+    weightGrams: 0,
+    volumeCm3: 0,
+    longestSideCm: 0,
+    freight: false,
+    oversized: false,
+    ...over,
+  };
 }
 
 describe("capacityFor", () => {
   it("knows every vehicle from the application form", () => {
-    for (const v of ["foot", "bicycle", "motorbike", "car", "van"]) {
+    for (const v of ["foot", "bicycle", "motorbike", "car", "van", "truck"]) {
       expect(capacityFor(v)).toBe(VEHICLE_CAPACITY[v]);
     }
   });
@@ -47,6 +57,37 @@ describe("capacityFor", () => {
     expect(capacityFor(null)).toBeNull();
     expect(capacityFor(undefined)).toBeNull();
     expect(capacityFor("rocket")).toBeNull();
+  });
+});
+
+describe("mergeVehicleCapacity", () => {
+  it("returns the defaults untouched for empty/garbage overrides", () => {
+    expect(mergeVehicleCapacity(null)).toEqual(VEHICLE_CAPACITY);
+    expect(mergeVehicleCapacity(undefined)).toEqual(VEHICLE_CAPACITY);
+    expect(mergeVehicleCapacity("junk")).toEqual(VEHICLE_CAPACITY);
+    expect(mergeVehicleCapacity({ rocket: { maxWeightGrams: 1 } })).toEqual(
+      VEHICLE_CAPACITY,
+    );
+  });
+
+  it("merges valid overrides field-by-field", () => {
+    const merged = mergeVehicleCapacity({
+      motorbike: { maxWeightGrams: 15_000, maxParcels: 20 },
+    });
+    expect(merged.motorbike.maxWeightGrams).toBe(15_000);
+    expect(merged.motorbike.maxParcels).toBe(20);
+    // Unspecified fields keep the shipped defaults; other vehicles untouched.
+    expect(merged.motorbike.maxVolumeCm3).toBe(
+      VEHICLE_CAPACITY.motorbike.maxVolumeCm3,
+    );
+    expect(merged.van).toEqual(VEHICLE_CAPACITY.van);
+  });
+
+  it("ignores malformed or out-of-range values per field", () => {
+    const merged = mergeVehicleCapacity({
+      motorbike: { maxWeightGrams: -5, maxParcels: "ten", maxVolumeCm3: 1e12 },
+    });
+    expect(merged.motorbike).toEqual(VEHICLE_CAPACITY.motorbike);
   });
 });
 
@@ -103,7 +144,53 @@ describe("metricsOfItems", () => {
       weightGrams: 0,
       volumeCm3: 0,
       longestSideCm: 0,
+      freight: false,
+      oversized: false,
     });
+  });
+
+  it("fills missing fields from the size-class profile", () => {
+    const m = metricsOfItems([
+      { quantity: 1, weightGrams: null, dims: null, sizeClass: "xlarge" },
+    ]);
+    const p = SIZE_CLASS_PROFILES.xlarge;
+    expect(m.weightGrams).toBe(p.weightGrams);
+    expect(m.longestSideCm).toBe(Math.max(p.dims.l, p.dims.w, p.dims.h));
+    expect(m.freight).toBe(true);
+    expect(m.oversized).toBe(false);
+  });
+
+  it("lets exact measurements override the class profile", () => {
+    const m = metricsOfItems([
+      {
+        quantity: 1,
+        weightGrams: 1_000,
+        dims: { l: 10, w: 10, h: 10 },
+        sizeClass: "xlarge",
+      },
+    ]);
+    expect(m.weightGrams).toBe(1_000); // exact wins over the 70 kg profile
+    expect(m.longestSideCm).toBe(10);
+    expect(m.freight).toBe(true); // …but the class still marks it freight
+  });
+
+  it("flags oversized parcels", () => {
+    const m = metricsOfItems([
+      { quantity: 1, weightGrams: null, dims: null, sizeClass: "oversized" },
+      { quantity: 2, weightGrams: 100, dims: null, sizeClass: "small" },
+    ]);
+    expect(m.freight).toBe(true);
+    expect(m.oversized).toBe(true);
+  });
+});
+
+describe("isFreightClass", () => {
+  it("marks only xlarge and oversized as freight", () => {
+    expect(isFreightClass("xlarge")).toBe(true);
+    expect(isFreightClass("oversized")).toBe(true);
+    for (const c of ["envelope", "small", "medium", "large", null, undefined]) {
+      expect(isFreightClass(c)).toBe(false);
+    }
   });
 });
 
@@ -240,6 +327,53 @@ describe("pickFrom (capacity)", () => {
         metrics: parcel({ weightGrams: 100_000 }),
       }),
     ).toBe("b-van");
+  });
+});
+
+describe("pickFrom (freight)", () => {
+  it("never auto-assigns an oversized parcel, even to a capable truck", () => {
+    const truck = courier({ id: "t", vehicleType: "truck" });
+    expect(
+      pickFrom([truck], "balanced", {
+        destGovernorate: "Aden",
+        metrics: parcel({ weightGrams: 200_000, oversized: true, freight: true }),
+      }),
+    ).toBeNull();
+  });
+
+  it("routes xlarge freight to the truck when smaller vehicles can't take it", () => {
+    const bike = courier({ id: "a-bike", vehicleType: "motorbike" });
+    const truck = courier({ id: "z-truck", vehicleType: "truck", load: 5 });
+    // A fridge: 70 kg, 180 cm tall — beyond car (150 kg is fine but 180 cm is
+    // the limit); here only bike vs truck, so the truck must win.
+    expect(
+      pickFrom([bike, truck], "balanced", {
+        destGovernorate: null,
+        metrics: parcel({
+          weightGrams: 70_000,
+          longestSideCm: 180,
+          freight: true,
+        }),
+      }),
+    ).toBe("z-truck");
+  });
+
+  it("does not batch freight onto a same-destination trip", () => {
+    const headed = courier({
+      id: "a-headed",
+      vehicleType: "truck",
+      load: 3,
+      activeGovernorates: new Set(["Aden"]),
+    });
+    const idleTruck = courier({ id: "z-idle", vehicleType: "truck" });
+    // For parcels, the same-destination trip wins; for freight, pure load
+    // ranking applies — the idle truck takes the appointment.
+    expect(
+      pickFrom([headed, idleTruck], "balanced", {
+        destGovernorate: "Aden",
+        metrics: parcel({ weightGrams: 70_000, freight: true }),
+      }),
+    ).toBe("z-idle");
   });
 });
 

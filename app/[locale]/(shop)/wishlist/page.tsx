@@ -30,6 +30,8 @@ export default async function WishlistPage() {
           id: true,
           slug: true,
           title: true,
+          sizeClass: true,
+          category: { select: { defaultSizeClass: true } },
           images: {
             orderBy: { position: "asc" },
             take: 1,
@@ -82,6 +84,7 @@ export default async function WishlistPage() {
               : null,
           stock: cheapestInStock.stock,
           quantity: 1,
+          sizeClass: p.sizeClass ?? p.category.defaultSizeClass,
         }
       : null;
 

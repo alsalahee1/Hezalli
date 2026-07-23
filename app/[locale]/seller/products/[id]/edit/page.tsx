@@ -61,6 +61,7 @@ export default async function EditProductPage({
     brandId: product.brandId ?? "",
     condition: product.condition,
     lowStockThreshold: product.lowStockThreshold,
+    sizeClass: product.sizeClass,
     weightGrams: product.weightGrams,
     dimensionsCm: parseDimensions(product.dimensions),
     status: product.status,

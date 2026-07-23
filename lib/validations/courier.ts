@@ -15,6 +15,7 @@ export const VEHICLE_TYPES = [
   "car",
   "bicycle",
   "van",
+  "truck",
   "foot",
 ] as const;
 

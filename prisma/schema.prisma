@@ -650,9 +650,11 @@ model Category {
   icon     String?
   position Int        @default(0)
   isActive Boolean    @default(true)
-  // Optional delivery defaults: typical unit weight/size for products in this
+  // Optional delivery defaults: typical unit size/weight for products in this
   // category, used by capacity-aware dispatch when a product doesn't specify
-  // its own (lib/courier-capacity.ts). Admin-set from the category manager.
+  // its own (lib/courier-capacity.ts). Set by admins or delivery managers.
+  // The size class is the simple knob; the numeric fields refine it.
+  defaultSizeClass   String?
   defaultWeightGrams Int?
   defaultDimensions  Json? // { l, w, h } cm — same shape as Product.dimensions
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
@@ -694,6 +696,11 @@ model Product {
   condition        ProductCondition @default(NEW)
   basePrice        Decimal          @db.Decimal(12, 2)
   lowStockThreshold Int             @default(0)
+  // Standard package size (envelope | small | medium | large | xlarge |
+  // oversized) — the seller-friendly capacity input. Maps to representative
+  // weight/dimensions (lib/courier-capacity.ts); the exact fields below
+  // override it. xlarge/oversized = freight: direct-only, appointment-required.
+  sizeClass        String?
   weightGrams      Int?
   dimensions       Json?
   moderatedBy      String?
@@ -914,6 +921,7 @@ model OrderItem {
   // product, then the category's delivery defaults.
   weightGramsSnapshot Int?
   dimensionsSnapshot  Json? // { l, w, h } cm
+  sizeClassSnapshot   String? // resolved size class at checkout (freight rules)
   // The FlashSaleItem whose stock this line claimed at checkout, so a cancel
   // can release it (plain id, no FK — flash sales are deletable).
   flashItemId   String?

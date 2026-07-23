@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { localizedName } from "@/lib/categories";
+import { isFreightClass } from "@/lib/courier-capacity";
 import { getFlashPricesFor, releaseFlashClaims } from "@/lib/flash";
 import { effectivePrice } from "@/lib/pricing";
 import { getCommissionRate, recomputeBalance, round2 } from "@/lib/finance";
@@ -106,8 +107,10 @@ export async function placeOrder(
           storeId: true,
           status: true,
           title: true,
+          sizeClass: true,
           weightGrams: true,
           dimensions: true,
+          category: { select: { defaultSizeClass: true } },
         },
       },
     },
@@ -125,10 +128,11 @@ export async function placeOrder(
     price: number;
     qty: number;
     flashItemId: string | null;
-    // Shipping snapshot: the product's weight/size at checkout, frozen onto
-    // the order line so courier capacity math survives catalog edits.
+    // Shipping snapshot: the product's weight/size/class at checkout, frozen
+    // onto the order line so courier capacity math survives catalog edits.
     weightGrams: number | null;
     dimensions: Prisma.JsonValue;
+    sizeClass: string | null;
   };
   const byStore = new Map<string, Line[]>();
   for (const it of items) {
@@ -149,6 +153,7 @@ export async function placeOrder(
       flashItemId: flash?.itemId ?? null,
       weightGrams: v.product.weightGrams,
       dimensions: v.product.dimensions,
+      sizeClass: v.product.sizeClass ?? v.product.category.defaultSizeClass,
     };
     const arr = byStore.get(v.product.storeId) ?? [];
     arr.push(line);
@@ -183,6 +188,22 @@ export async function placeOrder(
     return { ...g, shipping: choice.fee, shippingMethod: choice.method };
   });
 
+  // Freight (xlarge/oversized items — docs/EXPRESS-DELIVERY.md §4) is
+  // direct-only: nobody lifts a fridge over a Hezalli Point counter, so
+  // point pickup is off the table for any group containing one.
+  const freightGroups = new Set(
+    groupsBase
+      .filter((g) => g.lines.some((l) => isFreightClass(l.sizeClass)))
+      .map((g) => g.storeId),
+  );
+  if (
+    groupsBase.some(
+      (g) => g.shippingMethod === "PICKUP" && freightGroups.has(g.storeId),
+    )
+  ) {
+    return { error: "pickupNotForFreight" };
+  }
+
   // Any group collected from a point needs the buyer's chosen point — one per
   // order, validated ACTIVE server-side.
   let pickupPointId: string | null = null;
@@ -195,12 +216,15 @@ export async function placeOrder(
     pickupPointId = wanted;
   }
 
-  // Optional scheduled delivery window — only meaningful when an Express group is
-  // in the order. The horizon (and on/off) comes from delivery_window_days.
+  // Scheduled delivery window — offered for Express groups, and REQUIRED when
+  // the order contains freight: someone must be home to receive a fridge, and
+  // a failed truck run costs ten times a failed motorbike run. The horizon
+  // (and on/off) comes from delivery_window_days.
   const anyExpress = groupsBase.some((g) => g.shippingMethod === "EXPRESS");
+  const anyFreight = freightGroups.size > 0;
   let deliveryWindow: { date: Date; slot: string } | null = null;
   if (input.deliveryDate?.trim() || input.deliverySlot?.trim()) {
-    if (!anyExpress) return { error: "deliveryWindowNotExpress" };
+    if (!anyExpress && !anyFreight) return { error: "deliveryWindowNotExpress" };
     const windowDays = await getSetting("delivery_window_days");
     const parsed = parseDeliveryWindow(
       input.deliveryDate,
@@ -209,6 +233,13 @@ export async function placeOrder(
     );
     if (parsed === "invalid") return { error: "badDeliveryWindow" };
     deliveryWindow = parsed;
+  }
+  if (anyFreight && !deliveryWindow) {
+    // Only enforced while scheduling is enabled — with delivery_window_days
+    // at 0 there is no window to pick, so freight falls back to phone
+    // coordination by dispatch rather than becoming unorderable.
+    const windowDays = await getSetting("delivery_window_days");
+    if (windowDays > 0) return { error: "deliveryWindowRequiredFreight" };
   }
 
   // Optional voucher: validate + compute per-store discount.
@@ -406,6 +437,7 @@ export async function placeOrder(
                   dimensionsSnapshot:
                     (l.dimensions as Prisma.InputJsonValue | null) ??
                     Prisma.DbNull,
+                  sizeClassSnapshot: l.sizeClass,
                 })),
               },
             })),

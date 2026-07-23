@@ -40,7 +40,7 @@ async function getProduct(slug: string) {
       images: { orderBy: { position: "asc" } },
       variants: { where: { isActive: true }, orderBy: { sku: "asc" } },
       brand: { select: { name: true, slug: true } },
-      category: { select: { name: true, slug: true } },
+      category: { select: { name: true, slug: true, defaultSizeClass: true } },
       store: {
         select: {
           name: true,
@@ -376,6 +376,8 @@ export default async function ProductPage({
               storeId: product.storeId,
               storeName: product.store.name,
               storeSlug: product.store.slug,
+              sizeClass:
+                product.sizeClass ?? product.category.defaultSizeClass,
             }}
           />
 

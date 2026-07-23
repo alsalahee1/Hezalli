@@ -7,6 +7,7 @@ import { notifyBot } from "@/lib/integrations/bot-notify";
 import { getLocale } from "next-intl/server";
 
 import { requireSellerStore } from "@/lib/authz";
+import { subOrderMetric } from "@/lib/courier-capacity";
 import { dispatchShippedParcel } from "@/lib/job-board";
 import { aggregateOrderStatus } from "@/lib/order-status";
 import { checkPointRoutable } from "@/lib/point-select";
@@ -119,6 +120,13 @@ export async function shipSubOrder(
   }
   if (wantedPointId) {
     if (!carrier.platformManaged) return { error: "pointNotAllowed" };
+    // Freight (xlarge/oversized items) is direct-only — a point is a corner
+    // shop with shelves, not a freight terminal. Buyer-committed PICKUP
+    // destinations are exempt (checkout already refuses freight pickup).
+    if (sub.shippingMethod !== "PICKUP") {
+      const metrics = await subOrderMetric(sub.id);
+      if (metrics.freight) return { error: "freightDirect" };
+    }
     // A buyer-chosen pickup point stays routable even if points were later
     // switched off platform-wide — the buyer already paid for that option.
     if (

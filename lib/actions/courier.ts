@@ -7,10 +7,13 @@ import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
 import { codBlockedCourierIds } from "@/lib/cod-guard";
 import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import {
+  effectiveVehicleCapacity,
   hasRoomFor,
   subOrderMetric,
   subOrderMetrics,
+  VEHICLE_CAPACITY_SETTING_KEY,
 } from "@/lib/courier-capacity";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { notifyBot } from "@/lib/integrations/bot-notify";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -175,6 +178,86 @@ export async function setCourierVehicle(
   const locale = await getLocale();
   revalidatePath(`/${locale}/admin/couriers/${courier.id}`);
   revalidatePath(`/${locale}/admin/dispatch`);
+  return { ok: true };
+}
+
+// Ops tune what a vehicle class can carry — the capacity table auto-assignment
+// checks parcels against (lib/courier-capacity.ts). Stored as a
+// PlatformSetting override merged over the code defaults, so passing null
+// reverts the vehicle to the shipped numbers. Inputs are in human units
+// (kg / liters); stored in grams / cm³. Audited, since it changes which
+// drivers receive which parcels.
+export async function setVehicleCapacity(
+  vehicleType: string,
+  capacity: {
+    maxWeightKg: number;
+    maxVolumeLiters: number;
+    maxParcels: number;
+    maxItemLongestSideCm: number;
+  } | null,
+): Promise<Result> {
+  const staffId = await requireDeliveryManagerId();
+  if (!staffId) return { error: "forbidden" };
+  if (!(VEHICLE_TYPES as readonly string[]).includes(vehicleType)) {
+    return { error: "badVehicle" };
+  }
+  const inRange = (v: number, max: number) =>
+    Number.isFinite(v) && v > 0 && v <= max;
+  if (
+    capacity &&
+    !(
+      inRange(capacity.maxWeightKg, 20_000) &&
+      inRange(capacity.maxVolumeLiters, 100_000) &&
+      inRange(capacity.maxParcels, 500) &&
+      inRange(capacity.maxItemLongestSideCm, 2_000)
+    )
+  ) {
+    return { error: "badCapacity" };
+  }
+
+  const row = await prisma.platformSetting.findUnique({
+    where: { key: VEHICLE_CAPACITY_SETTING_KEY },
+    select: { value: true },
+  });
+  const overrides: Record<string, unknown> =
+    typeof row?.value === "object" && row.value !== null
+      ? { ...(row.value as Record<string, unknown>) }
+      : {};
+  const from = overrides[vehicleType] ?? null;
+  const to = capacity
+    ? {
+        maxWeightGrams: Math.round(capacity.maxWeightKg * 1000),
+        maxVolumeCm3: Math.round(capacity.maxVolumeLiters * 1000),
+        maxParcels: Math.round(capacity.maxParcels),
+        maxItemLongestSideCm: Math.round(capacity.maxItemLongestSideCm),
+      }
+    : null;
+  if (to) overrides[vehicleType] = to;
+  else delete overrides[vehicleType];
+
+  await prisma.$transaction([
+    prisma.platformSetting.upsert({
+      where: { key: VEHICLE_CAPACITY_SETTING_KEY },
+      create: {
+        key: VEHICLE_CAPACITY_SETTING_KEY,
+        value: overrides as Prisma.InputJsonValue,
+      },
+      update: { value: overrides as Prisma.InputJsonValue },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: staffId,
+        action: "vehicle.capacity",
+        entity: "PlatformSetting",
+        entityId: VEHICLE_CAPACITY_SETTING_KEY,
+        meta: { vehicleType, from, to } as Prisma.InputJsonValue,
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/delivery-manager/vehicles`);
+  revalidatePath(`/${locale}/admin/couriers`);
   return { ok: true };
 }
 
@@ -392,14 +475,17 @@ export async function courierClaimJob(shipmentId: string): Promise<Result> {
   // applies — a bicycle courier can't claim a washing machine, or stack more
   // weight/volume than their vehicle carries. Unknown vehicles pass, like in
   // auto-assign.
-  const loadMetrics = await subOrderMetrics(active.map((s) => s.subOrderId));
+  const [loadMetrics, parcel, capacityTable] = await Promise.all([
+    subOrderMetrics(active.map((s) => s.subOrderId)),
+    subOrderMetric(shipment.subOrderId),
+    effectiveVehicleCapacity(),
+  ]);
   let loadWeightGrams = 0;
   let loadVolumeCm3 = 0;
   for (const m of loadMetrics.values()) {
     loadWeightGrams += m.weightGrams;
     loadVolumeCm3 += m.volumeCm3;
   }
-  const parcel = await subOrderMetric(shipment.subOrderId);
   if (
     !hasRoomFor(
       {
@@ -409,6 +495,7 @@ export async function courierClaimJob(shipmentId: string): Promise<Result> {
         loadVolumeCm3,
       },
       parcel,
+      capacityTable,
     )
   ) {
     return { error: "noCapacity" };

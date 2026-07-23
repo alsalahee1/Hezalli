@@ -12,7 +12,11 @@ import {
 
 import { requireCourierId } from "@/lib/authz";
 import { courierCodStatus } from "@/lib/cod-guard";
-import { hasRoomFor, subOrderMetrics } from "@/lib/courier-capacity";
+import {
+  effectiveVehicleCapacity,
+  hasRoomFor,
+  subOrderMetrics,
+} from "@/lib/courier-capacity";
 import { boardReadyAtPoint, openBoardWhere } from "@/lib/job-board";
 import { codSettledDigitally } from "@/lib/payment-state";
 import { prisma } from "@/lib/prisma";
@@ -96,9 +100,10 @@ export default async function DriverBoardPage() {
   // and whether it still fits on this driver's vehicle on top of what they
   // already carry — mirrors the claim action's gate so the button never
   // promises a claim the server will refuse.
-  const [parcelMetrics, loadMetrics] = await Promise.all([
+  const [parcelMetrics, loadMetrics, capacityTable] = await Promise.all([
     subOrderMetrics(rawJobs.map((j) => j.subOrderId)),
     subOrderMetrics(activeShipments.map((s) => s.subOrderId)),
+    effectiveVehicleCapacity(),
   ]);
   let loadWeightGrams = 0;
   let loadVolumeCm3 = 0;
@@ -130,7 +135,7 @@ export default async function DriverBoardPage() {
         km,
         codDue,
         weightKg: metrics ? metrics.weightGrams / 1000 : null,
-        fits: metrics ? hasRoomFor(me, metrics) : true,
+        fits: metrics ? hasRoomFor(me, metrics, capacityTable) : true,
         codAmount:
           Number(j.subOrder.itemsTotal) +
           Number(j.subOrder.shippingTotal) -
