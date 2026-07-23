@@ -17,6 +17,7 @@
 // first sweep after opening (lib/offer-sweep.ts), so night orders wait for
 // the morning wave instead of pinging sleeping drivers.
 import { codBlockedCourierIds } from "@/lib/cod-guard";
+import { courierAcceptanceStats } from "@/lib/courier-reliability";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
@@ -43,6 +44,10 @@ export function offerOpenStatuses(
 type CourierLoad = {
   id: string;
   load: number;
+  // 90-day offer acceptance rate (1 with no history — a new driver starts
+  // trusted). Breaks ranking ties after load; the hard gate is applied before
+  // ranking (see activeCouriersWithLoad).
+  rate: number;
   governorate: string | null;
   lat: number | null;
   lng: number | null;
@@ -69,8 +74,24 @@ async function activeCouriersWithLoad(
   // COD don't get new work until they remit (lib/cod-guard.ts). Dispatch can
   // still assign manually — this gates the automatic paths only.
   const codBlocked = await codBlockedCourierIds(couriers.map((c) => c.id));
-  const eligible = couriers.filter((c) => !codBlocked.has(c.id));
+  let eligible = couriers.filter((c) => !codBlocked.has(c.id));
   if (eligible.length === 0) return [];
+
+  // Reliability (lib/courier-reliability.ts): with the gate configured,
+  // chronic decliners — enough answered offers, acceptance under the floor —
+  // stop receiving auto-offers, same manual-dispatch escape hatch as the COD
+  // guard. The rate itself also feeds ranking below.
+  const stats = await courierAcceptanceStats(eligible.map((c) => c.id));
+  const settings = await getPlatformSettings();
+  const minRate = settings.driver_min_acceptance_rate / 100;
+  const minOffers = settings.driver_acceptance_min_offers;
+  if (minRate > 0) {
+    eligible = eligible.filter((c) => {
+      const s = stats.get(c.id);
+      return !s || s.responded < minOffers || (s.rate ?? 1) >= minRate;
+    });
+    if (eligible.length === 0) return [];
+  }
 
   const ids = eligible.map((c) => c.id);
   const loads = await prisma.shipment.groupBy({
@@ -82,17 +103,19 @@ async function activeCouriersWithLoad(
   return eligible.map((c) => ({
     id: c.id,
     load: loadBy.get(c.id) ?? 0,
+    rate: stats.get(c.id)?.rate ?? 1,
     governorate: c.courierLocation?.governorate ?? null,
     lat: c.courierLocation?.lat ?? null,
     lng: c.courierLocation?.lng ?? null,
   }));
 }
 
-// Fewest active jobs wins; ties broken by id for deterministic behavior.
+// Fewest active jobs wins; ties go to the more reliable driver, then id for
+// deterministic behavior.
 function leastLoaded(list: CourierLoad[]): string | null {
   if (list.length === 0) return null;
   return [...list].sort(
-    (a, b) => a.load - b.load || a.id.localeCompare(b.id),
+    (a, b) => a.load - b.load || b.rate - a.rate || a.id.localeCompare(b.id),
   )[0].id;
 }
 
@@ -128,6 +151,7 @@ export async function pickCourierForShipment(
             haversineKm(dLat, dLng, a.lat!, a.lng!) -
               haversineKm(dLat, dLng, b.lat!, b.lng!) ||
             a.load - b.load ||
+            b.rate - a.rate ||
             a.id.localeCompare(b.id),
         )[0].id;
       }

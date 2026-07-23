@@ -10,20 +10,25 @@ import {
   offerOpenStatuses,
 } from "@/lib/courier-assign";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
+import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
 
 const BATCH = 100;
+// Escalated parcels nobody assigned re-alert staff this often (GAP-5 in
+// docs/AUDIT-LIFECYCLE-2026-07-22.md: an ignored alert must not end the chain).
+const REESCALATE_HOURS = 24;
 
 export async function sweepCourierOffers(): Promise<{
   expired: number;
   waved: number;
+  reescalated: number;
 }> {
   const settings = await getPlatformSettings();
   if (
     !isDispatchOpen(settings.dispatch_hours_start, settings.dispatch_hours_end)
   ) {
-    return { expired: 0, waved: 0 };
+    return { expired: 0, waved: 0, reescalated: 0 };
   }
 
   // 1. Expire lapsed offers and move those parcels to the next courier.
@@ -116,5 +121,52 @@ export async function sweepCourierOffers(): Promise<{
     }
   }
 
-  return { expired, waved };
+  // 3. Re-escalate: parcels flagged for manual dispatch that are STILL
+  // unassigned after REESCALATE_HOURS get one aggregated re-alert (and the
+  // flag re-stamped so the next one is another day out). Manual assignment
+  // clears the flag and ends the cycle.
+  const stale = await prisma.shipment.findMany({
+    where: {
+      platformManaged: true,
+      driverId: null,
+      assignmentEscalatedAt: {
+        lt: new Date(Date.now() - REESCALATE_HOURS * 3_600_000),
+      },
+      subOrder: { status: "SHIPPED" },
+    },
+    take: BATCH,
+    select: { id: true },
+  });
+  if (stale.length > 0) {
+    await prisma.shipment.updateMany({
+      where: { id: { in: stale.map((s) => s.id) } },
+      data: { assignmentEscalatedAt: new Date() },
+    });
+    const staff = await prisma.user.findMany({
+      where: {
+        isSuspended: false,
+        deletedAt: null,
+        roles: { hasSome: ["DELIVERY_MANAGER", "ADMIN"] },
+      },
+      select: { id: true, locale: true },
+    });
+    await Promise.all(
+      staff.map((u) => {
+        const ar = u.locale === "ar";
+        return notify({
+          userId: u.id,
+          type: "SHIPMENT",
+          title: ar
+            ? `تذكير: ${stale.length} طرد ما زال بلا مندوب`
+            : `Reminder: ${stale.length} parcel(s) still have no courier`,
+          body: ar
+            ? "طرود صعّدناها سابقًا وما زالت بلا تعيين. عيّنها يدويًا من لوحة التوزيع."
+            : "Parcels escalated earlier are still unassigned. Assign them manually from dispatch.",
+          link: "/admin/dispatch",
+        }).catch(() => {});
+      }),
+    );
+  }
+
+  return { expired, waved, reescalated: stale.length };
 }

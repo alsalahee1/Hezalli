@@ -45,6 +45,18 @@ export type PlatformSettings = {
   // overnight go out in the first sweep after opening. start == end = 24/7.
   dispatch_hours_start: number;
   dispatch_hours_end: number;
+  // Seller ship-SLA (lib/seller-sla.ts): days a seller has to ship a
+  // CONFIRMED/PROCESSING sub-order before it auto-cancels (refund-if-paid,
+  // restock, both sides notified). The seller is warned one day before the
+  // deadline. 0 turns the sweep off.
+  seller_ship_days: number;
+  // Driver reliability gate (lib/courier-reliability.ts): a courier whose
+  // 90-day offer acceptance rate falls below this percent — with at least
+  // `driver_acceptance_min_offers` answered offers — stops receiving
+  // auto-offers (manual dispatch still works, like the COD guard). 0 = off.
+  // The rate also breaks ranking ties, so reliable drivers are offered first.
+  driver_min_acceptance_rate: number;
+  driver_acceptance_min_offers: number;
   // Flat fee (USD) Hezalli pays a courier for each completed Hezalli Express
   // delivery — accrued to the driver's earnings ledger on delivery.
   courier_delivery_fee: number;
@@ -142,6 +154,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   courier_offer_max_rounds: 3,
   dispatch_hours_start: 8,
   dispatch_hours_end: 21,
+  seller_ship_days: 5,
+  driver_min_acceptance_rate: 0,
+  driver_acceptance_min_offers: 10,
   courier_delivery_fee: 1.5,
   points_enabled: true,
   point_handling_fee: 0.5,

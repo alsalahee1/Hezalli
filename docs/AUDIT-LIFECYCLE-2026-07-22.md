@@ -59,38 +59,39 @@ wave.
 outside the window queues the parcel; offer clocks only tick during dispatch
 hours; the cron sweep runs the morning wave.
 
-### GAP-3 (MEDIUM) — COD order never confirmed by the seller
+### GAP-3 (MEDIUM) — Order confirmed, seller never ships ✅ fixed in round 2
 
-`expireStaleOrders` deliberately skips COD (`paymentMethod: { not: "COD" }`),
-so a COD order whose seller never confirms sits PENDING forever — the buyer
-waits indefinitely and nobody is alerted. (Prepaid orders expire; post-ship
-stalls are caught by the stuck-shipment sweep; but PENDING/CONFIRMED **COD**
-orders pre-shipment have no clock.) Shopee/Lazada auto-cancel unconfirmed or
-unshipped orders after N days and count it against the seller.
+Correction to the original finding: COD and wallet orders are **CONFIRMED at
+placement** (`confirmedNow` in `lib/actions/order.ts`) — PENDING is purely a
+payment state, already handled by `expireStaleOrders`. The real hole was one
+step later: a CONFIRMED/PROCESSING sub-order the seller never ships had no
+clock — the buyer (who may have already paid) waited forever. Shopee/Lazada
+run this as "days to ship" with auto-cancel.
 
-Suggested: `seller_confirm_days` + `seller_ship_days` settings; auto-cancel +
-notify buyer + seller strike after the deadline; surface "orders at risk" on
-the seller dashboard.
+**Fixed** by `lib/seller-sla.ts` (hourly cron): the seller is warned one day
+before `seller_ship_days` (default 5, one-shot `sellerSlaRemindedAt`); past
+the deadline the sub-order auto-cancels — paid buyers refunded to their
+wallet via the shared `applyRefund` money-path, stock and flash claims
+restored, both sides notified. Remaining follow-up: a formal seller strike
+score fed by these cancellations.
 
-### GAP-4 (MEDIUM) — No driver reliability memory
+### GAP-4 (MEDIUM) — No driver reliability memory ✅ fixed in round 2
 
-Nothing records how often a driver declines, times out, or lets parcels
-auto-return. `pickCourierForShipment` ranks only by load/distance, so the
-least reliable driver keeps receiving offers on equal terms. Platforms rank
-dispatch by acceptance/on-time history and pause chronic offenders.
+**Fixed** by `lib/courier-reliability.ts`: a 90-day acceptance rate per
+driver from `ShipmentOffer` outcomes. It breaks ranking ties in
+`pickCourierForShipment` (reliable drivers offered first), gates chronic
+decliners out of auto-offers when `driver_min_acceptance_rate` is set (with a
+`driver_acceptance_min_offers` sample floor; manual dispatch always works —
+same escape hatch as the COD guard), and shows next to each courier on the
+dispatch board.
 
-The `ShipmentOffer` table added in this change captures the raw data
-(offer → outcome per driver); the remaining work is a scorecard (rate per
-driver), a ranking factor in `pickCourierForShipment`, and an auto-pause
-threshold — mirroring how `cod-guard` already pauses over-limit drivers.
+### GAP-5 (MEDIUM) — Escalations notify, but nothing re-checks ✅ fixed in round 2
 
-### GAP-5 (MEDIUM) — Escalations notify, but nothing re-checks
-
-`sweepStuckShipments` and the point sweeps alert staff **once** (one-shot
-guards). If staff also do nothing, that's the end of the chain. Platforms
-re-escalate on a schedule (24h unacknowledged → repeat / escalate wider).
-Suggested: age-tiered re-alerts (e.g. re-flag after 48h unresolved), and an
-"unresolved escalations" count on the admin dashboard.
+**Fixed**: `sweepStuckShipments` now treats `stuckFlaggedAt` as
+last-alerted-at and re-alerts every 48h while a parcel stays stuck; the offer
+sweep re-alerts staff (aggregated, every 24h during dispatch hours) about
+escalated parcels that are still unassigned. Manual action clears the flags
+and ends each cycle.
 
 ### GAP-6 (LOW) — Buyer-facing promise vs. dispatch reality
 

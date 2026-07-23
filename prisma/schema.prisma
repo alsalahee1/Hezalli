@@ -870,6 +870,9 @@ model SubOrder {
   sellerNet      Decimal        @default(0) @db.Decimal(12, 2)
   completedAt    DateTime?
   autoCompleteAt DateTime?
+  // One-shot guard for the seller ship-SLA sweep (lib/seller-sla.ts): when the
+  // seller was warned that this sub-order is about to auto-cancel unshipped.
+  sellerSlaRemindedAt DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)

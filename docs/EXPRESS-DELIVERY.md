@@ -69,6 +69,9 @@ All keys live in `PlatformSetting` (see `lib/settings.ts` for defaults).
 | `courier_offer_timeout_minutes` | `60` | Minutes a driver has to accept an offered parcel before it cascades to the next driver. `0` = classic forced assignment, no accept step. |
 | `courier_offer_max_rounds` | `3` | How many drivers to try before alerting dispatch to assign manually. |
 | `dispatch_hours_start` / `dispatch_hours_end` | `8` / `21` | Dispatch window, Yemen local hours (0–23). Outside it parcels queue and offer clocks pause; equal values = 24/7. |
+| `seller_ship_days` | `5` | Unshipped CONFIRMED/PROCESSING sub-orders auto-cancel (paid buyers refunded) after this many days; seller warned a day before. `0` = off. |
+| `driver_min_acceptance_rate` | `0` | Drivers under this 90-day offer-acceptance percent (with ≥ `driver_acceptance_min_offers` answers) stop getting auto-offers. `0` = off. |
+| `driver_acceptance_min_offers` | `10` | Answered-offer sample a driver needs before the acceptance gate applies. |
 
 Rules worth knowing:
 
@@ -124,6 +127,19 @@ it (`ShipmentOffer`; driver UI on `/driver`). The full lifecycle:
 clocks pause, and the first sweep after opening runs the **morning wave**,
 offering out everything that accumulated overnight. Nobody is pinged at 3 AM,
 and no offer silently expires while the fleet sleeps.
+
+**Reliability** (`lib/courier-reliability.ts`): every answered offer feeds a
+90-day acceptance rate per driver. Ties in ranking go to the more reliable
+driver, the dispatch board shows the rate next to each courier, and with
+`driver_min_acceptance_rate` set, chronic decliners are paused from
+auto-offers (manual dispatch still works — same escape hatch as the COD
+guard).
+
+**Nothing goes quiet**: escalated parcels still unassigned re-alert staff
+every 24h (aggregated) during dispatch hours, and the stuck-parcel sweep
+re-alerts every 48h while a parcel stays un-moved. The related seller-side
+clock lives in `lib/seller-sla.ts`: unshipped sub-orders warn the seller at
+`seller_ship_days − 1` and auto-cancel (refund-if-paid) at the deadline.
 
 ## 5. Operating it — by role
 

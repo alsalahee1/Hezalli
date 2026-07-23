@@ -233,7 +233,11 @@ describe("driver job offers", () => {
     expect(await autoAssignShipment(p)).toBeNull();
     expect((await shipmentOf(p)).driverId).toBeNull();
     // The sweep also refuses to act while dispatch is closed.
-    expect(await sweepCourierOffers()).toEqual({ expired: 0, waved: 0 });
+    expect(await sweepCourierOffers()).toEqual({
+      expired: 0,
+      waved: 0,
+      reescalated: 0,
+    });
 
     // Morning: the window opens and the wave offers the queued parcel out.
     await setSetting("dispatch_hours_start", 0);
@@ -244,6 +248,28 @@ describe("driver job offers", () => {
     const after = await shipmentOf(p);
     expect(after.driverId).toBeTruthy();
     expect((await offerOf(p, after.driverId!))?.status).toBe("OFFERED");
+  });
+
+  it("re-alerts staff about escalated parcels nobody assigned", async () => {
+    const p = await shippedParcel();
+    const staleAt = new Date(Date.now() - 25 * 3_600_000);
+    await prisma.shipment.update({
+      where: { id: p },
+      data: { assignmentEscalatedAt: staleAt },
+    });
+
+    const res = await sweepCourierOffers();
+    expect(res.reescalated).toBeGreaterThanOrEqual(1);
+
+    const after = await shipmentOf(p);
+    expect(after.driverId).toBeNull(); // re-alerted, not silently re-offered
+    expect(after.assignmentEscalatedAt!.getTime()).toBeGreaterThan(
+      staleAt.getTime(),
+    );
+    const reminder = await prisma.notification.findFirst({
+      where: { userId: staffId, title: { contains: "still have no courier" } },
+    });
+    expect(reminder).toBeTruthy();
   });
 
   it("offer window 0 = classic forced assignment, no consent step", async () => {
