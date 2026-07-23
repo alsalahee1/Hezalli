@@ -88,6 +88,24 @@ if ! grep -qE '^CRON_SECRET=.+' .env 2>/dev/null; then
   log "Generated CRON_SECRET into .env"
 fi
 
+# --- 2d. Reclaim disk before building (self-healing) ------------------------
+# Docker build cache + old image layers pile up across deploys and have filled
+# the disk before, failing the image build at `npm ci` with
+# "ENOSPC: no space left on device". When free space on Docker's filesystem
+# runs low, prune unused images + build cache BEFORE building. `prune -af`
+# without `--volumes` never removes named volumes (the Postgres data volume is
+# safe) and never removes the image backing the currently-running app.
+DOCKER_DIR="$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || echo /var/lib/docker)"
+FREE_KB="$(df -Pk "$DOCKER_DIR" 2>/dev/null | awk 'NR==2{print $4}')"
+MIN_FREE_KB=$((6 * 1024 * 1024)) # keep at least ~6 GB free for a clean build
+if [ -n "${FREE_KB:-}" ] && [ "$FREE_KB" -lt "$MIN_FREE_KB" ]; then
+  warn "Low disk on ${DOCKER_DIR} ($((FREE_KB / 1024)) MB free) — pruning unused Docker data ..."
+  docker system prune -af >/dev/null 2>&1 || true
+  docker builder prune -af >/dev/null 2>&1 || true
+  NEW_FREE_KB="$(df -Pk "$DOCKER_DIR" 2>/dev/null | awk 'NR==2{print $4}')"
+  log "Disk after prune: $(( ${NEW_FREE_KB:-0} / 1024 )) MB free on ${DOCKER_DIR}"
+fi
+
 # --- 3. Detect the existing web-facing setup --------------------------------
 port_owner() { (ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null) | grep -E "[:.]$1 " || true; }
 
