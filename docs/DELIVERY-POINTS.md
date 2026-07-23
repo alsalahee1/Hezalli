@@ -783,6 +783,35 @@ the block rule) powers `/admin/cash` and `/delivery-manager/cash`:
 - [x] i18n (en + ar) + integration test (aging bands, collateral, blocked flags, totals)
 - [x] This file kept current
 
-## 41. Out of scope
+## 41. v1.23 — Shelf/bin locations inside the hub
+
+The system knew WHO holds a parcel but not WHERE it sits inside the shop —
+retrieving one meant searching the shelves. Standard PUDO fix (Amazon Hub,
+InPost): a free-text shelf/bin label stamped at the receive scan.
+
+- **Stamp at receive.** The scan station's Receive and Return modes gain an
+  optional "shelf / bin" input (sticky between scans, so a stack going onto
+  one shelf is typed once). Free text ("A3") — each shop labels its own
+  shelves; no shelf inventory model.
+- **Shown at retrieval.** The driver manifest (scan the driver's QR → their
+  pickup list) shows each parcel's shelf chip; the buyer-pickup scan result
+  leads with "Shelf A3 — collect $X"; the dashboard shows the chip on every
+  held parcel.
+- **Re-shelve.** Scanning a parcel the hub already holds in Receive mode
+  with a shelf entered just moves the label (no custody change, no events);
+  without a shelf it stays the usual `badState`.
+- **Cleared on every departure** — driver handover, buyer pickup/delivery,
+  RTS — so a freed shelf label never lies.
+
+### Build checklist (v1.23)
+
+- [x] Schema: `Shipment.shelfCode String?` + migration
+- [x] `point-core`: receive/return stamp the shelf (trimmed, ≤20 chars), re-shelve path, cleared on handover / delivery / RTS; `ManifestRow.shelf`; pickup result returns the shelf
+- [x] Scan station: sticky shelf input (Receive/Return), manifest shelf chips, shelf-first pickup feedback
+- [x] Point dashboard: shelf chip on held parcels
+- [x] i18n (en + ar) + integration tests (stamp→manifest→clear, re-shelve, pickup shows & clears, failed-return re-stamp)
+- [x] This file kept current
+
+## 42. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

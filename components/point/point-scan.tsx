@@ -66,6 +66,10 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
   const modeRef = useRef<ScanMode>("receive");
   const [driverId, setDriverId] = useState("");
   const driverRef = useRef("");
+  // Shelf/bin for receive & return scans — sticky between scans so a stack of
+  // drop-offs going onto the same shelf is typed once.
+  const [shelf, setShelf] = useState("");
+  const shelfRef = useRef("");
   const [manual, setManual] = useState("");
   const [busy, setBusy] = useState(false);
   const [feed, setFeed] = useState<Feedback[]>([]);
@@ -117,11 +121,16 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
       if (m === "pickup") {
         const res = await pointBuyerPickup(code);
         if (res.ok) {
-          push(
-            true,
+          const base =
             res.codDue && res.codDue > 0
               ? t("pickupOkCod", { amount: `$${res.codDue.toFixed(2)}` })
-              : t("pickupOk"),
+              : t("pickupOk");
+          // Lead with WHERE the parcel is — the counter reads this to fetch it.
+          push(
+            true,
+            res.shelf
+              ? `${t("shelfBadge", { code: res.shelf })} — ${base}`
+              : base,
             code,
           );
           router.refresh();
@@ -132,15 +141,21 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
       }
       const res =
         m === "receive"
-          ? await pointReceiveParcel(code)
+          ? await pointReceiveParcel(code, shelfRef.current || undefined)
           : m === "handover"
             ? await pointHandoverParcel(code, driverRef.current || undefined)
-            : await pointReceiveReturn(code);
+            : await pointReceiveReturn(
+                code,
+                undefined,
+                shelfRef.current || undefined,
+              );
       if (res.ok) {
         push(
           true,
           m === "receive"
-            ? t("receivedOk")
+            ? res.reshelved
+              ? t("shelfUpdated")
+              : t("receivedOk")
             : m === "handover"
               ? t("handedOk")
               : t("returnOk"),
@@ -257,6 +272,25 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
         </p>
       ) : null}
 
+      {/* Where the parcel is being put — stamped on each receive/return scan
+          and shown back at handover/pickup time so nobody hunts the shelves. */}
+      {mode === "receive" || mode === "return" ? (
+        <div className="space-y-1">
+          <label className="text-sm font-medium">{t("shelfLabel")}</label>
+          <Input
+            value={shelf}
+            onChange={(e) => {
+              setShelf(e.target.value);
+              shelfRef.current = e.target.value;
+            }}
+            placeholder={t("shelfPlaceholder")}
+            maxLength={20}
+            className="h-10"
+          />
+          <p className="text-muted-foreground text-xs">{t("shelfHint")}</p>
+        </div>
+      ) : null}
+
       {mode === "handover" ? (
         <div className="space-y-1">
           <label className="text-sm font-medium">{t("driverLabel")}</label>
@@ -295,6 +329,11 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
                       <span className="min-w-0 flex-1 truncate" dir="ltr">
                         {row.trackingNumber}
                       </span>
+                      {row.shelf ? (
+                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-xs font-semibold text-sky-600">
+                          {t("shelfBadge", { code: row.shelf })}
+                        </span>
+                      ) : null}
                       {row.city ? (
                         <span className="text-muted-foreground truncate text-xs">
                           {row.city}

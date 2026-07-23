@@ -1386,6 +1386,10 @@ model Shipment {
   // Which point physically holds the parcel right now (null = not at a hub).
   // Set on every receive scan, cleared on handover / delivery / RTS.
   atPointId       String?
+  // Where inside that hub the parcel sits ("A3") — free text, the operator
+  // labels their own shelves. Set at the receive scan, shown on the driver
+  // manifest / pickup scan, cleared whenever the parcel leaves the hub.
+  shelfCode       String?
   // Short random code for the optional buyer-QR proof of delivery.
   deliveryCode    String?         @unique
   // Buyer's requested redelivery day + note after a failed attempt.
