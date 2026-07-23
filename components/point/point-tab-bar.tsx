@@ -27,11 +27,12 @@ export function PointTabBar() {
       ariaLabel={t("appName")}
       responsive={false}
       moreLabel={tCommon("more")}
+      centerKey="/point/scan"
       primary={[
         { href: "/point", label: t("parcels"), icon: Package, exact: true },
+        { href: "/point/history", label: t("history"), icon: History },
         { href: "/point/scan", label: t("scan"), icon: QrCode },
         { href: "/point/ledger", label: t("ledger"), icon: Wallet },
-        { href: "/point/history", label: t("history"), icon: History },
       ]}
       moreItems={[
         { href: "/point/stats", label: t("statsTab"), icon: TrendingUp },

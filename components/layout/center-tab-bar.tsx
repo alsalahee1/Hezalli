@@ -34,6 +34,7 @@ export function CenterTabBar({
   moreLabel = "More",
   ariaLabel,
   responsive = true,
+  centerKey,
 }: {
   primary: CenterTab[];
   moreItems?: CenterTab[];
@@ -45,6 +46,12 @@ export function CenterTabBar({
    * app) that want the bar at every width.
    */
   responsive?: boolean;
+  /**
+   * href of a primary tab to render as an elevated, circular center button
+   * (the raised "Scan" treatment the wallet/driver apps use). The remaining
+   * primary tabs flank it in their array order. Omit for the flat layout.
+   */
+  centerKey?: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -66,6 +73,48 @@ export function CenterTabBar({
       "flex w-full flex-col items-center gap-1 py-2 text-[11px] font-medium transition-colors",
       active ? "text-primary" : "text-muted-foreground hover:text-foreground",
     );
+
+  const renderTab = (tab: CenterTab) => {
+    const Icon = tab.icon;
+    const active = isActive(tab);
+    return (
+      <li key={tab.href} className="flex-1">
+        <Link
+          href={tab.href}
+          aria-current={active ? "page" : undefined}
+          className={tabClass(active)}
+        >
+          <Icon
+            className="size-6"
+            strokeWidth={active ? 2.4 : 1.9}
+            aria-hidden
+          />
+          {tab.label}
+        </Link>
+      </li>
+    );
+  };
+
+  // Elevated, circular center action — the raised "Scan" treatment shared with
+  // the wallet and driver bars.
+  const renderCenter = (tab: CenterTab) => {
+    const Icon = tab.icon;
+    return (
+      <li key={tab.href} className="flex-1">
+        <Link
+          href={tab.href}
+          aria-current={isActive(tab) ? "page" : undefined}
+          aria-label={tab.label}
+          className="text-primary flex w-full flex-col items-center gap-1 pb-2 text-[11px] font-medium"
+        >
+          <span className="ring-background bg-primary text-primary-foreground -mt-7 flex size-14 items-center justify-center rounded-full shadow-lg ring-4">
+            <Icon className="size-7" aria-hidden />
+          </span>
+          {tab.label}
+        </Link>
+      </li>
+    );
+  };
 
   return (
     <>
@@ -135,26 +184,9 @@ export function CenterTabBar({
         )}
       >
         <ul className="mx-auto flex max-w-md items-stretch justify-around">
-          {primary.map((tab) => {
-            const Icon = tab.icon;
-            const active = isActive(tab);
-            return (
-              <li key={tab.href} className="flex-1">
-                <Link
-                  href={tab.href}
-                  aria-current={active ? "page" : undefined}
-                  className={tabClass(active)}
-                >
-                  <Icon
-                    className="size-6"
-                    strokeWidth={active ? 2.4 : 1.9}
-                    aria-hidden
-                  />
-                  {tab.label}
-                </Link>
-              </li>
-            );
-          })}
+          {primary.map((tab) =>
+            tab.href === centerKey ? renderCenter(tab) : renderTab(tab),
+          )}
           {hasMore ? (
             <li className="flex-1">
               <button
