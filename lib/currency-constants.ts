@@ -5,6 +5,11 @@
 // *zone* derived from the governorate, not a single national rate.
 
 export const DISPLAY_CURRENCY_COOKIE = "hz_currency";
+// Buyer's explicit rial-market choice (NORTH = Sana'a old rial, SOUTH = Aden
+// new rial). When set it overrides the address-derived zone for *browsing*
+// display; the checkout snapshot always uses the delivery address's zone so a
+// COD courier collects in the rial that circulates at the destination.
+export const CURRENCY_ZONE_COOKIE = "hz_currency_zone";
 
 export const DISPLAY_CURRENCIES = ["USD", "YER", "SAR", "AED"] as const;
 export type DisplayCurrencyCode = (typeof DISPLAY_CURRENCIES)[number];
@@ -16,6 +21,27 @@ export function isDisplayCurrency(
   value: string | undefined,
 ): value is DisplayCurrencyCode {
   return !!value && (DISPLAY_CURRENCIES as readonly string[]).includes(value);
+}
+
+/** The two rial markets a buyer can explicitly pick between. */
+export const SELECTABLE_ZONES = ["NORTH", "SOUTH"] as const;
+export type SelectableZone = (typeof SELECTABLE_ZONES)[number];
+
+export function isSelectableZone(
+  value: string | undefined,
+): value is SelectableZone {
+  return value === "NORTH" || value === "SOUTH";
+}
+
+/**
+ * Coerce a resolved zone to one of the two buyer-facing rial markets. The
+ * DEFAULT fallback row is seeded/managed at the floating (Aden) value, so it
+ * presents as SOUTH.
+ */
+export function selectableZoneOf(
+  zone: CurrencyZone | undefined,
+): SelectableZone {
+  return zone === "NORTH" ? "NORTH" : "SOUTH";
 }
 
 // Governorates where the old (pre-2016-issue) rial circulates. Everything
@@ -50,6 +76,8 @@ export type DisplayCurrency = {
   code: DisplayCurrencyCode;
   /** Units of `code` per 1 USD. Always 1 for USD. */
   rate: number;
+  /** The currency zone the rate was resolved for (meaningful for YER). */
+  zone?: CurrencyZone;
 };
 
 export const USD_DISPLAY: DisplayCurrency = { code: "USD", rate: 1 };

@@ -6,15 +6,18 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 
 import {
+  CURRENCY_ZONE_COOKIE,
   CURRENCY_ZONES,
   DISPLAY_CURRENCY_COOKIE,
   isDisplayCurrency,
+  isSelectableZone,
   pickRate,
   USD_DISPLAY,
   zoneForGovernorate,
   type CurrencyZone,
   type DisplayCurrency,
   type DisplayCurrencyCode,
+  type SelectableZone,
 } from "@/lib/currency-constants";
 import { prisma } from "@/lib/prisma";
 
@@ -30,12 +33,33 @@ export async function getDisplayCurrencyCode(): Promise<DisplayCurrencyCode> {
   }
 }
 
-/** Rate for a currency in the zone of `governorate` (DEFAULT-zone fallback). */
+/**
+ * Buyer's explicit rial-market pick (Sana'a old rial vs Aden new rial), or
+ * null when they never chose one. Overrides the address-derived zone for
+ * browsing display only — never for the checkout snapshot.
+ */
+export async function getPreferredZone(): Promise<SelectableZone | null> {
+  try {
+    const store = await cookies();
+    const value = store.get(CURRENCY_ZONE_COOKIE)?.value;
+    return isSelectableZone(value) ? value : null;
+  } catch {
+    // No request scope (integration tests, background jobs).
+    return null;
+  }
+}
+
+/**
+ * Rate for a currency in `zone` — or, when no explicit zone is given, the
+ * zone of `governorate` (DEFAULT-zone fallback).
+ */
 export async function getRateFor(
   code: DisplayCurrencyCode,
   governorate: string | null | undefined,
+  zone?: CurrencyZone,
 ): Promise<DisplayCurrency> {
   if (code === "USD") return USD_DISPLAY;
+  const resolvedZone = zone ?? zoneForGovernorate(governorate);
   const rows = await prisma.exchangeRate.findMany({
     where: { currency: code },
     select: { currency: true, zone: true, rate: true },
@@ -43,10 +67,10 @@ export async function getRateFor(
   const rate = pickRate(
     rows.map((r) => ({ ...r, rate: Number(r.rate) })),
     code,
-    zoneForGovernorate(governorate),
+    resolvedZone,
   );
   // No configured rate → fail safe to USD rather than show a wrong price.
-  return rate ? { code, rate } : USD_DISPLAY;
+  return rate ? { code, rate, zone: resolvedZone } : USD_DISPLAY;
 }
 
 /**
@@ -99,6 +123,9 @@ export async function getDisplayCurrency(
 ): Promise<DisplayCurrency> {
   const code = await getDisplayCurrencyCode();
   if (code === "USD") return USD_DISPLAY;
+  // Explicit rial-market pick wins; otherwise infer from the default address.
+  const preferred = await getPreferredZone();
+  if (preferred) return getRateFor(code, null, preferred);
   const address = userId
     ? await prisma.address.findFirst({
         where: { userId },

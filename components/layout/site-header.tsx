@@ -7,7 +7,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { dashboardHref } from "@/lib/dashboard-href";
 import type { NavCategory } from "@/lib/categories";
-import type { DisplayCurrencyCode } from "@/lib/currency-constants";
+import type {
+  DisplayCurrencyCode,
+  SelectableZone,
+} from "@/lib/currency-constants";
 import type { ThemeId } from "@/lib/theme-constants";
 import { CartButton } from "@/components/cart/cart-button";
 import { useMoney } from "@/components/currency/currency-provider";
@@ -40,6 +43,7 @@ export function SiteHeader({
   categories = [],
   theme = "default",
   displayCurrency = "USD",
+  displayZone = "SOUTH",
 }: {
   user?: HeaderUser | null;
   isSeller?: boolean;
@@ -51,6 +55,7 @@ export function SiteHeader({
   categories?: NavCategory[];
   theme?: ThemeId;
   displayCurrency?: DisplayCurrencyCode;
+  displayZone?: SelectableZone;
 }) {
   const t = useTranslations("Header");
   const c = useTranslations("Common");
@@ -95,6 +100,7 @@ export function SiteHeader({
             <ThemeSwitcher initialTheme={theme} />
             <CurrencySwitcher
               initialCurrency={displayCurrency}
+              initialZone={displayZone}
               locale={locale}
             />
             <LanguageSwitcher />
@@ -186,6 +192,7 @@ export function SiteHeader({
             </span>
             <CurrencySwitcher
               initialCurrency={displayCurrency}
+              initialZone={displayZone}
               locale={locale}
             />
           </div>
