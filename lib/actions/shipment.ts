@@ -39,7 +39,11 @@ const mintDeliveryCode = () => randomBytes(5).toString("hex").toUpperCase();
 // after the prefix keep the printed Code 39 barcode compact and scannable.
 async function mintTrackingNumber(): Promise<string> {
   for (;;) {
-    const digits = Array.from(randomBytes(10), (b) => b % 10).join("");
+    // 14 random digits (~10^14 space) so tracking numbers can't be enumerated
+    // to harvest buyer PII/location — belt-and-suspenders alongside the per-IP
+    // rate limiting on the public tracking endpoints. Still numeric so the
+    // printed Code 39 barcode stays compact and scannable.
+    const digits = Array.from(randomBytes(14), (b) => b % 10).join("");
     const candidate = `HZE${digits}`;
     const clash = await prisma.shipment.findFirst({
       where: { trackingNumber: candidate },

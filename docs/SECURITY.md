@@ -93,19 +93,33 @@ account-linking codes are ~72-bit + session-bound; AI assistant tools are
 read-only and user-scoped; scrypt+salt+timing-safe passwords with atomic PIN
 lockout; ledger row-locks + idempotency indexes on settlement/loyalty/cashback.
 
-## Recommended follow-ups (defense-in-depth, not blocking)
+## Defense-in-depth hardening (done, follow-up pass)
 
-- **CSP nonces.** Replace `script-src 'unsafe-inline'` with per-request nonces.
-- **Shared rate-limit store.** Back `lib/rate-limit.ts` with Redis/Upstash for
-  multi-instance/serverless deploys (the in-process limiter is per-instance).
-- **Opaque tracking ids.** Longer/random tracking tokens to end enumeration.
-- **S3 private KYC.** With the S3 driver, store `kyc/`/`proof/` in a private
-  bucket and serve via short-lived signed URLs.
-- **Dependencies.** `npm audit` reports transitive advisories (mostly dev-only:
-  `@hono/node-server` via `@prisma/dev`; `sharp`/`postcss` via Next's optional
-  image pipeline). Run `npm audit fix` and track the Next-chain items.
-- **Seller suspension.** Route the remaining seller write paths through
-  `requireActiveSellerStore` so a mid-session suspension takes effect before the
-  JWT expires.
-- **CMS sanitization.** Server-side sanitize CMS HTML as belt-and-suspenders even
-  though authoring is admin-only.
+All the follow-ups from the audit above are now implemented:
+
+- **CSP nonces (done).** The CSP moved from `next.config.ts` to `middleware.ts`,
+  which sets a fresh per-request script nonce and drops `'unsafe-inline'` for
+  `script-src` (styles keep it). Verified with a production build + a headless
+  Chromium smoke test: Next stamps the nonce on its scripts, pages render and
+  hydrate with **zero CSP violations**.
+- **Shared rate-limit store (done).** `lib/rate-limit.ts` gained `rateLimitAsync`,
+  an opt-in Upstash-Redis-REST backend (set `UPSTASH_REDIS_REST_URL` +
+  `UPSTASH_REDIS_REST_TOKEN`) with automatic in-memory fallback on missing config
+  or backend error. The IP-keyed brute-force/enumeration surfaces (login,
+  register, AI chat, tracking) use it; per-actor limits stay in-process.
+- **Opaque tracking ids (done).** Minted waybills are now 14 random digits
+  (~10^14) instead of 10, on top of the per-IP rate limiting.
+- **Private KYC/proof (done).** Sensitive objects are always served through the
+  authenticated `/api/files` proxy — for the s3 driver too, via a credentialed
+  `getObject` — so the bucket can stay private for `kyc/`/`proof/` and no public
+  URL is ever minted for them.
+- **Dependencies (done).** `npm audit` is clean (`0 vulnerabilities`): `npm audit
+  fix`, a Next patch bump (15.5.21), and `overrides` pinning `sharp`/`postcss` to
+  patched versions.
+- **Seller suspension (done).** `saveProduct`, inventory edits, store settings,
+  payout-method + payout requests, and earnings→wallet transfers now go through
+  `requireActiveSeller` (DB-checked `isSuspended`/`deletedAt`), closing the
+  stale-JWT write window.
+- **CMS sanitization (done).** `saveCmsPage` sanitizes the HTML body on write
+  (`lib/sanitize.ts`, `sanitize-html` allowlist) — scripts, event handlers, and
+  unsafe URL schemes are stripped before storage; unit-tested.

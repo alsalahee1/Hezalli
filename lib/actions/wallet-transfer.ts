@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { auth } from "@/auth";
+import { requireActiveSeller } from "@/lib/authz";
 import { getBalanceId, recomputeBalance, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import {
@@ -25,16 +25,12 @@ class ReserveError extends Error {}
 export async function transferEarningsToWallet(
   amountUsd?: number,
 ): Promise<Result> {
-  const session = await auth();
   const locale = await getLocale();
-  if (!session?.user?.id) return { error: "unauthorized" };
-  const userId = session.user.id;
-
-  const profile = await prisma.sellerProfile.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-  if (!profile) return { error: "notSeller" };
+  // Money outflow: reject a suspended/deleted seller before touching balances.
+  const gate = await requireActiveSeller();
+  if (!gate) return { error: "notSeller" };
+  const userId = gate.userId;
+  const profile = { id: gate.profileId };
 
   await recomputeBalance(profile.id);
   const balanceId = await getBalanceId(profile.id);

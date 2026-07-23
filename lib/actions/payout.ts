@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { auth } from "@/auth";
 import { audit } from "@/lib/audit";
-import { requireWalletManagerId } from "@/lib/authz";
+import { requireActiveSeller, requireWalletManagerId } from "@/lib/authz";
 import { getBalanceId, recomputeBalance, round2 } from "@/lib/finance";
 import { prisma } from "@/lib/prisma";
 import { payoutMethodSchema } from "@/lib/validations/payout";
@@ -24,15 +23,10 @@ export async function savePayoutMethod(
   _prev: FormState | undefined,
   formData: FormData,
 ): Promise<FormState> {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return { formError: "notSignedIn" };
-
-  const profile = await prisma.sellerProfile.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-  if (!profile) return { formError: "notSeller" };
+  // requireActiveSeller rejects a suspended/deleted seller (stale-JWT window).
+  const gate = await requireActiveSeller();
+  if (!gate) return { formError: "notSeller" };
+  const profile = { id: gate.profileId };
 
   const kind = String(formData.get("kind") ?? "");
   const parsed = payoutMethodSchema.safeParse(
@@ -94,11 +88,12 @@ async function minPayout(): Promise<number> {
 
 // Seller requests a payout of (part of) their available balance.
 export async function requestPayout(amountUsd?: number): Promise<Result> {
-  const session = await auth();
   const locale = await getLocale();
-  if (!session?.user?.id) return { error: "unauthorized" };
+  // Money outflow: reject a suspended/deleted seller before touching balances.
+  const gate = await requireActiveSeller();
+  if (!gate) return { error: "notSeller" };
   const profile = await prisma.sellerProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { id: gate.profileId },
     select: {
       id: true,
       payoutMethods: { where: { isDefault: true }, take: 1 },

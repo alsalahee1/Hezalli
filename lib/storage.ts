@@ -1,4 +1,4 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { readFile, mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 // Provider-agnostic object storage. The app talks to this interface; the
@@ -8,13 +8,35 @@ import path from "node:path";
 //                    Storage, AWS S3, MinIO) via the S3_* env vars.
 // Swapping providers is an env change only — see docs/STORAGE.md.
 
+export type StoredObject = { body: Buffer; contentType: string };
+
 export interface StorageDriver {
   put(key: string, body: Buffer, contentType: string): Promise<void>;
   delete(key: string): Promise<void>;
   publicUrl(key: string): string;
+  // Fetch an object's bytes for the authenticated /api/files proxy. Returns null
+  // when the object is missing. Used to serve PRIVATE objects (KYC/proof) so
+  // they never need a public URL, even with the S3 driver.
+  getObject(key: string): Promise<StoredObject | null>;
 }
 
 export const UPLOAD_DIR = path.join(process.cwd(), ".uploads");
+
+// Keys under these prefixes hold sensitive objects (regulated ID docs, delivery/
+// payment proof). They are always served through the authenticated /api/files
+// proxy — never a public bucket URL — so access control is enforceable.
+const PRIVATE_PREFIXES = ["kyc/", "proof/"];
+export function isPrivateKey(key: string): boolean {
+  return PRIVATE_PREFIXES.some((p) => key.startsWith(p));
+}
+
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+};
 
 class LocalDriver implements StorageDriver {
   async put(key: string, body: Buffer): Promise<void> {
@@ -27,6 +49,24 @@ class LocalDriver implements StorageDriver {
   }
   publicUrl(key: string): string {
     return `/api/files/${key}`;
+  }
+  async getObject(key: string): Promise<StoredObject | null> {
+    const abs = path.join(UPLOAD_DIR, key);
+    // Path-traversal guard: the resolved path must stay inside UPLOAD_DIR.
+    if (abs !== UPLOAD_DIR && !abs.startsWith(UPLOAD_DIR + path.sep)) {
+      return null;
+    }
+    try {
+      const body = await readFile(abs);
+      return {
+        body,
+        contentType:
+          CONTENT_TYPE_BY_EXT[path.extname(abs).toLowerCase()] ??
+          "application/octet-stream",
+      };
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -76,7 +116,29 @@ class S3Driver implements StorageDriver {
   }
 
   publicUrl(key: string): string {
+    // Sensitive objects are proxied through the authenticated /api/files route
+    // (served via getObject below), so they need no public bucket URL — keep the
+    // bucket private for them. Public assets (avatars/products) use the CDN URL.
+    if (isPrivateKey(key)) return `/api/files/${key}`;
     return `${this.publicBase}/${key}`;
+  }
+
+  async getObject(key: string): Promise<StoredObject | null> {
+    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = await this.client();
+    try {
+      const res = await client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      if (!res.Body) return null;
+      const bytes = await res.Body.transformToByteArray();
+      return {
+        body: Buffer.from(bytes),
+        contentType: res.ContentType ?? "application/octet-stream",
+      };
+    } catch {
+      return null;
+    }
   }
 }
 

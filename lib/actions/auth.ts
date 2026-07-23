@@ -8,7 +8,7 @@ import { signIn, signOut } from "@/auth";
 import { generateReferralCode } from "@/lib/loyalty";
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import {
   fieldErrors,
   loginSchema,
@@ -41,7 +41,7 @@ export async function authenticate(
   formData: FormData,
 ): Promise<AuthFormState> {
   // Throttle brute-force: at most 8 attempts per IP per 5 minutes.
-  if (!rateLimit(`login:${await clientIp()}`, 8, 5 * 60_000).ok) {
+  if (!(await rateLimitAsync(`login:${await clientIp()}`, 8, 5 * 60_000)).ok) {
     return { formError: "tooManyAttempts" };
   }
 
@@ -145,7 +145,7 @@ export async function registerUser(
   formData: FormData,
 ): Promise<AuthFormState> {
   // Throttle account-creation abuse: at most 5 per IP per 15 minutes.
-  if (!rateLimit(`register:${await clientIp()}`, 5, 15 * 60_000).ok) {
+  if (!(await rateLimitAsync(`register:${await clientIp()}`, 5, 15 * 60_000)).ok) {
     return { formError: "tooManyAttempts" };
   }
 

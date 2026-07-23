@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { sanitizeCmsHtml } from "@/lib/sanitize";
 
 type Result = { ok?: boolean; error?: string };
 
@@ -29,7 +30,12 @@ export async function saveCmsPage(input: CmsPageInput): Promise<Result> {
     return { error: "titleRequired" };
 
   const title = { en: input.titleEn.trim(), ar: input.titleAr.trim() };
-  const body = { en: input.bodyEn, ar: input.bodyAr };
+  // Sanitize on write so the raw-HTML render at /p/[slug] can never carry
+  // scripts/handlers/unsafe URLs, even from a hijacked admin session.
+  const body = {
+    en: sanitizeCmsHtml(input.bodyEn),
+    ar: sanitizeCmsHtml(input.bodyAr),
+  };
 
   await prisma.cmsPage.upsert({
     where: { slug },

@@ -161,7 +161,7 @@ describe("full order journey: checkout → delivery → receipt (COD Express)", 
       },
     });
     expect(shipped.status).toBe("IN_TRANSIT");
-    expect(shipped.trackingNumber).toMatch(/^HZE\d{10}$/); // minted waybill
+    expect(shipped.trackingNumber).toMatch(/^HZE\d{14}$/); // minted waybill
     expect(shipped.deliveryCode).toBeTruthy(); // buyer's proof-of-delivery QR
     expect(shipped.shippedAt).toBeTruthy();
     expect(
