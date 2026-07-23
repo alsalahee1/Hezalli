@@ -97,7 +97,32 @@ export default async function DriverJobsPage() {
 
   return (
     <div className="space-y-4">
-      <LocationShare currentGovernorate={location?.governorate ?? null} />
+      {/* Cash the driver is holding + fees earned → full ledger. */}
+      {cash.cashOnHand > 0 || cash.earnings > 0 ? (
+        <Link href="/driver/ledger" className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
+              <Wallet className="size-3.5" /> {t("cashToRemit")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(cash.cashOnHand)}
+            </p>
+            {cod.cashLimit > 0 ? (
+              <p className="text-muted-foreground mt-0.5 text-[11px]">
+                {t("codLimitLine", { limit: money(cod.cashLimit) })}
+              </p>
+            ) : null}
+          </div>
+          <div className="rounded-xl border p-3">
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("earnings")}
+            </p>
+            <p className="mt-1 text-lg font-semibold" dir="ltr">
+              {money(cash.earnings)}
+            </p>
+          </div>
+        </Link>
+      ) : null}
       <PushToggle />
 
       {/* COD credit control (lib/cod-guard.ts): blocked drivers see WHY they
@@ -146,32 +171,7 @@ export default async function DriverJobsPage() {
         </div>
       </details>
 
-      {/* Cash the driver is holding + fees earned → full ledger. */}
-      {cash.cashOnHand > 0 || cash.earnings > 0 ? (
-        <Link href="/driver/ledger" className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
-              <Wallet className="size-3.5" /> {t("cashToRemit")}
-            </p>
-            <p className="mt-1 text-lg font-semibold" dir="ltr">
-              {money(cash.cashOnHand)}
-            </p>
-            {cod.cashLimit > 0 ? (
-              <p className="text-muted-foreground mt-0.5 text-[11px]">
-                {t("codLimitLine", { limit: money(cod.cashLimit) })}
-              </p>
-            ) : null}
-          </div>
-          <div className="rounded-xl border p-3">
-            <p className="text-muted-foreground text-xs font-medium">
-              {t("earnings")}
-            </p>
-            <p className="mt-1 text-lg font-semibold" dir="ltr">
-              {money(cash.earnings)}
-            </p>
-          </div>
-        </Link>
-      ) : null}
+      <LocationShare currentGovernorate={location?.governorate ?? null} />
 
       <div>
         <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
