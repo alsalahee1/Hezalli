@@ -3,7 +3,11 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
 import { courierCodStatus } from "@/lib/cod-guard";
-import { capacityFor, subOrderMetrics } from "@/lib/courier-capacity";
+import {
+  capacityFor,
+  effectiveVehicleCapacity,
+  subOrderMetrics,
+} from "@/lib/courier-capacity";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { courierRating } from "@/lib/courier-ratings";
 import { prisma } from "@/lib/prisma";
@@ -73,7 +77,10 @@ export async function CourierDetailView({
     (a, b) => a + b.weightGrams,
     0,
   );
-  const capacity = capacityFor(courier.courierVehicleType);
+  const capacity = capacityFor(
+    courier.courierVehicleType,
+    await effectiveVehicleCapacity(),
+  );
 
   const money = (n: number) =>
     format.number(n, { style: "currency", currency: "USD" });

@@ -11,6 +11,7 @@ import {
   DEFAULT_ITEM_WEIGHT_GRAMS,
   hasRoomFor,
   isFreightClass,
+  mergeVehicleCapacity,
   metricsOfItems,
   PACKING_FACTOR,
   type ParcelMetrics,
@@ -56,6 +57,37 @@ describe("capacityFor", () => {
     expect(capacityFor(null)).toBeNull();
     expect(capacityFor(undefined)).toBeNull();
     expect(capacityFor("rocket")).toBeNull();
+  });
+});
+
+describe("mergeVehicleCapacity", () => {
+  it("returns the defaults untouched for empty/garbage overrides", () => {
+    expect(mergeVehicleCapacity(null)).toEqual(VEHICLE_CAPACITY);
+    expect(mergeVehicleCapacity(undefined)).toEqual(VEHICLE_CAPACITY);
+    expect(mergeVehicleCapacity("junk")).toEqual(VEHICLE_CAPACITY);
+    expect(mergeVehicleCapacity({ rocket: { maxWeightGrams: 1 } })).toEqual(
+      VEHICLE_CAPACITY,
+    );
+  });
+
+  it("merges valid overrides field-by-field", () => {
+    const merged = mergeVehicleCapacity({
+      motorbike: { maxWeightGrams: 15_000, maxParcels: 20 },
+    });
+    expect(merged.motorbike.maxWeightGrams).toBe(15_000);
+    expect(merged.motorbike.maxParcels).toBe(20);
+    // Unspecified fields keep the shipped defaults; other vehicles untouched.
+    expect(merged.motorbike.maxVolumeCm3).toBe(
+      VEHICLE_CAPACITY.motorbike.maxVolumeCm3,
+    );
+    expect(merged.van).toEqual(VEHICLE_CAPACITY.van);
+  });
+
+  it("ignores malformed or out-of-range values per field", () => {
+    const merged = mergeVehicleCapacity({
+      motorbike: { maxWeightGrams: -5, maxParcels: "ten", maxVolumeCm3: 1e12 },
+    });
+    expect(merged.motorbike).toEqual(VEHICLE_CAPACITY.motorbike);
   });
 });
 

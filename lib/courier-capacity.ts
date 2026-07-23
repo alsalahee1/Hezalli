@@ -153,12 +153,60 @@ export function parseDimensions(value: unknown): DimensionsCm | null {
     : null;
 }
 
+// Ops can tune the vehicle profiles from the delivery-manager portal without
+// a deploy: overrides live in the PlatformSetting table under this key as
+// { [vehicleType]: Partial<VehicleCapacity> } and are merged over the code
+// defaults — so clearing a vehicle's override reverts it to the shipped
+// numbers. Managed by setVehicleCapacity (lib/actions/courier.ts), audited.
+export const VEHICLE_CAPACITY_SETTING_KEY = "vehicle_capacity";
+
+/**
+ * Merge stored overrides over the shipped VEHICLE_CAPACITY defaults. Unknown
+ * vehicles and malformed/out-of-range values are ignored field-by-field, so a
+ * bad write can never take the capacity table down.
+ */
+export function mergeVehicleCapacity(
+  overrides: unknown,
+): Record<string, VehicleCapacity> {
+  const out: Record<string, VehicleCapacity> = { ...VEHICLE_CAPACITY };
+  if (typeof overrides !== "object" || overrides === null) return out;
+  const num = (v: unknown, max: number): number | null =>
+    typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= max
+      ? Math.round(v)
+      : null;
+  for (const [vehicle, raw] of Object.entries(overrides)) {
+    const base = out[vehicle];
+    if (!base || typeof raw !== "object" || raw === null) continue;
+    const c = raw as Record<string, unknown>;
+    out[vehicle] = {
+      maxWeightGrams: num(c.maxWeightGrams, 20_000_000) ?? base.maxWeightGrams,
+      maxVolumeCm3: num(c.maxVolumeCm3, 100_000_000) ?? base.maxVolumeCm3,
+      maxParcels: num(c.maxParcels, 500) ?? base.maxParcels,
+      maxItemLongestSideCm:
+        num(c.maxItemLongestSideCm, 2_000) ?? base.maxItemLongestSideCm,
+    };
+  }
+  return out;
+}
+
+/** The live capacity table: stored overrides merged over the code defaults. */
+export async function effectiveVehicleCapacity(): Promise<
+  Record<string, VehicleCapacity>
+> {
+  const row = await prisma.platformSetting.findUnique({
+    where: { key: VEHICLE_CAPACITY_SETTING_KEY },
+    select: { value: true },
+  });
+  return mergeVehicleCapacity(row?.value);
+}
+
 /** The carrying profile for a vehicle, or null when the vehicle is unknown. */
 export function capacityFor(
   vehicleType: string | null | undefined,
+  table: Record<string, VehicleCapacity> = VEHICLE_CAPACITY,
 ): VehicleCapacity | null {
   if (!vehicleType) return null;
-  return VEHICLE_CAPACITY[vehicleType] ?? null;
+  return table[vehicleType] ?? null;
 }
 
 /**
@@ -176,8 +224,9 @@ export function hasRoomFor(
     loadVolumeCm3: number;
   },
   parcel: ParcelMetrics,
+  table: Record<string, VehicleCapacity> = VEHICLE_CAPACITY,
 ): boolean {
-  const cap = capacityFor(courier.vehicleType);
+  const cap = capacityFor(courier.vehicleType, table);
   if (!cap) return true;
   return (
     courier.load < cap.maxParcels &&

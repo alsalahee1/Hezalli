@@ -154,6 +154,11 @@ const DELIVERY_MANAGER_NAV: NavItem[] = [
     key: "deliveryDefaults",
     icon: Shapes,
   },
+  {
+    href: "/delivery-manager/vehicles",
+    key: "vehicleCapacity",
+    icon: Truck,
+  },
   { href: "/delivery-manager/how", key: "how", icon: BookOpen },
 ];
 const DELIVERY_MANAGER_PRIMARY = [
