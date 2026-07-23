@@ -7,6 +7,7 @@
 // the drivers sleep.
 import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import { isDispatchOpen } from "@/lib/dispatch-hours";
+import { boardShipment } from "@/lib/job-board";
 import { notify } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -19,13 +20,14 @@ const REESCALATE_HOURS = 24;
 export async function sweepCourierOffers(): Promise<{
   expired: number;
   waved: number;
+  boarded: number;
   reescalated: number;
 }> {
   const settings = await getPlatformSettings();
   if (
     !isDispatchOpen(settings.dispatch_hours_start, settings.dispatch_hours_end)
   ) {
-    return { expired: 0, waved: 0, reescalated: 0 };
+    return { expired: 0, waved: 0, boarded: 0, reescalated: 0 };
   }
 
   // 1. Expire lapsed offers and move those parcels to the next courier.
@@ -87,8 +89,15 @@ export async function sweepCourierOffers(): Promise<{
   // direct parcels not yet picked up, and point-routed parcels received at
   // their DESTINATION point (a parcel held at its origin hub is waiting for
   // line-haul, not a doorstep driver; PUDO parcels never get one).
+  //
+  // With the job board on (docs/EXPRESS-DELIVERY.md §4b) each parcel goes
+  // through two stages here: not yet boarded → post it on the board; boarded
+  // but unclaimed past `job_board_window_minutes` → start the push-offer
+  // cascade as well (only when auto-assign is on — a pure-pull marketplace
+  // just leaves it claimable). Board off = the classic wave, unchanged.
   let waved = 0;
-  if (settings.express_auto_assign) {
+  let boarded = 0;
+  if (settings.express_auto_assign || settings.job_board_enabled) {
     const queued = await prisma.shipment.findMany({
       where: {
         platformManaged: true,
@@ -110,13 +119,29 @@ export async function sweepCourierOffers(): Promise<{
         status: true,
         atPointId: true,
         deliveryPointId: true,
+        boardedAt: true,
       },
     });
+    const boardCutoff = new Date(
+      Date.now() - settings.job_board_window_minutes * 60_000,
+    );
     for (const s of queued) {
       // Prisma can't compare two columns in `where`; do the "at destination"
       // check here.
       if (s.status === "AT_POINT" && s.atPointId !== s.deliveryPointId) {
         continue;
+      }
+      if (settings.job_board_enabled && !s.boardedAt) {
+        const posted = await boardShipment(s.id).catch(() => false);
+        if (posted) boarded += 1;
+        continue; // Its board-only window starts now; push comes later.
+      }
+      if (
+        settings.job_board_enabled &&
+        s.boardedAt &&
+        (!settings.express_auto_assign || s.boardedAt > boardCutoff)
+      ) {
+        continue; // Still board-only, or pull-only mode — leave it claimable.
       }
       const got = await cascadeShipmentOffer(s.id).catch(() => null);
       if (got) waved += 1;
@@ -170,5 +195,5 @@ export async function sweepCourierOffers(): Promise<{
     );
   }
 
-  return { expired, waved, reescalated: stale.length };
+  return { expired, waved, boarded, reescalated: stale.length };
 }

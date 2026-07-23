@@ -224,7 +224,8 @@ export async function placeOrder(
   const anyFreight = freightGroups.size > 0;
   let deliveryWindow: { date: Date; slot: string } | null = null;
   if (input.deliveryDate?.trim() || input.deliverySlot?.trim()) {
-    if (!anyExpress && !anyFreight) return { error: "deliveryWindowNotExpress" };
+    if (!anyExpress && !anyFreight)
+      return { error: "deliveryWindowNotExpress" };
     const windowDays = await getSetting("delivery_window_days");
     const parsed = parseDeliveryWindow(
       input.deliveryDate,

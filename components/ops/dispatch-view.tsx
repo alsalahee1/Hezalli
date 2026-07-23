@@ -101,9 +101,7 @@ export async function DispatchView({ base }: { base: string }) {
       c.courierVehicleType
         ? tCouriers(`vehicle_${c.courierVehicleType}`)
         : null,
-      load
-        ? t("optionLoad", { count: load.count, kg: kg(load.grams) })
-        : null,
+      load ? t("optionLoad", { count: load.count, kg: kg(load.grams) }) : null,
       stats?.rate != null ? `${Math.round(stats.rate * 100)}%` : null,
     ].filter(Boolean);
     return { id: c.id, name: parts.join(" · ") };
@@ -247,7 +245,9 @@ export async function DispatchView({ base }: { base: string }) {
                   <span className="ms-2 inline-flex items-center gap-1">
                     <Weight className="size-3.5" />
                     {t("parcelWeight", {
-                      kg: kg(metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0),
+                      kg: kg(
+                        metricsBySubOrder.get(s.subOrder.id)?.weightGrams ?? 0,
+                      ),
                     })}
                   </span>
                   {metricsBySubOrder.get(s.subOrder.id)?.freight ? (

@@ -376,8 +376,7 @@ export default async function ProductPage({
               storeId: product.storeId,
               storeName: product.store.name,
               storeSlug: product.store.slug,
-              sizeClass:
-                product.sizeClass ?? product.category.defaultSizeClass,
+              sizeClass: product.sizeClass ?? product.category.defaultSizeClass,
             }}
           />
 

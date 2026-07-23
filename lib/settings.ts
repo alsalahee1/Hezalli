@@ -40,6 +40,18 @@ export type PlatformSettings = {
   // dispatch staff are alerted instead.
   courier_offer_timeout_minutes: number;
   courier_offer_max_rounds: number;
+  // Open driver job board (lib/job-board.ts). When on, a shipped platform
+  // parcel is posted on a board every eligible courier can see — with the
+  // destination, size, COD amount, and the delivery fee — and the first driver
+  // to claim it takes it. Window is how many minutes the parcel stays
+  // board-only before the push-offer cascade ALSO starts chasing a driver
+  // (0 = push-offers start immediately alongside the board; the parcel stays
+  // claimable either way until someone actually holds it). Max active jobs
+  // caps how many in-flight deliveries a driver may hold and still claim more
+  // (0 = no cap) — an anti-hoarding guard, not a scheduling tool.
+  job_board_enabled: boolean;
+  job_board_window_minutes: number;
+  job_board_max_active_jobs: number;
   // Dispatch working hours, platform local time (Asia/Aden, UTC+3). Outside
   // the window nothing is auto-offered and offer clocks pause; parcels queued
   // overnight go out in the first sweep after opening. start == end = 24/7.
@@ -152,6 +164,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   courier_assign_strategy: "balanced",
   courier_offer_timeout_minutes: 60,
   courier_offer_max_rounds: 3,
+  job_board_enabled: false,
+  job_board_window_minutes: 15,
+  job_board_max_active_jobs: 10,
   dispatch_hours_start: 8,
   dispatch_hours_end: 21,
   seller_ship_days: 5,

@@ -93,7 +93,11 @@ export function WalletSecurityDialog({
         {children}
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} closeLabel={t("cancel")}>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        closeLabel={t("cancel")}
+      >
         <div className="space-y-4">
           <div>
             <h3 className="flex items-center gap-2 font-semibold">

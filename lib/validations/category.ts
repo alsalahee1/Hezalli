@@ -34,7 +34,11 @@ export const categorySchema = z.object({
     z.null(),
   ]),
   defaultWeightGrams: z.union([
-    z.coerce.number().int().min(0, "weightInvalid").max(5_000_000, "weightInvalid"),
+    z.coerce
+      .number()
+      .int()
+      .min(0, "weightInvalid")
+      .max(5_000_000, "weightInvalid"),
     z.null(),
   ]),
   defaultDimensionsCm: z.union([

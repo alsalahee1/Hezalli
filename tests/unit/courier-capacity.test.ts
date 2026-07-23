@@ -245,9 +245,9 @@ describe("hasRoomFor", () => {
       volumeCm3: 5_000,
       longestSideCm: 200,
     });
-    expect(hasRoomFor(courier({ id: "b", vehicleType: "motorbike" }), rod)).toBe(
-      false,
-    );
+    expect(
+      hasRoomFor(courier({ id: "b", vehicleType: "motorbike" }), rod),
+    ).toBe(false);
     expect(hasRoomFor(courier({ id: "c", vehicleType: "car" }), rod)).toBe(
       false, // car max 180 cm
     );
@@ -261,7 +261,11 @@ describe("hasRoomFor", () => {
     expect(
       hasRoomFor(
         legacy,
-        parcel({ weightGrams: 1_000_000, volumeCm3: 10_000_000, longestSideCm: 500 }),
+        parcel({
+          weightGrams: 1_000_000,
+          volumeCm3: 10_000_000,
+          longestSideCm: 500,
+        }),
       ),
     ).toBe(true);
   });
@@ -332,7 +336,11 @@ describe("pickFrom (freight)", () => {
     expect(
       pickFrom([truck], "balanced", {
         destGovernorate: "Aden",
-        metrics: parcel({ weightGrams: 200_000, oversized: true, freight: true }),
+        metrics: parcel({
+          weightGrams: 200_000,
+          oversized: true,
+          freight: true,
+        }),
       }),
     ).toBeNull();
   });

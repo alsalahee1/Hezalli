@@ -43,8 +43,7 @@ function parse(formData: FormData) {
     isActive: formData.get("isActive") === "on",
     defaultSizeClass: formData.get("defaultSizeClass") || null,
     defaultWeightGrams: formData.get("defaultWeightGrams") || null,
-    defaultDimensionsCm:
-      dims.l > 0 && dims.w > 0 && dims.h > 0 ? dims : null,
+    defaultDimensionsCm: dims.l > 0 && dims.w > 0 && dims.h > 0 ? dims : null,
   });
 }
 
