@@ -109,7 +109,10 @@ Two refinements apply under both strategies (`lib/courier-capacity.ts`):
   trip instead of fanning out across the fleet one-parcel-per-driver.
 
 Ops can always reassign from the dispatch board — capacity gates the automatic
-paths only (same philosophy as the COD credit guard).
+paths only (same philosophy as the COD credit guard). To keep manual calls
+informed, the dispatch board shows each parcel's weight and each courier's
+vehicle + current load in the assign pickers, and a courier's vehicle can be
+changed (audited, `setCourierVehicle`) from their admin detail page.
 
 ## 5. Operating it — by role
 

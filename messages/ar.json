@@ -2277,7 +2277,9 @@
     "bulkPickDriver": "اختر سائقاً…",
     "bulkAssign": "إسناد المنطقة",
     "bulkAssigned": "{count, plural, zero {تم إسناد # طرد} one {تم إسناد طرد واحد} two {تم إسناد طردين} few {تم إسناد # طرود} many {تم إسناد # طرداً} other {تم إسناد # طرد}}",
-    "performance": "الأداء"
+    "performance": "الأداء",
+    "optionLoad": "{count} طرد · {kg} كجم",
+    "parcelWeight": "{kg} كجم"
   },
   "Drive": {
     "title": "وصّل مع هزلي",
@@ -2409,6 +2411,14 @@
     "vehicle_bicycle": "دراجة هوائية",
     "vehicle_van": "شاحنة صغيرة",
     "vehicle_foot": "سيراً على الأقدام",
+    "vehicleTitle": "المركبة والسعة",
+    "vehicleHint": "التعيين التلقائي لا يسند لهذا السائق إلا الطرود التي تستطيع مركبته حملها — بالوزن الإجمالي وعدد الطرود. بدون مركبة لا توجد حدود.",
+    "vehicleLabel": "المركبة",
+    "vehicleNone": "بدون مركبة (بلا حدود سعة)",
+    "loadNow": "الحمولة الآن: {count} طرود · {kg} كجم",
+    "capacityLimits": "حدود المركبة: {maxKg} كجم، {maxParcels} طرود",
+    "saving": "جارٍ الحفظ…",
+    "saveError": "تعذّر الحفظ",
     "status_PENDING": "معلّق",
     "status_APPROVED": "مقبول",
     "status_REJECTED": "مرفوض",

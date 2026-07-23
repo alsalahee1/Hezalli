@@ -7,9 +7,11 @@ import {
   Package,
   RotateCcw,
   Route,
+  Weight,
 } from "lucide-react";
 
 import { requireDeliveryManagerId } from "@/lib/authz";
+import { subOrderWeights } from "@/lib/courier-capacity";
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSettings } from "@/lib/settings";
@@ -42,6 +44,7 @@ export async function DispatchView({ base }: { base: string }) {
         attemptCount: true,
         subOrder: {
           select: {
+            id: true,
             shippingMethod: true,
             order: {
               select: {
@@ -61,16 +64,44 @@ export async function DispatchView({ base }: { base: string }) {
       select: {
         id: true,
         name: true,
+        courierVehicleType: true,
         courierLocation: { select: { governorate: true } },
       },
     }),
     getPlatformSettings(),
   ]);
 
+  // Parcel weights (the same numbers capacity-aware auto-assignment uses),
+  // both per row and summed per assigned courier so the pickers show what a
+  // driver is already carrying.
+  const weightBySubOrder = await subOrderWeights(
+    shipments.map((s) => s.subOrder.id),
+  );
+  const kg = (grams: number) =>
+    format.number(grams / 1000, { maximumFractionDigits: 1 });
+  const loadByDriver = new Map<string, { count: number; grams: number }>();
+  for (const s of shipments) {
+    if (!s.driverId) continue;
+    const cur = loadByDriver.get(s.driverId) ?? { count: 0, grams: 0 };
+    cur.count += 1;
+    cur.grams += weightBySubOrder.get(s.subOrder.id) ?? 0;
+    loadByDriver.set(s.driverId, cur);
+  }
+
+  const tCouriers = await getTranslations("AdminCouriers");
   const courierOptions = couriers.map((c) => {
-    const base = c.name ?? c.id.slice(-6);
-    const gov = c.courierLocation?.governorate;
-    return { id: c.id, name: gov ? `${base} · ${gov}` : base };
+    const load = loadByDriver.get(c.id);
+    const parts = [
+      c.name ?? c.id.slice(-6),
+      c.courierLocation?.governorate,
+      c.courierVehicleType
+        ? tCouriers(`vehicle_${c.courierVehicleType}`)
+        : null,
+      load
+        ? t("optionLoad", { count: load.count, kg: kg(load.grams) })
+        : null,
+    ].filter(Boolean);
+    return { id: c.id, name: parts.join(" · ") };
   });
 
   const now = new Date();
@@ -208,6 +239,12 @@ export async function DispatchView({ base }: { base: string }) {
                       {s.trackingNumber}
                     </span>
                   ) : null}
+                  <span className="ms-2 inline-flex items-center gap-1">
+                    <Weight className="size-3.5" />
+                    {t("parcelWeight", {
+                      kg: kg(weightBySubOrder.get(s.subOrder.id) ?? 0),
+                    })}
+                  </span>
                 </p>
                 {s.due ? (
                   <p

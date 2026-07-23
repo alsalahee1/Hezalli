@@ -11,6 +11,7 @@ import { sendPushToUser } from "@/lib/push";
 import { settleReturnedSubOrder } from "@/lib/return-core";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
+import { VEHICLE_TYPES } from "@/lib/validations/courier";
 import { nearestGovernorate } from "@/lib/yemen-geo";
 
 type Result = { ok?: boolean; error?: string };
@@ -110,6 +111,54 @@ export async function assignCourier(
 
   revalidatePath(`/${locale}/admin/dispatch`);
   revalidatePath(`/${locale}/driver`);
+  return { ok: true };
+}
+
+// Ops sets (or clears) the vehicle a courier drives, which controls how much
+// weight and how many parcels auto-assignment will hand them
+// (lib/courier-capacity.ts). Normally copied from the approved application;
+// this covers vehicle changes and couriers who were granted the role without
+// one. Audited, since it changes who receives work.
+export async function setCourierVehicle(
+  courierId: string,
+  vehicleType: string,
+): Promise<Result> {
+  const adminId = await requireDeliveryManagerId();
+  if (!adminId) return { error: "forbidden" };
+
+  const vehicle = vehicleType.trim();
+  if (vehicle && !(VEHICLE_TYPES as readonly string[]).includes(vehicle)) {
+    return { error: "badVehicle" };
+  }
+
+  const courier = await prisma.user.findFirst({
+    where: { id: courierId, roles: { has: "COURIER" }, deletedAt: null },
+    select: { id: true, courierVehicleType: true },
+  });
+  if (!courier) return { error: "notFound" };
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: courier.id },
+      data: { courierVehicleType: vehicle || null },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "courier.vehicle",
+        entity: "User",
+        entityId: courier.id,
+        meta: {
+          from: courier.courierVehicleType,
+          to: vehicle || null,
+        },
+      },
+    }),
+  ]);
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/couriers/${courier.id}`);
+  revalidatePath(`/${locale}/admin/dispatch`);
   return { ok: true };
 }
 

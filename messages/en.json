@@ -2277,7 +2277,9 @@
     "bulkPickDriver": "Pick a driver…",
     "bulkAssign": "Assign area",
     "bulkAssigned": "{count, plural, one {# parcel assigned} other {# parcels assigned}}",
-    "performance": "Performance"
+    "performance": "Performance",
+    "optionLoad": "{count} pcs · {kg} kg",
+    "parcelWeight": "{kg} kg"
   },
   "Drive": {
     "title": "Deliver with Hezalli",
@@ -2409,6 +2411,14 @@
     "vehicle_bicycle": "Bicycle",
     "vehicle_van": "Van",
     "vehicle_foot": "On foot",
+    "vehicleTitle": "Vehicle & capacity",
+    "vehicleHint": "Auto-assignment only hands this driver parcels their vehicle can carry — by total weight and number of parcels. Without a vehicle there are no limits.",
+    "vehicleLabel": "Vehicle",
+    "vehicleNone": "No vehicle (no capacity limits)",
+    "loadNow": "Carrying now: {count} parcels · {kg} kg",
+    "capacityLimits": "vehicle limits: {maxKg} kg, {maxParcels} parcels",
+    "saving": "Saving…",
+    "saveError": "Could not save",
     "status_PENDING": "Pending",
     "status_APPROVED": "Approved",
     "status_REJECTED": "Rejected",
