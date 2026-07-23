@@ -9,6 +9,7 @@ import { redirect, Link } from "@/i18n/navigation";
 import { Forbidden } from "@/components/auth/forbidden";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { PointTabBar } from "@/components/point/point-tab-bar";
+import type { PointAccess } from "@/lib/point-access";
 
 // Scope the installable-app metadata to the point section only (same pattern
 // as the driver app) so operators can pin "Hezalli Point" to a phone or the
@@ -26,8 +27,10 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
 };
 
-// Phone/counter-first shell for Hezalli Point operators. Gated to the
-// DELIVERY_POINT role owning an ACTIVE point (checked against the DB).
+// Phone/counter-first shell for everyone working at a Hezalli Point: the
+// DELIVERY_POINT operator owning an ACTIVE point, or an active PointStaff
+// member of one (docs §42d) — both checked against the DB. The resolved
+// access tier drives which tabs the shell shows.
 export default async function PointLayout({
   children,
 }: {
@@ -44,16 +47,36 @@ export default async function PointLayout({
       isSuspended: true,
       deletedAt: true,
       deliveryPoint: { select: { status: true } },
+      pointStaff: {
+        select: {
+          role: true,
+          isActive: true,
+          point: { select: { status: true } },
+        },
+      },
     },
   });
   if (!user || user.deletedAt) redirect({ href: "/login", locale });
   if (user!.isSuspended) return <Forbidden />;
-  // Not an operator yet → send them to apply rather than bounce to the shop.
-  if (!user!.roles.includes("DELIVERY_POINT")) {
+
+  const staff = user!.pointStaff;
+  let access: PointAccess;
+  if (user!.roles.includes("DELIVERY_POINT")) {
+    // Suspended point: role kept, access paused.
+    if (user!.deliveryPoint?.status !== "ACTIVE") return <Forbidden />;
+    access = "OWNER";
+  } else if (staff) {
+    // Deactivated membership or suspended hub: keep the row, pause access.
+    if (!staff.isActive || staff.point.status !== "ACTIVE") {
+      return <Forbidden />;
+    }
+    access = staff.role;
+  } else {
+    // Not an operator or employee → send them to apply rather than bounce
+    // to the shop.
     redirect({ href: "/point-partner", locale });
+    return null;
   }
-  // Suspended point: role kept, access paused.
-  if (user!.deliveryPoint?.status !== "ACTIVE") return <Forbidden />;
 
   const t = await getTranslations("Point");
 
@@ -93,7 +116,7 @@ export default async function PointLayout({
 
       <main className="flex-1 px-4 py-4 pb-20">{children}</main>
 
-      <PointTabBar />
+      <PointTabBar access={access} />
     </div>
   );
 }

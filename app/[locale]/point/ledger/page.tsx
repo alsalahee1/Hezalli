@@ -1,9 +1,10 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { FileText, Wallet } from "lucide-react";
 
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { canMoveEarnings, canViewMoney } from "@/lib/point-access";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { transferPointEarningsToWallet } from "@/lib/actions/earnings-wallet";
 import { prisma } from "@/lib/prisma";
@@ -23,6 +24,10 @@ export default async function PointLedgerPage({
 }) {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
+  // Money view: hidden from cashiers/organizers (docs §42d).
+  if (!canViewMoney(gate.access)) {
+    redirect({ href: "/point", locale: await getLocale() });
+  }
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const t = await getTranslations("Point");
@@ -202,13 +207,19 @@ export default async function PointLedgerPage({
       ) : null}
 
       {/* Sweep the earnings balance straight into the HezalliPay wallet
-          (instant), or ask Hezalli to pay it out to a rail (docs §22). */}
-      <MoveEarningsToWallet
-        action={transferPointEarningsToWallet}
-        namespace="Point"
-        disabled={summary.balance <= 0}
-      />
-      <PayoutRequestForm free={summary.balance} hasOpen={hasOpen} />
+          (instant), or ask Hezalli to pay it out to a rail (docs §22).
+          Owner only — both pay the OWNER, so staff never see the forms
+          (and the actions refuse them anyway). */}
+      {canMoveEarnings(gate.access) ? (
+        <>
+          <MoveEarningsToWallet
+            action={transferPointEarningsToWallet}
+            namespace="Point"
+            disabled={summary.balance <= 0}
+          />
+          <PayoutRequestForm free={summary.balance} hasOpen={hasOpen} />
+        </>
+      ) : null}
       {payoutRequests.length > 0 ? (
         <ul className="divide-y rounded-xl border">
           {payoutRequests.map((r) => (

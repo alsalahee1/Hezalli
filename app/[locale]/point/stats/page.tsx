@@ -9,10 +9,13 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { getLocale } from "next-intl/server";
+
 import { requireDeliveryPoint } from "@/lib/authz";
+import { canViewMoney } from "@/lib/point-access";
 import { monthRange } from "@/lib/point-statement";
 import { hubSummary } from "@/lib/point-stats";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 
 // The hub's own scoreboard: the per-hub numbers admins already see on the
 // Reports page (lib/point-stats.ts), month by month, plus all-time totals —
@@ -24,6 +27,10 @@ export default async function PointStatsPage({
 }) {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
+  // Fees/earnings on this page → money view only (docs §42d).
+  if (!canViewMoney(gate.access)) {
+    redirect({ href: "/point", locale: await getLocale() });
+  }
   const { month } = await searchParams;
   const t = await getTranslations("Point");
   const format = await getFormatter();

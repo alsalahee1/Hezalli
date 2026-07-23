@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireCourierId, requireDeliveryPoint } from "@/lib/authz";
+import { canMoveEarnings } from "@/lib/point-access";
 import { prisma } from "@/lib/prisma";
 import {
   creditWalletTx,
@@ -114,7 +115,9 @@ export async function transferPointEarningsToWallet(
   amountUsd?: number,
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
-  if (!gate) return { error: "forbidden" };
+  // Owner only: this credits the CALLER's wallet, so an employee triggering
+  // it would move the hub's earnings into their own pocket.
+  if (!gate || !canMoveEarnings(gate.access)) return { error: "forbidden" };
   const walletId = await getWalletId(gate.userId);
 
   let moved = 0;

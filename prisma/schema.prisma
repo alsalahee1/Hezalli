@@ -228,75 +228,76 @@ enum NotificationType {
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  phone         String?   @unique
-  phoneVerified DateTime?
-  passwordHash  String?
-  image         String?
-  roles         Role[]    @default([BUYER])
-  locale        String    @default("ar")
+  id                String    @id @default(cuid())
+  name              String?
+  email             String?   @unique
+  emailVerified     DateTime?
+  phone             String?   @unique
+  phoneVerified     DateTime?
+  passwordHash      String?
+  image             String?
+  roles             Role[]    @default([BUYER])
+  locale            String    @default("ar")
   // Home governorate chosen at signup (optional). Sets the buyer's default
   // currency zone — which Yemeni rial prices show in — before they've added a
   // shipping address (lib/currency.ts). Not a shipping address itself.
-  homeGovernorate String?
+  homeGovernorate   String?
   notificationPrefs Json?
-  isSuspended   Boolean   @default(false)
-  deletedAt     DateTime?
+  isSuspended       Boolean   @default(false)
+  deletedAt         DateTime?
   // Loyalty (Step 17.9): points balance + referral graph.
-  loyaltyPoints Int       @default(0)
-  referralCode  String?   @unique
-  referredById  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  loyaltyPoints     Int       @default(0)
+  referralCode      String?   @unique
+  referredById      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  addresses      Address[]
-  sellerProfile  SellerProfile?
-  cart           Cart?
-  wishlist       Wishlist?
-  recentlyViewed RecentlyViewed[]
-  orders         Order[]
-  reviews        Review[]
-  returnRequests ReturnRequest[]
-  notifications  Notification[]
-  conversations  Conversation[]
-  follows        StoreFollow[]
-  accounts       Account[]
-  sessions       Session[]
-  referredBy     User?    @relation("Referrals", fields: [referredById], references: [id])
-  referrals      User[]   @relation("Referrals")
-  loyaltyTxns    LoyaltyTransaction[]
-  wallet         Wallet?
-  walletCredentials WalletCredential[]
-  walletWebauthnChallenge WalletWebauthnChallenge?
-  courierShipments Shipment[] @relation("CourierShipments")
-  courierLocation  CourierLocation?
-  courierApplication CourierApplication?
-  courierLedger    CourierLedgerEntry[] @relation("CourierLedger")
-  remitClaims      RemitClaim[] @relation("CourierRemitClaims")
-  pushSubscriptions PushSubscription[]
-  deliveryPoint    DeliveryPoint? @relation("PointOwner")
+  addresses                Address[]
+  sellerProfile            SellerProfile?
+  cart                     Cart?
+  wishlist                 Wishlist?
+  recentlyViewed           RecentlyViewed[]
+  orders                   Order[]
+  reviews                  Review[]
+  returnRequests           ReturnRequest[]
+  notifications            Notification[]
+  conversations            Conversation[]
+  follows                  StoreFollow[]
+  accounts                 Account[]
+  sessions                 Session[]
+  referredBy               User?                     @relation("Referrals", fields: [referredById], references: [id])
+  referrals                User[]                    @relation("Referrals")
+  loyaltyTxns              LoyaltyTransaction[]
+  wallet                   Wallet?
+  walletCredentials        WalletCredential[]
+  walletWebauthnChallenge  WalletWebauthnChallenge?
+  courierShipments         Shipment[]                @relation("CourierShipments")
+  courierLocation          CourierLocation?
+  courierApplication       CourierApplication?
+  courierLedger            CourierLedgerEntry[]      @relation("CourierLedger")
+  remitClaims              RemitClaim[]              @relation("CourierRemitClaims")
+  pushSubscriptions        PushSubscription[]
+  deliveryPoint            DeliveryPoint?            @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
+  pointStaff               PointStaff?               @relation("PointStaffUser")
   // Security deposit Hezalli holds from this courier (docs §32). Optional —
   // raises the driver's COD cash limit 1:1. Set by admins only, audited.
-  courierDepositUsd Decimal @default(0) @db.Decimal(12, 2)
+  courierDepositUsd        Decimal                   @default(0) @db.Decimal(12, 2)
   // The vehicle this courier drives (motorbike | car | bicycle | van | foot),
   // copied from their approved CourierApplication. Auto-assignment uses it to
   // match parcel weight/count to what the vehicle can carry
   // (lib/courier-capacity.ts). Null = unknown → treated as unconstrained.
-  courierVehicleType String?
+  courierVehicleType       String?
   // Vacation mode: while set, the courier gets NO new work from any automatic
   // path (assignment, offers, board pings, board claims) — jobs they already
   // carry stay theirs, and manual dispatch can still assign. Self-service
   // toggle from the driver app; null = active.
-  courierPausedAt  DateTime?
+  courierPausedAt          DateTime?
   // Fleet-partner tier: a courier may belong to a fleet (fleetId); a user may
   // also OWN one fleet (ownedFleet), which grants the read-only fleet portal.
-  fleetId          String?
-  fleet            Fleet? @relation("FleetMembers", fields: [fleetId], references: [id], onDelete: SetNull)
-  ownedFleet       Fleet? @relation("FleetOwner")
+  fleetId                  String?
+  fleet                    Fleet?                    @relation("FleetMembers", fields: [fleetId], references: [id], onDelete: SetNull)
+  ownedFleet               Fleet?                    @relation("FleetOwner")
 
   @@index([referredById])
   @@index([fleetId])
@@ -368,34 +369,35 @@ enum DeliveryPointStatus {
 // it. The operator is a partner (not staff) and earns a per-parcel handling
 // fee — see DeliveryPointLedgerEntry and docs/DELIVERY-POINTS.md.
 model DeliveryPoint {
-  id          String              @id @default(cuid())
-  ownerId     String              @unique
-  name        String
-  phone       String
-  governorate String
-  city        String
-  addressLine String
-  lat         Float?
-  lng         Float?
+  id             String                     @id @default(cuid())
+  ownerId        String                     @unique
+  name           String
+  phone          String
+  governorate    String
+  city           String
+  addressLine    String
+  lat            Float?
+  lng            Float?
   // Max parcels held/inbound at once (null = unlimited). Gates NEW routing
   // only — counter scans always accept announced parcels. See §8 of the docs.
-  capacity    Int?
+  capacity       Int?
   // Security deposit Hezalli holds from this operator (docs §32). Optional —
   // raises the point's unremitted-cash limit 1:1. Admin-set, audited.
-  depositUsd  Decimal             @default(0) @db.Decimal(12, 2)
+  depositUsd     Decimal                    @default(0) @db.Decimal(12, 2)
   // Vacation mode: while set, the hub gets NO new routing (pickers +
   // server re-check) and drops off the public directory; announced parcels
   // are still accepted at the counter and held ones stay collectible.
   // Self-service toggle from the point app; null = open.
-  pausedAt    DateTime?
-  status      DeliveryPointStatus @default(ACTIVE)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  owner       User                @relation("PointOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  shipments   Shipment[]
-  ledger      DeliveryPointLedgerEntry[]
+  pausedAt       DateTime?
+  status         DeliveryPointStatus        @default(ACTIVE)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  owner          User                       @relation("PointOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  shipments      Shipment[]
+  ledger         DeliveryPointLedgerEntry[]
   payoutRequests PointPayoutRequest[]
-  remitClaims RemitClaim[]
+  remitClaims    RemitClaim[]
+  staff          PointStaff[]
 
   @@index([governorate, status])
 }
@@ -417,6 +419,38 @@ model PointPayoutRequest {
 
   @@index([pointId])
   @@index([status])
+}
+
+// Job roles for the extra counter accounts a hub attaches to itself
+// (docs/DELIVERY-POINTS.md §42d). The owner is NOT stored here — owning the
+// point (DeliveryPoint.ownerId) is the implicit fifth, all-powerful tier.
+enum PointStaffRole {
+  MANAGER // runs the shop day-to-day: everything but payouts/earnings moves
+  CASHIER // counter money: buyer COD pickups, driver cash hand-ins
+  COLLECTOR // money collector: cash ops plus ledger/statement visibility
+  ORGANIZER // shelves organizer: receive/re-shelve/hand over parcels, no money
+}
+
+// An employee account working at a delivery point. Membership is the grant —
+// staff do NOT hold the DELIVERY_POINT role; requireDeliveryPoint() admits an
+// active member of an ACTIVE point and reports their access tier so actions
+// and pages can scope what each job may do (lib/point-access.ts). One
+// membership per user (userId unique): a person works at one hub at a time,
+// and a hub owner can never be hired as staff elsewhere.
+model PointStaff {
+  id        String         @id @default(cuid())
+  pointId   String
+  userId    String         @unique
+  role      PointStaffRole
+  // Soft off-switch: keep the row (and its history) but revoke access, e.g.
+  // an employee on leave. Removal deletes the row outright.
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  point     DeliveryPoint  @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  user      User           @relation("PointStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([pointId])
 }
 
 // One "become a delivery point" application per user, mirroring
@@ -595,49 +629,49 @@ model Address {
 // ---------------------------------------------------------------------------
 
 model SellerProfile {
-  id            String         @id @default(cuid())
-  userId        String         @unique
-  kycStatus     KycStatus      @default(NONE)
-  kycDocs       Json?
-  kycReviewedBy String?
-  kycReviewedAt DateTime?
+  id             String         @id @default(cuid())
+  userId         String         @unique
+  kycStatus      KycStatus      @default(NONE)
+  kycDocs        Json?
+  kycReviewedBy  String?
+  kycReviewedAt  DateTime?
   // Per-seller commission override (null = use the platform-wide rate).
-  commissionRate Decimal?      @db.Decimal(5, 4)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  store         Store?
-  balance       SellerBalance?
-  payoutMethods PayoutMethod[]
-  payouts       Payout[]
+  commissionRate Decimal?       @db.Decimal(5, 4)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store          Store?
+  balance        SellerBalance?
+  payoutMethods  PayoutMethod[]
+  payouts        Payout[]
 }
 
 model Store {
-  id            String         @id @default(cuid())
-  sellerId      String         @unique
-  name          String
-  slug          String         @unique
-  logo          String?
-  banner        String?
-  description   String?
-  policies      Json?
-  status        StoreStatus    @default(ACTIVE)
-  isFeatured    Boolean        @default(false)
+  id               String         @id @default(cuid())
+  sellerId         String         @unique
+  name             String
+  slug             String         @unique
+  logo             String?
+  banner           String?
+  description      String?
+  policies         Json?
+  status           StoreStatus    @default(ACTIVE)
+  isFeatured       Boolean        @default(false)
   // Seller tools (Step 17.7): temporary self-close + chat auto-reply.
-  isOnVacation  Boolean        @default(false)
+  isOnVacation     Boolean        @default(false)
   vacationMessage  String?
   autoReplyMessage String?
-  ratingAvg     Float          @default(0)
-  ratingCount   Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  seller        SellerProfile  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  products      Product[]
-  shippingRates ShippingRate[]
-  subOrders     SubOrder[]
-  conversations Conversation[]
-  coupons       Coupon[]
-  followers     StoreFollow[]
+  ratingAvg        Float          @default(0)
+  ratingCount      Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  seller           SellerProfile  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  products         Product[]
+  shippingRates    ShippingRate[]
+  subOrders        SubOrder[]
+  conversations    Conversation[]
+  coupons          Coupon[]
+  followers        StoreFollow[]
 }
 
 model PayoutMethod {
@@ -657,13 +691,13 @@ model PayoutMethod {
 // ---------------------------------------------------------------------------
 
 model Category {
-  id       String     @id @default(cuid())
-  parentId String?
-  name     Json
-  slug     String     @unique
-  icon     String?
-  position Int        @default(0)
-  isActive Boolean    @default(true)
+  id                 String     @id @default(cuid())
+  parentId           String?
+  name               Json
+  slug               String     @unique
+  icon               String?
+  position           Int        @default(0)
+  isActive           Boolean    @default(true)
   // Optional delivery defaults: typical unit size/weight for products in this
   // category, used by capacity-aware dispatch when a product doesn't specify
   // its own (lib/courier-capacity.ts). Set by admins or delivery managers.
@@ -671,9 +705,9 @@ model Category {
   defaultSizeClass   String?
   defaultWeightGrams Int?
   defaultDimensions  Json? // { l, w, h } cm — same shape as Product.dimensions
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryTree")
-  products Product[]
+  parent             Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children           Category[] @relation("CategoryTree")
+  products           Product[]
 
   @@index([parentId])
 }
@@ -699,40 +733,40 @@ model StoreFollow {
 }
 
 model Product {
-  id               String           @id @default(cuid())
-  storeId          String
-  categoryId       String
-  brandId          String?
-  title            Json
-  slug             String           @unique
-  description      Json?
-  status           ProductStatus    @default(ACTIVE)
-  condition        ProductCondition @default(NEW)
-  basePrice        Decimal          @db.Decimal(12, 2)
-  lowStockThreshold Int             @default(0)
+  id                String           @id @default(cuid())
+  storeId           String
+  categoryId        String
+  brandId           String?
+  title             Json
+  slug              String           @unique
+  description       Json?
+  status            ProductStatus    @default(ACTIVE)
+  condition         ProductCondition @default(NEW)
+  basePrice         Decimal          @db.Decimal(12, 2)
+  lowStockThreshold Int              @default(0)
   // Standard package size (envelope | small | medium | large | xlarge |
   // oversized) — the seller-friendly capacity input. Maps to representative
   // weight/dimensions (lib/courier-capacity.ts); the exact fields below
   // override it. xlarge/oversized = freight: direct-only, appointment-required.
-  sizeClass        String?
-  weightGrams      Int?
-  dimensions       Json?
-  moderatedBy      String?
-  moderationReason String?
-  isFeatured       Boolean          @default(false)
-  ratingAvg        Float            @default(0)
-  ratingCount      Int              @default(0)
-  views            Int              @default(0)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  store            Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  category         Category         @relation(fields: [categoryId], references: [id])
-  brand            Brand?           @relation(fields: [brandId], references: [id])
-  variants         ProductVariant[]
-  images           ProductImage[]
-  reviews          Review[]
-  wishlistItems    WishlistItem[]
-  recentlyViewed   RecentlyViewed[]
+  sizeClass         String?
+  weightGrams       Int?
+  dimensions        Json?
+  moderatedBy       String?
+  moderationReason  String?
+  isFeatured        Boolean          @default(false)
+  ratingAvg         Float            @default(0)
+  ratingCount       Int              @default(0)
+  views             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  store             Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category          Category         @relation(fields: [categoryId], references: [id])
+  brand             Brand?           @relation(fields: [brandId], references: [id])
+  variants          ProductVariant[]
+  images            ProductImage[]
+  reviews           Review[]
+  wishlistItems     WishlistItem[]
+  recentlyViewed    RecentlyViewed[]
 
   @@index([storeId])
   @@index([categoryId])
@@ -810,7 +844,7 @@ model CartItem {
   quantity      Int            @default(1)
   savedForLater Boolean        @default(false)
   cart          Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variant       ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, variantId])
   @@index([cartId])
@@ -885,33 +919,33 @@ model Order {
 }
 
 model SubOrder {
-  id             String         @id @default(cuid())
-  orderId        String
-  storeId        String
-  status         SubOrderStatus @default(PENDING)
-  shippingMethod ShippingMethod @default(STANDARD)
+  id                  String         @id @default(cuid())
+  orderId             String
+  storeId             String
+  status              SubOrderStatus @default(PENDING)
+  shippingMethod      ShippingMethod @default(STANDARD)
   // PICKUP only: the Hezalli Point the buyer collects from (plain id — the
   // shipment's deliveryPointId FK is set when the seller ships).
-  pickupPointId  String?
-  itemsTotal     Decimal        @db.Decimal(12, 2)
-  shippingTotal  Decimal        @db.Decimal(12, 2)
-  discountTotal  Decimal        @default(0) @db.Decimal(12, 2)
-  commissionRate Decimal        @default(0.10) @db.Decimal(5, 4)
-  commissionAmt  Decimal        @default(0) @db.Decimal(12, 2)
-  sellerNet      Decimal        @default(0) @db.Decimal(12, 2)
-  completedAt    DateTime?
-  autoCompleteAt DateTime?
+  pickupPointId       String?
+  itemsTotal          Decimal        @db.Decimal(12, 2)
+  shippingTotal       Decimal        @db.Decimal(12, 2)
+  discountTotal       Decimal        @default(0) @db.Decimal(12, 2)
+  commissionRate      Decimal        @default(0.10) @db.Decimal(5, 4)
+  commissionAmt       Decimal        @default(0) @db.Decimal(12, 2)
+  sellerNet           Decimal        @default(0) @db.Decimal(12, 2)
+  completedAt         DateTime?
+  autoCompleteAt      DateTime?
   // One-shot guard for the seller ship-SLA sweep (lib/seller-sla.ts): when the
   // seller was warned that this sub-order is about to auto-cancel unshipped.
   sellerSlaRemindedAt DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  store          Store          @relation(fields: [storeId], references: [id])
-  items          OrderItem[]
-  shipment       Shipment?
-  return         ReturnRequest?
-  reviews        Review[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  order               Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  store               Store          @relation(fields: [storeId], references: [id])
+  items               OrderItem[]
+  shipment            Shipment?
+  return              ReturnRequest?
+  reviews             Review[]
 
   @@index([orderId])
   @@index([storeId])
@@ -920,14 +954,14 @@ model SubOrder {
 }
 
 model OrderItem {
-  id            String   @id @default(cuid())
-  subOrderId    String
-  variantId     String
-  titleSnapshot String
-  skuSnapshot   String
-  unitPrice     Decimal  @db.Decimal(12, 2)
-  quantity      Int
-  lineTotal     Decimal  @db.Decimal(12, 2)
+  id                  String   @id @default(cuid())
+  subOrderId          String
+  variantId           String
+  titleSnapshot       String
+  skuSnapshot         String
+  unitPrice           Decimal  @db.Decimal(12, 2)
+  quantity            Int
+  lineTotal           Decimal  @db.Decimal(12, 2)
   // Shipping snapshot at checkout (like titleSnapshot): the product's weight/
   // dimensions as they were when ordered, so in-flight parcel capacity metrics
   // (lib/courier-capacity.ts) don't shift when the seller edits the catalog.
@@ -938,8 +972,8 @@ model OrderItem {
   sizeClassSnapshot   String? // resolved size class at checkout (freight rules)
   // The FlashSaleItem whose stock this line claimed at checkout, so a cancel
   // can release it (plain id, no FK — flash sales are deletable).
-  flashItemId   String?
-  subOrder      SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  flashItemId         String?
+  subOrder            SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
 
   @@index([subOrderId])
   @@index([variantId])
@@ -1069,30 +1103,30 @@ enum WalletTopUpStatus {
 }
 
 model Wallet {
-  id           String             @id @default(cuid())
-  userId       String             @unique
-  availableUsd Decimal            @default(0) @db.Decimal(12, 2)
-  frozen       Boolean            @default(false) // AML / dispute hold
+  id             String              @id @default(cuid())
+  userId         String              @unique
+  availableUsd   Decimal             @default(0) @db.Decimal(12, 2)
+  frozen         Boolean             @default(false) // AML / dispute hold
   // COD collateral pledge (docs §36): the owner voluntarily locks this much of
   // their balance as security for COD cash they carry — outflows must keep
   // availableUsd ≥ codHoldUsd, and the effective collateral counted toward the
   // courier's cash limit is min(codHoldUsd, availableUsd).
-  codHoldUsd   Decimal            @default(0) @db.Decimal(12, 2)
+  codHoldUsd     Decimal             @default(0) @db.Decimal(12, 2)
   // Wallet PIN (Step 19.9): scrypt hash (same format as passwordHash). Required
   // to authorize every outflow. Lockout backs off brute force: after too many
   // wrong tries `pinLockedUntil` blocks attempts for a cool-off window.
   pinHash        String?
-  pinFailedCount Int              @default(0)
+  pinFailedCount Int                 @default(0)
   pinLockedUntil DateTime?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries      WalletEntry[]
-  topUps       WalletTopUp[]
-  withdrawals  WalletWithdrawal[]
-  sent         WalletTransfer[]   @relation("SentTransfers")
-  received     WalletTransfer[]   @relation("ReceivedTransfers")
-  billPayments WalletBillPayment[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries        WalletEntry[]
+  topUps         WalletTopUp[]
+  withdrawals    WalletWithdrawal[]
+  sent           WalletTransfer[]    @relation("SentTransfers")
+  received       WalletTransfer[]    @relation("ReceivedTransfers")
+  billPayments   WalletBillPayment[]
 }
 
 // Peer-to-peer wallet transfer (Step 19.5+). LICENSED ONLY — money transmission
@@ -1239,8 +1273,8 @@ model RemitClaim {
   processedAt DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-  courier     User?          @relation("CourierRemitClaims", fields: [courierId], references: [id], onDelete: Cascade)
-  point       DeliveryPoint? @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  courier     User?            @relation("CourierRemitClaims", fields: [courierId], references: [id], onDelete: Cascade)
+  point       DeliveryPoint?   @relation(fields: [pointId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([courierId])
@@ -1249,22 +1283,22 @@ model RemitClaim {
 
 // Immutable. availableUsd MUST equal the sum of entries — never edit directly.
 model WalletEntry {
-  id         String          @id @default(cuid())
-  walletId   String
-  type       WalletEntryType
-  amountUsd  Decimal         @db.Decimal(12, 2) // +credit / -debit
-  orderId    String? // set for PAYMENT / REFUND
-  subOrderId String?
-  note       String?
+  id           String          @id @default(cuid())
+  walletId     String
+  type         WalletEntryType
+  amountUsd    Decimal         @db.Decimal(12, 2) // +credit / -debit
+  orderId      String? // set for PAYMENT / REFUND
+  subOrderId   String?
+  note         String?
   // Link to the source record so a transaction detail / receipt can enrich the
   // entry (transfer | bill | topup | withdrawal). `refId` is that record's id.
-  refType    String? // transfer | bill | topup | withdrawal
-  refId      String?
+  refType      String? // transfer | bill | topup | withdrawal
+  refId        String?
   // Unguessable token minted the first time the owner shares this transaction's
   // receipt; the public /receipt/[token] page resolves it (Step 19.8).
-  receiptToken String?       @unique
-  createdAt  DateTime        @default(now())
-  wallet     Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  receiptToken String?         @unique
+  createdAt    DateTime        @default(now())
+  wallet       Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([walletId])
   @@index([orderId])
@@ -1367,56 +1401,56 @@ model ShippingZone {
 }
 
 model ShippingRate {
-  id       String       @id @default(cuid())
-  storeId  String
-  zoneId   String
-  feeUsd   Decimal      @db.Decimal(12, 2)
-  freeOver Decimal?     @db.Decimal(12, 2)
+  id            String       @id @default(cuid())
+  storeId       String
+  zoneId        String
+  feeUsd        Decimal      @db.Decimal(12, 2)
+  freeOver      Decimal?     @db.Decimal(12, 2)
   // Optional express-tier fee for this zone. Null → the store hasn't set its own
   // express price and the platform default (default_express_fee) applies.
-  expressFeeUsd Decimal? @db.Decimal(12, 2)
-  store    Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  zone     ShippingZone @relation(fields: [zoneId], references: [id])
+  expressFeeUsd Decimal?     @db.Decimal(12, 2)
+  store         Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  zone          ShippingZone @relation(fields: [zoneId], references: [id])
 
   @@unique([storeId, zoneId])
   @@index([storeId])
 }
 
 model Shipment {
-  id              String          @id @default(cuid())
-  subOrderId      String          @unique
-  carrierId       String?
-  trackingNumber  String?
-  status          ShipmentStatus  @default(PENDING)
-  platformManaged Boolean         @default(false)
+  id                    String            @id @default(cuid())
+  subOrderId            String            @unique
+  carrierId             String?
+  trackingNumber        String?
+  status                ShipmentStatus    @default(PENDING)
+  platformManaged       Boolean           @default(false)
   // Assigned Hezalli Express courier (null = unassigned / third-party carrier).
-  driverId        String?
+  driverId              String?
   // Route via a partner hub (null = direct seller → courier).
-  deliveryPointId String?
+  deliveryPointId       String?
   // Two-hop line-haul (docs §14): the point near the SELLER where the parcel
   // enters the network before being carried to deliveryPointId. Plain id (no
   // FK) — resolved manually to keep DeliveryPoint relations simple.
-  originPointId   String?
+  originPointId         String?
   // Which point physically holds the parcel right now (null = not at a hub).
   // Set on every receive scan, cleared on handover / delivery / RTS.
-  atPointId       String?
+  atPointId             String?
   // Where inside that hub the parcel sits ("A3") — free text, the operator
   // labels their own shelves. Set at the receive scan, shown on the driver
   // manifest / pickup scan, cleared whenever the parcel leaves the hub.
-  shelfCode       String?
+  shelfCode             String?
   // Short random code for the optional buyer-QR proof of delivery.
-  deliveryCode    String?         @unique
+  deliveryCode          String?           @unique
   // Buyer's requested redelivery day + note after a failed attempt.
-  redeliverAt     DateTime?
-  redeliverNote   String?
+  redeliverAt           DateTime?
+  redeliverNote         String?
   // One-shot guards for the stale-parcel sweep (docs §20): when the buyer was
   // reminded to collect, and when the hold was flagged (window expiry / stuck).
-  pickupRemindedAt DateTime?
-  staleFlaggedAt   DateTime?
+  pickupRemindedAt      DateTime?
+  staleFlaggedAt        DateTime?
   // One-shot guard for the stuck-shipment sweep: when delivery staff were
   // alerted that this parcel sat un-moved past the threshold. Cleared on any
   // staff status override so a re-stuck parcel alerts again.
-  stuckFlaggedAt   DateTime?
+  stuckFlaggedAt        DateTime?
   // One-shot guard for dispatch escalation: set when auto-assignment ran out
   // of couriers (everyone declined / timed out / none eligible) and staff
   // were alerted. Cleared by a manual ops assignment so a re-stranded parcel
@@ -1427,25 +1461,25 @@ model Shipment {
   // parcel's lifetime — the board only shows currently-unassigned parcels, and
   // the offer sweep uses this timestamp to start push-offers once the
   // board-only window lapses.
-  boardedAt       DateTime?
+  boardedAt             DateTime?
   // When couriers were last re-pinged about this parcel sitting unclaimed on
   // the board (lib/job-board.ts remindOpenBoardJobs) — throttles the repeat
   // reminder to once per board_reminder_minutes instead of every sweep run.
-  boardRemindedAt DateTime?
-  shippedAt       DateTime?
-  deliveredAt     DateTime?
+  boardRemindedAt       DateTime?
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
   // How many doorstep attempts the courier has made (failed + the final one).
-  attemptCount    Int             @default(0)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  subOrder        SubOrder        @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
-  carrier         Carrier?        @relation(fields: [carrierId], references: [id])
-  driver          User?           @relation("CourierShipments", fields: [driverId], references: [id])
-  deliveryPoint   DeliveryPoint?  @relation(fields: [deliveryPointId], references: [id])
-  events          ShipmentEvent[]
-  attempts        DeliveryAttempt[]
-  offers          ShipmentOffer[]
-  deliveryRating  DeliveryRating?
+  attemptCount          Int               @default(0)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  subOrder              SubOrder          @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  carrier               Carrier?          @relation(fields: [carrierId], references: [id])
+  driver                User?             @relation("CourierShipments", fields: [driverId], references: [id])
+  deliveryPoint         DeliveryPoint?    @relation(fields: [deliveryPointId], references: [id])
+  events                ShipmentEvent[]
+  attempts              DeliveryAttempt[]
+  offers                ShipmentOffer[]
+  deliveryRating        DeliveryRating?
 
   @@index([driverId])
   @@index([carrierId])
@@ -1679,24 +1713,24 @@ model Notification {
 // ---------------------------------------------------------------------------
 
 model Coupon {
-  id           String             @id @default(cuid())
-  code         String             @unique
-  scope        CouponScope
-  storeId      String?
-  discountType DiscountType
-  value        Decimal            @db.Decimal(12, 2)
-  maxDiscountUsd Decimal?         @db.Decimal(12, 2)
-  minSpendUsd  Decimal?           @db.Decimal(12, 2)
-  maxUses      Int?
-  usedCount    Int                @default(0)
-  perUserLimit Int?
-  startsAt     DateTime?
-  endsAt       DateTime?
-  isActive     Boolean            @default(true)
-  createdAt    DateTime           @default(now())
-  store        Store?             @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  redemptions  CouponRedemption[]
-  orders       Order[]
+  id             String             @id @default(cuid())
+  code           String             @unique
+  scope          CouponScope
+  storeId        String?
+  discountType   DiscountType
+  value          Decimal            @db.Decimal(12, 2)
+  maxDiscountUsd Decimal?           @db.Decimal(12, 2)
+  minSpendUsd    Decimal?           @db.Decimal(12, 2)
+  maxUses        Int?
+  usedCount      Int                @default(0)
+  perUserLimit   Int?
+  startsAt       DateTime?
+  endsAt         DateTime?
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  store          Store?             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  redemptions    CouponRedemption[]
+  orders         Order[]
 
   @@index([storeId])
 }
@@ -1779,26 +1813,26 @@ model AuditLog {
 // few turns as a JSON array of { role, text } so follow-up questions keep
 // context. Not tied to a Hezalli account — the chat is anonymous by default.
 model BotConversation {
-  id        String   @id @default(cuid())
-  platform  String
-  chatId    String
-  messages  Json     @default("[]")
+  id                String    @id @default(cuid())
+  platform          String
+  chatId            String
+  messages          Json      @default("[]")
   // Recent request timestamps (ms) inside the rolling hourly window — the
   // per-user rate limit. Trimmed on each turn.
-  rateHits  Json     @default("[]")
+  rateHits          Json      @default("[]")
   // Linked Hezalli account (via the /link flow) — lets the bot answer order
   // questions for this chat. Null = anonymous.
-  userId    String?
+  userId            String?
   // One-time code + expiry for the account-linking handshake (set by /link,
   // consumed on the website while signed in).
   linkCode          String?   @unique
   linkCodeExpiresAt DateTime?
   // Lifetime per-chat counters (light analytics).
-  msgCount  Int      @default(0)
-  tokensIn  Int      @default(0)
-  tokensOut Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  msgCount          Int       @default(0)
+  tokensIn          Int       @default(0)
+  tokensOut         Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@unique([platform, chatId])
   @@index([userId])

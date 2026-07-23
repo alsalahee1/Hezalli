@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireDeliveryPoint } from "@/lib/authz";
 import { cashBlockedPointIds } from "@/lib/cod-guard";
+import { canHandleCash, canManagePoint } from "@/lib/point-access";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -103,7 +104,8 @@ export async function pointBuyerPickup(code: string): Promise<{
   shelf?: string | null;
 }> {
   const gate = await requireDeliveryPoint();
-  if (!gate) return { error: "forbidden" };
+  // Cash-gated: a shelves organizer may not take a buyer's COD money.
+  if (!gate || !canHandleCash(gate.access)) return { error: "forbidden" };
   const locale = await getLocale();
   const res = await buyerPickupAtPoint(gate.pointId, code, locale);
   if (res.ok) {
@@ -129,7 +131,8 @@ export async function pointDriverCashIn(
   note?: string,
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
-  if (!gate) return { error: "forbidden" };
+  // Cash-gated: only staff who may take money can record a driver hand-in.
+  if (!gate || !canHandleCash(gate.access)) return { error: "forbidden" };
   const amountUsd = Math.round(Number(amount) * 100) / 100;
   if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
     return { error: "badAmount" };
@@ -224,7 +227,8 @@ export async function pointReturnToSeller(
 // (docs/DELIVERY-POINTS.md §42c).
 export async function setPointPaused(paused: boolean): Promise<Result> {
   const gate = await requireDeliveryPoint();
-  if (!gate) return { error: "forbidden" };
+  // Owner/manager only: a cashier can't put the whole hub on vacation.
+  if (!gate || !canManagePoint(gate.access)) return { error: "forbidden" };
 
   await prisma.deliveryPoint.update({
     where: { id: gate.pointId },

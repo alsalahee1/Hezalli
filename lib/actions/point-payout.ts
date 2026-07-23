@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireDeliveryManagerId, requireDeliveryPoint } from "@/lib/authz";
+import { canMoveEarnings } from "@/lib/point-access";
 import { prisma } from "@/lib/prisma";
 import { getSetting } from "@/lib/settings";
 
@@ -33,7 +34,8 @@ const CASH_TYPES = [
  */
 export async function requestPointPayout(amountUsd?: number): Promise<Result> {
   const gate = await requireDeliveryPoint();
-  if (!gate) return { error: "forbidden" };
+  // Owner only: the payout goes to the owner, so no employee may request it.
+  if (!gate || !canMoveEarnings(gate.access)) return { error: "forbidden" };
   const locale = await getLocale();
   const min = await getSetting("min_payout_usd");
 
