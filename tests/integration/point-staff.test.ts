@@ -29,6 +29,7 @@ import {
 } from "@/lib/actions/point-staff";
 import { shipSubOrder } from "@/lib/actions/shipment";
 import { requireDeliveryPoint } from "@/lib/authz";
+import { pointStaffActivity } from "@/lib/point-staff-activity";
 import { prisma } from "@/lib/prisma";
 import { makeFixture } from "./factory";
 
@@ -192,6 +193,21 @@ describe("point staff", () => {
     ).toEqual({ ok: true });
     as(organizerId);
     expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+
+    // Accountability: the receive scan records WHICH person acted, and the
+    // per-staff activity rollup attributes the parcel to the organizer.
+    const ev = await prisma.shipmentEvent.findFirst({
+      where: { shipment: { trackingNumber }, status: "AT_POINT" },
+      select: { actorId: true },
+    });
+    expect(ev?.actorId).toBe(organizerId);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const activity = await pointStaffActivity(pointId, startOfDay, new Date());
+    expect(
+      activity.find((r) => r.userId === organizerId)?.received,
+    ).toBeGreaterThanOrEqual(1);
+
     expect(await pointDriverCashIn("any-driver", 5)).toEqual({
       error: "forbidden",
     });
@@ -229,6 +245,14 @@ describe("point staff", () => {
     expect(
       await prisma.user.findUnique({ where: { id: organizerId } }),
     ).not.toBeNull();
+
+    // The employee is notified as their standing changes: hire, role change,
+    // pause, reinstate, removal — at least the four management events above.
+    expect(
+      await prisma.notification.count({
+        where: { userId: organizerId, type: "SHIPMENT" },
+      }),
+    ).toBeGreaterThanOrEqual(4);
 
     // A stranger can't manage anyone's roster.
     as(fx.buyerId);

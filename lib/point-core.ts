@@ -91,6 +91,7 @@ export async function receiveParcelAtPoint(
   pointId: string,
   tracking: string,
   shelf?: string,
+  actorId?: string,
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
@@ -151,6 +152,7 @@ export async function receiveParcelAtPoint(
           status: "AT_POINT",
           location: originName,
           note: `Entered the network at ${originName} — awaiting line-haul`,
+          actorId: actorId ?? null,
         },
       }),
       prisma.notification.create({
@@ -180,6 +182,7 @@ export async function receiveParcelAtPoint(
         note: isPickup
           ? `Ready for pickup at ${pointName}`
           : `Received at ${pointName}`,
+        actorId: actorId ?? null,
       },
     }),
     prisma.notification.create({
@@ -230,6 +233,7 @@ export async function handoverParcelToDriver(
   pointId: string,
   tracking: string,
   driverId?: string,
+  actorId?: string,
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
@@ -301,6 +305,7 @@ export async function handoverParcelToDriver(
           shipmentId: parcel.id,
           status: "PICKED_UP",
           note: "Collected for line-haul transfer",
+          actorId: actorId ?? null,
         },
       }),
       prisma.shipmentEvent.create({
@@ -327,6 +332,7 @@ export async function handoverParcelToDriver(
         status: "PICKED_UP",
         location: pointName,
         note: `Collected from ${pointName}`,
+        actorId: actorId ?? null,
       },
     }),
     prisma.shipmentEvent.create({
@@ -362,6 +368,7 @@ export async function receiveReturnAtPoint(
   tracking: string,
   note?: string,
   shelf?: string,
+  actorId?: string,
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
@@ -388,6 +395,7 @@ export async function receiveReturnAtPoint(
         status: "RETURNED_TO_POINT",
         location: pointName,
         note: note?.trim() || `Back at ${pointName}`,
+        actorId: actorId ?? null,
       },
     }),
     prisma.notification.create({
@@ -417,6 +425,7 @@ export async function returnParcelToSeller(
   pointId: string,
   tracking: string,
   note?: string,
+  actorId?: string,
 ): Promise<Result> {
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
@@ -454,6 +463,7 @@ export async function returnParcelToSeller(
         status: "RETURNED",
         location: pointName,
         note: note?.trim() || "Returning to seller",
+        actorId: actorId ?? null,
       },
     }),
     ...(seller
@@ -495,6 +505,7 @@ export async function buyerPickupAtPoint(
   pointId: string,
   code: string,
   locale: string,
+  actorId?: string,
 ): Promise<{
   ok?: boolean;
   error?: string;
@@ -551,6 +562,7 @@ export async function buyerPickupAtPoint(
   const res = await markSubOrderDelivered(sub.id, "point", locale, {
     codeVerified: true,
     pickupPointId: pointId,
+    actorId,
   });
   if (res.error) return res;
   // Where to grab the parcel from — the counter reads this off the scan result.
@@ -634,6 +646,7 @@ export async function driverManifestAtPoint(
 export async function handoverManifestToDriver(
   pointId: string,
   driverId: string,
+  actorId?: string,
 ): Promise<{ handed: number; failed: number }> {
   const manifest = await driverManifestAtPoint(pointId, driverId);
   let handed = 0;
@@ -643,6 +656,7 @@ export async function handoverManifestToDriver(
       pointId,
       row.trackingNumber,
       driverId,
+      actorId,
     );
     if (res.ok) handed++;
     else failed++;

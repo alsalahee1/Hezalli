@@ -37,6 +37,10 @@ export async function recordPointCounterCod(
     subOrderId: string;
     shipmentId?: string | null;
     amount: number;
+    // The counter user (cashier/owner) who took the cash — attributes the
+    // COD_COLLECTED row to a person so a hub with several staff can reconcile
+    // each drawer (lib/point-staff-activity.ts). Null for legacy callers.
+    actorId?: string | null;
   },
 ): Promise<void> {
   if (input.amount <= 0) return;
@@ -47,6 +51,7 @@ export async function recordPointCounterCod(
       amountUsd: input.amount,
       subOrderId: input.subOrderId,
       shipmentId: input.shipmentId ?? null,
+      createdById: input.actorId ?? null,
     },
   });
 }

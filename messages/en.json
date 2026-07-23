@@ -3049,7 +3049,14 @@
     "staffErr_badRole": "Pick a valid job.",
     "staffErr_notFound": "That team member no longer exists.",
     "staffErr_forbidden": "Only the owner or a store manager can do that.",
-    "staffErr_generic": "Something went wrong — try again."
+    "staffErr_generic": "Something went wrong — try again.",
+    "activityToday": "Today",
+    "activityEmpty": "No counter activity yet today.",
+    "activityFormer": "former",
+    "actReceived": "{count} received",
+    "actHanded": "{count} handed over",
+    "actPickups": "{count} pickups",
+    "actReturns": "{count} returns"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

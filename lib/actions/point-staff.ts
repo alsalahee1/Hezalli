@@ -39,6 +39,53 @@ async function revalidateStaff() {
   revalidatePath(`/${locale}/point/staff`);
 }
 
+// A localized in-app notice for the employee when their standing changes, so
+// they learn of a demotion/pause/removal from a message rather than by hitting
+// a wall in the app. Mirrors the hire notice.
+function staffNotice(
+  locale: string,
+  pointName: string | null,
+  kind: "role" | "paused" | "activated" | "removed",
+  role?: PointStaffRole,
+): { title: string; body: string; link: string } {
+  const ar = locale === "ar";
+  const p = pointName || (ar ? "نقطة حزالي" : "Hezalli Point");
+  switch (kind) {
+    case "role":
+      return {
+        title: ar ? "تغيّرت وظيفتك" : "Your role changed",
+        body: ar
+          ? `غيّر ${p} وظيفتك إلى ${ROLE_LABEL_AR[role!]}.`
+          : `${p} changed your role to ${ROLE_LABEL_EN[role!]}.`,
+        link: "/point",
+      };
+    case "paused":
+      return {
+        title: ar ? "أُوقف وصولك مؤقتًا" : "Your access was paused",
+        body: ar
+          ? `أوقف ${p} وصولك مؤقتًا. تواصل مع الإدارة لمعرفة التفاصيل.`
+          : `${p} paused your access. Contact the manager for details.`,
+        link: "/",
+      };
+    case "activated":
+      return {
+        title: ar ? "أُعيد تفعيل وصولك" : "Your access was restored",
+        body: ar
+          ? `أعاد ${p} تفعيل وصولك — يمكنك العودة للعمل في تطبيق النقطة.`
+          : `${p} restored your access — you can work in the point app again.`,
+        link: "/point",
+      };
+    case "removed":
+      return {
+        title: ar ? "أُزلت من الفريق" : "You were removed from the team",
+        body: ar
+          ? `أزالك ${p} من فريق العمل.`
+          : `${p} removed you from its team.`,
+        link: "/",
+      };
+  }
+}
+
 function parseRole(role: string): PointStaffRole | null {
   return (POINT_STAFF_ROLES as readonly string[]).includes(role)
     ? (role as PointStaffRole)
@@ -141,13 +188,19 @@ export async function setPointStaffRole(
 
   const row = await prisma.pointStaff.findFirst({
     where: { id: staffId, pointId: gate.pointId },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { locale: true } },
+      point: { select: { name: true } },
+    },
   });
   if (!row) return { error: "notFound" };
   // A manager may not touch their own row (self-promotion / lockout games);
   // the owner's access never comes from a row, so this can't hit the owner.
   if (row.userId === gate.userId) return { error: "isSelf" };
 
+  const notice = staffNotice(row.user.locale, row.point.name, "role", job);
   await prisma.$transaction([
     prisma.pointStaff.update({ where: { id: row.id }, data: { role: job } }),
     prisma.auditLog.create({
@@ -157,6 +210,15 @@ export async function setPointStaffRole(
         entity: "DeliveryPoint",
         entityId: gate.pointId,
         meta: { staffUserId: row.userId, role: job },
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        userId: row.userId,
+        type: "SHIPMENT",
+        title: notice.title,
+        body: notice.body,
+        data: { link: notice.link },
       },
     }),
   ]);
@@ -176,11 +238,21 @@ export async function setPointStaffActive(
 
   const row = await prisma.pointStaff.findFirst({
     where: { id: staffId, pointId: gate.pointId },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { locale: true } },
+      point: { select: { name: true } },
+    },
   });
   if (!row) return { error: "notFound" };
   if (row.userId === gate.userId) return { error: "isSelf" };
 
+  const notice = staffNotice(
+    row.user.locale,
+    row.point.name,
+    active ? "activated" : "paused",
+  );
   await prisma.$transaction([
     prisma.pointStaff.update({
       where: { id: row.id },
@@ -193,6 +265,15 @@ export async function setPointStaffActive(
         entity: "DeliveryPoint",
         entityId: gate.pointId,
         meta: { staffUserId: row.userId },
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        userId: row.userId,
+        type: "SHIPMENT",
+        title: notice.title,
+        body: notice.body,
+        data: { link: notice.link },
       },
     }),
   ]);
@@ -209,11 +290,17 @@ export async function removePointStaff(staffId: string): Promise<Result> {
 
   const row = await prisma.pointStaff.findFirst({
     where: { id: staffId, pointId: gate.pointId },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { locale: true } },
+      point: { select: { name: true } },
+    },
   });
   if (!row) return { error: "notFound" };
   if (row.userId === gate.userId) return { error: "isSelf" };
 
+  const notice = staffNotice(row.user.locale, row.point.name, "removed");
   await prisma.$transaction([
     prisma.pointStaff.delete({ where: { id: row.id } }),
     prisma.auditLog.create({
@@ -223,6 +310,15 @@ export async function removePointStaff(staffId: string): Promise<Result> {
         entity: "DeliveryPoint",
         entityId: gate.pointId,
         meta: { staffUserId: row.userId },
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        userId: row.userId,
+        type: "SHIPMENT",
+        title: notice.title,
+        body: notice.body,
+        data: { link: notice.link },
       },
     }),
   ]);

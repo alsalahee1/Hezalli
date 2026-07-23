@@ -55,6 +55,10 @@ export type DeliveryProof = {
   // Counter pickup: the point that handed the parcel to the buyer. For COD,
   // the cash lands on this point's cash ledger instead of a courier's.
   pickupPointId?: string;
+  // The hub user (cashier/owner) who handed the parcel over at the counter —
+  // stamped on the DELIVERED event and the COD_COLLECTED row for per-staff
+  // accountability (lib/point-staff-activity.ts). Null for courier deliveries.
+  actorId?: string;
 };
 
 // Transition a SHIPPED sub-order to DELIVERED. `actor` is recorded in the order
@@ -178,6 +182,7 @@ export async function markSubOrderDelivered(
           shipmentId: sub.shipment.id,
           status: "DELIVERED",
           note: recipientName ? `Received by ${recipientName}` : undefined,
+          actorId: proof?.actorId ?? null,
         },
       });
       // Record the successful attempt (proof of delivery).
@@ -231,6 +236,7 @@ export async function markSubOrderDelivered(
           subOrderId,
           shipmentId: sub.shipment.id,
           amount: codAmount,
+          actorId: proof.actorId ?? null,
         });
       }
     }

@@ -3049,7 +3049,14 @@
     "staffErr_badRole": "اختر وظيفة صحيحة.",
     "staffErr_notFound": "هذا الموظف لم يعد موجودًا.",
     "staffErr_forbidden": "فقط المالك أو مدير المحل يمكنه ذلك.",
-    "staffErr_generic": "حدث خطأ — حاول مجددًا."
+    "staffErr_generic": "حدث خطأ — حاول مجددًا.",
+    "activityToday": "اليوم",
+    "activityEmpty": "لا يوجد نشاط على الكاونتر اليوم بعد.",
+    "activityFormer": "سابق",
+    "actReceived": "{count} استُلمت",
+    "actHanded": "{count} سُلّمت",
+    "actPickups": "{count} تسليم للعميل",
+    "actReturns": "{count} مرتجعات"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
