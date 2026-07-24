@@ -261,7 +261,7 @@ if [ -f deploy/DEBUG_PDF_ONCE ]; then
   CSRF="$(curl -sk $RES -c "$CJ" "$BASE/api/auth/csrf" --max-time 15 | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')"
   curl -sk $RES -b "$CJ" -c "$CJ" -o /dev/null --max-time 20 \
     --data-urlencode "csrfToken=$CSRF" --data-urlencode "email=buyer1@example.com" \
-    --data-urlencode "password=hezalli123" --data-urlencode "callbackUrl=$BASE/ar" \
+    --data-urlencode "password=salahahmed" --data-urlencode "callbackUrl=$BASE/ar" \
     "$BASE/api/auth/callback/credentials"
   PDF=/tmp/hz-test.pdf
   CODE="$(curl -sk $RES -b "$CJ" -o "$PDF" -w '%{http_code} %{content_type}' --max-time 60 "$BASE/api/pdf?type=invoice&id=${ORDER_ID}&locale=ar")"

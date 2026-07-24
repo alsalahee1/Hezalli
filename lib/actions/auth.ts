@@ -98,7 +98,7 @@ export async function authenticate(
 // with a seed account's email and the known seed password — so it only works
 // against seeded/test databases, and only while DEV_LOGIN_ENABLED === "true".
 // Never enable that flag in production.
-const SEED_PASSWORD = "hezalli123";
+const SEED_PASSWORD = "salahahmed";
 
 export async function devSignIn(formData: FormData): Promise<void> {
   if (process.env.DEV_LOGIN_ENABLED !== "true") return;

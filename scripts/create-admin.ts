@@ -2,7 +2,7 @@
  * Safe first-admin bootstrap for a production database.
  *
  * The production deploy path intentionally does NOT seed any login-able
- * accounts (the demo seed's shared "hezalli123" password would be a public
+ * accounts (the demo seed's shared "salahahmed" password would be a public
  * backdoor — see prisma/seed-if-empty.ts). Use this script once, right after
  * the first deploy, to create (or promote) a single real ADMIN with a strong
  * password you choose.
@@ -24,7 +24,7 @@ import { prisma } from "../lib/prisma";
 
 // Passwords the demo seed uses — refused outright so a "real" admin can never
 // be created with a publicly-known credential.
-const FORBIDDEN_PASSWORDS = new Set(["hezalli123", "password", "admin"]);
+const FORBIDDEN_PASSWORDS = new Set(["salahahmed", "password", "admin"]);
 
 function assertStrong(password: string): void {
   if (password.length < 12) {

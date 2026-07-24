@@ -16,7 +16,7 @@ test("visitor subscribes to the newsletter from the footer", async ({
 });
 
 test("admin views subscribers and sends a broadcast", async ({ page }) => {
-  await login(page, "admin@hezalli.com", "hezalli123");
+  await login(page, "admin@hezalli.com", "salahahmed");
   await page.goto("/en/admin/newsletter", { waitUntil: "domcontentloaded" });
 
   await expect(

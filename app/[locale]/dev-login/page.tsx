@@ -118,7 +118,7 @@ export default async function DevLoginPage() {
       </div>
 
       <p className="text-muted-foreground mt-6 text-center text-xs">
-        Seed password for manual login: <code>hezalli123</code>
+        Seed password for manual login: <code>salahahmed</code>
       </p>
     </main>
   );

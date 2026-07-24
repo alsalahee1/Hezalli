@@ -11,7 +11,7 @@ const STORE = "sanaa-electronics";
 test("seller tools page renders and vacation mode toggles the storefront banner", async ({
   page,
 }) => {
-  await login(page, "seller1@hezalli.com", "hezalli123");
+  await login(page, "seller1@hezalli.com", "salahahmed");
 
   await page.goto("/en/seller/tools", { waitUntil: "domcontentloaded" });
   expect(page.url()).toContain("/seller/tools");

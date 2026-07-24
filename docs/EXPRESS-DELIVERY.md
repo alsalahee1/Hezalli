@@ -305,7 +305,7 @@ Couriers are never self-granted the role — they apply and an admin approves
 3. On approval the **Courier** role is added; the driver signs in and lands in
    `/driver`. (A signed-in non-courier visiting `/driver` is sent to `/drive`.)
 
-For local/test use, the seeded `driver@hezalli.com` (`hezalli123`) already has
+For local/test use, the seeded `driver@hezalli.com` (`salahahmed`) already has
 the role, so onboarding can be skipped. An admin can also grant the role
 directly in the DB if needed.
 
