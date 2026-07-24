@@ -5,6 +5,7 @@ import { AlertTriangle, MessageSquare, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { AssistantStats } from "@/lib/ai/stats";
+import { Link } from "@/i18n/navigation";
 
 type BotMeta = { name: string; avatar: string };
 
@@ -178,11 +179,16 @@ export function AssistantStatsView({
                         className="flex items-start justify-between gap-2 text-sm"
                       >
                         <span className="line-clamp-1">{q.question}</span>
-                        <span
-                          className="text-muted-foreground shrink-0"
-                          dir="ltr"
-                        >
-                          ×{q.count}
+                        <span className="flex shrink-0 items-center gap-2">
+                          <Link
+                            href={`/admin/assistant/faq?q=${encodeURIComponent(q.question)}&bot=${b.bot}`}
+                            className="text-primary text-xs whitespace-nowrap hover:underline"
+                          >
+                            {t("addAnswer")}
+                          </Link>
+                          <span className="text-muted-foreground" dir="ltr">
+                            ×{q.count}
+                          </span>
                         </span>
                       </li>
                     ))}

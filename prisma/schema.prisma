@@ -1892,3 +1892,25 @@ model AiChatEvent {
   @@index([bot, createdAt])
   @@index([createdAt])
 }
+
+// Curated question→answer entries the assistant uses as its knowledge base.
+// Admins add these (often straight from a "needs attention" question) so the
+// characters answer known questions consistently instead of falling back.
+// Enabled entries matching the active character + language are injected into
+// the system prompt each turn.
+model AiFaq {
+  id        String   @id @default(cuid())
+  // The question / topic this answers (the trigger).
+  question  String
+  // The curated answer the character should give (it adapts tone to persona).
+  answer    String
+  // Which character uses it: "all" | "shadi" | "jumana".
+  bot       String   @default("all")
+  // Which language: "all" | "ar" | "en".
+  locale    String   @default("all")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled, updatedAt])
+}

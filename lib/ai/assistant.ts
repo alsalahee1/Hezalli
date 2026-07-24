@@ -13,6 +13,7 @@ import {
   type TokenUsage,
 } from "./gemini";
 import { BOTS, type BotId } from "./bot-constants";
+import { getFaqBlock } from "./faq";
 import { defaultIntro, lockedRules } from "./prompt-defaults";
 import {
   runTool,
@@ -129,6 +130,7 @@ function systemPrompt(
   bot: BotId,
   intro: string,
   persona: string,
+  faq: string,
 ): string {
   const lang = locale === "ar" ? "Arabic" : "English";
   // The intro (identity + marketplace description) is admin-editable; empty
@@ -155,6 +157,11 @@ function systemPrompt(
       p,
     );
   }
+
+  // The curated knowledge base (Admin → FAQ). Authoritative for the questions
+  // it covers; still bound by the locked rules.
+  if (faq) lines.push("", faq);
+
   return lines.join("\n");
 }
 
@@ -189,12 +196,13 @@ export async function runAssistant(
 
   const section = ctx.section ?? "store";
   const bot: BotId = ctx.bot ?? "shadi";
-  // Shared base intro + this character's own persona (Admin → Shadi).
-  const [intro, persona] = await Promise.all([
+  // Shared base intro + this character's own persona + the curated FAQ block.
+  const [intro, persona, faq] = await Promise.all([
     getSetting("ai_intro").catch(() => ""),
     getSetting(BOTS[bot].personaKey).catch(() => ""),
+    getFaqBlock(bot, ctx.locale),
   ]);
-  const system = systemPrompt(ctx.locale, section, bot, intro, persona);
+  const system = systemPrompt(ctx.locale, section, bot, intro, persona, faq);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await generateContent({
