@@ -162,6 +162,14 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Native-sized checkboxes/radios (default browser boxes are ~13px — too
+     small to hit reliably with a finger) tinted to match the theme. */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--primary);
+  }
 }
 
 /* Diamond trim — the repeating rhombus border seen on tribal thawb
