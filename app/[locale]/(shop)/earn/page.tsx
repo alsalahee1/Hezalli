@@ -380,7 +380,7 @@ export default async function EarnPage({
             ]}
           />
           <PhoneShot
-            src="/earn/point-scan.png"
+            src="/earn/point.png"
             width={860}
             height={1760}
             alt={t("pointTitle")}
