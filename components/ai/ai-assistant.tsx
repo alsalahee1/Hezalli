@@ -184,7 +184,12 @@ export function AiAssistant({
         <div
           dir={isRtl ? "rtl" : "ltr"}
           className={cn(
-            "bg-background fixed bottom-36 z-50 flex h-[min(70vh,32rem)] w-[min(92vw,24rem)] transform-gpu flex-col overflow-hidden rounded-2xl border shadow-2xl transition duration-200 ease-out will-change-transform motion-reduce:transition-none md:bottom-20",
+            // Height is measured against the *dynamic* viewport (`dvh`) and the
+            // bottom offset is subtracted, so the panel never grows taller than
+            // the visible area and clips its own header off the top of the
+            // screen when the mobile browser's address bar is showing. Falls
+            // back to the 32rem cap on tall viewports.
+            "bg-background fixed bottom-36 z-50 flex h-[min(32rem,calc(100dvh_-_11rem))] w-[min(92vw,24rem)] transform-gpu flex-col overflow-hidden rounded-2xl border shadow-2xl transition duration-200 ease-out will-change-transform motion-reduce:transition-none md:bottom-20 md:h-[min(32rem,calc(100dvh_-_7rem))]",
             isRtl ? "left-4 origin-bottom-left" : "right-4 origin-bottom-right",
             shown ? "scale-100 opacity-100" : "scale-95 opacity-0",
           )}
