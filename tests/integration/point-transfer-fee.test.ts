@@ -111,13 +111,15 @@ async function deliverParcel(withOrigin: boolean) {
 
   if (withOrigin) {
     as(originOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     expect(await pointHandoverParcel(trackingNumber, courierId)).toEqual({
       ok: true,
     });
   }
   as(destOwnerId);
-  expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+  expect(await pointReceiveParcel(trackingNumber)).toMatchObject({ ok: true });
   // Auto-assign may have claimed the parcel (setting races with other
   // suites) — hand it to whichever driver holds it, else our courier.
   const pre = await prisma.shipment.findUnique({

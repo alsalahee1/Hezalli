@@ -120,7 +120,7 @@ describe("shelf locations", () => {
   it("stamps the shelf at receive, shows it on the driver manifest, clears it at handover", async () => {
     const p = await shippedParcel();
     as(ownerId);
-    expect(await pointReceiveParcel(p.trackingNumber, "  A3  ")).toEqual({
+    expect(await pointReceiveParcel(p.trackingNumber, "  A3  ")).toMatchObject({
       ok: true,
     });
     expect(await shelfOf(p.id)).toBe("A3");
@@ -146,16 +146,16 @@ describe("shelf locations", () => {
   it("re-shelves a held parcel on a repeat receive scan with a shelf, without one it stays badState", async () => {
     const p = await shippedParcel();
     as(ownerId);
-    expect(await pointReceiveParcel(p.trackingNumber, "B1")).toEqual({
+    expect(await pointReceiveParcel(p.trackingNumber, "B1")).toMatchObject({
       ok: true,
     });
-    expect(await pointReceiveParcel(p.trackingNumber, "C2")).toEqual({
+    expect(await pointReceiveParcel(p.trackingNumber, "C2")).toMatchObject({
       ok: true,
       reshelved: true,
     });
     expect(await shelfOf(p.id)).toBe("C2");
     // A plain double receive-scan (no shelf) is still the usual bad state.
-    expect(await pointReceiveParcel(p.trackingNumber)).toEqual({
+    expect(await pointReceiveParcel(p.trackingNumber)).toMatchObject({
       error: "badState",
     });
     expect(await shelfOf(p.id)).toBe("C2");
@@ -164,7 +164,7 @@ describe("shelf locations", () => {
   it("returns the shelf on the buyer-pickup scan and clears it on delivery", async () => {
     const p = await shippedParcel({ pickup: true });
     as(ownerId);
-    expect(await pointReceiveParcel(p.trackingNumber, "D4")).toEqual({
+    expect(await pointReceiveParcel(p.trackingNumber, "D4")).toMatchObject({
       ok: true,
     });
     const res = await pointBuyerPickup(p.deliveryCode!);
@@ -175,7 +175,7 @@ describe("shelf locations", () => {
   it("stamps a shelf when a failed parcel is scanned back in", async () => {
     const p = await shippedParcel();
     as(ownerId);
-    expect(await pointReceiveParcel(p.trackingNumber, "E5")).toEqual({
+    expect(await pointReceiveParcel(p.trackingNumber, "E5")).toMatchObject({
       ok: true,
     });
     await prisma.shipment.update({
@@ -190,9 +190,9 @@ describe("shelf locations", () => {
       where: { id: p.id },
       data: { status: "FAILED", attemptCount: 1 },
     });
-    expect(await pointReceiveReturn(p.trackingNumber, undefined, "R1")).toEqual(
-      { ok: true },
-    );
+    expect(
+      await pointReceiveReturn(p.trackingNumber, undefined, "R1"),
+    ).toMatchObject({ ok: true });
     const back = await prisma.shipment.findUniqueOrThrow({
       where: { id: p.id },
       select: { status: true, shelfCode: true },

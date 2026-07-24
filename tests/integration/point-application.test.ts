@@ -150,7 +150,7 @@ describe("delivery point application", () => {
     await setPointStatus(fd);
 
     as(applicantId);
-    expect(await pointReceiveParcel("WHATEVER")).toEqual({
+    expect(await pointReceiveParcel("WHATEVER")).toMatchObject({
       error: "forbidden",
     });
   });

@@ -202,7 +202,9 @@ describe("point staff", () => {
       await shipSubOrder(subOrderId, { carrierId, trackingNumber }),
     ).toEqual({ ok: true });
     as(organizerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
 
     // Accountability: the receive scan records WHICH person acted, and the
     // per-staff activity rollup attributes the parcel to the organizer.

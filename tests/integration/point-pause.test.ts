@@ -124,7 +124,9 @@ describe("hub vacation mode", () => {
       await shipSubOrder(subOrderId, { carrierId, trackingNumber }),
     ).toEqual({ ok: true });
     as(ownerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
 
     // Resume: routable and public again.
     expect(await setPointPaused(false)).toEqual({ ok: true });

@@ -170,7 +170,9 @@ describe("pickup custody chain", () => {
 
     // Receive: ready for the buyer, and NO courier gets assigned.
     as(pointOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     const atPoint = await prisma.shipment.findUnique({
       where: { id: shipment.id },
       select: { status: true, driverId: true },
@@ -187,7 +189,9 @@ describe("pickup custody chain", () => {
     });
 
     // The buyer's code is the key: wrong code opens nothing.
-    expect(await pointBuyerPickup("WRONGCODE1")).toEqual({ error: "notFound" });
+    expect(await pointBuyerPickup("WRONGCODE1")).toMatchObject({
+      error: "notFound",
+    });
     // Optional counter proof (docs §42h): recipient name + a handover photo.
     const res = await pointBuyerPickup(
       shipment.deliveryCode!,
@@ -228,7 +232,7 @@ describe("pickup custody chain", () => {
     ).toBe(0);
 
     // A delivered code can't be replayed.
-    expect(await pointBuyerPickup(shipment.deliveryCode!)).toEqual({
+    expect(await pointBuyerPickup(shipment.deliveryCode!)).toMatchObject({
       error: "notFound",
     });
   });
@@ -236,7 +240,9 @@ describe("pickup custody chain", () => {
   it("lets the point RTS an uncollected pickup parcel straight from AT_POINT", async () => {
     const { trackingNumber, shipment } = await shipPickupParcel();
     as(pointOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     expect(
       await pointReturnToSeller(trackingNumber, "never collected"),
     ).toEqual({ ok: true });

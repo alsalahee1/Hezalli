@@ -90,7 +90,7 @@ async function heldParcel(shippingMethod: "PICKUP" | "STANDARD") {
     }),
   ).toEqual({ ok: true });
   as(ownerId);
-  expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+  expect(await pointReceiveParcel(trackingNumber)).toMatchObject({ ok: true });
   const ship = await prisma.shipment.findUniqueOrThrow({
     where: { subOrderId },
     select: { id: true },

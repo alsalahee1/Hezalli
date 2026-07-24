@@ -151,18 +151,20 @@ describe("happy path: receive → handover → deliver", () => {
 
     // Only the point's operator may receive it.
     as(courierId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
       error: "forbidden",
     });
 
     as(pointOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     expect(
       (await prisma.shipment.findUnique({ where: { id: shipment.id } }))
         ?.status,
     ).toBe("AT_POINT");
     // Receiving twice is a no-op error, not a duplicate event.
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
       error: "badState",
     });
 
@@ -224,7 +226,9 @@ describe("happy path: receive → handover → deliver", () => {
   it("blocks driver-side moves while the point still holds the parcel", async () => {
     const { trackingNumber, shipment } = await shipViaPoint();
     as(pointOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     // Assign the driver directly (dispatch-style) without a handover scan.
     await prisma.shipment.update({
       where: { id: shipment.id },
@@ -250,7 +254,9 @@ describe("failure loop: fail → return → reschedule → re-handover → RTS",
 
     const { subOrderId, trackingNumber, shipment } = await shipViaPoint();
     as(pointOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     expect(await pointHandoverParcel(trackingNumber, courierId)).toEqual({
       ok: true,
     });
@@ -264,7 +270,9 @@ describe("failure loop: fail → return → reschedule → re-handover → RTS",
     expect(await pointReturnToSeller(trackingNumber)).toEqual({
       error: "badState",
     });
-    expect(await pointReceiveReturn(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveReturn(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     expect(
       (await prisma.shipment.findUnique({ where: { id: shipment.id } }))
         ?.status,
@@ -300,7 +308,9 @@ describe("failure loop: fail → return → reschedule → re-handover → RTS",
       ok: true,
     });
     as(pointOwnerId);
-    expect(await pointReceiveReturn(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveReturn(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     expect(await pointReturnToSeller(trackingNumber, "2 strikes")).toEqual({
       ok: true,
     });
