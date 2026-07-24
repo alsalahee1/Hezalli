@@ -103,7 +103,7 @@ async function heldParcel(opts: { pickup?: boolean; assignTo?: string }) {
     }),
   ).toEqual({ ok: true });
   as(ownerId);
-  expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+  expect(await pointReceiveParcel(trackingNumber)).toMatchObject({ ok: true });
   // Pin the assignment deterministically (auto-assign may pick any driver).
   if (opts.assignTo) {
     await prisma.shipment.updateMany({

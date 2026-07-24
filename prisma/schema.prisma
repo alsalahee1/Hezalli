@@ -241,32 +241,32 @@ enum NotificationType {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                String    @id @default(cuid())
+  id                String          @id @default(cuid())
   name              String?
-  email             String?   @unique
+  email             String?         @unique
   emailVerified     DateTime?
-  phone             String?   @unique
+  phone             String?         @unique
   phoneVerified     DateTime?
   passwordHash      String?
   image             String?
-  roles             Role[]    @default([BUYER])
+  roles             Role[]          @default([BUYER])
   // Desks a DELIVERY_MANAGER team member may work. Empty = Head of Delivery
   // (all desks). Ignored for non-DELIVERY_MANAGER users. See DeliveryScope.
   deliveryScopes    DeliveryScope[] @default([])
-  locale            String    @default("ar")
+  locale            String          @default("ar")
   // Home governorate chosen at signup (optional). Sets the buyer's default
   // currency zone — which Yemeni rial prices show in — before they've added a
   // shipping address (lib/currency.ts). Not a shipping address itself.
   homeGovernorate   String?
   notificationPrefs Json?
-  isSuspended       Boolean   @default(false)
+  isSuspended       Boolean         @default(false)
   deletedAt         DateTime?
   // Loyalty (Step 17.9): points balance + referral graph.
-  loyaltyPoints     Int       @default(0)
-  referralCode      String?   @unique
+  loyaltyPoints     Int             @default(0)
+  referralCode      String?         @unique
   referredById      String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   addresses                Address[]
   sellerProfile            SellerProfile?
@@ -296,6 +296,7 @@ model User {
   deliveryPoints           DeliveryPoint[]           @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
   pointStaff               PointStaff?               @relation("PointStaffUser")
+  pointQueueEntries        PointQueueEntry[]         @relation("PointQueueUser")
   // Security deposit Hezalli holds from this courier (docs §32). Optional —
   // raises the driver's COD cash limit 1:1. Set by admins only, audited.
   courierDepositUsd        Decimal                   @default(0) @db.Decimal(12, 2)
@@ -424,9 +425,71 @@ model DeliveryPoint {
   remitClaims    RemitClaim[]
   staff          PointStaff[]
   shelves        PointShelf[]
+  queueEntries   PointQueueEntry[]
 
   @@index([governorate, status])
   @@index([ownerId])
+}
+
+// Which line a queue visitor stands in (docs/DELIVERY-POINTS.md §44). The two
+// counter flows have very different shapes — a seller dropping a stack off is
+// slow and parcel-by-parcel, a driver collecting is one QR scan of their whole
+// manifest — so they queue separately and are called from separate lanes.
+enum PointQueueKind {
+  DROPOFF // a seller (or line-haul) bringing parcels IN
+  COLLECTION // a courier collecting their assigned parcels OUT
+}
+
+// Lifecycle of a hub arrival ticket. A visitor either reserves a future slot
+// (BOOKED) or checks in on arrival (WAITING, ticket number assigned); the
+// operator calls them to the counter (SERVING) and closes it (DONE). CANCELLED
+// is the visitor backing out; NO_SHOW is the operator clearing a ticket nobody
+// answered.
+enum PointQueueStatus {
+  BOOKED
+  WAITING
+  SERVING
+  DONE
+  CANCELLED
+  NO_SHOW
+}
+
+// One visit to a hub counter (docs/DELIVERY-POINTS.md §44). Spreads the morning
+// crowd two ways: a reservable time slot flattens the peak, and a fair
+// arrival-ordered ticket number removes the "who's first" scrum at the desk.
+// Scoped to a Yemen-local service day so ticket numbers and the live queue
+// reset each morning. Purely an arrival-coordination record — it never touches
+// custody or money; the actual drop-off/collection stays the existing scan.
+model PointQueueEntry {
+  id          String           @id @default(cuid())
+  pointId     String
+  userId      String // the visiting seller or driver
+  kind        PointQueueKind
+  status      PointQueueStatus @default(WAITING)
+  // The Asia/Aden service day this visit belongs to, "YYYY-MM-DD". Scopes
+  // ticket numbering and the daily queue view (see lib/point-queue.ts).
+  serviceDay  String
+  // Booked slot start as minutes past midnight on the Aden wall clock, or null
+  // for a walk-in who just checked in.
+  slotStart   Int?
+  // Per-day, per-lane ticket number, assigned when the visitor checks in
+  // (BOOKED/walk-in → WAITING). Null while a booking is still in the future.
+  ticketNo    Int?
+  // Drop-offs: how many parcels the visitor is bringing, so the counter can
+  // size the wait. Null/1 otherwise.
+  parcelCount Int?
+  note        String?
+  bookedAt    DateTime? // a future slot was reserved
+  arrivedAt   DateTime? // checked in — joined the line
+  calledAt    DateTime? // operator called them to the counter
+  servedAt    DateTime? // marked done
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  point       DeliveryPoint    @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  user        User             @relation("PointQueueUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([pointId, serviceDay, status])
+  @@index([userId, status])
 }
 
 // A physical bay in a point's storage area (docs §42e). Registering shelves
@@ -435,7 +498,7 @@ model DeliveryPoint {
 // the parcel's shelfCode is set from here at the receive scan. Occupancy is
 // derived live from Shipment.shelfCode, never stored, so it can't drift.
 model PointShelf {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   pointId   String
   // The human bay code (e.g. "A1", "B3") — matches Shipment.shelfCode and the
   // printed label QR ("hezalli:shelf:<code>").
@@ -447,8 +510,8 @@ model PointShelf {
   // Optional cap on parcels this bay holds (null = unlimited). Assignment skips
   // a full bay and rolls to the next.
   capacity  Int?
-  createdAt DateTime       @default(now())
-  point     DeliveryPoint  @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  point     DeliveryPoint   @relation(fields: [pointId], references: [id], onDelete: Cascade)
 
   @@unique([pointId, code])
   @@index([pointId])

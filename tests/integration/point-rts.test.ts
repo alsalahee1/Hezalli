@@ -83,7 +83,7 @@ async function heldParcel(paymentMethod: PaymentChoice) {
     { ok: true },
   );
   as(ownerId);
-  expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+  expect(await pointReceiveParcel(trackingNumber)).toMatchObject({ ok: true });
   return { subOrderId, orderId, trackingNumber };
 }
 

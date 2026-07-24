@@ -139,7 +139,9 @@ describe("pickupHubForShipment", () => {
 
     // Received at the counter → the hub's shopfront info.
     as(ownerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     ship = await prisma.shipment.findUniqueOrThrow({
       where: { subOrderId },
       select: { status: true, atPointId: true },

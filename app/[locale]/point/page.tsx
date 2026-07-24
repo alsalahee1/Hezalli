@@ -10,6 +10,7 @@ import {
   RotateCcw,
   ShoppingBag,
   Truck,
+  UsersRound,
 } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
@@ -17,6 +18,7 @@ import { getPlatformSettings } from "@/lib/settings";
 import { maxDeliveryAttempts } from "@/lib/point-core";
 import { pointLedgerSummary } from "@/lib/point-ledger";
 import { pointShelfLoads } from "@/lib/point-shelves";
+import { queueWaitingCounts } from "@/lib/point-queue";
 import { hubDaySummary } from "@/lib/point-stats";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
@@ -101,6 +103,13 @@ export default async function PointDashboardPage() {
   // Shelf occupancy for the dashboard tile — only surfaced once the point has
   // registered bays for auto-placement.
   const shelfLoads = await pointShelfLoads(gate.pointId);
+
+  // Live arrival queue (docs §44): how many are waiting at the counter right
+  // now, per lane. Only surfaced when the queue feature is on.
+  const queueWaiting = settings.queue_enabled
+    ? await queueWaitingCounts(gate.pointId)
+    : { dropoff: 0, collection: 0 };
+  const queueTotal = queueWaiting.dropoff + queueWaiting.collection;
   const shelfParcels = shelfLoads.reduce((n, b) => n + b.load, 0);
   const shelfFull = shelfLoads.filter(
     (b) => b.capacity != null && b.load >= b.capacity,
@@ -266,6 +275,41 @@ export default async function PointDashboardPage() {
         </span>
         <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
       </Link>
+
+      {/* Arrival queue: how many are waiting at the counter now, per lane.
+          A live count nudges the operator to open the queue and call the
+          next ticket — the morning-crowd fix (docs §44). */}
+      {settings.queue_enabled ? (
+        <Link
+          href="/point/queue"
+          className="hover:bg-muted/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+        >
+          <span
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-lg",
+              queueTotal > 0
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            <UsersRound className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">
+              {t("queueTileTitle")}
+            </span>
+            <span className="text-muted-foreground block truncate text-xs">
+              {queueTotal > 0
+                ? t("queueTileWaiting", {
+                    dropoff: queueWaiting.dropoff,
+                    collection: queueWaiting.collection,
+                  })
+                : t("queueTileEmpty")}
+            </span>
+          </span>
+          <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+        </Link>
+      ) : null}
 
       {/* Shelf occupancy at a glance — where there's room, and whether any bay
           is full. Only once bays are registered; links to the shelves screen. */}

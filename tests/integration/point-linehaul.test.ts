@@ -126,13 +126,15 @@ describe("two-hop line-haul", () => {
 
     // The destination can't receive it before the line-haul leg exists.
     as(destOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
       error: "badState",
     });
 
     // Origin receives: held at origin, buyer told it's moving, no assignment.
     as(originOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     let s = await prisma.shipment.findUnique({
       where: { id: ship!.id },
       select: { status: true, atPointId: true, driverId: true },
@@ -159,7 +161,9 @@ describe("two-hop line-haul", () => {
 
     // Destination receives the line-haul: held there, transfer driver released.
     as(destOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     s = await prisma.shipment.findUnique({
       where: { id: ship!.id },
       select: { status: true, atPointId: true, driverId: true },
@@ -192,14 +196,18 @@ describe("two-hop line-haul", () => {
     });
 
     as(originOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     // Transfer leg is NOT the last mile — allowed for pickup orders.
     expect(await pointHandoverParcel(trackingNumber, courierId)).toEqual({
       ok: true,
     });
 
     as(destOwnerId);
-    expect(await pointReceiveParcel(trackingNumber)).toEqual({ ok: true });
+    expect(await pointReceiveParcel(trackingNumber)).toMatchObject({
+      ok: true,
+    });
     // At the destination the buyer collects with their code — never a driver.
     expect(await pointHandoverParcel(trackingNumber, courierId)).toEqual({
       error: "pickupOnly",

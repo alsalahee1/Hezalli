@@ -73,6 +73,9 @@ export function PlatformSettingsForm({
     point_transfer_fee: String(current.point_transfer_fee),
     stale_parcel_days: String(current.stale_parcel_days),
     pickup_window_days: String(current.pickup_window_days),
+    queue_enabled: current.queue_enabled,
+    queue_slot_minutes: String(current.queue_slot_minutes),
+    queue_slot_capacity: String(current.queue_slot_capacity),
     driver_cash_limit: String(current.driver_cash_limit),
     driver_cod_max_age_hours: String(current.driver_cod_max_age_hours),
     point_cash_limit: String(current.point_cash_limit),
@@ -143,6 +146,9 @@ export function PlatformSettingsForm({
         point_transfer_fee: Number(f.point_transfer_fee),
         stale_parcel_days: Number(f.stale_parcel_days),
         pickup_window_days: Number(f.pickup_window_days),
+        queue_enabled: f.queue_enabled,
+        queue_slot_minutes: Number(f.queue_slot_minutes),
+        queue_slot_capacity: Number(f.queue_slot_capacity),
         driver_cash_limit: Number(f.driver_cash_limit),
         driver_cod_max_age_hours: Number(f.driver_cod_max_age_hours),
         point_cash_limit: Number(f.point_cash_limit),
@@ -363,6 +369,34 @@ export function PlatformSettingsForm({
             type="number"
             value={f.pickup_window_days}
             onChange={(e) => set("pickup_window_days", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <label className="flex items-center gap-2 py-1 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.queue_enabled}
+            onChange={(e) => set("queue_enabled", e.target.checked)}
+          />
+          {t("queueEnabled")}
+          <span className="text-muted-foreground text-xs">
+            {t("queueEnabledHint")}
+          </span>
+        </label>
+        <Field label={t("queueSlotMinutes")} hint={t("queueSlotMinutesHint")}>
+          <Input
+            type="number"
+            value={f.queue_slot_minutes}
+            onChange={(e) => set("queue_slot_minutes", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field label={t("queueSlotCapacity")} hint={t("queueSlotCapacityHint")}>
+          <Input
+            type="number"
+            value={f.queue_slot_capacity}
+            onChange={(e) => set("queue_slot_capacity", e.target.value)}
             dir="ltr"
           />
         </Field>

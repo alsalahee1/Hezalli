@@ -7,6 +7,7 @@ import {
   PackageCheck,
   PackageSearch,
   Trophy,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 
@@ -216,6 +217,24 @@ export default async function DriverJobsPage() {
           </p>
         </div>
       </details>
+
+      {/* Skip the morning scrum at the hub: book a collection slot or check
+          in on arrival, and see your place in line (docs §44). */}
+      <Link
+        href="/points"
+        className="hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4"
+      >
+        <span className="rounded-full bg-sky-500/15 p-2 text-sky-600 dark:text-sky-400">
+          <UsersRound className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{t("queueCard")}</span>
+          <span className="text-muted-foreground block truncate text-xs">
+            {t("queueCardHint")}
+          </span>
+        </span>
+        <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+      </Link>
 
       <LocationShare currentGovernorate={location?.governorate ?? null} />
 
