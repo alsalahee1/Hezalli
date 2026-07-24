@@ -83,6 +83,17 @@ export async function processTelegramUpdate(
       return;
     }
 
+    // Reveal this chat's id — used to configure the weekly owner digest.
+    if (text === "/id") {
+      await sendTelegramMessage(
+        chatId,
+        locale === "ar"
+          ? `معرّف هذه المحادثة:\n${chatId}\nالصقه في إعدادات المساعد لتلقّي الملخص الأسبوعي.`
+          : `This chat's id:\n${chatId}\nPaste it in the assistant settings to receive the weekly digest.`,
+      );
+      return;
+    }
+
     // Account-linking commands.
     if (text === "/link") {
       const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ?? "";

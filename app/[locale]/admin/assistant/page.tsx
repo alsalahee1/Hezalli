@@ -99,6 +99,8 @@ export default async function AdminAssistantPage() {
           spendCapUsd: settings.ai_spend_cap_usd,
           telegramEnabled: settings.ai_channel_telegram,
           whatsappEnabled: settings.ai_channel_whatsapp,
+          digestEnabled: settings.ai_digest_enabled,
+          digestChatId: settings.ai_digest_chat_id,
           intro: settings.ai_intro,
           defaultIntro: DEFAULT_INTRO,
           lockedRules: LOCKED_RULES_PREVIEW,

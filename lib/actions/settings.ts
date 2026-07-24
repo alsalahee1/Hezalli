@@ -7,6 +7,7 @@ import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
 import { BOTS, isBotId, type BotId } from "@/lib/ai/bot-constants";
+import { sendWeeklyDigest } from "@/lib/ai/digest";
 import { DEFAULT_INTRO } from "@/lib/ai/prompt-defaults";
 import { getTelegramToken, telegramApi } from "@/lib/integrations/telegram";
 import { prisma } from "@/lib/prisma";
@@ -425,6 +426,8 @@ export type AssistantSettingsInput = {
   spendCapUsd: number;
   telegramEnabled: boolean;
   whatsappEnabled: boolean;
+  digestEnabled: boolean;
+  digestChatId: string;
   defaultBot: string;
   intro: string;
   // Per-character persona/greeting, keyed by bot id (e.g. { shadi, jumana }).
@@ -504,6 +507,8 @@ export async function saveAssistantSettings(
     ["ai_spend_cap_usd", spendCap],
     ["ai_channel_telegram", Boolean(input.telegramEnabled)],
     ["ai_channel_whatsapp", Boolean(input.whatsappEnabled)],
+    ["ai_digest_enabled", Boolean(input.digestEnabled)],
+    ["ai_digest_chat_id", (input.digestChatId || "").trim().slice(0, 40)],
     ["ai_intro", intro],
     ["ai_temperature", Math.round(temperature * 100) / 100],
     ["ai_max_tokens", maxTokens],
@@ -537,6 +542,16 @@ export async function saveAssistantSettings(
   revalidatePath(`/${locale}/admin/assistant`);
   revalidatePath(`/${locale}`, "layout");
   return { ok: true };
+}
+
+// Send the weekly digest right now (admin "test" button). Ignores the enabled
+// toggle but still needs a chat id + a working bot. Save settings first so the
+// current chat id is used.
+export async function sendTestDigest(): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+  const res = await sendWeeklyDigest(Date.now(), { force: true });
+  return res.sent ? { ok: true } : { error: `digest_${res.reason}` };
 }
 
 // --- Telegram connection (Admin → Shadi) -------------------------------------
