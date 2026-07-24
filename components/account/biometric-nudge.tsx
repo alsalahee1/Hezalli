@@ -76,7 +76,7 @@ export function BiometricNudge({ hasPasskey }: { hasPasskey: boolean }) {
         type="button"
         onClick={dismiss}
         aria-label={t("dismiss")}
-        className="text-muted-foreground hover:text-foreground shrink-0"
+        className="text-muted-foreground hover:text-foreground -m-2 flex size-9 shrink-0 items-center justify-center"
       >
         <X className="size-4" />
       </button>

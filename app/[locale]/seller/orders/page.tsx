@@ -85,7 +85,7 @@ export default async function SellerOrdersPage({
             key={tk}
             href={tk === "all" ? "/seller/orders" : `/seller/orders?tab=${tk}`}
             className={cn(
-              "border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap",
+              "flex min-h-11 items-center border-b-2 px-3 text-sm font-medium whitespace-nowrap",
               tab === tk
                 ? "border-primary text-foreground"
                 : "text-muted-foreground hover:text-foreground border-transparent",
