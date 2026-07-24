@@ -1395,6 +1395,21 @@ model WalletWebauthnChallenge {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Pre-auth WebAuthn challenge for passwordless (biometric) LOGIN. Unlike
+// WalletWebauthnChallenge this is NOT keyed by a user — at login time there is
+// no session yet. The row is found by its own random challenge value (echoed
+// back inside the assertion's signed clientDataJSON) and consumed once on a
+// successful sign-in. A periodic prune (or the TTL check on read) clears
+// expired rows.
+model LoginWebauthnChallenge {
+  id        String   @id @default(cuid())
+  challenge String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
 // Admin-managed display rates (DECISIONS.md §3). Yemen's rial trades at very
 // different values depending on which monetary authority controls an area, so
 // rates are keyed per currency *zone* ("NORTH" / "SOUTH", mapped from the

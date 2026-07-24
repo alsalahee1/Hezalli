@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations/auth";
+import { verifyLoginPasskey } from "@/lib/webauthn";
 
 import { authConfig } from "./auth.config";
 
@@ -39,6 +40,36 @@ export const {
 
         const ok = await verifyPassword(password, user.passwordHash);
         if (!ok) return null;
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          roles: user.roles,
+        };
+      },
+    }),
+    // Passwordless biometric login: the assertion is verified against a stored
+    // passkey (the same WalletCredential store), then the account is re-checked
+    // for suspension/deletion before a session is issued. Enrolment happens on
+    // the account Security page; verification lives in lib/webauthn.ts.
+    Credentials({
+      id: "passkey",
+      name: "Passkey",
+      credentials: { assertion: { label: "Passkey", type: "text" } },
+      async authorize(raw) {
+        const assertion =
+          typeof raw?.assertion === "string" ? raw.assertion : "";
+        if (!assertion) return null;
+
+        const result = await verifyLoginPasskey(assertion);
+        if (!result.ok) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { id: result.userId },
+        });
+        if (!user || user.isSuspended || user.deletedAt) return null;
 
         return {
           id: user.id,
