@@ -1,7 +1,7 @@
 // Shared voice-reply policy + rendering for the messaging channels (Telegram,
 // WhatsApp). Each channel decides *whether* to speak the same way and renders
 // the same OGG/Opus audio; only the transport (how the audio is sent) differs.
-// Every knob reads the admin-managed setting first (Admin → Shadi), then the
+// Every knob reads the admin-managed setting first (Admin → Assistant), then the
 // env var, then a built-in default.
 import "server-only";
 

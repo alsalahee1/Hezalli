@@ -3,7 +3,7 @@
 //
 // The bot token and webhook secret live in PlatformSetting rows
 // ("telegram_bot_token" / "telegram_webhook_secret", written by the Admin →
-// Shadi connect flow), with the TELEGRAM_BOT_TOKEN / TELEGRAM_WEBHOOK_SECRET
+// Assistant connect flow), with the TELEGRAM_BOT_TOKEN / TELEGRAM_WEBHOOK_SECRET
 // env vars as fallbacks. Like the Gemini key, they're kept out of
 // getPlatformSettings() so the secrets never travel with the settings object.
 import "server-only";

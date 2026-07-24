@@ -12,7 +12,7 @@ import { AssistantSettings } from "@/components/admin/assistant-settings";
 
 export const dynamic = "force-dynamic";
 
-// Dedicated settings page for Shadi (شادي), the AI assistant — identity,
+// Dedicated settings page for the AI assistant — identity,
 // credentials, channels, voice replies, cost guards, and live usage.
 export default async function AdminAssistantPage() {
   const t = await getTranslations("AdminAssistant");
@@ -72,20 +72,20 @@ export default async function AdminAssistantPage() {
           enabled: settings.ai_assistant_enabled,
           bots: [
             {
-              id: "shadi",
-              name: botName("shadi", locale),
+              id: "sam",
+              name: botName("sam", locale),
               avatar: settings.ai_assistant_avatar,
               defaultAvatar: SETTING_DEFAULTS.ai_assistant_avatar,
               persona: settings.ai_persona,
               greeting: settings.ai_greeting,
             },
             {
-              id: "jumana",
-              name: botName("jumana", locale),
-              avatar: settings.ai_avatar_jumana,
-              defaultAvatar: SETTING_DEFAULTS.ai_avatar_jumana,
-              persona: settings.ai_persona_jumana,
-              greeting: settings.ai_greeting_jumana,
+              id: "balqis",
+              name: botName("balqis", locale),
+              avatar: settings.ai_avatar_balqis,
+              defaultAvatar: SETTING_DEFAULTS.ai_avatar_balqis,
+              persona: settings.ai_persona_balqis,
+              greeting: settings.ai_greeting_balqis,
             },
           ],
           defaultBot: settings.ai_default_bot,

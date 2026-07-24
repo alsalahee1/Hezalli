@@ -9,11 +9,11 @@ import { BOT_COOKIE } from "@/lib/ai/bot-constants";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
-import { ShadiIcon } from "@/components/ai/shadi-icon";
+import { AssistantIcon } from "@/components/ai/assistant-icon";
 
 // Set on a bot switch so the widget re-opens after the reload (below) instead
 // of closing. Session-scoped so it's a true one-shot.
-const REOPEN_KEY = "shadi:reopen-after-switch";
+const REOPEN_KEY = "hz-assistant:reopen-after-switch";
 
 // Switch character: persist the choice in a cookie and reload so the server
 // re-resolves the avatar, name, and system-prompt identity. Flag the widget to
@@ -52,7 +52,7 @@ type Section =
   "store" | "seller" | "admin" | "wallet" | "driver" | "point" | "fleet";
 
 // Which part of the platform the user is on, from the (locale-stripped)
-// pathname. Sent with every message so Shadi tailors its help to the page;
+// pathname. Sent with every message so the assistant tailors its help to the page;
 // the API re-checks roles before honouring a privileged section.
 function sectionFor(pathname: string): Section {
   if (pathname.startsWith("/seller")) return "seller";
@@ -200,7 +200,7 @@ export function AiAssistant({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatar} alt="" className="size-full object-cover" />
         ) : (
-          <ShadiIcon className="size-6" />
+          <AssistantIcon className="size-6" />
         )}
       </button>
 
@@ -289,7 +289,7 @@ export function AiAssistant({
                     className="border-primary/20 mx-auto size-14 rounded-full border object-cover"
                   />
                 ) : (
-                  <ShadiIcon className="text-primary mx-auto size-8" />
+                  <AssistantIcon className="text-primary mx-auto size-8" />
                 )}
                 <p className="whitespace-pre-line">
                   {greeting?.trim() || t("greeting", { name })}

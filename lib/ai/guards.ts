@@ -24,7 +24,7 @@ import {
 export { checkRate, estimateCostUsd } from "./guards-core";
 export type { GuardReason, RateResult } from "./guards-core";
 
-// Admin-tunable guard values (Admin → Shadi). A 0/unset setting falls back to
+// Admin-tunable guard values (Admin → Assistant). A 0/unset setting falls back to
 // the env-derived default from guards-core, so nothing changes until an admin
 // dials in a value.
 export async function getMaxPerHour(): Promise<number> {

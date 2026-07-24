@@ -58,7 +58,7 @@ const bodySchema = z.object({
 
 /**
  * A privileged section only sticks if the signed-in user actually holds the
- * matching role — otherwise Shadi quietly runs in shopper mode. The section
+ * matching role — otherwise it quietly runs in shopper mode. The section
  * only tailors guidance (no extra data tools), but role-checking keeps the
  * prompt honest about who it's talking to.
  */

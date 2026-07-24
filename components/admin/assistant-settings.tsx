@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/upload/image-uploader";
-import { ShadiIcon } from "@/components/ai/shadi-icon";
+import { AssistantIcon } from "@/components/ai/assistant-icon";
 
 // Gemini prebuilt TTS voices worth offering; "" = keep the server default.
 const VOICES = [
@@ -145,7 +145,7 @@ export function AssistantSettings({
   const [tab, setTab] = useState<string>(
     current.bots.some((b) => b.id === current.defaultBot)
       ? current.defaultBot
-      : (current.bots[0]?.id ?? "shadi"),
+      : (current.bots[0]?.id ?? "sam"),
   );
   const activeBotCard =
     current.bots.find((b) => b.id === tab) ?? current.bots[0];
@@ -197,7 +197,7 @@ export function AssistantSettings({
     <div className="space-y-6">
       {/* ── Status & identity ── */}
       <section className="space-y-4 rounded-lg border p-5">
-        <SectionTitle icon={ShadiIcon} title={t("statusTitle")} />
+        <SectionTitle icon={AssistantIcon} title={t("statusTitle")} />
         <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
@@ -215,7 +215,7 @@ export function AssistantSettings({
       {/* ── Characters (tabbed): each bot's image, default, persona, greeting ── */}
       <section className="space-y-4 rounded-lg border p-5">
         <SectionTitle icon={Users} title={t("charactersTitle")} />
-        {/* Shadi / Jumana tabs — a real tab bar: the active one sits on a
+        {/* Character tabs — a real tab bar: the active one sits on a
             bottom border so the panel below reads as that tab's own page. */}
         <div role="tablist" className="-mb-px flex gap-1 border-b">
           {current.bots.map((bot) => (

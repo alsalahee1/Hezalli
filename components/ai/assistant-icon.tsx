@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
 
 /**
- * One-color glyph of Shadi (شادي), the AI assistant — a minimal line-icon
- * take on the brand artwork: keffiyeh dome with the agal cord and dark
- * sunglasses. Drawn to lucide conventions (24×24 viewBox, 2px rounded
- * strokes, currentColor) so it drops in anywhere a lucide icon fits.
+ * One-color glyph for the AI assistant — a minimal line-icon take on the
+ * brand artwork: keffiyeh dome with the agal cord and dark sunglasses. Drawn
+ * to lucide conventions (24×24 viewBox, 2px rounded strokes, currentColor) so
+ * it drops in anywhere a lucide icon fits.
  */
-export function ShadiIcon({
+export function AssistantIcon({
   className,
   ...props
 }: React.SVGProps<SVGSVGElement>) {
