@@ -3242,7 +3242,8 @@
     "labelsBays": "Bays per row",
     "labelsUpdate": "Update",
     "labelsCalloutTitle": "Print shelf labels",
-    "labelsCalloutBody": "QR labels for your bays — scan instead of typing shelf codes."
+    "labelsCalloutBody": "QR labels for your bays — scan instead of typing shelf codes.",
+    "labelsTab": "Shelf labels"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
