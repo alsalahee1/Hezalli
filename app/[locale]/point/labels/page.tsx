@@ -4,8 +4,10 @@ import { Tags } from "lucide-react";
 import { requireDeliveryPoint } from "@/lib/authz";
 import { pointShelfRows } from "@/lib/actions/point-shelves";
 import { canManagePoint } from "@/lib/point-access";
+import { pointShelfLoads } from "@/lib/point-shelves";
 import { QrCode } from "@/components/orders/qr-code";
 import { ShelfLabelControls } from "@/components/point/shelf-label-controls";
+import { ShelfOccupancy } from "@/components/point/shelf-occupancy";
 import { ShelfRegistryToggle } from "@/components/point/shelf-registry-toggle";
 import { ShelfZoneEditor } from "@/components/point/shelf-zone-editor";
 
@@ -28,10 +30,12 @@ export default async function PointLabelsPage({
   const rows = Math.min(12, Math.max(1, Number(sp.rows) || 6));
   const bays = Math.min(20, Math.max(1, Number(sp.bays) || 8));
 
-  // Auto-placement registry status — the toggle/editor are owner/manager only.
+  // Auto-placement registry status — the toggle/editor are owner/manager only;
+  // the occupancy view is for any counter staff.
   const canManage = canManagePoint(gate.access);
+  const loads = await pointShelfLoads(gate.pointId);
   const shelfRows = canManage ? await pointShelfRows() : [];
-  const registered = shelfRows.reduce((n, r) => n + r.count, 0);
+  const registered = loads.length;
 
   const codes: string[] = [];
   for (let r = 0; r < rows; r++) {
@@ -57,6 +61,8 @@ export default async function PointLabelsPage({
       {canManage && shelfRows.length > 0 ? (
         <ShelfZoneEditor rows={shelfRows} />
       ) : null}
+
+      <ShelfOccupancy loads={loads} />
 
       {/* The sheet — the only thing that reaches the paper. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 print:grid-cols-4 print:gap-2">

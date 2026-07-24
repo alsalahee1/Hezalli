@@ -95,4 +95,58 @@ describe("pickShelf", () => {
       expect(pickShelf(zoned, occ)).toBe("A2");
     });
   });
+
+  describe("co-location", () => {
+    it("consolidates onto the bay already holding the same destination", () => {
+      const shelves = slots("A1", "A2", "A3");
+      // A2 is not the emptiest, but it already holds this city's parcels.
+      const occ = new Map([
+        ["A1", 0],
+        ["A2", 2],
+        ["A3", 1],
+      ]);
+      const sameCity = new Map([["A2", 2]]);
+      expect(pickShelf(shelves, occ, undefined, sameCity)).toBe("A2");
+    });
+
+    it("prefers the bay with the most of the destination (finish it first)", () => {
+      const shelves = slots("A1", "A2", "A3");
+      const occ = new Map([
+        ["A1", 3],
+        ["A2", 5],
+        ["A3", 1],
+      ]);
+      const sameCity = new Map([
+        ["A1", 1],
+        ["A2", 4],
+      ]);
+      expect(pickShelf(shelves, occ, undefined, sameCity)).toBe("A2");
+    });
+
+    it("skips a full matching bay and co-locates on the next match", () => {
+      const shelves: ShelfSlot[] = [
+        { code: "A1", capacity: 2, zone: null },
+        { code: "A2", capacity: 5, zone: null },
+        { code: "A3", capacity: null, zone: null },
+      ];
+      // A1 has the most matches but is full → A2 (also a match) wins.
+      const occ = new Map([
+        ["A1", 2],
+        ["A2", 1],
+        ["A3", 0],
+      ]);
+      const sameCity = new Map([
+        ["A1", 2],
+        ["A2", 1],
+      ]);
+      expect(pickShelf(shelves, occ, undefined, sameCity)).toBe("A2");
+    });
+
+    it("falls back to least-busy when no bay holds the destination", () => {
+      const shelves = slots("A1", "A2");
+      const occ = new Map([["A1", 3]]);
+      const sameCity = new Map<string, number>();
+      expect(pickShelf(shelves, occ, undefined, sameCity)).toBe("A2");
+    });
+  });
 });
