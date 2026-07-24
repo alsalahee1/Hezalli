@@ -293,7 +293,7 @@ model User {
   courierLedger            CourierLedgerEntry[]      @relation("CourierLedger")
   remitClaims              RemitClaim[]              @relation("CourierRemitClaims")
   pushSubscriptions        PushSubscription[]
-  deliveryPoint            DeliveryPoint?            @relation("PointOwner")
+  deliveryPoints           DeliveryPoint[]           @relation("PointOwner")
   deliveryPointApplication DeliveryPointApplication?
   pointStaff               PointStaff?               @relation("PointStaffUser")
   // Security deposit Hezalli holds from this courier (docs §32). Optional —
@@ -386,7 +386,10 @@ enum DeliveryPointStatus {
 // fee — see DeliveryPointLedgerEntry and docs/DELIVERY-POINTS.md.
 model DeliveryPoint {
   id             String                     @id @default(cuid())
-  ownerId        String                     @unique
+  // An owner may run several branches (docs §42j) — no longer unique. The
+  // point app resolves which branch the owner is operating from the
+  // `point_branch` cookie (see requireDeliveryPoint / lib/point-branch.ts).
+  ownerId        String
   name           String
   phone          String
   governorate    String
@@ -422,6 +425,7 @@ model DeliveryPoint {
   staff          PointStaff[]
 
   @@index([governorate, status])
+  @@index([ownerId])
 }
 
 // A hub operator's request to be paid their earnings balance, mirroring the

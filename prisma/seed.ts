@@ -836,7 +836,7 @@ async function main() {
       passwordHash: PASSWORD,
       roles: ["DELIVERY_POINT"],
       locale: "ar",
-      deliveryPoint: {
+      deliveryPoints: {
         create: {
           name: "Sana'a Central Point",
           phone: "+967700000010",

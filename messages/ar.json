@@ -3209,7 +3209,8 @@
     "receiptDelivered": "سُلّم إلى العميل",
     "receiptFooter": "تم الاستلام عبر نقطة {locale}",
     "receiptNotFound": "لا يوجد طرد مُستلم بهذا الرمز في هذه النقطة.",
-    "receiptBack": "العودة للمسح"
+    "receiptBack": "العودة للمسح",
+    "branchSwitch": "تبديل الفرع"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
@@ -3333,7 +3334,22 @@
     "staffSince": "منذ {date}",
     "staffDeactivate": "إيقاف",
     "staffReactivate": "إعادة التفعيل",
-    "staffErr": "تعذر التحديث — حاول مجددًا."
+    "staffErr": "تعذر التحديث — حاول مجددًا.",
+    "branchAddTitle": "إضافة فرع",
+    "branchAddHint": "أنشئ فرعًا آخر لمالك موجود (بالبريد أو الهاتف)، أو سجّل مالكًا جديدًا.",
+    "branchAddBtn": "إنشاء الفرع",
+    "branchAdded": "تم إنشاء الفرع.",
+    "branchCancel": "إلغاء",
+    "branch_owner": "بريد أو هاتف المالك",
+    "branch_name": "اسم الفرع",
+    "branch_phone": "هاتف الفرع",
+    "branch_governorate": "المحافظة",
+    "branch_city": "المدينة",
+    "branch_addressLine": "العنوان",
+    "branchErr_forbidden": "غير مسموح.",
+    "branchErr_badInput": "أكمل جميع الحقول.",
+    "branchErr_ownerNotFound": "لا يوجد حساب بهذا البريد أو الهاتف.",
+    "branchErr_isStaff": "هذا الحساب يعمل كموظف نقطة ولا يمكنه امتلاك فروع."
   },
   "DeliveryProof": {
     "title": "إثبات التسليم",

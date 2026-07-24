@@ -75,7 +75,11 @@ async function resolveSection(
     select: {
       roles: true,
       ownedFleet: { select: { isActive: true } },
-      deliveryPoint: { select: { status: true } },
+      deliveryPoints: {
+        where: { status: "ACTIVE" },
+        select: { id: true },
+        take: 1,
+      },
     },
   });
   const ok =
@@ -87,7 +91,7 @@ async function resolveSection(
           ? user?.roles.includes("COURIER")
           : requested === "point"
             ? user?.roles.includes("DELIVERY_POINT") &&
-              user?.deliveryPoint?.status === "ACTIVE"
+              (user?.deliveryPoints.length ?? 0) > 0
             : requested === "fleet"
               ? (user?.ownedFleet?.isActive ?? false)
               : false;

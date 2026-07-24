@@ -113,15 +113,15 @@ export async function addPointStaff(
       locale: true,
       isSuspended: true,
       deletedAt: true,
-      deliveryPoint: { select: { id: true } },
+      deliveryPoints: { select: { id: true }, take: 1 },
       pointStaff: { select: { pointId: true } },
     },
   });
   if (!user || user.isSuspended || user.deletedAt) {
     return { error: "userNotFound" };
   }
-  // A hub owner (this one or any other) can't be hired as counter staff.
-  if (user.deliveryPoint) return { error: "ownsPoint" };
+  // A hub owner (of any branch) can't be hired as counter staff.
+  if (user.deliveryPoints.length > 0) return { error: "ownsPoint" };
   if (user.pointStaff) {
     return user.pointStaff.pointId === gate.pointId
       ? { error: "alreadyStaff" }

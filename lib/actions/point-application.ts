@@ -141,37 +141,42 @@ export async function reviewPointApplication(
       ? applicant.roles
       : [...applicant.roles, "DELIVERY_POINT"];
 
-    await prisma.$transaction([
-      prisma.user.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id: application.userId },
         data: { roles: { set: roles } },
-      }),
-      // One point per owner: a re-approved operator gets their point updated
-      // and reactivated rather than duplicated.
-      prisma.deliveryPoint.upsert({
+      });
+      // The self-service application creates the applicant's FIRST point (and,
+      // on a re-approval, reactivates/updates that same one rather than
+      // duplicating). Additional branches for an owner who already has one are
+      // admin-created (adminAddPointBranch), not made here — so this touches
+      // at most the applicant's existing single point. ownerId is no longer
+      // unique (docs §42j), so resolve it explicitly instead of upsert-by-owner.
+      const existing = await tx.deliveryPoint.findFirst({
         where: { ownerId: application.userId },
-        create: {
-          ownerId: application.userId,
-          name: application.pointName,
-          phone: application.phone,
-          governorate: application.governorate,
-          city: application.city,
-          addressLine: application.addressLine,
-          lat: application.lat,
-          lng: application.lng,
-        },
-        update: {
-          name: application.pointName,
-          phone: application.phone,
-          governorate: application.governorate,
-          city: application.city,
-          addressLine: application.addressLine,
-          lat: application.lat,
-          lng: application.lng,
-          status: "ACTIVE",
-        },
-      }),
-      prisma.deliveryPointApplication.update({
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const fields = {
+        name: application.pointName,
+        phone: application.phone,
+        governorate: application.governorate,
+        city: application.city,
+        addressLine: application.addressLine,
+        lat: application.lat,
+        lng: application.lng,
+      };
+      if (existing) {
+        await tx.deliveryPoint.update({
+          where: { id: existing.id },
+          data: { ...fields, status: "ACTIVE" },
+        });
+      } else {
+        await tx.deliveryPoint.create({
+          data: { ownerId: application.userId, ...fields },
+        });
+      }
+      await tx.deliveryPointApplication.update({
         where: { id: applicationId },
         data: {
           status: "APPROVED",
@@ -179,8 +184,8 @@ export async function reviewPointApplication(
           reviewedAt: new Date(),
           reviewNote: reviewNote || null,
         },
-      }),
-      prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           actorId: adminId,
           action: "point.approve",
@@ -188,8 +193,8 @@ export async function reviewPointApplication(
           entityId: applicationId,
           meta: reviewNote ? { reviewNote } : undefined,
         },
-      }),
-    ]);
+      });
+    });
   } else {
     await prisma.$transaction([
       prisma.deliveryPointApplication.update({
@@ -215,6 +220,74 @@ export async function reviewPointApplication(
 
   const locale = await getLocale();
   revalidatePath(`/${locale}/admin/points`);
+}
+
+// Multi-location (docs §42j): an admin creates an ADDITIONAL branch for an
+// existing owner (found by email or phone), or onboards a new operator
+// directly. The self-service application still makes only the first point;
+// branches 2..N come through here. Grants the DELIVERY_POINT role if missing.
+export async function adminAddPointBranch(
+  formData: FormData,
+): Promise<{ ok?: boolean; error?: string }> {
+  const adminId = await requireDeliveryManagerId();
+  if (!adminId) return { error: "forbidden" };
+
+  const identifier = String(formData.get("owner") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const governorate = String(formData.get("governorate") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const addressLine = String(formData.get("addressLine") ?? "").trim();
+  if (!identifier || !name || !phone || !governorate || !city || !addressLine) {
+    return { error: "badInput" };
+  }
+
+  const owner = await prisma.user.findUnique({
+    where: identifier.includes("@")
+      ? { email: identifier.toLowerCase() }
+      : { phone: identifier },
+    select: { id: true, roles: true, isSuspended: true, deletedAt: true },
+  });
+  if (!owner || owner.isSuspended || owner.deletedAt) {
+    return { error: "ownerNotFound" };
+  }
+  // Someone working at a hub as staff can't also own branches.
+  const staff = await prisma.pointStaff.findUnique({
+    where: { userId: owner.id },
+    select: { id: true },
+  });
+  if (staff) return { error: "isStaff" };
+
+  const roles: Role[] = owner.roles.includes("DELIVERY_POINT")
+    ? owner.roles
+    : [...owner.roles, "DELIVERY_POINT"];
+
+  await prisma.$transaction(async (tx) => {
+    if (!owner.roles.includes("DELIVERY_POINT")) {
+      await tx.user.update({
+        where: { id: owner.id },
+        data: { roles: { set: roles } },
+      });
+    }
+    const created = await tx.deliveryPoint.create({
+      data: { ownerId: owner.id, name, phone, governorate, city, addressLine },
+      select: { id: true },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: "point.addBranch",
+        entity: "DeliveryPoint",
+        entityId: created.id,
+        meta: { ownerId: owner.id },
+      },
+    });
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/points`);
+  revalidatePath(`/${locale}/delivery-manager/points`);
+  return { ok: true };
 }
 
 // Admin sets a point's parcel capacity (max held/inbound at once). Empty or

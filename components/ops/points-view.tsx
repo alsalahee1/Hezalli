@@ -6,6 +6,7 @@ import { getSetting } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { PointApplicationActions } from "@/components/admin/point-application-actions";
+import { AddBranchForm } from "@/components/admin/add-branch-form";
 import { Button } from "@/components/ui/button";
 
 // Admin review queue for "become a delivery point" applications plus the live
@@ -144,6 +145,8 @@ export async function PointsView({ base }: { base: string }) {
         <h2 className="text-sm font-semibold">
           {t("networkHeading")} ({points.length})
         </h2>
+        {/* Multi-location (docs §42j): add a branch to an existing owner. */}
+        <AddBranchForm />
         {points.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("noPoints")}</p>
         ) : (

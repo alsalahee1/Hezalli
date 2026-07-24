@@ -3,9 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
+import { cookies } from "next/headers";
+
+import { auth } from "@/auth";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { requireDeliveryPoint } from "@/lib/authz";
 import { cashBlockedPointIds } from "@/lib/cod-guard";
+import { POINT_BRANCH_COOKIE } from "@/lib/point-branch";
 import { canHandleCash, canManagePoint } from "@/lib/point-access";
 import { parseWeeklyHours, type WeeklyHours } from "@/lib/point-hours";
 import { courierCashSummary } from "@/lib/courier-ledger";
@@ -316,5 +320,32 @@ export async function setPointHours(
   const locale = await getLocale();
   revalidatePath(`/${locale}/point/profile`);
   revalidatePath(`/${locale}/points`);
+  return { ok: true };
+}
+
+// Multi-location (docs §42j): switch which of the owner's branches the point
+// app is operating. Validated against ownership of an ACTIVE branch, then
+// stored in the point_branch cookie that requireDeliveryPoint reads. Only an
+// owner has more than one branch; staff never call this.
+export async function setActiveBranch(pointId: string): Promise<Result> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return { error: "forbidden" };
+  const owns = await prisma.deliveryPoint.findFirst({
+    where: { id: pointId, ownerId: id, status: "ACTIVE" },
+    select: { id: true },
+  });
+  if (!owns) return { error: "forbidden" };
+
+  const store = await cookies();
+  store.set(POINT_BRANCH_COOKIE, pointId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/point`, "layout");
   return { ok: true };
 }

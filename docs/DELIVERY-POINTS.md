@@ -1095,6 +1095,39 @@ pickup offers a printable receipt:
 - [x] i18n (en + ar)
 - [x] This file kept current
 
+## 42j. v1.33 — Multi-location (chains)
+
+One owner was hard-capped to a single hub (`DeliveryPoint.ownerId @unique`).
+Now an owner can run several branches:
+
+- **Schema** — `ownerId` is no longer unique (+ migration dropping the unique
+  index); `User.deliveryPoints` is a list. Staff are still one-hub
+  (`PointStaff.userId` unique).
+- **Branch resolution** — `requireDeliveryPoint()` returns the owner's
+  *selected* branch, read from the `point_branch` cookie
+  (`lib/point-branch.ts`), defaulting to the earliest-created active branch.
+  The single-branch case skips the cookie entirely, so nothing changes for the
+  vast majority of hubs. Staff resolve to their one hub, unchanged.
+- **Switcher** — a header control in the point app (shown only when an owner
+  has ≥2 active branches) writes the cookie via `setActiveBranch` (validated
+  against ownership of an ACTIVE branch) and refreshes.
+- **Creating branches** — the self-service application still makes only the
+  FIRST point (its approval reactivates/updates that one, never duplicates).
+  Branches 2..N are admin-created via `adminAddPointBranch` (delivery-manager
+  gated, audited) from the ops network page — which also onboards a brand-new
+  owner directly. A point-staff account can't be made a branch owner.
+
+### Build checklist (v1.33)
+
+- [x] `ownerId` non-unique + `deliveryPoints` list + migration
+- [x] `requireDeliveryPoint` branch cookie (single-branch fast path) +
+      `setActiveBranch` + header switcher
+- [x] Application approval refactored off upsert-by-owner (still 1 point)
+- [x] `adminAddPointBranch` + ops network add-branch form
+- [x] i18n (en + ar) + integration test (`point-multi-location.test.ts`:
+      default branch, switch, ownership guard, admin add-branch)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

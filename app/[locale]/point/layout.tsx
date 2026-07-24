@@ -6,10 +6,14 @@ import type { Metadata, Viewport } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, Link } from "@/i18n/navigation";
+import { cookies } from "next/headers";
+
 import { Forbidden } from "@/components/auth/forbidden";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { PointTabBar } from "@/components/point/point-tab-bar";
+import { PointBranchSwitcher } from "@/components/point/point-branch-switcher";
 import type { PointAccess } from "@/lib/point-access";
+import { POINT_BRANCH_COOKIE, resolveActiveBranch } from "@/lib/point-branch";
 
 // Scope the installable-app metadata to the point section only (same pattern
 // as the driver app) so operators can pin "Hezalli Point" to a phone or the
@@ -46,7 +50,13 @@ export default async function PointLayout({
       roles: true,
       isSuspended: true,
       deletedAt: true,
-      deliveryPoint: { select: { status: true } },
+      // An owner may run several branches (docs §42j); the header switcher
+      // lists their ACTIVE ones and the cookie picks the current.
+      deliveryPoints: {
+        where: { status: "ACTIVE" },
+        select: { id: true, name: true },
+        orderBy: { createdAt: "asc" },
+      },
       pointStaff: {
         select: {
           role: true,
@@ -61,9 +71,20 @@ export default async function PointLayout({
 
   const staff = user!.pointStaff;
   let access: PointAccess;
+  // The owner's active branches (empty for staff); drives the switcher and the
+  // resolved current branch.
+  let branches: { id: string; name: string }[] = [];
+  let currentBranchId: string | null = null;
   if (user!.roles.includes("DELIVERY_POINT")) {
-    // Suspended point: role kept, access paused.
-    if (user!.deliveryPoint?.status !== "ACTIVE") return <Forbidden />;
+    branches = user!.deliveryPoints;
+    // Role kept but every branch suspended → access paused.
+    if (branches.length === 0) return <Forbidden />;
+    // Only a multi-branch owner needs the cookie.
+    const cookie =
+      branches.length > 1
+        ? (await cookies()).get(POINT_BRANCH_COOKIE)?.value
+        : undefined;
+    currentBranchId = resolveActiveBranch(branches, cookie)!.id;
     access = "OWNER";
   } else if (staff) {
     // Deactivated membership or suspended hub: keep the row, pause access.
@@ -87,6 +108,13 @@ export default async function PointLayout({
           <Store className="text-primary size-5" /> {t("appName")}
         </Link>
         <div className="flex items-center gap-2">
+          {/* Multi-branch owners switch which hub they're operating here. */}
+          {branches.length > 1 && currentBranchId ? (
+            <PointBranchSwitcher
+              branches={branches}
+              currentId={currentBranchId}
+            />
+          ) : null}
           {/* Escape hatch back to the storefront — the point app is a
               standalone shell, so without this an operator who opens it has no
               way back to the shop (matches the driver/seller/admin shells). */}
