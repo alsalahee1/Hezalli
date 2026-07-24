@@ -3273,7 +3273,9 @@
     "shelfZoneDispatch": "Courier dispatch",
     "shelfZoneReturns": "Returns",
     "shelfZonesSave": "Save areas",
-    "shelfZonesSaved": "Saved"
+    "shelfZonesSaved": "Saved",
+    "shelfLoadTitle": "Shelf occupancy",
+    "shelfLoadSummary": "{parcels} parcels on {bays} bays right now."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

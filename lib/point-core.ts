@@ -65,7 +65,13 @@ async function findParcel(pointId: string, tracking: string) {
             },
           },
           order: {
-            select: { buyerId: true, buyer: { select: { locale: true } } },
+            select: {
+              buyerId: true,
+              buyer: { select: { locale: true } },
+              // Destination city — groups a driver's dispatch load onto the
+              // same bay via co-location at receive time.
+              address: { select: { city: true } },
+            },
           },
         },
       },
@@ -132,7 +138,11 @@ export async function receiveParcelAtPoint(
     parcel.deliveryPointId === pointId;
   const shelfCode =
     manualShelf ??
-    (await assignShelf(pointId, isPickupParcel ? "PICKUP" : "DISPATCH"));
+    (await assignShelf(
+      pointId,
+      isPickupParcel ? "PICKUP" : "DISPATCH",
+      isPickupParcel ? null : parcel.subOrder.order.address?.city,
+    ));
   // Which hop is this? Origin receives the seller drop-off (LABEL_CREATED);
   // the destination receives either the drop-off (single-hop) or the
   // line-haul arrival (IN_TRANSIT with an origin leg).

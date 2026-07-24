@@ -3273,7 +3273,9 @@
     "shelfZoneDispatch": "إرسال المندوب",
     "shelfZoneReturns": "المرتجعات",
     "shelfZonesSave": "حفظ المناطق",
-    "shelfZonesSaved": "تم الحفظ"
+    "shelfZonesSaved": "تم الحفظ",
+    "shelfLoadTitle": "إشغال الرفوف",
+    "shelfLoadSummary": "{parcels} طردًا على {bays} رفًّا حاليًا."
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
