@@ -3276,7 +3276,8 @@
     "shelfZonesSaved": "تم الحفظ",
     "shelfLoadTitle": "إشغال الرفوف",
     "shelfLoadSummary": "{parcels} طردًا على {bays} رفًّا حاليًا.",
-    "manifestNoShelf": "بدون رف"
+    "manifestNoShelf": "بدون رف",
+    "shelfTileFull": "{count} ممتلئ"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
