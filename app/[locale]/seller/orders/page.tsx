@@ -7,6 +7,7 @@ import { SELLER_TABS, STATUS_BADGE, type SellerTab } from "@/lib/order-status";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const TAB_STATUSES: Record<Exclude<SellerTab, "all">, string[]> = {
   new: ["PENDING", "CONFIRMED"],
@@ -65,12 +66,12 @@ export default async function SellerOrdersPage({
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <form className="relative">
           <Search className="text-muted-foreground pointer-events-none absolute inset-y-0 my-auto ms-3 size-4" />
-          <input
+          <Input
             type="search"
             name="q"
             defaultValue={q}
             placeholder={t("searchPlaceholder")}
-            className="bg-muted/40 h-9 w-64 rounded-md border ps-9 pe-3 text-sm outline-none"
+            className="bg-muted/40 w-64 ps-9"
           />
           {tab !== "all" ? (
             <input type="hidden" name="tab" value={tab} />

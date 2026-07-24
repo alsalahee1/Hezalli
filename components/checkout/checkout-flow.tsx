@@ -27,6 +27,8 @@ import { formatUsd } from "@/lib/products";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export type CheckoutAddress = {
   id: string;
@@ -504,11 +506,10 @@ export function CheckoutFlow({
                 <label className="text-sm font-medium" htmlFor="pickup-point">
                   {t("pickupPointLabel")}
                 </label>
-                <select
+                <Select
                   id="pickup-point"
                   value={pickupPointId}
                   onChange={(e) => setPickupPointId(e.target.value)}
-                  className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
                 >
                   <option value="">{t("pickupPointPlaceholder")}</option>
                   {sortedPickupPoints.map((p) => (
@@ -516,7 +517,7 @@ export function CheckoutFlow({
                       {p.label}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <p className="text-muted-foreground text-xs">
                   {t("pickupPointHint")}{" "}
                   <Link
@@ -542,21 +543,21 @@ export function CheckoutFlow({
                     ? t("scheduleRequiredFreight")
                     : t("scheduleHint")}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <input
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
                     type="date"
                     aria-label={t("scheduleDate")}
                     value={deliveryDate}
                     min={scheduleBounds.min}
                     max={scheduleBounds.max}
                     onChange={(e) => setDeliveryDate(e.target.value)}
-                    className="h-9 rounded-md border bg-transparent px-3 text-sm"
+                    className="w-auto"
                   />
-                  <select
+                  <Select
                     aria-label={t("scheduleSlot")}
                     value={deliverySlot}
                     onChange={(e) => setDeliverySlot(e.target.value)}
-                    className="h-9 rounded-md border bg-transparent px-3 text-sm"
+                    className="w-auto"
                   >
                     <option value="">{t("scheduleSlotAny")}</option>
                     {DELIVERY_SLOTS.map((s) => (
@@ -564,7 +565,7 @@ export function CheckoutFlow({
                         {tWin(`slot_${s}`)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   {(deliveryDate || deliverySlot) && (
                     <button
                       type="button"
@@ -572,7 +573,7 @@ export function CheckoutFlow({
                         setDeliveryDate("");
                         setDeliverySlot("");
                       }}
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      className="text-muted-foreground hover:text-foreground flex min-h-9 items-center px-2 text-xs underline"
                     >
                       {t("scheduleClear")}
                     </button>
@@ -628,18 +629,18 @@ export function CheckoutFlow({
                 <button
                   type="button"
                   onClick={clearCoupon}
-                  className="text-muted-foreground hover:text-foreground text-xs"
+                  className="text-muted-foreground hover:text-foreground flex min-h-9 items-center px-2 text-xs"
                 >
                   {t("removeCoupon")}
                 </button>
               </div>
             ) : (
               <div className="flex gap-2">
-                <input
+                <Input
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
                   placeholder={t("couponPlaceholder")}
-                  className="h-9 flex-1 rounded-md border px-3 text-sm uppercase outline-none"
+                  className="flex-1 uppercase"
                 />
                 <Button
                   size="sm"

@@ -89,7 +89,7 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
             type="button"
             onClick={() => go(index - 1)}
             aria-label={t("previous")}
-            className="absolute start-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            className="absolute start-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100"
           >
             <ChevronLeft className="size-5 rtl:rotate-180" />
           </button>
@@ -97,22 +97,26 @@ export function HeroCarousel({ banners }: { banners: HeroBanner[] }) {
             type="button"
             onClick={() => go(index + 1)}
             aria-label={t("next")}
-            className="absolute end-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            className="absolute end-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100"
           >
             <ChevronRight className="size-5 rtl:rotate-180" />
           </button>
-          <div className="absolute start-1/2 bottom-3 flex -translate-x-1/2 gap-1.5 rtl:translate-x-1/2">
+          <div className="absolute start-1/2 bottom-1 flex -translate-x-1/2 rtl:translate-x-1/2">
             {banners.map((b, i) => (
               <button
                 key={b.id}
                 type="button"
                 aria-label={t("slide", { n: i + 1 })}
                 onClick={() => setIndex(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  i === index ? "w-5 bg-white" : "w-1.5 bg-white/60",
-                )}
-              />
+                className="flex size-8 items-center justify-center"
+              >
+                <span
+                  className={cn(
+                    "h-1.5 rounded-full transition-all",
+                    i === index ? "w-5 bg-white" : "w-1.5 bg-white/60",
+                  )}
+                />
+              </button>
             ))}
           </div>
         </>

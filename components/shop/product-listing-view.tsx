@@ -41,7 +41,7 @@ export async function ProductListingView({
         ) : null}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]">
         <ListingFilters facets={facets} params={params} mode={mode} />
 
         <div className="min-w-0">

@@ -55,7 +55,7 @@ export function MultiImageUploader({
                     onClick={() => move(i, -1)}
                     disabled={i === 0}
                     aria-label={t("moveBack")}
-                    className="bg-background/90 hover:bg-background inline-flex size-6 items-center justify-center rounded disabled:opacity-40"
+                    className="bg-background/90 hover:bg-background inline-flex size-9 items-center justify-center rounded disabled:opacity-40"
                   >
                     <ChevronLeft className="size-4 rtl:rotate-180" />
                   </button>
@@ -64,7 +64,7 @@ export function MultiImageUploader({
                     onClick={() => move(i, 1)}
                     disabled={i === images.length - 1}
                     aria-label={t("moveForward")}
-                    className="bg-background/90 hover:bg-background inline-flex size-6 items-center justify-center rounded disabled:opacity-40"
+                    className="bg-background/90 hover:bg-background inline-flex size-9 items-center justify-center rounded disabled:opacity-40"
                   >
                     <ChevronRight className="size-4 rtl:rotate-180" />
                   </button>
@@ -73,7 +73,7 @@ export function MultiImageUploader({
                   type="button"
                   onClick={() => remove(i)}
                   aria-label={t("removeImage")}
-                  className="bg-background/90 text-destructive hover:bg-background inline-flex size-6 items-center justify-center rounded"
+                  className="bg-background/90 text-destructive hover:bg-background inline-flex size-9 items-center justify-center rounded"
                 >
                   <X className="size-4" />
                 </button>

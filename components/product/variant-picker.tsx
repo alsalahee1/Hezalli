@@ -182,7 +182,7 @@ export function VariantPicker({
                         setQty(1);
                       }}
                       className={cn(
-                        "rounded-md border px-3 py-1.5 text-sm transition-colors",
+                        "min-h-10 rounded-md border px-3.5 py-2 text-sm transition-colors",
                         isSel
                           ? "border-primary bg-primary/10 font-medium"
                           : "hover:border-muted-foreground/50",
@@ -221,7 +221,7 @@ export function VariantPicker({
         <div className="flex items-center rounded-md border">
           <button
             type="button"
-            className="hover:bg-muted flex size-9 items-center justify-center disabled:opacity-40"
+            className="hover:bg-muted flex size-11 items-center justify-center disabled:opacity-40"
             disabled={clampedQty <= 1}
             onClick={() => setQty((q) => Math.max(1, q - 1))}
             aria-label={t("decrease")}
@@ -233,7 +233,7 @@ export function VariantPicker({
           </span>
           <button
             type="button"
-            className="hover:bg-muted flex size-9 items-center justify-center disabled:opacity-40"
+            className="hover:bg-muted flex size-11 items-center justify-center disabled:opacity-40"
             disabled={clampedQty >= stock}
             onClick={() => setQty((q) => Math.min(stock, q + 1))}
             aria-label={t("increase")}

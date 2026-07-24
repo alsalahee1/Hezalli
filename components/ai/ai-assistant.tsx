@@ -268,7 +268,7 @@ export function AiAssistant({
               type="button"
               aria-label={t("close")}
               onClick={() => setOpen(false)}
-              className="hover:bg-primary-foreground/10 rounded-md p-1"
+              className="hover:bg-primary-foreground/10 flex size-11 items-center justify-center rounded-md"
             >
               <X className="size-5" />
             </button>

@@ -144,14 +144,16 @@ export function CartView() {
               {g.lines.map((l) => {
                 const oos = l.stock <= 0;
                 return (
-                  <li key={l.variantId} className="flex gap-3 p-4">
-                    <input
-                      type="checkbox"
-                      className="mt-1 size-4"
-                      disabled={oos}
-                      checked={selected.has(l.variantId)}
-                      onChange={() => toggle(l.variantId)}
-                    />
+                  <li key={l.variantId} className="flex gap-1 p-4">
+                    <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center">
+                      <input
+                        type="checkbox"
+                        className="size-4"
+                        disabled={oos}
+                        checked={selected.has(l.variantId)}
+                        onChange={() => toggle(l.variantId)}
+                      />
+                    </label>
                     <Link
                       href={`/product/${l.productSlug}`}
                       className="bg-muted size-20 shrink-0 overflow-hidden rounded"
@@ -187,18 +189,18 @@ export function CartView() {
                       ) : null}
                     </div>
                     <div className="flex flex-col items-end justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center">
                         <button
                           type="button"
                           onClick={() => saveForLater(l.variantId)}
-                          className="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                          className="text-muted-foreground hover:text-foreground flex min-h-9 items-center px-2 text-xs hover:underline"
                         >
                           {t("saveForLater")}
                         </button>
                         <button
                           type="button"
                           onClick={() => remove(l.variantId)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="text-muted-foreground hover:text-destructive flex size-9 items-center justify-center"
                           aria-label={t("remove")}
                         >
                           <Trash2 className="size-4" />
@@ -207,18 +209,18 @@ export function CartView() {
                       <div className="flex items-center rounded-md border">
                         <button
                           type="button"
-                          className="hover:bg-muted flex size-8 items-center justify-center disabled:opacity-40"
+                          className="hover:bg-muted flex size-10 items-center justify-center disabled:opacity-40"
                           disabled={oos || l.quantity <= 1}
                           onClick={() => setQty(l.variantId, l.quantity - 1)}
                         >
                           <Minus className="size-3.5" />
                         </button>
-                        <span className="w-8 text-center text-sm tabular-nums">
+                        <span className="w-9 text-center text-sm tabular-nums">
                           {l.quantity}
                         </span>
                         <button
                           type="button"
-                          className="hover:bg-muted flex size-8 items-center justify-center disabled:opacity-40"
+                          className="hover:bg-muted flex size-10 items-center justify-center disabled:opacity-40"
                           disabled={oos || l.quantity >= l.stock}
                           onClick={() => setQty(l.variantId, l.quantity + 1)}
                         >

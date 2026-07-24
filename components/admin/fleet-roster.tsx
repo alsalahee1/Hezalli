@@ -143,7 +143,7 @@ export function FleetRoster({
                     </dd>
                   </div>
                 </dl>
-                <div className="mt-3 flex items-center justify-end gap-3 border-t pt-3">
+                <div className="mt-3 flex items-center justify-end border-t pt-1">
                   {d.courierId === ownerId ? (
                     <button
                       type="button"
@@ -151,7 +151,7 @@ export function FleetRoster({
                       onClick={() =>
                         run(() => setFleetOwner({ fleetId, courierId: null }))
                       }
-                      className="text-muted-foreground hover:text-foreground text-xs underline"
+                      className="text-muted-foreground hover:text-foreground flex min-h-10 items-center px-2 text-xs underline"
                     >
                       {t("clearOwner")}
                     </button>
@@ -164,7 +164,7 @@ export function FleetRoster({
                           setFleetOwner({ fleetId, courierId: d.courierId }),
                         )
                       }
-                      className="text-primary text-xs underline"
+                      className="text-primary flex min-h-10 items-center px-2 text-xs underline"
                     >
                       {t("makeOwner")}
                     </button>
@@ -179,7 +179,7 @@ export function FleetRoster({
                         removeCourierFromFleet({ courierId: d.courierId }),
                       )
                     }
-                    className="text-destructive hover:bg-destructive/10 rounded p-1"
+                    className="text-destructive hover:bg-destructive/10 flex size-10 items-center justify-center rounded"
                   >
                     <UserMinus className="size-4" />
                   </button>

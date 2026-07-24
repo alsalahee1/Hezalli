@@ -10,6 +10,7 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export type SchedulerProduct = {
   id: string;
@@ -55,10 +56,9 @@ export function DiscountScheduler({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs font-medium">
           {t("product")}
-          <select
+          <Select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
-            className="h-9 rounded-md border bg-transparent px-2 text-sm"
           >
             <option value="">—</option>
             {products.map((p) => (
@@ -67,7 +67,7 @@ export function DiscountScheduler({
                 {p.onSale ? " ★" : ""}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium">
           {t("percentOff")}

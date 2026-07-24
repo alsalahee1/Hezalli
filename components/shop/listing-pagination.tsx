@@ -29,7 +29,7 @@ export function ListingPagination({
         type="button"
         disabled={page <= 1}
         onClick={() => go(page - 1)}
-        className="hover:bg-muted flex size-9 items-center justify-center rounded-md border disabled:opacity-40"
+        className="hover:bg-muted flex size-10 items-center justify-center rounded-md border disabled:opacity-40"
         aria-label={t("prev")}
       >
         <ChevronLeft className="size-4 rtl:rotate-180" />
@@ -43,7 +43,7 @@ export function ListingPagination({
               type="button"
               onClick={() => go(n)}
               className={cn(
-                "flex size-9 items-center justify-center rounded-md border text-sm",
+                "flex size-10 items-center justify-center rounded-md border text-sm",
                 n === page
                   ? "bg-primary text-primary-foreground border-primary"
                   : "hover:bg-muted",
@@ -58,7 +58,7 @@ export function ListingPagination({
         type="button"
         disabled={page >= totalPages}
         onClick={() => go(page + 1)}
-        className="hover:bg-muted flex size-9 items-center justify-center rounded-md border disabled:opacity-40"
+        className="hover:bg-muted flex size-10 items-center justify-center rounded-md border disabled:opacity-40"
         aria-label={t("next")}
       >
         <ChevronRight className="size-4 rtl:rotate-180" />

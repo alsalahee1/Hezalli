@@ -88,7 +88,6 @@ export function ShippingRatesForm({
                   value={r.fee}
                   onChange={(e) => set(r.zoneId, "fee", e.target.value)}
                   placeholder={t("defaultPlaceholder")}
-                  className="h-9"
                   dir="ltr"
                 />
               </label>
@@ -102,7 +101,6 @@ export function ShippingRatesForm({
                   value={r.freeOver}
                   onChange={(e) => set(r.zoneId, "freeOver", e.target.value)}
                   placeholder={t("neverPlaceholder")}
-                  className="h-9"
                   dir="ltr"
                 />
               </label>
@@ -116,7 +114,6 @@ export function ShippingRatesForm({
                   value={r.expressFee}
                   onChange={(e) => set(r.zoneId, "expressFee", e.target.value)}
                   placeholder={t("defaultPlaceholder")}
-                  className="h-9"
                   dir="ltr"
                 />
               </label>

@@ -167,7 +167,7 @@ export function QrScanSheet({
           type="button"
           onClick={onClose}
           aria-label={closeLabel}
-          className="hover:bg-muted rounded-md p-1"
+          className="hover:bg-muted flex size-11 items-center justify-center rounded-md"
         >
           <X className="size-5" />
         </button>
