@@ -1128,6 +1128,55 @@ Now an owner can run several branches:
       default branch, switch, ownership guard, admin add-branch)
 - [x] This file kept current
 
+## 42k. v1.34 — Arrival queue & drop-off/collection slots
+
+When a hub opens in the morning, sellers dropping parcels off and drivers
+collecting them all arrive at once, and with no visible order the counter turns
+into a "who's first" scrum. This is the standard PUDO fix (SPX, J&T, InPost),
+adapted: spread the crowd two ways, without touching custody or money — the
+real drop-off/collection stays the existing scan (§1).
+
+1. **Time-slot booking flattens the peak.** A seller or driver reserves a
+   window for today, sliced from the hub's published opening hours (§42g) into
+   `queue_slot_minutes` chunks. Each slot+lane accepts `queue_slot_capacity`
+   reservations before it shows full, so arrivals spread across the morning
+   instead of landing together. Booking is refused when the queue is off, the
+   hub isn't taking arrivals (suspended/paused), or it hasn't published hours.
+
+2. **A fair arrival ticket removes the fight.** Whoever is actually at the
+   counter checks in and takes a numbered ticket — **per lane**, because the
+   two flows differ: a seller's drop-off is slow and parcel-by-parcel, a
+   driver's collection is one QR scan of the whole manifest (§26). The operator
+   calls the lowest ticket in each lane, so "who's first" is a server
+   timestamp, not an argument. A booked visitor's check-in flips their
+   reservation into the line; walk-ins get a ticket on the spot; the called
+   visitor is notified to come to the desk.
+
+Everything is scoped to an Asia/Aden **service day** (same wall clock as
+§42g/dispatch), so ticket numbers reset each morning. The queue is a pure
+arrival-coordination record: it never moves a parcel or a dollar, so it carries
+none of the custody/cash guarantees — those stay on the scan.
+
+Surfaces: operators get `/point/queue` (both lanes, call-next / serve /
+no-show, plus a booked-for-later list) and a live waiting-count tile on the
+dashboard; sellers and drivers get a self-service page per hub
+(`/points/[id]/queue`) — book a slot, check in, watch their place in line —
+linked from the public directory (§24) and the driver home. Three platform
+settings (`queue_enabled`, `queue_slot_minutes` default 30,
+`queue_slot_capacity` default 4) are editable in Admin → Settings.
+
+### Build checklist (v1.34)
+
+- [x] Schema: `PointQueueEntry` + `PointQueueKind` / `PointQueueStatus` enums + migration
+- [x] Settings: `queue_enabled`, `queue_slot_minutes`, `queue_slot_capacity` + admin form fields
+- [x] `lib/point-queue.ts`: service-day + slot math (pure), slot availability, live queue, my-ticket, waiting counts
+- [x] `lib/actions/point-queue.ts`: visitor (book / check-in / cancel) + operator (call-next / call / serve / no-show), gated, audited, notifying; race-safe ticket numbering + slot-full re-check in-tx
+- [x] Operator `/point/queue` page + tab-bar entry + dashboard waiting tile
+- [x] Visitor `/points/[id]/queue` page + directory & driver-home links
+- [x] i18n (en + ar) for Point / Driver / PointsDirectory / AdminSettings
+- [x] Unit test (slot math) + integration test (ticket numbering, call/serve/no-show, book→check-in, slot-full / already-queued, disabled switch, operator gating)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

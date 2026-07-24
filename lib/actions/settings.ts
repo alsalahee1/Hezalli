@@ -61,6 +61,9 @@ export type SettingsInput = {
   point_transfer_fee: number;
   stale_parcel_days: number;
   pickup_window_days: number;
+  queue_enabled: boolean;
+  queue_slot_minutes: number;
+  queue_slot_capacity: number;
   driver_cash_limit: number;
   driver_cod_max_age_hours: number;
   point_cash_limit: number;
@@ -148,6 +151,21 @@ export async function savePlatformSettings(
   const pickupWindow = int(input.pickup_window_days);
   if (!Number.isFinite(pickupWindow) || pickupWindow < 1 || pickupWindow > 60)
     return { error: "badDays" };
+  // Arrival queue tunables (docs §44): slot length 5–240 min, per-slot cap 0–99.
+  const queueSlotMinutes = int(input.queue_slot_minutes);
+  if (
+    !Number.isFinite(queueSlotMinutes) ||
+    queueSlotMinutes < 5 ||
+    queueSlotMinutes > 240
+  )
+    return { error: "badQueue" };
+  const queueSlotCapacity = int(input.queue_slot_capacity);
+  if (
+    !Number.isFinite(queueSlotCapacity) ||
+    queueSlotCapacity < 0 ||
+    queueSlotCapacity > 99
+  )
+    return { error: "badQueue" };
   const maxAttempts = int(input.max_delivery_attempts);
   if (!Number.isFinite(maxAttempts) || maxAttempts < 1 || maxAttempts > 10)
     return { error: "badMaxAttempts" };
@@ -330,6 +348,9 @@ export async function savePlatformSettings(
     point_transfer_fee: transferFee,
     stale_parcel_days: staleDays,
     pickup_window_days: pickupWindow,
+    queue_enabled: Boolean(input.queue_enabled),
+    queue_slot_minutes: queueSlotMinutes,
+    queue_slot_capacity: queueSlotCapacity,
     driver_cash_limit: driverCashLimit,
     driver_cod_max_age_hours: codMaxAge,
     point_cash_limit: pointCashLimit,

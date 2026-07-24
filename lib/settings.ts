@@ -103,6 +103,12 @@ export type PlatformSettings = {
   // Days a PUDO parcel waits at the counter before the network prompts an RTS
   // (docs/DELIVERY-POINTS.md §20). Must be ≥ stale_parcel_days in practice.
   pickup_window_days: number;
+  // Hub arrival queue & slot booking (docs §44). Master switch; the length of a
+  // bookable slot in minutes; and how many visits a single slot+lane accepts
+  // before it shows full (0 = no booking cap, walk-ins always allowed).
+  queue_enabled: boolean;
+  queue_slot_minutes: number;
+  queue_slot_capacity: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -285,6 +291,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   point_transfer_fee: 0.25,
   stale_parcel_days: 3,
   pickup_window_days: 7,
+  queue_enabled: true,
+  queue_slot_minutes: 30,
+  queue_slot_capacity: 4,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

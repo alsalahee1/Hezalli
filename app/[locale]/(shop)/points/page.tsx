@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MapPin, Phone, Store } from "lucide-react";
+import { CalendarClock, MapPin, Phone, Store } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { publicPointsByGovernorate } from "@/lib/point-public";
@@ -68,6 +68,12 @@ export default async function PointsDirectoryPage({
                       <Phone className="size-3.5 shrink-0" />
                       <span dir="ltr">{p.phone}</span>
                     </p>
+                    <Link
+                      href={`/points/${p.id}/queue`}
+                      className="text-primary mt-2 inline-flex items-center gap-1 text-sm font-medium hover:underline"
+                    >
+                      <CalendarClock className="size-3.5" /> {t("queueLink")}
+                    </Link>
                   </li>
                 ))}
               </ul>

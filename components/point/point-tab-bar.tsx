@@ -11,6 +11,7 @@ import {
   Tags,
   TrendingUp,
   Users,
+  UsersRound,
   Wallet,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -69,6 +70,7 @@ export function PointTabBar({ access }: { access: PointAccess }) {
               { href: "/point/labels", label: t("labelsTab"), icon: Tags },
             ]
           : []),
+        { href: "/point/queue", label: t("queueTab"), icon: UsersRound },
         { href: "/point/layout", label: t("layoutTab"), icon: Map },
         { href: "/point/how", label: t("howTab"), icon: CircleHelp },
       ]}
