@@ -129,9 +129,7 @@ export default async function FleetOwnerPage() {
                     <th className="p-2 text-end font-medium">
                       {t("colDelivered")}
                     </th>
-                    <th className="p-2 text-end font-medium">
-                      {t("colCash")}
-                    </th>
+                    <th className="p-2 text-end font-medium">{t("colCash")}</th>
                     <th className="p-2 text-end font-medium">
                       {t("colRating")}
                     </th>

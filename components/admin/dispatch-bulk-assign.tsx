@@ -77,7 +77,11 @@ export function DispatchBulkAssign({
           </option>
         ))}
       </Select>
-      <Button type="button" onClick={run} disabled={pending || !driver || !group}>
+      <Button
+        type="button"
+        onClick={run}
+        disabled={pending || !driver || !group}
+      >
         {pending ? t("saving") : t("bulkAssign")}
       </Button>
       {msg ? (

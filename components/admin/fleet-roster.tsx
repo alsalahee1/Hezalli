@@ -55,7 +55,7 @@ export function FleetRoster({
           aria-label={t("addCourier")}
           value={pick}
           onChange={(e) => setPick(e.target.value)}
-          className="min-w-56 w-auto"
+          className="w-auto min-w-56"
         >
           <option value="">{t("addCourierPlaceholder")}</option>
           {assignable.map((c) => (

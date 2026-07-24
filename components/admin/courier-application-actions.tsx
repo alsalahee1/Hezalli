@@ -25,12 +25,7 @@ export async function CourierApplicationActions({
         placeholder={t("notePlaceholder")}
         className="flex-1 text-xs"
       />
-      <Button
-        type="submit"
-        name="decision"
-        value="approve"
-        size="sm"
-      >
+      <Button type="submit" name="decision" value="approve" size="sm">
         {t("approve")}
       </Button>
       <Button

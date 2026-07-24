@@ -31,6 +31,9 @@ test("admin views subscribers and sends a broadcast", async ({ page }) => {
   await page.getByPlaceholder("Write your message…").fill("Hello subscribers.");
   await page.getByRole("button", { name: "Send broadcast" }).click();
 
+  // Sending now asks for confirmation first (it emails every active subscriber).
+  await page.getByRole("alertdialog").getByRole("button", { name: "OK" }).click();
+
   // Success clears the composer.
   await expect(subject).toHaveValue("");
 });

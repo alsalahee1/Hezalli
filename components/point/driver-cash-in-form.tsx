@@ -74,7 +74,11 @@ export function DriverCashInForm({ drivers }: { drivers: Driver[] }) {
       <div className="flex flex-wrap items-center gap-2">
         {/* Scanning the driver's collection QR is the fast path; the list keeps
             camera-less counters working. */}
-        <Button type="button" variant="outline" onClick={() => setScanOpen(true)}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setScanOpen(true)}
+        >
           <QrCode className="size-4" /> {t("cashInScan")}
         </Button>
         <Select
