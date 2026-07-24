@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutDashboard, Menu, Store, User, Wallet, X } from "lucide-react";
+import {
+  Coins,
+  LayoutDashboard,
+  Menu,
+  Store,
+  User,
+  Wallet,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -110,6 +118,17 @@ export function SiteHeader({
             size="sm"
             asChild
             className="hidden sm:inline-flex"
+          >
+            <Link href="/earn">
+              <Coins className="size-4" />
+              {t("earn")}
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="hidden lg:inline-flex"
           >
             <Link href={isSeller ? "/seller" : "/sell"}>
               <Store className="size-4" />

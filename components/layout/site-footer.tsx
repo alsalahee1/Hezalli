@@ -16,6 +16,7 @@ export function SiteFooter() {
     { href: "/how", key: "how" },
     { href: "/express", key: "expressShowcase" },
     { href: "/p/about", key: "about" },
+    { href: "/earn", key: "earnWithHezalli" },
     { href: "/sell", key: "sellOnHezalli" },
     { href: "/drive", key: "deliverWithHezalli" },
     { href: "/p/terms", key: "terms" },
