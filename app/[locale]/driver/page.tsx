@@ -116,6 +116,35 @@ export default async function DriverJobsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Performance & badges banner, first thing on the page: the driver's
+          own scoreboard → /driver/stats. Volume AND quality both count
+          (lib/courier-badges.ts). */}
+      <Link
+        href="/driver/stats"
+        className="hover:border-primary/50 flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4"
+      >
+        <span className="rounded-full bg-amber-500/15 p-2 text-amber-600 dark:text-amber-500">
+          <Trophy className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{t("statsTitle")}</p>
+          <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs">
+            {perf.stats.ratingCount > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <StarRating rating={perf.stats.ratingAvg} size={12} />
+                <span dir="ltr">{perf.stats.ratingAvg}</span>
+              </span>
+            ) : null}
+            <span>
+              {t("statDeliveriesCount", { count: perf.stats.deliveries })}
+            </span>
+            <span>·</span>
+            <span>{t("badgesEarnedCount", { count: perf.earnedCount })}</span>
+          </p>
+        </div>
+        <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
+      </Link>
+
       {/* Cash the driver is holding + fees earned → full ledger. */}
       {cash.cashOnHand > 0 || cash.earnings > 0 ? (
         <Link href="/driver/ledger" className="grid grid-cols-2 gap-3">
@@ -222,34 +251,6 @@ export default async function DriverJobsPage() {
       </Link>
 
       <LocationShare currentGovernorate={location?.governorate ?? null} />
-
-      {/* Performance & badges: the driver's own scoreboard → /driver/stats.
-          Volume AND quality both count (lib/courier-badges.ts). */}
-      <Link
-        href="/driver/stats"
-        className="hover:border-primary/50 flex items-center gap-3 rounded-xl border p-4"
-      >
-        <span className="rounded-full bg-amber-500/15 p-2 text-amber-600 dark:text-amber-500">
-          <Trophy className="size-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{t("statsTitle")}</p>
-          <p className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs">
-            {perf.stats.ratingCount > 0 ? (
-              <span className="inline-flex items-center gap-1">
-                <StarRating rating={perf.stats.ratingAvg} size={12} />
-                <span dir="ltr">{perf.stats.ratingAvg}</span>
-              </span>
-            ) : null}
-            <span>
-              {t("statDeliveriesCount", { count: perf.stats.deliveries })}
-            </span>
-            <span>·</span>
-            <span>{t("badgesEarnedCount", { count: perf.earnedCount })}</span>
-          </p>
-        </div>
-        <ChevronRight className="text-muted-foreground size-5 rtl:rotate-180" />
-      </Link>
 
       <div>
         <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
