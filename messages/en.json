@@ -429,7 +429,11 @@
     "forbiddenTitle": "Access denied",
     "forbiddenDesc": "You don't have permission to view this page.",
     "backHome": "Back to home",
-    "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again."
+    "tooManyAttempts": "Too many attempts. Please wait a few minutes and try again.",
+    "passkeyOr": "or",
+    "passkeySignIn": "Sign in with biometrics",
+    "passkeyFailed": "Biometric sign-in failed. Try again or use your password.",
+    "passkeyCancelled": "Biometric sign-in was cancelled, or no passkey is set up on this device."
   },
   "Account": {
     "title": "My account",

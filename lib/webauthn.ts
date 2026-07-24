@@ -131,3 +131,123 @@ export async function verifyWalletPasskey(
   await clearChallenge(userId);
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// Passwordless (biometric) LOGIN — a passkey used as the FIRST factor, before
+// any session exists. Reuses the same WalletCredential store (a passkey is a
+// passkey), but the challenge is anonymous: it can't be keyed by userId because
+// we don't yet know who is signing in. Instead we persist a one-time random
+// challenge and later find it by the value the authenticator signed and echoed
+// back in clientDataJSON — then resolve the user from the matched credential.
+// ---------------------------------------------------------------------------
+
+const LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+
+/** Persist a one-time login challenge (looked up later by its own value). */
+export async function saveLoginChallenge(challenge: string): Promise<void> {
+  await prisma.loginWebauthnChallenge.create({
+    data: {
+      challenge,
+      expiresAt: new Date(Date.now() + LOGIN_CHALLENGE_TTL_MS),
+    },
+  });
+}
+
+export type LoginPasskeyResult =
+  | { ok: true; userId: string }
+  | { ok?: false; error: "noChallenge" | "unknownCredential" | "badPasskey" };
+
+/**
+ * Verify a first-factor login assertion. Resolves the signed challenge from the
+ * assertion, matches it to a stored one-time row, verifies the assertion against
+ * the credential's public key, bumps the signature counter, and consumes the
+ * challenge. Returns the owning user id on success — the caller (the `passkey`
+ * auth provider) still re-checks the account is active before issuing a session.
+ */
+export async function verifyLoginPasskey(
+  responseJson: string,
+): Promise<LoginPasskeyResult> {
+  let response: AuthenticationResponseJSON;
+  try {
+    response = JSON.parse(responseJson) as AuthenticationResponseJSON;
+  } catch {
+    return { error: "badPasskey" };
+  }
+
+  // The challenge the authenticator signed is inside clientDataJSON — decode it
+  // to find the matching one-time row (the browser never sends us the raw
+  // challenge separately during a discoverable-credential login).
+  let signedChallenge: string;
+  try {
+    const clientData = JSON.parse(
+      new TextDecoder().decode(
+        isoBase64URL.toBuffer(response.response.clientDataJSON),
+      ),
+    ) as { challenge?: string };
+    if (!clientData.challenge) return { error: "badPasskey" };
+    signedChallenge = clientData.challenge;
+  } catch {
+    return { error: "badPasskey" };
+  }
+
+  const row = await prisma.loginWebauthnChallenge.findUnique({
+    where: { challenge: signedChallenge },
+  });
+  if (!row || row.expiresAt < new Date()) {
+    if (row)
+      await prisma.loginWebauthnChallenge
+        .delete({ where: { id: row.id } })
+        .catch(() => {});
+    return { error: "noChallenge" };
+  }
+
+  // Discoverable login: find the credential across ALL users by its unique id.
+  const cred = await prisma.walletCredential.findFirst({
+    where: { credentialId: response.id },
+  });
+  if (!cred) {
+    await prisma.loginWebauthnChallenge
+      .delete({ where: { id: row.id } })
+      .catch(() => {});
+    return { error: "unknownCredential" };
+  }
+
+  const { origin, rpID } = rpConfig();
+  let verification: VerifiedAuthenticationResponse;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: signedChallenge,
+      expectedOrigin: origin,
+      expectedRPID: rpID,
+      requireUserVerification: true,
+      authenticator: {
+        credentialID: isoBase64URL.toBuffer(cred.credentialId),
+        credentialPublicKey: isoBase64URL.toBuffer(cred.publicKey),
+        counter: cred.counter,
+        transports: cred.transports as never,
+      },
+    });
+  } catch {
+    await prisma.loginWebauthnChallenge
+      .delete({ where: { id: row.id } })
+      .catch(() => {});
+    return { error: "badPasskey" };
+  }
+
+  // Consume the challenge whatever the outcome, so it can never be replayed.
+  await prisma.loginWebauthnChallenge
+    .delete({ where: { id: row.id } })
+    .catch(() => {});
+
+  if (!verification.verified) return { error: "badPasskey" };
+
+  await prisma.walletCredential.update({
+    where: { id: cred.id },
+    data: {
+      counter: verification.authenticationInfo.newCounter,
+      lastUsedAt: new Date(),
+    },
+  });
+  return { ok: true, userId: cred.userId };
+}

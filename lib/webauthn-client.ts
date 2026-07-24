@@ -13,8 +13,21 @@ import {
   startPasskeyRegistration,
   startWalletAuth,
 } from "@/lib/actions/wallet-passkey";
+import { startLoginPasskey } from "@/lib/actions/login-passkey";
 
 export { browserSupportsWebAuthn };
+
+// Run a first-factor biometric login: fetch discoverable-credential options,
+// prompt the platform authenticator, and return the assertion JSON to hand to
+// `loginWithPasskey`. Throws if there's no passkey / options fail / user cancels.
+export async function getLoginPasskeyAssertion(): Promise<string> {
+  const opts = await startLoginPasskey();
+  if (!opts.ok || !opts.data) throw new Error(opts.error ?? "failed");
+  const assertion = await startAuthentication(
+    opts.data as Parameters<typeof startAuthentication>[0],
+  );
+  return JSON.stringify(assertion);
+}
 
 // Run a biometric assertion for an outflow; returns the response JSON to pass to
 // the outflow action as `passkey`. Throws if there's no passkey or the user

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Link, redirect } from "@/i18n/navigation";
 import { LoginForm } from "@/components/auth/login-form";
+import { PasskeyLoginButton } from "@/components/auth/passkey-login-button";
 import { DevQuickLogin } from "@/components/auth/dev-quick-login";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -50,6 +51,8 @@ export default async function LoginPage({
       </div>
 
       <LoginForm callbackUrl={callbackUrl} />
+
+      <PasskeyLoginButton callbackUrl={callbackUrl} />
 
       <DevQuickLogin />
 
