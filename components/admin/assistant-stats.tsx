@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { MessageSquare, Users } from "lucide-react";
+import { AlertTriangle, MessageSquare, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { AssistantStats } from "@/lib/ai/stats";
@@ -100,6 +100,24 @@ export function AssistantStatsView({
                 />
               </div>
 
+              {/* Couldn't-answer rate — the quality signal. */}
+              <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("needsRate")}</span>
+                <span
+                  className={cn(
+                    "font-semibold",
+                    b.fallbackRate >= 0.2
+                      ? "text-destructive"
+                      : b.fallbackRate >= 0.1
+                        ? "text-amber-600"
+                        : "text-emerald-600",
+                  )}
+                  dir="ltr"
+                >
+                  {pct(b.fallbackRate)} ({b.fallbacks})
+                </span>
+              </div>
+
               <div>
                 <p className="mb-1.5 text-xs font-medium">{t("topPages")}</p>
                 {b.topSections.length ? (
@@ -146,6 +164,31 @@ export function AssistantStatsView({
                   <p className="text-muted-foreground text-xs">{t("none")}</p>
                 )}
               </div>
+
+              {b.needsAttention.length ? (
+                <div>
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                    <AlertTriangle className="size-3.5" />
+                    {t("needsAttention")}
+                  </p>
+                  <ol className="space-y-1">
+                    {b.needsAttention.map((q, qi) => (
+                      <li
+                        key={qi}
+                        className="flex items-start justify-between gap-2 text-sm"
+                      >
+                        <span className="line-clamp-1">{q.question}</span>
+                        <span
+                          className="text-muted-foreground shrink-0"
+                          dir="ltr"
+                        >
+                          ×{q.count}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ) : null}
             </section>
           );
         })}

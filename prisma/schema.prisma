@@ -1883,6 +1883,9 @@ model AiChatEvent {
   visitorId String?
   // The shopper's message, trimmed + truncated. Grouped for "most questions".
   question  String
+  // True when the character couldn't answer and returned the generic fallback —
+  // the "needs attention" signal.
+  fallback  Boolean  @default(false)
   tokensIn  Int      @default(0)
   tokensOut Int      @default(0)
 

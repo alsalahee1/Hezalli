@@ -36,6 +36,9 @@ export type AssistantReply = {
   text: string;
   cards: ProductCard[];
   usage: TokenUsage;
+  // True when the model produced no real answer and we returned the generic
+  // fallback line — a "couldn't answer" signal for analytics.
+  fallback?: boolean;
 };
 
 // What Shadi focuses on in each part of the platform. The user's role has
@@ -204,10 +207,12 @@ export async function runAssistant(
 
     const calls = functionCalls(res.parts);
     if (calls.length === 0) {
+      const answer = textFrom(res.parts);
       return {
-        text: textFrom(res.parts) || fallbackText(ctx.locale),
+        text: answer || fallbackText(ctx.locale),
         cards,
         usage,
+        fallback: !answer,
       };
     }
 
@@ -237,10 +242,12 @@ export async function runAssistant(
   });
   usage.in += res.usage.in;
   usage.out += res.usage.out;
+  const finalAnswer = textFrom(res.parts);
   return {
-    text: textFrom(res.parts) || fallbackText(ctx.locale),
+    text: finalAnswer || fallbackText(ctx.locale),
     cards,
     usage,
+    fallback: !finalAnswer,
   };
 }
 
