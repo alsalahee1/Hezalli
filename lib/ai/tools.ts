@@ -115,6 +115,15 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
       },
     },
   },
+  {
+    name: "get_wallet_balance",
+    description:
+      "Get the signed-in shopper's own HezalliPay wallet: current available " +
+      "balance and their most recent wallet activity (top-ups, payments, " +
+      "refunds, transfers, cashback). Use for 'what's my balance', 'how much " +
+      "do I have', or 'show my wallet history'. Only works when logged in.",
+    parameters: { type: "object", properties: {} },
+  },
 ];
 
 // --- Runners ------------------------------------------------------------
@@ -300,6 +309,58 @@ async function getOrderStatus(
   };
 }
 
+async function getWalletBalance(
+  _args: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  if (!ctx.userId) {
+    return {
+      result: {
+        error: "not_signed_in",
+        message: "The shopper must sign in to view their wallet.",
+      },
+    };
+  }
+
+  const wallet = await prisma.wallet.findUnique({
+    where: { userId: ctx.userId },
+    select: {
+      availableUsd: true,
+      frozen: true,
+      entries: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { type: true, amountUsd: true, note: true, createdAt: true },
+      },
+    },
+  });
+
+  if (!wallet) {
+    return {
+      result: {
+        balance: formatUsd(0, ctx.locale),
+        message: "no wallet activity yet",
+      },
+    };
+  }
+
+  return {
+    result: {
+      balance: formatUsd(Number(wallet.availableUsd), ctx.locale),
+      frozen: wallet.frozen, // AML/dispute hold — withdrawals paused
+      recent: wallet.entries.map((e) => {
+        const amt = Number(e.amountUsd);
+        return {
+          type: e.type,
+          amount: `${amt >= 0 ? "+" : "-"}${formatUsd(Math.abs(amt), ctx.locale)}`,
+          note: e.note ?? null,
+          date: e.createdAt.toISOString().slice(0, 10),
+        };
+      }),
+    },
+  };
+}
+
 const RUNNERS: Record<
   string,
   (args: Record<string, unknown>, ctx: ToolContext) => Promise<ToolResult>
@@ -307,6 +368,7 @@ const RUNNERS: Record<
   search_products: searchProducts,
   get_product_details: getProductDetails,
   get_order_status: getOrderStatus,
+  get_wallet_balance: getWalletBalance,
 };
 
 /** Execute a model-requested tool call. Never throws — errors become results. */
