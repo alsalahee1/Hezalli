@@ -96,104 +96,107 @@ export type FloorPlanLabels = {
 };
 
 export function CenterFloorPlan({ labels }: { labels: FloorPlanLabels }) {
+  // Portrait composition (tall, two columns) so the whole plan fits a phone's
+  // width with no sideways scrolling — the diagram reads top-to-bottom like the
+  // parcel flow itself. Left column: receiving → pickup → cash → returns; right
+  // column: sorting → shelves (tall) → dispatch. Same seven numbered zones and
+  // tones as before; only the arrangement changed.
   const zones: Zone[] = [
-    { n: 1, tone: "sky", x: 40, y: 70, w: 250, h: 120, label: labels.z1 },
-    { n: 2, tone: "slate", x: 320, y: 70, w: 170, h: 120, label: labels.z2 },
-    { n: 3, tone: "violet", x: 520, y: 70, w: 240, h: 290, label: labels.z3 },
-    { n: 4, tone: "emerald", x: 40, y: 230, w: 250, h: 120, label: labels.z4 },
-    { n: 5, tone: "amber", x: 320, y: 230, w: 170, h: 120, label: labels.z5 },
-    { n: 6, tone: "indigo", x: 320, y: 390, w: 200, h: 110, label: labels.z6 },
-    { n: 7, tone: "rose", x: 40, y: 390, w: 250, h: 110, label: labels.z7 },
+    { n: 1, tone: "sky", x: 34, y: 64, w: 180, h: 118, label: labels.z1 },
+    { n: 2, tone: "slate", x: 246, y: 64, w: 180, h: 118, label: labels.z2 },
+    { n: 3, tone: "violet", x: 246, y: 210, w: 180, h: 264, label: labels.z3 },
+    { n: 4, tone: "emerald", x: 34, y: 210, w: 180, h: 118, label: labels.z4 },
+    { n: 5, tone: "amber", x: 34, y: 356, w: 180, h: 118, label: labels.z5 },
+    { n: 6, tone: "indigo", x: 246, y: 502, w: 180, h: 118, label: labels.z6 },
+    { n: 7, tone: "rose", x: 34, y: 502, w: 180, h: 118, label: labels.z7 },
   ];
 
   return (
-    <div className="overflow-x-auto">
-      <svg
-        viewBox="0 0 800 590"
-        role="img"
-        aria-label={labels.building}
-        className="text-muted-foreground mx-auto block h-auto w-full max-w-3xl min-w-[560px]"
+    <svg
+      viewBox="0 0 460 720"
+      role="img"
+      aria-label={labels.building}
+      className="text-muted-foreground mx-auto block h-auto w-full max-w-sm"
+    >
+      <defs>
+        <marker
+          id="fp-arrow"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M0,0 L10,5 L0,10 z" className="fill-current" />
+        </marker>
+      </defs>
+
+      {/* Building shell. */}
+      <rect
+        x={8}
+        y={8}
+        width={444}
+        height={704}
+        rx={18}
+        className="fill-muted/30 stroke-current/40"
+        strokeWidth={2}
+      />
+
+      {/* Flow caption (top). */}
+      <text
+        x={230}
+        y={40}
+        textAnchor="middle"
+        className="fill-muted-foreground text-[13px] font-medium"
       >
-        <defs>
-          <marker
-            id="fp-arrow"
-            viewBox="0 0 10 10"
-            refX="8"
-            refY="5"
-            markerWidth="7"
-            markerHeight="7"
-            orient="auto-start-reverse"
-          >
-            <path d="M0,0 L10,5 L0,10 z" className="fill-current" />
-          </marker>
-        </defs>
+        {labels.flowIn}
+      </text>
 
-        {/* Building shell. */}
-        <rect
-          x={16}
-          y={20}
-          width={768}
-          height={550}
-          rx={18}
-          className="fill-muted/30 stroke-current/40"
-          strokeWidth={2}
-        />
+      {/* Parcel-flow arrows: in → sort → shelves → pickup / dispatch. */}
+      <g
+        className="stroke-current/50"
+        strokeWidth={2.5}
+        fill="none"
+        markerEnd="url(#fp-arrow)"
+      >
+        {/* receiving → sorting */}
+        <path d="M214,123 L242,123" />
+        {/* sorting → shelves */}
+        <path d="M336,182 L336,206" />
+        {/* shelves → pickup */}
+        <path d="M244,300 L216,300" />
+        {/* shelves → dispatch */}
+        <path d="M336,476 L336,498" />
+        {/* pickup → returns, routed down the left gutter so it never crosses
+            the cash desk between them */}
+        <path d="M90,328 L90,340 L20,340 L20,561 L30,561" />
+      </g>
 
-        {/* Parcel-flow arrows: in → sort → shelves → out. */}
-        <g
-          className="stroke-current/50"
-          strokeWidth={2.5}
-          fill="none"
-          markerEnd="url(#fp-arrow)"
-        >
-          {/* receiving → sorting */}
-          <path d="M290,130 L318,130" />
-          {/* sorting → shelves */}
-          <path d="M490,130 L518,150" />
-          {/* shelves → pickup, routed through the clear corridor between the
-              rows so it never crosses the cash desk */}
-          <path d="M520,212 L210,212 L210,226" />
-          {/* shelves → dispatch */}
-          <path d="M560,362 L470,388" />
-          {/* pickup → returns */}
-          <path d="M165,352 L165,388" />
-        </g>
+      {zones.map((z) => (
+        <ZoneBox key={z.n} z={z} />
+      ))}
 
-        {zones.map((z) => (
-          <ZoneBox key={z.n} z={z} />
-        ))}
-
-        {/* Entrance / storefront opening at the bottom edge. */}
-        <rect
-          x={330}
-          y={556}
-          width={140}
-          height={26}
-          rx={6}
-          className="fill-background stroke-current/60"
-          strokeWidth={2}
-        />
-        <text
-          x={400}
-          y={569}
-          textAnchor="middle"
-          dominantBaseline="central"
-          className="fill-foreground text-[13px] font-semibold"
-        >
-          {labels.entrance}
-        </text>
-
-        {/* Flow captions. */}
-        <text
-          x={400}
-          y={44}
-          textAnchor="middle"
-          className="fill-muted-foreground text-[12px] font-medium"
-        >
-          {labels.flowIn}
-        </text>
-      </svg>
-    </div>
+      {/* Entrance / storefront opening near the bottom edge. */}
+      <rect
+        x={180}
+        y={648}
+        width={100}
+        height={26}
+        rx={6}
+        className="fill-background stroke-current/60"
+        strokeWidth={2}
+      />
+      <text
+        x={230}
+        y={661}
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="fill-foreground text-[13px] font-semibold"
+      >
+        {labels.entrance}
+      </text>
+    </svg>
   );
 }
 

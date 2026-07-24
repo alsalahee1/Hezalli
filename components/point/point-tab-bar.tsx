@@ -8,6 +8,7 @@ import {
   Package,
   QrCode,
   Store,
+  Tags,
   TrendingUp,
   Users,
   Wallet,
@@ -62,7 +63,10 @@ export function PointTabBar({ access }: { access: PointAccess }) {
             ]
           : []),
         ...(manage
-          ? [{ href: "/point/staff", label: t("staffTab"), icon: Users }]
+          ? [
+              { href: "/point/staff", label: t("staffTab"), icon: Users },
+              { href: "/point/labels", label: t("labelsTab"), icon: Tags },
+            ]
           : []),
         { href: "/point/layout", label: t("layoutTab"), icon: Map },
         { href: "/point/how", label: t("howTab"), icon: CircleHelp },

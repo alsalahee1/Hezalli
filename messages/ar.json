@@ -3242,7 +3242,8 @@
     "labelsBays": "الأرفف في كل صف",
     "labelsUpdate": "تحديث",
     "labelsCalloutTitle": "اطبع ملصقات الرفوف",
-    "labelsCalloutBody": "ملصقات QR لأرففك — امسح بدل كتابة رموز الرفوف."
+    "labelsCalloutBody": "ملصقات QR لأرففك — امسح بدل كتابة رموز الرفوف.",
+    "labelsTab": "ملصقات الرفوف"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
