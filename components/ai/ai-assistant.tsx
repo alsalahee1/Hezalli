@@ -213,21 +213,23 @@ export function AiAssistant({
                 aria-label={t("switchTo", { name: otherBot.name })}
                 title={t("switchTo", { name: otherBot.name })}
                 onClick={() => switchTo(otherBot.id)}
-                className="hover:bg-primary-foreground/10 focus-visible:ring-primary-foreground/60 relative rounded-full p-0.5 transition focus-visible:ring-2 focus-visible:outline-none"
+                className="ring-primary-foreground/40 hover:ring-primary-foreground focus-visible:ring-primary-foreground relative shrink-0 rounded-full ring-2 transition focus-visible:outline-none"
               >
-                {/* The other character's face, so it's clear who you'd switch
-                    to; a small swap badge marks it as a switch action. */}
+                {/* The other character's face in full colour, so it's obvious
+                    who you'd switch to; a small swap badge marks the action. */}
                 {otherBot.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={otherBot.avatar}
-                    alt=""
-                    className="border-primary-foreground/40 size-8 rounded-full border bg-white object-cover opacity-90 grayscale transition hover:opacity-100 hover:grayscale-0"
+                    alt={otherBot.name}
+                    className="size-8 rounded-full bg-white object-cover"
                   />
                 ) : (
-                  <Repeat className="size-4" />
+                  <span className="flex size-8 items-center justify-center">
+                    <Repeat className="size-4" />
+                  </span>
                 )}
-                <span className="bg-background text-primary absolute -end-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full shadow">
+                <span className="bg-background text-primary absolute -end-1 -bottom-1 flex size-4 items-center justify-center rounded-full shadow ring-1 ring-black/5">
                   <Repeat className="size-2.5" />
                 </span>
               </button>
