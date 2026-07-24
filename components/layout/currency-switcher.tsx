@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 
 import { cn } from "@/lib/utils";
+import { Popover } from "@/components/ui/popover";
 import {
   CURRENCY_ZONE_COOKIE,
   DISPLAY_CURRENCY_COOKIE,
@@ -72,7 +73,7 @@ function useCurrentOption(
   return [current, setCurrent] as const;
 }
 
-/** Full switcher: both rial markets + USD/SAR/AED as a segmented row. */
+/** Full switcher: a dropdown listing both rial markets plus USD/SAR/AED. */
 export function CurrencySwitcher({
   initialCurrency,
   initialZone,
@@ -85,12 +86,14 @@ export function CurrencySwitcher({
 }) {
   const router = useRouter();
   const [current, setCurrent] = useCurrentOption(initialCurrency, initialZone);
+  const [open, setOpen] = useState(false);
 
   const isActive = (opt: DisplayOption) =>
     opt.code === current.code &&
     (opt.code !== "YER" || opt.zone === current.zone);
 
   const switchTo = (opt: DisplayOption) => {
+    setOpen(false);
     if (isActive(opt)) return;
     setCurrent(opt);
     applyOption(opt);
@@ -99,23 +102,54 @@ export function CurrencySwitcher({
   };
 
   return (
-    <div className="flex items-center overflow-hidden rounded-md border text-xs font-medium">
-      {OPTIONS.map((opt) => (
-        <button
-          key={`${opt.code}-${opt.zone ?? ""}`}
-          type="button"
-          onClick={() => switchTo(opt)}
-          aria-current={isActive(opt)}
-          className={cn(
-            "px-2 py-1 whitespace-nowrap transition-colors",
-            isActive(opt)
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {optionLabel(opt, locale)}
-        </button>
-      ))}
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="hover:bg-muted inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium whitespace-nowrap transition-colors"
+      >
+        {optionLabel(current, locale)}
+        <ChevronDown className="size-3.5 opacity-60" aria-hidden />
+      </button>
+
+      <Popover open={open} onClose={() => setOpen(false)}>
+        {(shown) => (
+          <ul
+            role="listbox"
+            className={cn(
+              "bg-background absolute end-0 z-50 mt-2 w-36 origin-top-right overflow-hidden rounded-md border p-1 shadow-lg transition duration-200 ease-out will-change-transform motion-reduce:transition-none rtl:origin-top-left",
+              shown ? "scale-100 opacity-100" : "scale-95 opacity-0",
+            )}
+          >
+            {OPTIONS.map((opt) => {
+              const active = isActive(opt);
+              return (
+                <li key={`${opt.code}-${opt.zone ?? ""}`}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => switchTo(opt)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-start text-xs font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {optionLabel(opt, locale)}
+                    {active ? (
+                      <Check className="size-3.5 shrink-0" aria-hidden />
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Popover>
     </div>
   );
 }
