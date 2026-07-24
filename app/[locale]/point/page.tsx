@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import {
   AlertTriangle,
+  Boxes,
   CalendarClock,
   ChevronRight,
   Inbox,
@@ -15,6 +16,7 @@ import { requireDeliveryPoint } from "@/lib/authz";
 import { getPlatformSettings } from "@/lib/settings";
 import { maxDeliveryAttempts } from "@/lib/point-core";
 import { pointLedgerSummary } from "@/lib/point-ledger";
+import { pointShelfLoads } from "@/lib/point-shelves";
 import { hubDaySummary } from "@/lib/point-stats";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
@@ -95,6 +97,15 @@ export default async function PointDashboardPage() {
           : p.deliveryPointId === gate.pointId)),
   ).length;
   const capacity = me?.capacity ?? null;
+
+  // Shelf occupancy for the dashboard tile — only surfaced once the point has
+  // registered bays for auto-placement.
+  const shelfLoads = await pointShelfLoads(gate.pointId);
+  const shelfParcels = shelfLoads.reduce((n, b) => n + b.load, 0);
+  const shelfFull = shelfLoads.filter(
+    (b) => b.capacity != null && b.load >= b.capacity,
+  ).length;
+
   // Days since a parcel last moved; past the threshold it gets an aged badge.
   const ageDays = (d: Date) =>
     Math.floor((Date.now() - d.getTime()) / 86_400_000);
@@ -255,6 +266,41 @@ export default async function PointDashboardPage() {
         </span>
         <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
       </Link>
+
+      {/* Shelf occupancy at a glance — where there's room, and whether any bay
+          is full. Only once bays are registered; links to the shelves screen. */}
+      {shelfLoads.length > 0 ? (
+        <Link
+          href="/point/labels"
+          className="hover:bg-muted/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+        >
+          <span
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-lg",
+              shelfFull > 0
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+            )}
+          >
+            <Boxes className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">
+              {t("shelfLoadTitle")}
+            </span>
+            <span className="text-muted-foreground block truncate text-xs">
+              {t("shelfLoadSummary", {
+                parcels: shelfParcels,
+                bays: shelfLoads.length,
+              })}
+              {shelfFull > 0
+                ? ` · ${t("shelfTileFull", { count: shelfFull })}`
+                : ""}
+            </span>
+          </span>
+          <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+        </Link>
+      ) : null}
 
       {/* End-of-day reconciliation: what moved through the counter today. */}
       <section className="space-y-2">

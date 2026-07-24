@@ -3276,7 +3276,8 @@
     "shelfZonesSaved": "Saved",
     "shelfLoadTitle": "Shelf occupancy",
     "shelfLoadSummary": "{parcels} parcels on {bays} bays right now.",
-    "manifestNoShelf": "No bay"
+    "manifestNoShelf": "No bay",
+    "shelfTileFull": "{count} full"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
