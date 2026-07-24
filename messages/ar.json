@@ -3227,7 +3227,11 @@
     "staffScanNoCamera": "الكاميرا غير متاحة — الصق رمزه أو رابط الدفع بالأسفل.",
     "staffScanManualLabel": "الصق رمز حزالي أو رابط الدفع الخاص به",
     "staffScanNotCode": "هذا ليس رمز موظف في حزالي.",
-    "staffScanClose": "إغلاق"
+    "staffScanClose": "إغلاق",
+    "searchScanBtn": "مسح",
+    "searchScanTitle": "مسح طرد",
+    "searchScanHint": "وجّه الكاميرا نحو رمز ملصق الطرد لفتحه.",
+    "searchScanManualLabel": "أدخل رقم التتبع"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",

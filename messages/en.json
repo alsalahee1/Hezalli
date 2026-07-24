@@ -3227,7 +3227,11 @@
     "staffScanNoCamera": "Camera unavailable — paste their code or pay link below.",
     "staffScanManualLabel": "Paste their Hezalli code or pay link",
     "staffScanNotCode": "That isn’t a Hezalli member code.",
-    "staffScanClose": "Close"
+    "staffScanClose": "Close",
+    "searchScanBtn": "Scan",
+    "searchScanTitle": "Scan a parcel",
+    "searchScanHint": "Point the camera at the parcel label’s QR to open it.",
+    "searchScanManualLabel": "Enter tracking number"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
