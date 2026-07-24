@@ -642,7 +642,9 @@ export async function driverManifestAtPoint(
       subOrder: { status: "SHIPPED" },
       trackingNumber: { not: null },
     },
-    orderBy: { updatedAt: "asc" },
+    // Group by bay so the counter walks the shelves in order when loading the
+    // driver (nulls sort last in Postgres asc); stable by arrival within a bay.
+    orderBy: [{ shelfCode: "asc" }, { updatedAt: "asc" }],
     select: {
       id: true,
       trackingNumber: true,
