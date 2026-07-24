@@ -14,6 +14,7 @@ import {
 import { WALLET_OPEN_TOPUP } from "@/components/wallet/wallet-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
 
 type Method = "LOCAL_WALLET" | "BANK_TRANSFER" | "USDT";
@@ -93,17 +94,17 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
               dir="ltr"
               className="sm:w-40"
             />
-            <select
+            <Select
               value={method}
               onChange={(e) => setMethod(e.target.value as Method)}
-              className="bg-background h-10 flex-1 rounded-md border px-3 text-sm"
+              className="flex-1"
             >
               {METHODS.map((m) => (
                 <option key={m} value={m}>
                   {t(`method_${m}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           {display.code !== "USD" && Number(amount) > 0 ? (
             <p className="text-muted-foreground text-xs" dir="ltr">
@@ -119,8 +120,8 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
                   onClick={() => setAmount(String(n))}
                   className={
                     Number(amount) === n
-                      ? "border-primary bg-primary/10 text-primary rounded-full border px-3 py-1 text-sm font-semibold"
-                      : "hover:border-muted-foreground/40 rounded-full border px-3 py-1 text-sm"
+                      ? "border-primary bg-primary/10 text-primary min-h-10 rounded-full border px-3.5 py-2 text-sm font-semibold"
+                      : "hover:border-muted-foreground/40 min-h-10 rounded-full border px-3.5 py-2 text-sm"
                   }
                   dir="ltr"
                 >
@@ -146,16 +147,16 @@ export function WalletTopUpForm({ min, max }: { min: number; max: number }) {
 
           {isUsdt ? (
             <div className="flex flex-col gap-2 sm:flex-row">
-              <select
+              <Select
                 value={network}
                 onChange={(e) =>
                   setNetwork(e.target.value as "TRC20" | "ERC20")
                 }
-                className="bg-background h-10 rounded-md border px-3 text-sm"
+                className="sm:w-32"
               >
                 <option value="TRC20">TRC20</option>
                 <option value="ERC20">ERC20</option>
-              </select>
+              </Select>
               <Input
                 value={txHash}
                 onChange={(e) => setTxHash(e.target.value)}

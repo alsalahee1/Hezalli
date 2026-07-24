@@ -11,6 +11,7 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 const STATUSES: OverrideStatus[] = [
   "PENDING",
@@ -65,36 +66,33 @@ export function ShipmentOverride({
       }
     });
 
-  const selectClass =
-    "border-input bg-background h-9 rounded-md border px-2 text-sm";
-
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <div className="space-y-3 rounded-lg border p-4">
         <p className="text-sm font-medium">{t("setStatus")}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <Select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className={selectClass}
+            className="w-auto"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {t(`shipStatus_${s}`)}
               </option>
             ))}
-          </select>
+          </Select>
           <Input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder={t("eventLocation")}
-            className="h-9 w-36"
+            className="w-36"
           />
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("eventNote")}
-            className="h-9 max-w-xs flex-1"
+            className="max-w-xs flex-1"
           />
           <Button
             size="sm"
@@ -117,10 +115,10 @@ export function ShipmentOverride({
       <div className="space-y-3 rounded-lg border p-4">
         <p className="text-sm font-medium">{t("editTracking")}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <Select
             value={carrier}
             onChange={(e) => setCarrier(e.target.value)}
-            className={selectClass}
+            className="w-auto"
           >
             <option value="">{t("chooseCarrier")}</option>
             {carriers.map((c) => (
@@ -128,13 +126,13 @@ export function ShipmentOverride({
                 {c.name}
               </option>
             ))}
-          </select>
+          </Select>
           <Input
             value={tracking}
             onChange={(e) => setTracking(e.target.value)}
             placeholder={t("trackingNumber")}
             dir="ltr"
-            className="h-9 w-44"
+            className="w-44"
           />
           <Button
             size="sm"

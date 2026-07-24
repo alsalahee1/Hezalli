@@ -42,7 +42,7 @@ export function ListingFilters({
 
   const rowBtn = (active: boolean) =>
     cn(
-      "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-start text-sm transition-colors",
+      "flex min-h-10 w-full items-center justify-between rounded-md px-2 py-2 text-start text-sm transition-colors",
       active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted",
     );
 
@@ -162,7 +162,7 @@ export function ListingFilters({
                 key={c}
                 type="button"
                 className={cn(
-                  "flex-1 rounded-md border px-2 py-1.5 text-sm transition-colors",
+                  "min-h-10 flex-1 rounded-md border px-2 py-2 text-sm transition-colors",
                   active
                     ? "border-primary bg-primary/10 text-primary font-medium"
                     : "hover:border-muted-foreground/50",
@@ -240,8 +240,8 @@ export function ListingFilters({
 
   return (
     <>
-      {/* Mobile: collapsible */}
-      <details className="rounded-lg border px-3 lg:hidden">
+      {/* Phone: collapsible */}
+      <details className="rounded-lg border px-3 md:hidden">
         <summary className="flex cursor-pointer items-center gap-2 py-3 text-sm font-medium">
           <SlidersHorizontal className="size-4" />
           {t("filters")}
@@ -249,8 +249,8 @@ export function ListingFilters({
         {body}
       </details>
 
-      {/* Desktop: sticky sidebar */}
-      <aside className="sticky top-24 hidden h-fit rounded-lg border px-4 lg:block">
+      {/* Tablet/desktop: sticky sidebar */}
+      <aside className="sticky top-24 hidden h-fit rounded-lg border px-4 md:block">
         {body}
       </aside>
     </>

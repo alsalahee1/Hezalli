@@ -337,7 +337,7 @@ export default async function ProductPage({
         <span className="text-foreground truncate">{title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <div className="min-w-0">
           <ProductGallery images={galleryImages} />
         </div>

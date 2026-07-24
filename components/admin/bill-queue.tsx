@@ -71,7 +71,7 @@ export function BillQueue({ rows }: { rows: BillRow[] }) {
                 placeholder={
                   failing === p.id ? t("billsFailReason") : t("billsReference")
                 }
-                className="h-9 max-w-[10rem]"
+                className="max-w-[10rem]"
               />
               <Button
                 size="sm"

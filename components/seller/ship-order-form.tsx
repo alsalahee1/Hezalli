@@ -12,6 +12,7 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export type CarrierOption = {
   id: string;
@@ -77,10 +78,10 @@ export function ShipOrderForm({
     });
 
   const carrierSelect = (
-    <select
+    <Select
       value={carrierId}
       onChange={(e) => setCarrierId(e.target.value)}
-      className="h-9 rounded-md border bg-transparent px-3 text-sm"
+      className="w-auto"
     >
       {carriers.length === 0 ? <option value="">—</option> : null}
       {carriers.map((c) => (
@@ -88,7 +89,7 @@ export function ShipOrderForm({
           {c.name}
         </option>
       ))}
-    </select>
+    </Select>
   );
 
   const errLine = err ? (
@@ -126,7 +127,6 @@ export function ShipOrderForm({
                 value={tracking}
                 onChange={(e) => setTracking(e.target.value)}
                 placeholder="YE123456789"
-                className="h-9 w-48"
                 dir="ltr"
               />
             </label>
@@ -140,10 +140,10 @@ export function ShipOrderForm({
         (pointId || shippingMethod === "PICKUP") ? (
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("originPoint")}
-            <select
+            <Select
               value={originId}
               onChange={(e) => setOriginId(e.target.value)}
-              className="h-9 max-w-md rounded-md border bg-transparent px-3 text-sm"
+              className="max-w-md"
             >
               <option value="">{t("originDirect")}</option>
               {points.map((p) => (
@@ -151,7 +151,7 @@ export function ShipOrderForm({
                   {p.label}
                 </option>
               ))}
-            </select>
+            </Select>
             <span className="text-muted-foreground font-normal">
               {t("originHint")}
             </span>
@@ -160,10 +160,10 @@ export function ShipOrderForm({
         {platformCarrier && shippingMethod !== "PICKUP" && points.length > 0 ? (
           <label className="flex flex-col gap-1 text-xs font-medium">
             {t("dropOffPoint")}
-            <select
+            <Select
               value={pointId}
               onChange={(e) => setPointId(e.target.value)}
-              className="h-9 max-w-md rounded-md border bg-transparent px-3 text-sm"
+              className="max-w-md"
             >
               <option value="">{t("directToCourier")}</option>
               {points.map((p) => (
@@ -171,7 +171,7 @@ export function ShipOrderForm({
                   {p.label}
                 </option>
               ))}
-            </select>
+            </Select>
             <span className="text-muted-foreground font-normal">
               {t("dropOffHint")}
             </span>
@@ -183,7 +183,6 @@ export function ShipOrderForm({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("notePlaceholder")}
-            className="h-9 max-w-md"
           />
         </label>
         {errLine}
@@ -285,7 +284,7 @@ export function ShipOrderForm({
                 <Input
                   value={tracking}
                   onChange={(e) => setTracking(e.target.value)}
-                  className="h-9 w-48"
+
                   dir="ltr"
                 />
               </label>

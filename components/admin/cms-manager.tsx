@@ -7,6 +7,7 @@ import { deleteCmsPage, saveCmsPage } from "@/lib/actions/cms";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type CmsPageRow = {
@@ -191,22 +192,22 @@ function PageEditor({
       </div>
       <label className="space-y-1.5">
         <span className="text-sm font-medium">{t("bodyEn")}</span>
-        <textarea
+        <Textarea
           value={f.bodyEn}
           onChange={(e) => set("bodyEn", e.target.value)}
           dir="ltr"
           rows={8}
-          className="bg-background w-full rounded-md border p-3 font-mono text-xs"
+          className="font-mono"
         />
       </label>
       <label className="space-y-1.5">
         <span className="text-sm font-medium">{t("bodyAr")}</span>
-        <textarea
+        <Textarea
           value={f.bodyAr}
           onChange={(e) => set("bodyAr", e.target.value)}
           dir="rtl"
           rows={8}
-          className="bg-background w-full rounded-md border p-3 font-mono text-xs"
+          className="font-mono"
         />
       </label>
       <p className="text-muted-foreground text-xs">{t("htmlHint")}</p>

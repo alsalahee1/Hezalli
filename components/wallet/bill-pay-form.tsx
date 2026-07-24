@@ -232,8 +232,8 @@ export function BillPayForm({
                     onClick={() => setAmount(String(n))}
                     className={
                       Number(amount) === n
-                        ? "border-primary bg-primary/10 text-primary rounded-full border px-3 py-1 text-sm font-semibold"
-                        : "hover:border-muted-foreground/40 rounded-full border px-3 py-1 text-sm"
+                        ? "border-primary bg-primary/10 text-primary min-h-10 rounded-full border px-3.5 py-2 text-sm font-semibold"
+                        : "hover:border-muted-foreground/40 min-h-10 rounded-full border px-3.5 py-2 text-sm"
                     }
                     dir="ltr"
                   >

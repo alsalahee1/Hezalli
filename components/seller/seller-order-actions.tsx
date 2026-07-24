@@ -66,7 +66,7 @@ export function SellerOrderActions({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("cancelReason")}
-            className="h-9 max-w-xs"
+            className="max-w-xs"
           />
           <Button
             size="sm"

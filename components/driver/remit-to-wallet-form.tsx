@@ -83,7 +83,7 @@ export function RemitToWalletForm({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               dir="ltr"
-              className="h-10 sm:w-48"
+              className="sm:w-48"
             />
           </label>
           <WalletAuthField

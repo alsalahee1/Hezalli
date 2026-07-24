@@ -163,7 +163,7 @@ export function ChatApp({
               <button
                 type="button"
                 onClick={() => setActiveId(null)}
-                className="hover:bg-muted rounded-md p-1 md:hidden"
+                className="hover:bg-muted -ms-2 flex size-10 items-center justify-center rounded-md md:hidden"
                 aria-label={t("back")}
               >
                 <ArrowLeft className="size-5 rtl:rotate-180" />

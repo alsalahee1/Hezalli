@@ -64,7 +64,7 @@ export function WishlistGrid({ initial }: { initial: WishlistCardData[] }) {
             type="button"
             onClick={() => removeItem(item.productId)}
             aria-label={t("remove")}
-            className="absolute end-2 top-2 z-10 flex size-7 items-center justify-center rounded-full bg-white/85 shadow-sm hover:bg-white"
+            className="absolute end-1 top-1 z-10 flex size-9 items-center justify-center rounded-full bg-white/85 shadow-sm hover:bg-white"
           >
             <X className="size-4" />
           </button>

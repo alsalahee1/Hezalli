@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { SORT_KEYS, type ListingParams } from "@/lib/listing";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 
 import { useListingNav } from "./listing-nav";
 
@@ -71,17 +72,17 @@ export function ListingToolbar({
         </p>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">{t("sortBy")}</span>
-          <select
+          <Select
             value={params.sort}
             onChange={(e) => nav({ sort: e.target.value })}
-            className="bg-background rounded-md border px-2 py-1.5 text-sm"
+            className="w-auto"
           >
             {SORT_KEYS.map((k) => (
               <option key={k} value={k}>
                 {t(`sort_${k}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -93,11 +94,13 @@ export function ListingToolbar({
               type="button"
               onClick={() => nav(chip.clear)}
               className={cn(
-                "bg-muted hover:bg-muted/70 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
+                "bg-muted hover:bg-muted/70 inline-flex min-h-9 items-center gap-1.5 rounded-full py-1 ps-3 pe-2 text-xs",
               )}
             >
               {chip.label}
-              <X className="size-3" />
+              <span className="flex size-5 items-center justify-center">
+                <X className="size-3" />
+              </span>
             </button>
           ))}
           <button
@@ -114,7 +117,7 @@ export function ListingToolbar({
                 instock: null,
               })
             }
-            className="text-muted-foreground hover:text-foreground text-xs underline"
+            className="text-muted-foreground hover:text-foreground flex min-h-9 items-center px-2 text-xs underline"
           >
             {t("clearAll")}
           </button>

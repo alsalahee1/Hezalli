@@ -53,7 +53,7 @@ export function CsvImport() {
         </Button>
         <button
           type="button"
-          className="text-muted-foreground text-xs hover:underline"
+          className="text-muted-foreground flex min-h-9 items-center px-1 text-xs hover:underline"
           onClick={() => setCsv(SAMPLE)}
         >
           {t("csvSample")}

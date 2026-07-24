@@ -75,7 +75,7 @@ export default async function PointStaffPage() {
             {t("activityEmpty")}
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
             {active.map((r) => (
               <li key={r.userId} className="rounded-xl border p-3">
                 <div className="flex items-center justify-between gap-2">

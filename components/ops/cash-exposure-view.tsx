@@ -145,12 +145,85 @@ function HolderTable({
 }) {
   if (holders.length === 0) return null;
   const Icon = icon === "driver" ? Bike : MapPinned;
+
+  const statusBadge = (h: ExposureHolder) =>
+    h.blocked ? (
+      <span className="rounded bg-rose-500/15 px-1.5 py-0.5 text-xs font-semibold text-rose-600">
+        {t("statusBlocked")}
+      </span>
+    ) : h.overdue24 > 0 ? (
+      <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+        {t("statusWatch")}
+      </span>
+    ) : (
+      <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600">
+        {t("statusOk")}
+      </span>
+    );
+
   return (
     <section className="space-y-2">
       <h2 className="flex items-center gap-2 text-sm font-semibold">
         <Icon className="size-4" /> {title}
       </h2>
-      <div className="overflow-x-auto rounded-lg border">
+
+      <ul className="space-y-2 md:hidden">
+        {holders.map((h) => (
+          <li key={h.id} className="rounded-lg border p-3">
+            <div className="flex items-start justify-between gap-2">
+              <Link
+                href={`${hrefBase}/${h.id}`}
+                className="text-primary font-medium hover:underline"
+              >
+                {h.name}
+              </Link>
+              {statusBadge(h)}
+            </div>
+            <dl className="mt-2 grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <dt className="text-muted-foreground text-xs">
+                  {t("colCash")}
+                </dt>
+                <dd className="font-semibold" dir="ltr">
+                  {money(h.cashOnHand)}
+                </dd>
+              </div>
+              <div className="text-end">
+                <dt className="text-muted-foreground text-xs">
+                  {t("colLimit")}
+                </dt>
+                <dd dir="ltr">{h.limit > 0 ? money(h.limit) : "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs">
+                  {t("colOver24")}
+                </dt>
+                <dd
+                  className={cn(
+                    h.overdue24 > 0 && "font-medium text-amber-600",
+                  )}
+                  dir="ltr"
+                >
+                  {h.overdue24 > 0 ? money(h.overdue24) : "—"}
+                </dd>
+              </div>
+              <div className="text-end">
+                <dt className="text-muted-foreground text-xs">
+                  {t("colOver48")}
+                </dt>
+                <dd
+                  className={cn(h.overdue48 > 0 && "font-medium text-rose-600")}
+                  dir="ltr"
+                >
+                  {h.overdue48 > 0 ? money(h.overdue48) : "—"}
+                </dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-muted-foreground border-b text-xs">
@@ -201,21 +274,7 @@ function HolderTable({
                 >
                   {h.overdue48 > 0 ? money(h.overdue48) : "—"}
                 </td>
-                <td className="p-2">
-                  {h.blocked ? (
-                    <span className="rounded bg-rose-500/15 px-1.5 py-0.5 text-xs font-semibold text-rose-600">
-                      {t("statusBlocked")}
-                    </span>
-                  ) : h.overdue24 > 0 ? (
-                    <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
-                      {t("statusWatch")}
-                    </span>
-                  ) : (
-                    <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600">
-                      {t("statusOk")}
-                    </span>
-                  )}
-                </td>
+                <td className="p-2">{statusBadge(h)}</td>
               </tr>
             ))}
           </tbody>

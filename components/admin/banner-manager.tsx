@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { ImageUploader } from "@/components/upload/image-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type BannerRow = {
@@ -263,13 +264,12 @@ function BannerForm({
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium">{t("position")}</span>
-          <select
+          <Select
             value={value.position}
             onChange={(e) => set({ position: e.target.value })}
-            className="bg-background h-10 w-full rounded-md border px-3 text-sm"
           >
             <option value="home_hero">{t("posHomeHero")}</option>
-          </select>
+          </Select>
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium">{t("order")}</span>

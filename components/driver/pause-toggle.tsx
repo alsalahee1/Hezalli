@@ -58,8 +58,8 @@ export function PauseToggle({ paused }: { paused: boolean }) {
           disabled={pending}
           className={
             paused
-              ? "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-              : "text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+              ? "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              : "text-muted-foreground hover:text-foreground inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium disabled:opacity-50"
           }
         >
           {paused ? (

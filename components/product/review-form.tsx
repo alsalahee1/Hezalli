@@ -80,7 +80,7 @@ export function ReviewForm({
       <p className="font-medium">
         {existing ? t("editYourReview") : t("writeReview")}
       </p>
-      <div className="flex items-center gap-1" dir="ltr">
+      <div className="flex items-center" dir="ltr">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
@@ -89,6 +89,7 @@ export function ReviewForm({
             onMouseEnter={() => setHover(n)}
             onMouseLeave={() => setHover(0)}
             aria-label={`${n}`}
+            className="flex size-10 items-center justify-center"
           >
             <Star
               className={cn(

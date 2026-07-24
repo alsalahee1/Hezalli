@@ -13,6 +13,7 @@ import { DELIVERY_SCOPES, type DeliveryScope } from "@/lib/delivery-access";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type TeamMember = {
   id: string;
@@ -71,6 +72,7 @@ function MemberRow({ member }: { member: TeamMember }) {
   const [selected, setSelected] = useState<Set<DeliveryScope>>(
     new Set(member.scopes),
   );
+  const { confirm, dialog } = useConfirm();
 
   const toggle = (scope: DeliveryScope) =>
     setSelected((prev) => {
@@ -89,18 +91,27 @@ function MemberRow({ member }: { member: TeamMember }) {
       router.refresh();
     });
 
-  const remove = () =>
+  const remove = async () => {
+    if (
+      !(await confirm(t("removeConfirm"), {
+        title: t("remove"),
+        destructive: true,
+      }))
+    )
+      return;
     start(async () => {
       const fd = new FormData();
       fd.set("userId", member.id);
       await removeDeliveryTeamMember(fd);
       router.refresh();
     });
+  };
 
   const isHead = selected.size === 0;
 
   return (
     <li className="space-y-3 rounded-lg border p-4">
+      {dialog}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="font-medium">

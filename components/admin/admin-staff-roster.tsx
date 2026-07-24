@@ -88,7 +88,7 @@ export function AdminStaffRoster({
               type="button"
               disabled={pending}
               onClick={() => toggle(s.id, !s.isActive)}
-              className="text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
+              className="text-muted-foreground hover:text-foreground inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full border px-3 py-2 text-xs font-medium disabled:opacity-50"
             >
               {s.isActive ? (
                 <>

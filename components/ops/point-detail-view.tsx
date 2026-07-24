@@ -12,6 +12,8 @@ import { DepositForm } from "@/components/admin/deposit-form";
 import { PointPayoutForm } from "@/components/admin/point-payout-form";
 import { PointPayoutRequests } from "@/components/admin/point-payout-requests";
 import { AdminStaffRoster } from "@/components/admin/admin-staff-roster";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Per-point settlement: headline balance + fee/payout totals, a record-a-
 // payout form, and the raw ledger. The balance is what Hezalli owes the
@@ -162,21 +164,16 @@ export async function PointDetailView({
           className="flex flex-wrap items-center gap-2"
         >
           <input type="hidden" name="pointId" value={point.id} />
-          <input
+          <Input
             type="number"
             name="capacity"
             min={1}
             defaultValue={point.capacity ?? ""}
             placeholder={t("capacityUnlimited")}
-            className="h-9 w-36 rounded-md border bg-transparent px-3 text-sm"
+            className="w-36"
             dir="ltr"
           />
-          <button
-            type="submit"
-            className="bg-primary text-primary-foreground h-9 rounded-md px-3 text-sm font-medium"
-          >
-            {t("capacitySave")}
-          </button>
+          <Button type="submit">{t("capacitySave")}</Button>
           <span className="text-muted-foreground text-xs">
             {t("capacityHint")}
           </span>

@@ -102,7 +102,10 @@ export default async function PointLayout({
   const t = await getTranslations("Point");
 
   return (
-    <div className="bg-background mx-auto flex min-h-screen max-w-md flex-col">
+    // Counter tablets get the extra width (docs: "pin to a phone or the shop
+    // counter tablet") instead of sitting in a phone-narrow column on a big
+    // screen; the bottom bar and phone layout are unaffected below `md`.
+    <div className="bg-background mx-auto flex min-h-screen max-w-md flex-col md:max-w-3xl">
       <header className="bg-background/95 sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur print:hidden">
         <Link href="/point" className="flex items-center gap-2 font-semibold">
           <Store className="text-primary size-5" /> {t("appName")}

@@ -14,6 +14,8 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type VoucherRow = {
   id: string;
@@ -57,6 +59,7 @@ export function VoucherManager({
   const [pending, start] = useTransition();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) =>
     setDraft((d) => (d ? { ...d, [k]: v } : d));
@@ -91,11 +94,20 @@ export function VoucherManager({
       router.refresh();
     });
 
-  const remove = (id: string) =>
+  const remove = async (id: string, code: string) => {
+    if (
+      !(await confirm(t("deleteConfirm", { code }), {
+        title: t("deleteTitle"),
+        destructive: true,
+        confirmLabel: t("deleteButton"),
+      }))
+    )
+      return;
     start(async () => {
       await deleteCoupon(id);
       router.refresh();
     });
+  };
 
   const toggle = (id: string, active: boolean) =>
     start(async () => {
@@ -115,6 +127,7 @@ export function VoucherManager({
 
   return (
     <div className="space-y-4">
+      {dialog}
       <div className="flex justify-end">
         <Button
           size="sm"
@@ -142,17 +155,16 @@ export function VoucherManager({
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium">
               {t("type")}
-              <select
+              <Select
                 value={draft.discountType}
                 onChange={(e) =>
                   set("discountType", e.target.value as Draft["discountType"])
                 }
-                className="h-9 rounded-md border bg-transparent px-3 text-sm"
               >
                 <option value="PERCENT">{t("type_PERCENT")}</option>
                 <option value="FIXED">{t("type_FIXED")}</option>
                 <option value="FREE_SHIPPING">{t("type_FREE_SHIPPING")}</option>
-              </select>
+              </Select>
             </label>
             {draft.discountType !== "FREE_SHIPPING" ? (
               <label className="flex flex-col gap-1 text-xs font-medium">
@@ -291,15 +303,19 @@ export function VoucherManager({
                   role="switch"
                   aria-checked={r.isActive}
                   onClick={() => toggle(r.id, !r.isActive)}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                    r.isActive ? "bg-primary" : "bg-muted-foreground/30"
-                  }`}
+                  className="flex size-11 shrink-0 items-center justify-center"
                 >
                   <span
-                    className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${
-                      r.isActive ? "start-[22px]" : "start-0.5"
+                    className={`relative h-6 w-11 rounded-full transition-colors ${
+                      r.isActive ? "bg-primary" : "bg-muted-foreground/30"
                     }`}
-                  />
+                  >
+                    <span
+                      className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${
+                        r.isActive ? "start-[22px]" : "start-0.5"
+                      }`}
+                    />
+                  </span>
                 </button>
                 <Button
                   size="sm"
@@ -313,7 +329,7 @@ export function VoucherManager({
                   size="sm"
                   variant="outline"
                   className="text-destructive"
-                  onClick={() => remove(r.id)}
+                  onClick={() => remove(r.id, r.code)}
                   disabled={pending}
                 >
                   <Trash2 className="size-4" />

@@ -8,6 +8,7 @@ import type { PlatformSettings } from "@/lib/settings";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export function PlatformSettingsForm({
   current,
@@ -429,7 +430,7 @@ export function PlatformSettingsForm({
             dir="ltr"
           />
         </Field>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -480,14 +481,13 @@ export function PlatformSettingsForm({
           />
         </Field>
         <Field label={t("assignStrategy")} hint={t("assignStrategyHint")}>
-          <select
+          <Select
             value={f.courier_assign_strategy}
             onChange={(e) => set("courier_assign_strategy", e.target.value)}
-            className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
           >
             <option value="balanced">{t("strategyBalanced")}</option>
             <option value="nearest">{t("strategyNearest")}</option>
-          </select>
+          </Select>
         </Field>
         <Field label={t("offerTimeout")} hint={t("offerTimeoutHint")}>
           <Input
@@ -584,7 +584,7 @@ export function PlatformSettingsForm({
       </div>
 
       <div className="space-y-2 border-t pt-4">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -593,7 +593,7 @@ export function PlatformSettingsForm({
           />
           {t("codEnabled")}
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -605,7 +605,7 @@ export function PlatformSettingsForm({
             {t("codWalletPayHint")}
           </span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -617,7 +617,7 @@ export function PlatformSettingsForm({
             {t("expressEnabledHint")}
           </span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -629,7 +629,7 @@ export function PlatformSettingsForm({
             {t("expressAutoAssignHint")}
           </span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -641,7 +641,7 @@ export function PlatformSettingsForm({
             {t("jobBoardHint")}
           </span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -653,7 +653,7 @@ export function PlatformSettingsForm({
             {t("pointsEnabledHint")}
           </span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -665,7 +665,7 @@ export function PlatformSettingsForm({
             {t("maintenanceHint")}
           </span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -675,7 +675,7 @@ export function PlatformSettingsForm({
           {t("walletP2p")}
           <span className="text-xs text-amber-600">{t("walletP2pHint")}</span>
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"

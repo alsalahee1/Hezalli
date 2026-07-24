@@ -42,15 +42,17 @@ export function AccountNav() {
           <Link
             key={item.href}
             href={item.href}
+            title={t(item.key)}
             className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors",
+              "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
+              "justify-center px-2 lg:justify-start lg:px-3",
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <Icon className="size-4" />
-            {t(item.key)}
+            <Icon className="size-5 shrink-0" />
+            <span className="hidden lg:inline">{t(item.key)}</span>
           </Link>
         );
       })}

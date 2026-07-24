@@ -26,7 +26,7 @@ export function ReportReviewButton({ reviewId }: { reviewId: string }) {
           setDone(true);
         })
       }
-      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+      className="text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center gap-1 text-xs"
     >
       <Flag className="size-3" /> {t("report")}
     </button>

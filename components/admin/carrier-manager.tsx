@@ -8,6 +8,7 @@ import { deleteCarrier, saveCarrier } from "@/lib/actions/carrier";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type CarrierRow = {
   id: string;
@@ -29,6 +30,7 @@ export function CarrierManager({ carriers }: { carriers: CarrierRow[] }) {
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState<Editing>(null);
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const openNew = () => {
     setErr(null);
@@ -57,14 +59,24 @@ export function CarrierManager({ carriers }: { carriers: CarrierRow[] }) {
       router.refresh();
     });
 
-  const remove = (id: string) =>
+  const remove = async (id: string, name: string) => {
+    if (
+      !(await confirm(t("deleteConfirm", { name }), {
+        title: t("deleteTitle"),
+        destructive: true,
+        confirmLabel: t("delete"),
+      }))
+    )
+      return;
     start(async () => {
       await deleteCarrier(id);
       router.refresh();
     });
+  };
 
   return (
     <div className="space-y-4">
+      {dialog}
       <div className="flex justify-end">
         <Button size="sm" onClick={openNew} disabled={pending}>
           <Plus className="size-4" /> {t("addCarrier")}
@@ -168,7 +180,7 @@ export function CarrierManager({ carriers }: { carriers: CarrierRow[] }) {
                   size="sm"
                   variant="outline"
                   className="text-destructive"
-                  onClick={() => remove(c.id)}
+                  onClick={() => remove(c.id, c.name)}
                   disabled={pending}
                 >
                   <Trash2 className="size-4" /> {t("delete")}

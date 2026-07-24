@@ -121,60 +121,99 @@ export async function DeliveryAnalyticsView({
         {leaders.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("noCouriers")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-muted-foreground border-b text-xs">
-                  <th className="p-2 text-start font-medium">
-                    {t("colDriver")}
-                  </th>
-                  <th className="p-2 text-end font-medium">
-                    {t("colDeliveries")}
-                  </th>
-                  <th className="p-2 text-end font-medium">{t("colRating")}</th>
-                  <th className="p-2 text-end font-medium">{t("colCash")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaders.map((c) => (
-                  <tr key={c.courierId} className="border-b last:border-0">
-                    <td className="p-2">
-                      <Link
-                        href={`${base}/couriers/${c.courierId}`}
-                        className="hover:underline"
-                      >
-                        {c.name}
-                      </Link>
-                    </td>
-                    <td className="p-2 text-end tabular-nums" dir="ltr">
-                      {c.deliveries}
-                    </td>
-                    <td className="p-2 text-end" dir="ltr">
-                      {c.rating != null ? (
-                        <span className="font-medium text-amber-600">
-                          ★ {c.rating.toFixed(1)}{" "}
-                          <span className="text-muted-foreground text-xs">
-                            ({c.ratingCount})
-                          </span>
+          <>
+            <ul className="space-y-2 md:hidden">
+              {leaders.map((c) => (
+                <li key={c.courierId} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`${base}/couriers/${c.courierId}`}
+                      className="font-medium hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                    {c.rating != null ? (
+                      <span className="text-xs font-medium text-amber-600">
+                        ★ {c.rating.toFixed(1)}{" "}
+                        <span className="text-muted-foreground">
+                          ({c.ratingCount})
                         </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="p-2 text-end tabular-nums" dir="ltr">
-                      {c.cashOnHand > 0 ? (
-                        <span className="text-amber-600">
-                          {money(c.cashOnHand)}
-                        </span>
-                      ) : (
-                        money(c.cashOnHand)
-                      )}
-                    </td>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </div>
+                  <div className="text-muted-foreground mt-2 flex items-center justify-between text-xs">
+                    <span>
+                      {t("colDeliveries")}: {c.deliveries}
+                    </span>
+                    <span
+                      className={cn(c.cashOnHand > 0 && "text-amber-600")}
+                      dir="ltr"
+                    >
+                      {money(c.cashOnHand)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted-foreground border-b text-xs">
+                    <th className="p-2 text-start font-medium">
+                      {t("colDriver")}
+                    </th>
+                    <th className="p-2 text-end font-medium">
+                      {t("colDeliveries")}
+                    </th>
+                    <th className="p-2 text-end font-medium">
+                      {t("colRating")}
+                    </th>
+                    <th className="p-2 text-end font-medium">{t("colCash")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {leaders.map((c) => (
+                    <tr key={c.courierId} className="border-b last:border-0">
+                      <td className="p-2">
+                        <Link
+                          href={`${base}/couriers/${c.courierId}`}
+                          className="hover:underline"
+                        >
+                          {c.name}
+                        </Link>
+                      </td>
+                      <td className="p-2 text-end tabular-nums" dir="ltr">
+                        {c.deliveries}
+                      </td>
+                      <td className="p-2 text-end" dir="ltr">
+                        {c.rating != null ? (
+                          <span className="font-medium text-amber-600">
+                            ★ {c.rating.toFixed(1)}{" "}
+                            <span className="text-muted-foreground text-xs">
+                              ({c.ratingCount})
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-2 text-end tabular-nums" dir="ltr">
+                        {c.cashOnHand > 0 ? (
+                          <span className="text-amber-600">
+                            {money(c.cashOnHand)}
+                          </span>
+                        ) : (
+                          money(c.cashOnHand)
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

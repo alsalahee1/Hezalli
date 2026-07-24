@@ -97,11 +97,7 @@ export function AddressForm({
   }, [state, onDone]);
 
   return (
-    <form
-      action={action}
-      className="space-y-4 rounded-lg border p-4"
-      noValidate
-    >
+    <form action={action} className="space-y-4" noValidate>
       {address ? <input type="hidden" name="id" value={address.id} /> : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -170,7 +166,7 @@ export function AddressForm({
               <button
                 type="button"
                 onClick={() => setCoords(null)}
-                className="text-muted-foreground hover:text-foreground text-xs"
+                className="text-muted-foreground hover:text-foreground flex min-h-9 items-center px-1 text-xs"
               >
                 {t("clearLocation")}
               </button>

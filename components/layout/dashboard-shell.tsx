@@ -257,11 +257,22 @@ export function DashboardShell({
   const isActive = (href: string) =>
     href === base ? pathname === href : pathname.startsWith(href);
 
-  const sidebar = (
+  // `rail` renders the tablet-width (md, 768–1023px) icon-only sidebar; the
+  // same nav switches to full icon+label at `lg` (desktop) and inside the
+  // phone drawer (which is only ever shown below `md`, so the lg: overrides
+  // below have no effect there — it always renders full).
+  const sidebar = (rail: boolean) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        <Store className="size-5" />
-        <span className="font-semibold">{t(titleKey)}</span>
+      <div
+        className={cn(
+          "flex h-14 items-center gap-2 border-b px-4",
+          rail && "justify-center px-2 lg:justify-start lg:px-4",
+        )}
+      >
+        <Store className="size-5 shrink-0" />
+        <span className={cn("font-semibold", rail && "hidden lg:inline")}>
+          {t(titleKey)}
+        </span>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {nav.map((item) => {
@@ -271,15 +282,19 @@ export function DashboardShell({
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
+              title={rail ? t(item.key) : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                rail && "justify-center px-2 lg:justify-start lg:px-3",
                 isActive(item.href)
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <Icon className="size-4" />
-              {t(item.key)}
+              <Icon className="size-5 shrink-0" />
+              <span className={cn(rail && "hidden lg:inline")}>
+                {t(item.key)}
+              </span>
             </Link>
           );
         })}
@@ -289,9 +304,10 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop sidebar */}
-      <aside className="bg-background hidden w-64 shrink-0 border-e md:block">
-        {sidebar}
+      {/* Tablet gets a compact icon-only rail (md); desktop gets the full
+          labeled sidebar (lg). */}
+      <aside className="bg-background hidden w-16 shrink-0 border-e md:block lg:w-64">
+        {sidebar(true)}
       </aside>
 
       {/* Mobile drawer */}
@@ -313,7 +329,7 @@ export function DashboardShell({
                 : "-translate-x-full rtl:translate-x-full",
             )}
           >
-            {sidebar}
+            {sidebar(false)}
           </aside>
         </div>
       )}

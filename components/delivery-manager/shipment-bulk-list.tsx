@@ -10,6 +10,8 @@ import {
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 const STATUSES: OverrideStatus[] = [
   "PICKED_UP",
@@ -86,22 +88,22 @@ export function ShipmentBulkList({ rows }: { rows: ShipmentRow[] }) {
           <span className="font-medium">
             {t("bulkSelected", { count: sel.size })}
           </span>
-          <select
+          <Select
             value={status}
             onChange={(e) => setStatus(e.target.value as OverrideStatus)}
-            className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+            className="w-auto"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {t(`shipStatus_${s}`)}
               </option>
             ))}
-          </select>
-          <input
+          </Select>
+          <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("eventNote")}
-            className="border-input bg-background h-9 max-w-xs flex-1 rounded-md border px-3 text-sm"
+            className="max-w-xs flex-1"
           />
           <Button size="sm" disabled={pending} onClick={apply}>
             {t("bulkApply")}

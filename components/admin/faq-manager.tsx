@@ -13,6 +13,9 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type FaqRow = {
   id: string;
@@ -57,6 +60,7 @@ export function FaqManager({
   const [pending, start] = useTransition();
   const [drafting, setDrafting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
   const [draft, setDraft] = useState<Draft | null>(
     initialDraft
       ? emptyDraft({
@@ -114,6 +118,7 @@ export function FaqManager({
 
   return (
     <div className="space-y-5">
+      {dialog}
       {!draft ? (
         <Button onClick={() => setDraft(emptyDraft())}>
           <Plus className="size-4" />
@@ -139,7 +144,7 @@ export function FaqManager({
                 type="button"
                 onClick={draft2}
                 disabled={drafting || pending || !draft.question.trim()}
-                className="text-primary inline-flex items-center gap-1.5 text-xs font-medium hover:underline disabled:opacity-50"
+                className="text-primary flex min-h-8 items-center gap-1.5 text-xs font-medium hover:underline disabled:opacity-50"
               >
                 {drafting ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -149,13 +154,12 @@ export function FaqManager({
                 {drafting ? t("drafting") : t("draft")}
               </button>
             </div>
-            <textarea
+            <Textarea
               value={draft.answer}
               onChange={(e) => setDraft({ ...draft, answer: e.target.value })}
               rows={4}
               maxLength={4000}
               placeholder={t("answerPlaceholder")}
-              className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
             />
             <span className="text-muted-foreground block text-xs">
               {t("draftHint")}
@@ -164,10 +168,9 @@ export function FaqManager({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
               <span className="text-sm font-medium">{t("character")}</span>
-              <select
+              <Select
                 value={draft.bot}
                 onChange={(e) => setDraft({ ...draft, bot: e.target.value })}
-                className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
               >
                 <option value="all">{t("allChars")}</option>
                 {Object.entries(botNames).map(([id, name]) => (
@@ -175,19 +178,18 @@ export function FaqManager({
                     {name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="space-y-1.5">
               <span className="text-sm font-medium">{t("language")}</span>
-              <select
+              <Select
                 value={draft.locale}
                 onChange={(e) => setDraft({ ...draft, locale: e.target.value })}
-                className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
               >
                 <option value="all">{t("allLangs")}</option>
                 <option value="ar">العربية</option>
                 <option value="en">English</option>
-              </select>
+              </Select>
             </label>
           </div>
           <label className="flex items-center gap-2 text-sm">
@@ -259,7 +261,7 @@ export function FaqManager({
                   type="button"
                   aria-label={t("edit")}
                   onClick={() => setDraft({ ...f })}
-                  className="hover:bg-muted rounded-md p-1.5"
+                  className="hover:bg-muted flex size-9 items-center justify-center rounded-md"
                 >
                   <Pencil className="size-4" />
                 </button>
@@ -267,9 +269,14 @@ export function FaqManager({
                   type="button"
                   aria-label={t("delete")}
                   onClick={() => {
-                    if (confirm(t("confirmDelete"))) run(() => deleteFaq(f.id));
+                    void confirm(t("confirmDelete"), {
+                      title: t("delete"),
+                      destructive: true,
+                    }).then((ok) => {
+                      if (ok) run(() => deleteFaq(f.id));
+                    });
                   }}
-                  className="hover:bg-destructive/10 text-destructive rounded-md p-1.5"
+                  className="hover:bg-destructive/10 text-destructive flex size-9 items-center justify-center rounded-md"
                 >
                   <Trash2 className="size-4" />
                 </button>

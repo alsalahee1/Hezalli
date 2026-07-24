@@ -10,6 +10,7 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 // Staff controls on a wallet detail page: freeze/unfreeze and a manual
 // ADJUSTMENT entry (positive credits, negative debits; note mandatory).
@@ -27,6 +28,7 @@ export function WalletTools({
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const run = (fn: () => Promise<{ ok?: boolean; error?: string }>) =>
     start(async () => {
@@ -43,6 +45,7 @@ export function WalletTools({
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
+      {dialog}
       <p className="text-sm font-medium">{t("tools")}</p>
       <div className="flex flex-wrap gap-2">
         <Button
@@ -52,7 +55,12 @@ export function WalletTools({
           disabled={pending}
           onClick={() => {
             const msg = frozen ? t("unfreezeConfirm") : t("freezeConfirm");
-            if (confirm(msg)) run(() => setWalletFrozen(userId, !frozen));
+            void confirm(msg, {
+              title: frozen ? t("unfreeze") : t("freeze"),
+              destructive: !frozen,
+            }).then((ok) => {
+              if (ok) run(() => setWalletFrozen(userId, !frozen));
+            });
           }}
         >
           {frozen ? t("unfreeze") : t("freeze")}
@@ -74,13 +82,13 @@ export function WalletTools({
             placeholder={t("adjustAmount")}
             inputMode="decimal"
             dir="ltr"
-            className="h-9 w-32"
+            className="w-32"
           />
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("adjustNote")}
-            className="h-9 max-w-xs flex-1"
+            className="max-w-xs flex-1"
           />
           <Button
             size="sm"

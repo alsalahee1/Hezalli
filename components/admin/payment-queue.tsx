@@ -92,7 +92,7 @@ export function PaymentQueue({ rows }: { rows: PaymentRow[] }) {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder={t("rejectReason")}
-                className="h-9 max-w-xs"
+                className="max-w-xs"
               />
               <Button
                 size="sm"

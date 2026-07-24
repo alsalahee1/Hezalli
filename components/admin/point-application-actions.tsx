@@ -23,15 +23,9 @@ export async function PointApplicationActions({
       <Input
         name="reviewNote"
         placeholder={t("notePlaceholder")}
-        className="h-8 flex-1 text-xs"
+        className="flex-1 text-xs"
       />
-      <Button
-        type="submit"
-        name="decision"
-        value="approve"
-        size="sm"
-        className="h-8"
-      >
+      <Button type="submit" name="decision" value="approve" size="sm">
         {t("approve")}
       </Button>
       <Button
@@ -40,7 +34,7 @@ export async function PointApplicationActions({
         value="reject"
         size="sm"
         variant="outline"
-        className="text-destructive h-8"
+        className="text-destructive"
       >
         {t("reject")}
       </Button>

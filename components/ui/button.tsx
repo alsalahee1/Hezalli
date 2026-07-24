@@ -22,10 +22,15 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
+        // 44px+ tap target by default — the iOS/Android minimum — so buttons
+        // feel native on touch, not shrunk-down desktop chrome.
+        default: "h-11 px-5 py-2 has-[>svg]:px-4",
+        sm: "h-9 rounded-md gap-1.5 px-3.5 has-[>svg]:px-3",
+        lg: "h-12 rounded-md px-6 has-[>svg]:px-5",
+        icon: "size-11",
+        // Opt-in smaller icon button for dense toolbars/table rows where a
+        // row of 44px targets would be too cramped to lay out.
+        "icon-sm": "size-9",
       },
     },
     defaultVariants: {

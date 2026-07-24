@@ -121,7 +121,7 @@ export function Modal({
           type="button"
           onClick={onClose}
           aria-label={closeLabel}
-          className="hover:bg-muted text-muted-foreground absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-md transition-colors"
+          className="hover:bg-muted text-muted-foreground absolute end-2 top-2 inline-flex size-11 items-center justify-center rounded-md transition-colors"
         >
           <X className="size-5" />
         </button>

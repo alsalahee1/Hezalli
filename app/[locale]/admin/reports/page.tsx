@@ -138,36 +138,54 @@ export default async function AdminReportsPage({
         </div>
 
         {net.perPoint.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 text-start font-medium">
-                    {t("netPoint")}
-                  </th>
-                  <th className="px-3 py-2 text-end font-medium">
-                    {t("netPointDelivered")}
-                  </th>
-                  <th className="px-3 py-2 text-end font-medium">
-                    {t("netPointFees")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {net.perPoint.map((p) => (
-                  <tr key={p.pointId}>
-                    <td className="px-3 py-2">{p.name}</td>
-                    <td className="px-3 py-2 text-end" dir="ltr">
-                      {p.delivered}
-                    </td>
-                    <td className="px-3 py-2 text-end" dir="ltr">
-                      {money(p.feesUsd)}
-                    </td>
+          <>
+            <ul className="space-y-2 md:hidden">
+              {net.perPoint.map((p) => (
+                <li
+                  key={p.pointId}
+                  className="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"
+                >
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-muted-foreground flex items-center gap-3">
+                    <span dir="ltr">
+                      {t("netPointDelivered")}: {p.delivered}
+                    </span>
+                    <span dir="ltr">{money(p.feesUsd)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-start font-medium">
+                      {t("netPoint")}
+                    </th>
+                    <th className="px-3 py-2 text-end font-medium">
+                      {t("netPointDelivered")}
+                    </th>
+                    <th className="px-3 py-2 text-end font-medium">
+                      {t("netPointFees")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y">
+                  {net.perPoint.map((p) => (
+                    <tr key={p.pointId}>
+                      <td className="px-3 py-2">{p.name}</td>
+                      <td className="px-3 py-2 text-end" dir="ltr">
+                        {p.delivered}
+                      </td>
+                      <td className="px-3 py-2 text-end" dir="ltr">
+                        {money(p.feesUsd)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <p className="text-muted-foreground text-sm">{t("netNoPoints")}</p>
         )}

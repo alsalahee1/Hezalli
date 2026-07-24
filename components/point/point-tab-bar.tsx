@@ -40,6 +40,7 @@ export function PointTabBar({ access }: { access: PointAccess }) {
     <CenterTabBar
       ariaLabel={t("appName")}
       responsive={false}
+      maxWidthClass="max-w-md md:max-w-3xl"
       moreLabel={tCommon("more")}
       centerKey="/point/scan"
       primary={[

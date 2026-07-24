@@ -54,7 +54,7 @@ export function OfferActions({
               key={r}
               disabled={pending}
               onClick={() => respond("DECLINE", r)}
-              className="rounded-full border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+              className="min-h-10 rounded-full border px-3.5 py-2 text-xs font-medium disabled:opacity-50"
             >
               {t(`declineReason_${r}`)}
             </button>
@@ -62,7 +62,7 @@ export function OfferActions({
           <button
             disabled={pending}
             onClick={() => setDeclining(false)}
-            className="text-muted-foreground px-2 py-1.5 text-xs"
+            className="text-muted-foreground flex min-h-10 items-center px-2 py-1.5 text-xs"
           >
             {t("offerBack")}
           </button>
@@ -72,14 +72,14 @@ export function OfferActions({
           <button
             disabled={pending}
             onClick={() => respond("ACCEPT")}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
             <Check className="size-4" /> {t("offerAccept")}
           </button>
           <button
             disabled={pending}
             onClick={() => setDeclining(true)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium disabled:opacity-50"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-2.5 text-sm font-medium disabled:opacity-50"
           >
             <X className="size-4" /> {t("offerDecline")}
           </button>

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { postDisputeMessage } from "@/lib/actions/dispute";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export function DisputeComposer({ disputeId }: { disputeId: string }) {
   const t = useTranslations("AdminDisputes");
@@ -16,12 +17,12 @@ export function DisputeComposer({ disputeId }: { disputeId: string }) {
 
   return (
     <div className="flex gap-2">
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={2}
         placeholder={t("messagePlaceholder")}
-        className="flex-1 rounded-md border bg-transparent p-2 text-sm outline-none"
+        className="flex-1"
       />
       <Button
         size="sm"

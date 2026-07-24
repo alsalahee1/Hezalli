@@ -40,7 +40,7 @@ export function SellerCommission({
           value={val}
           onChange={(e) => setVal(e.target.value)}
           placeholder={String(platformPercent)}
-          className="h-9 w-28"
+          className="w-28"
           dir="ltr"
         />
         <span className="text-muted-foreground text-sm">%</span>

@@ -38,25 +38,12 @@ export async function FleetsView({ base }: { base: string }) {
           {t("empty")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-xs">
-                <th className="p-2 text-start font-medium">{t("colFleet")}</th>
-                <th className="p-2 text-end font-medium">{t("colDrivers")}</th>
-                <th className="p-2 text-end font-medium">{t("colActive")}</th>
-                <th className="p-2 text-end font-medium">
-                  {t("colDelivered")}
-                </th>
-                <th className="p-2 text-end font-medium">{t("colCash")}</th>
-                <th className="p-2 text-end font-medium">{t("colOwed")}</th>
-                <th className="p-2 text-end font-medium">{t("colRating")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fleets.map((f) => (
-                <tr key={f.id} className="border-b last:border-0">
-                  <td className="p-2">
+        <>
+          <ul className="space-y-2 md:hidden">
+            {fleets.map((f) => (
+              <li key={f.id} className="rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
                     <Link
                       href={`${base}/fleets/${f.id}`}
                       className="font-medium hover:underline"
@@ -73,42 +60,131 @@ export async function FleetsView({ base }: { base: string }) {
                         {t("ownerLabel")}: {f.ownerName}
                       </span>
                     ) : null}
-                  </td>
-                  <td className="p-2 text-end tabular-nums" dir="ltr">
-                    {f.totals.drivers}
-                  </td>
-                  <td className="p-2 text-end tabular-nums" dir="ltr">
-                    {f.totals.activeJobs}
-                  </td>
-                  <td className="p-2 text-end tabular-nums" dir="ltr">
-                    {f.totals.delivered}
-                  </td>
-                  <td
-                    className={cn(
-                      "p-2 text-end tabular-nums",
-                      f.totals.cashOnHand > 0 && "text-amber-600",
-                    )}
-                    dir="ltr"
-                  >
-                    {money(f.totals.cashOnHand)}
-                  </td>
-                  <td className="p-2 text-end tabular-nums" dir="ltr">
-                    {money(f.totals.earningsOwed)}
-                  </td>
-                  <td className="p-2 text-end" dir="ltr">
-                    {f.totals.rating != null ? (
-                      <span className="text-amber-600">
-                        ★ {f.totals.rating.toFixed(1)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
+                  </div>
+                  {f.totals.rating != null ? (
+                    <span className="shrink-0 text-xs font-medium text-amber-600">
+                      ★ {f.totals.rating.toFixed(1)}
+                    </span>
+                  ) : null}
+                </div>
+                <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("colDrivers")}
+                    </dt>
+                    <dd dir="ltr">{f.totals.drivers}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("colActive")}
+                    </dt>
+                    <dd dir="ltr">{f.totals.activeJobs}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("colDelivered")}
+                    </dt>
+                    <dd dir="ltr">{f.totals.delivered}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("colCash")}
+                    </dt>
+                    <dd
+                      className={cn(
+                        f.totals.cashOnHand > 0 && "text-amber-600",
+                      )}
+                      dir="ltr"
+                    >
+                      {money(f.totals.cashOnHand)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground text-xs">
+                      {t("colOwed")}
+                    </dt>
+                    <dd dir="ltr">{money(f.totals.earningsOwed)}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-lg border md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b text-xs">
+                  <th className="p-2 text-start font-medium">
+                    {t("colFleet")}
+                  </th>
+                  <th className="p-2 text-end font-medium">
+                    {t("colDrivers")}
+                  </th>
+                  <th className="p-2 text-end font-medium">{t("colActive")}</th>
+                  <th className="p-2 text-end font-medium">
+                    {t("colDelivered")}
+                  </th>
+                  <th className="p-2 text-end font-medium">{t("colCash")}</th>
+                  <th className="p-2 text-end font-medium">{t("colOwed")}</th>
+                  <th className="p-2 text-end font-medium">{t("colRating")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {fleets.map((f) => (
+                  <tr key={f.id} className="border-b last:border-0">
+                    <td className="p-2">
+                      <Link
+                        href={`${base}/fleets/${f.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {f.name}
+                      </Link>
+                      {!f.isActive ? (
+                        <span className="text-muted-foreground ms-2 text-xs">
+                          {t("inactive")}
+                        </span>
+                      ) : null}
+                      {f.ownerName ? (
+                        <span className="text-muted-foreground block text-xs">
+                          {t("ownerLabel")}: {f.ownerName}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="p-2 text-end tabular-nums" dir="ltr">
+                      {f.totals.drivers}
+                    </td>
+                    <td className="p-2 text-end tabular-nums" dir="ltr">
+                      {f.totals.activeJobs}
+                    </td>
+                    <td className="p-2 text-end tabular-nums" dir="ltr">
+                      {f.totals.delivered}
+                    </td>
+                    <td
+                      className={cn(
+                        "p-2 text-end tabular-nums",
+                        f.totals.cashOnHand > 0 && "text-amber-600",
+                      )}
+                      dir="ltr"
+                    >
+                      {money(f.totals.cashOnHand)}
+                    </td>
+                    <td className="p-2 text-end tabular-nums" dir="ltr">
+                      {money(f.totals.earningsOwed)}
+                    </td>
+                    <td className="p-2 text-end" dir="ltr">
+                      {f.totals.rating != null ? (
+                        <span className="text-amber-600">
+                          ★ {f.totals.rating.toFixed(1)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

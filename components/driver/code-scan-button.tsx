@@ -111,7 +111,7 @@ export function CodeScanButton({ onScan }: { onScan: (code: string) => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium"
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border py-3 text-sm font-medium"
       >
         <QrCode className="size-4" /> {t("scanCustomerQr")}
       </button>
@@ -124,7 +124,7 @@ export function CodeScanButton({ onScan }: { onScan: (code: string) => void }) {
               type="button"
               onClick={() => setOpen(false)}
               aria-label={t("cancel")}
-              className="rounded-md p-1 hover:bg-white/10"
+              className="flex size-11 items-center justify-center rounded-md hover:bg-white/10"
             >
               <X className="size-5" />
             </button>

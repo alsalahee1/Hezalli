@@ -39,9 +39,9 @@ export function WalletHoldForm({ current }: { current: number }) {
         dir="ltr"
         defaultValue={current > 0 ? current.toFixed(2) : ""}
         placeholder="0.00"
-        className="h-9 w-32"
+        className="w-32"
       />
-      <Button type="submit" size="sm" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? t("saving") : t("holdSave")}
       </Button>
       {err ? (

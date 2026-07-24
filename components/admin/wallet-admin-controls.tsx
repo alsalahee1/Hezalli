@@ -91,7 +91,7 @@ export function WalletAdminControls({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("reason")}
-            className="h-8 w-48 text-sm"
+            className="w-48"
           />
           <Button size="sm" disabled={pending} onClick={toggleFreeze}>
             {frozen ? t("confirmUnfreeze") : t("confirmFreeze")}
@@ -108,13 +108,13 @@ export function WalletAdminControls({
             onChange={(e) => setAmount(e.target.value)}
             placeholder={t("amountHint")}
             dir="ltr"
-            className="h-8 w-24 text-sm"
+            className="w-24"
           />
           <Input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("reason")}
-            className="h-8 w-40 text-sm"
+            className="w-40"
           />
           <Button
             size="sm"

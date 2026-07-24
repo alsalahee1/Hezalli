@@ -248,46 +248,90 @@ export async function CourierDetailView({
         {entries.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("ledgerEmpty")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-muted-foreground border-b text-xs">
-                  <th className="p-2 text-start font-medium">{t("colDate")}</th>
-                  <th className="p-2 text-start font-medium">{t("colType")}</th>
-                  <th className="p-2 text-end font-medium">{t("colAmount")}</th>
-                  <th className="p-2 text-start font-medium">{t("colNote")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e) => {
-                  const amt = Number(e.amountUsd);
-                  return (
-                    <tr key={e.id} className="border-b last:border-0">
-                      <td className="text-muted-foreground p-2 whitespace-nowrap">
-                        {format.dateTime(e.createdAt, { dateStyle: "short" })}
-                      </td>
-                      <td className="p-2">{typeLabel[e.type] ?? e.type}</td>
-                      <td
+          <>
+            <ul className="space-y-2 md:hidden">
+              {entries.map((e) => {
+                const amt = Number(e.amountUsd);
+                return (
+                  <li key={e.id} className="rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-medium">
+                        {typeLabel[e.type] ?? e.type}
+                      </span>
+                      <span
                         className={cn(
-                          "p-2 text-end font-medium whitespace-nowrap",
+                          "font-medium whitespace-nowrap",
                           amt < 0 ? "text-emerald-600" : "",
                         )}
                         dir="ltr"
                       >
                         {money(amt)}
-                      </td>
-                      <td className="text-muted-foreground p-2">
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground mt-1 flex items-center justify-between gap-2 text-xs">
+                      <span>
+                        {format.dateTime(e.createdAt, { dateStyle: "short" })}
+                      </span>
+                      <span>
                         {e.note ??
                           (e.subOrderId
                             ? `#${e.subOrderId.slice(-8).toUpperCase()}`
                             : "—")}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted-foreground border-b text-xs">
+                    <th className="p-2 text-start font-medium">
+                      {t("colDate")}
+                    </th>
+                    <th className="p-2 text-start font-medium">
+                      {t("colType")}
+                    </th>
+                    <th className="p-2 text-end font-medium">
+                      {t("colAmount")}
+                    </th>
+                    <th className="p-2 text-start font-medium">
+                      {t("colNote")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((e) => {
+                    const amt = Number(e.amountUsd);
+                    return (
+                      <tr key={e.id} className="border-b last:border-0">
+                        <td className="text-muted-foreground p-2 whitespace-nowrap">
+                          {format.dateTime(e.createdAt, { dateStyle: "short" })}
+                        </td>
+                        <td className="p-2">{typeLabel[e.type] ?? e.type}</td>
+                        <td
+                          className={cn(
+                            "p-2 text-end font-medium whitespace-nowrap",
+                            amt < 0 ? "text-emerald-600" : "",
+                          )}
+                          dir="ltr"
+                        >
+                          {money(amt)}
+                        </td>
+                        <td className="text-muted-foreground p-2">
+                          {e.note ??
+                            (e.subOrderId
+                              ? `#${e.subOrderId.slice(-8).toUpperCase()}`
+                              : "—")}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

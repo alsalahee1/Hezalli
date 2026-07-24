@@ -54,7 +54,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           </label>
           <Link
             href="/forgot-password"
-            className="text-muted-foreground hover:text-foreground text-xs hover:underline"
+            className="text-muted-foreground hover:text-foreground flex min-h-9 items-center text-xs hover:underline"
           >
             {t("forgotPassword")}
           </Link>

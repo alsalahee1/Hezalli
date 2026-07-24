@@ -20,7 +20,7 @@ export function ReviewReplyForm({ reviewId }: { reviewId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-primary text-xs hover:underline"
+        className="text-primary flex min-h-8 items-center text-xs hover:underline"
       >
         {t("reply")}
       </button>

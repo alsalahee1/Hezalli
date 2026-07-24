@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { assignCourier } from "@/lib/actions/courier";
 import { useRouter } from "@/i18n/navigation";
+import { Select } from "@/components/ui/select";
 
 export type CourierOpt = { id: string; name: string };
 
@@ -39,11 +40,10 @@ export function DispatchAssign({
 
   return (
     <div className="flex items-center gap-2">
-      <select
+      <Select
         value={value}
         disabled={pending || couriers.length === 0}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 rounded-md border bg-transparent px-3 text-sm disabled:opacity-50"
         aria-label={t("assignTo")}
       >
         <option value="">{t("unassigned")}</option>
@@ -52,7 +52,7 @@ export function DispatchAssign({
             {c.name}
           </option>
         ))}
-      </select>
+      </Select>
       {pending ? (
         <span className="text-muted-foreground text-xs">{t("saving")}</span>
       ) : err ? (

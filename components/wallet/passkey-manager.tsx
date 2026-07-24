@@ -72,7 +72,7 @@ export function PasskeyManager({ passkeys }: { passkeys: Passkey[] }) {
               <span>{p.label || t("biometricDevice")}</span>
               <button
                 type="button"
-                className="text-muted-foreground hover:text-destructive"
+                className="text-muted-foreground hover:text-destructive flex size-9 items-center justify-center"
                 disabled={pending}
                 onClick={() => remove(p.id)}
                 aria-label={t("biometricRemove")}

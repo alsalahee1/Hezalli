@@ -69,61 +69,113 @@ export default async function FleetOwnerPage() {
         {fleet!.drivers.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("rosterEmpty")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-muted-foreground border-b text-xs">
-                  <th className="p-2 text-start font-medium">
-                    {t("colDriver")}
-                  </th>
-                  <th className="p-2 text-end font-medium">{t("colActive")}</th>
-                  <th className="p-2 text-end font-medium">
-                    {t("colDelivered")}
-                  </th>
-                  <th className="p-2 text-end font-medium">{t("colCash")}</th>
-                  <th className="p-2 text-end font-medium">{t("colRating")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fleet!.drivers.map((d) => (
-                  <tr key={d.courierId} className="border-b last:border-0">
-                    <td className="p-2 font-medium">
+          <>
+            <ul className="space-y-2 md:hidden">
+              {fleet!.drivers.map((d) => (
+                <li key={d.courierId} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-medium">
                       {d.name}
                       {d.courierId === fleet!.ownerId ? (
                         <span className="ms-2 rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
                           {t("you")}
                         </span>
                       ) : null}
-                    </td>
-                    <td className="p-2 text-end tabular-nums" dir="ltr">
-                      {d.activeJobs}
-                    </td>
-                    <td className="p-2 text-end tabular-nums" dir="ltr">
-                      {d.delivered}
-                    </td>
-                    <td className="p-2 text-end tabular-nums" dir="ltr">
-                      {d.cashOnHand > 0 ? (
-                        <span className="text-amber-600">
-                          {money(d.cashOnHand)}
-                        </span>
-                      ) : (
-                        money(d.cashOnHand)
-                      )}
-                    </td>
-                    <td className="p-2 text-end" dir="ltr">
-                      {d.rating != null ? (
-                        <span className="text-amber-600">
-                          ★ {d.rating.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
+                    </span>
+                    {d.rating != null ? (
+                      <span className="shrink-0 text-xs font-medium text-amber-600">
+                        ★ {d.rating.toFixed(1)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <dt className="text-muted-foreground text-xs">
+                        {t("colActive")}
+                      </dt>
+                      <dd dir="ltr">{d.activeJobs}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground text-xs">
+                        {t("colDelivered")}
+                      </dt>
+                      <dd dir="ltr">{d.delivered}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground text-xs">
+                        {t("colCash")}
+                      </dt>
+                      <dd
+                        className={cn(d.cashOnHand > 0 && "text-amber-600")}
+                        dir="ltr"
+                      >
+                        {money(d.cashOnHand)}
+                      </dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg border md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted-foreground border-b text-xs">
+                    <th className="p-2 text-start font-medium">
+                      {t("colDriver")}
+                    </th>
+                    <th className="p-2 text-end font-medium">
+                      {t("colActive")}
+                    </th>
+                    <th className="p-2 text-end font-medium">
+                      {t("colDelivered")}
+                    </th>
+                    <th className="p-2 text-end font-medium">{t("colCash")}</th>
+                    <th className="p-2 text-end font-medium">
+                      {t("colRating")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {fleet!.drivers.map((d) => (
+                    <tr key={d.courierId} className="border-b last:border-0">
+                      <td className="p-2 font-medium">
+                        {d.name}
+                        {d.courierId === fleet!.ownerId ? (
+                          <span className="ms-2 rounded bg-violet-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-400">
+                            {t("you")}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="p-2 text-end tabular-nums" dir="ltr">
+                        {d.activeJobs}
+                      </td>
+                      <td className="p-2 text-end tabular-nums" dir="ltr">
+                        {d.delivered}
+                      </td>
+                      <td className="p-2 text-end tabular-nums" dir="ltr">
+                        {d.cashOnHand > 0 ? (
+                          <span className="text-amber-600">
+                            {money(d.cashOnHand)}
+                          </span>
+                        ) : (
+                          money(d.cashOnHand)
+                        )}
+                      </td>
+                      <td className="p-2 text-end" dir="ltr">
+                        {d.rating != null ? (
+                          <span className="text-amber-600">
+                            ★ {d.rating.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </div>

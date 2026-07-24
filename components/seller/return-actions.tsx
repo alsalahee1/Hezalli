@@ -118,7 +118,7 @@ export function ReturnActions({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t("returnAddressPlaceholder")}
-              className="h-9 w-64"
+              className="w-64"
             />
           ) : null}
           <Button
@@ -137,7 +137,7 @@ export function ReturnActions({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("rejectReasonPlaceholder")}
-            className="h-9 w-64"
+            className="w-64"
           />
           <Button
             size="sm"

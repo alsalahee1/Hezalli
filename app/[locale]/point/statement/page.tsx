@@ -72,54 +72,56 @@ export default async function PointStatementPage({
         </Link>
       </div>
 
-      {sides.map((s) => (
-        <div key={s.key} className="space-y-2 rounded-xl border p-3">
-          <p className="text-sm font-semibold">{t(`stmt_${s.key}`)}</p>
-          <dl className="grid grid-cols-3 gap-2 text-sm">
-            <div>
-              <dt className="text-muted-foreground text-xs">
-                {t("stmtOpening")}
-              </dt>
-              <dd className="font-medium" dir="ltr">
-                {money(s.data.opening)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground text-xs">
-                {t("stmtChange")}
-              </dt>
-              <dd
-                className={cn(
-                  "font-medium",
-                  s.data.delta > 0 && "text-emerald-600",
-                  s.data.delta < 0 && "text-destructive",
-                )}
-                dir="ltr"
-              >
-                {money(s.data.delta)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground text-xs">
-                {t("stmtClosing")}
-              </dt>
-              <dd className="font-semibold" dir="ltr">
-                {money(s.data.closing)}
-              </dd>
-            </div>
-          </dl>
-          <ul className="text-muted-foreground space-y-0.5 text-xs">
-            {Object.entries(s.data.byType)
-              .filter(([, v]) => v !== 0)
-              .map(([type, v]) => (
-                <li key={type} className="flex justify-between">
-                  <span>{t(`ledger_${type}`)}</span>
-                  <span dir="ltr">{money(v)}</span>
-                </li>
-              ))}
-          </ul>
-        </div>
-      ))}
+      <div className="grid gap-4 md:grid-cols-2">
+        {sides.map((s) => (
+          <div key={s.key} className="space-y-2 rounded-xl border p-3">
+            <p className="text-sm font-semibold">{t(`stmt_${s.key}`)}</p>
+            <dl className="grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <dt className="text-muted-foreground text-xs">
+                  {t("stmtOpening")}
+                </dt>
+                <dd className="font-medium" dir="ltr">
+                  {money(s.data.opening)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs">
+                  {t("stmtChange")}
+                </dt>
+                <dd
+                  className={cn(
+                    "font-medium",
+                    s.data.delta > 0 && "text-emerald-600",
+                    s.data.delta < 0 && "text-destructive",
+                  )}
+                  dir="ltr"
+                >
+                  {money(s.data.delta)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs">
+                  {t("stmtClosing")}
+                </dt>
+                <dd className="font-semibold" dir="ltr">
+                  {money(s.data.closing)}
+                </dd>
+              </div>
+            </dl>
+            <ul className="text-muted-foreground space-y-0.5 text-xs">
+              {Object.entries(s.data.byType)
+                .filter(([, v]) => v !== 0)
+                .map(([type, v]) => (
+                  <li key={type} className="flex justify-between">
+                    <span>{t(`ledger_${type}`)}</span>
+                    <span dir="ltr">{money(v)}</span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ))}
+      </div>
 
       <a
         href={`/api/point/statement?month=${key}`}

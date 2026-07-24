@@ -92,7 +92,7 @@ export function ShelfZoneEditor({ rows }: { rows: ShelfRow[] }) {
             <Select
               value={r.zone}
               onChange={(e) => set(r.letter, { zone: e.target.value })}
-              className="h-9 text-sm"
+              className="text-sm"
               aria-label={t("shelfZoneArea")}
             >
               <option value="">{t("shelfZoneGeneral")}</option>
@@ -108,7 +108,7 @@ export function ShelfZoneEditor({ rows }: { rows: ShelfRow[] }) {
               onChange={(e) => set(r.letter, { capacity: e.target.value })}
               placeholder="∞"
               dir="ltr"
-              className="h-9 text-sm"
+              className="text-sm"
               aria-label={t("shelfZoneCap")}
             />
           </div>
