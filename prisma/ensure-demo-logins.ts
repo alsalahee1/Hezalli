@@ -1,17 +1,18 @@
 /**
- * Idempotent upsert of the later-added demo login accounts —
- * driver@hezalli.com (COURIER), point@hezalli.com (DELIVERY_POINT),
- * wallet@hezalli.com (WALLET_MANAGER), delivery@hezalli.com
- * (DELIVERY_MANAGER).
+ * Idempotent upsert of the demo login accounts —
+ * admin@hezalli.com (ADMIN), driver@hezalli.com (COURIER),
+ * point@hezalli.com (DELIVERY_POINT), wallet@hezalli.com (WALLET_MANAGER),
+ * delivery@hezalli.com (DELIVERY_MANAGER).
  *
  * Unlike prisma/seed.ts this is NON-destructive: it adds (or refreshes) just
  * these accounts (and the point's active DeliveryPoint), leaving every existing
- * user, order, and product untouched. Use it to add the one-tap "Courier" and
- * "Point Center" demo logins to a database that was seeded before those
- * accounts existed, without wiping the data.
+ * user, order, and product untouched. Use it to add (or reset the password on)
+ * the demo logins for a database that was seeded before those accounts existed
+ * — or before the shared password changed — without wiping the data.
  *
- * The buyer/seller/admin demo accounts are part of the original seed and are
- * not touched here — this only fills in the two roles the seed added later.
+ * The admin account is refreshed here so an existing database's admin password
+ * is reset to the shared demo password too. The buyer/seller demo accounts are
+ * part of the original seed and are not touched here.
  *
  * Run against the app's database:
  *   docker compose -f deploy/docker-compose.traefik.yml --env-file .env \
@@ -86,6 +87,18 @@ async function ensureUser(opts: {
 
 async function main() {
   const passwordHash = await hashPassword("salahahmed");
+
+  // --- Admin (full panel) → /admin ---
+  const adminCreated = await ensureUser({
+    email: "admin@hezalli.com",
+    name: "Hezalli Admin",
+    phone: "+967700000001",
+    role: "ADMIN",
+    passwordHash,
+  });
+  console.log(
+    `Admin ${adminCreated ? "created" : "ensured"} — admin@hezalli.com (ADMIN).`,
+  );
 
   // --- Courier (Hezalli Express driver) → /driver ---
   const driverCreated = await ensureUser({
