@@ -3142,7 +3142,7 @@
     "staffTitle": "Team",
     "staffSubtitle": "Everyone who works at this point and what they may do.",
     "staffAddTitle": "Add a team member",
-    "staffAddHint": "They need a Hezalli account first — enter its phone number or email.",
+    "staffAddHint": "They need a Hezalli account first — scan their code, or enter a phone number or email.",
     "staffIdentifierPlaceholder": "Phone or email",
     "staffAddBtn": "Add",
     "staffRole_MANAGER": "Store manager",
@@ -3217,7 +3217,17 @@
     "receiptFooter": "Collected via {locale} Point",
     "receiptNotFound": "No collected parcel matches that code at this point.",
     "receiptBack": "Back to scan",
-    "branchSwitch": "Switch branch"
+    "branchSwitch": "Switch branch",
+    "staffScanBtn": "Scan member’s QR",
+    "staffOr": "or",
+    "staffScanTitle": "Add by scanning",
+    "staffScanHint": "Point the camera at the member’s Hezalli code (their wallet “My code”). They’ll join as {role}.",
+    "staffScanStarting": "Starting camera…",
+    "staffScanAdding": "Adding…",
+    "staffScanNoCamera": "Camera unavailable — paste their code or pay link below.",
+    "staffScanManualLabel": "Paste their Hezalli code or pay link",
+    "staffScanNotCode": "That isn’t a Hezalli member code.",
+    "staffScanClose": "Close"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

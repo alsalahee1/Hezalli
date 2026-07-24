@@ -3142,7 +3142,7 @@
     "staffTitle": "فريق العمل",
     "staffSubtitle": "كل من يعمل في هذه النقطة وما يُسمح له به.",
     "staffAddTitle": "إضافة موظف",
-    "staffAddHint": "يحتاج الموظف حساب حزالي أولًا — أدخل رقم هاتفه أو بريده.",
+    "staffAddHint": "يحتاج الموظف حساب حزالي أولًا — امسح رمزه أو أدخل رقم هاتفه أو بريده.",
     "staffIdentifierPlaceholder": "رقم الهاتف أو البريد",
     "staffAddBtn": "إضافة",
     "staffRole_MANAGER": "مدير المحل",
@@ -3217,7 +3217,17 @@
     "receiptFooter": "تم الاستلام عبر نقطة {locale}",
     "receiptNotFound": "لا يوجد طرد مُستلم بهذا الرمز في هذه النقطة.",
     "receiptBack": "العودة للمسح",
-    "branchSwitch": "تبديل الفرع"
+    "branchSwitch": "تبديل الفرع",
+    "staffScanBtn": "امسح رمز الموظف",
+    "staffOr": "أو",
+    "staffScanTitle": "الإضافة بالمسح",
+    "staffScanHint": "وجّه الكاميرا نحو رمز حزالي الخاص بالموظف («رمزي» في محفظته). سينضم بوظيفة {role}.",
+    "staffScanStarting": "جارٍ تشغيل الكاميرا…",
+    "staffScanAdding": "جارٍ الإضافة…",
+    "staffScanNoCamera": "الكاميرا غير متاحة — الصق رمزه أو رابط الدفع بالأسفل.",
+    "staffScanManualLabel": "الصق رمز حزالي أو رابط الدفع الخاص به",
+    "staffScanNotCode": "هذا ليس رمز موظف في حزالي.",
+    "staffScanClose": "إغلاق"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
