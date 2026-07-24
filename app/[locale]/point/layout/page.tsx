@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import {
   Boxes,
+  ChevronRight,
   ClipboardCheck,
   DoorOpen,
   HandCoins,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { Link } from "@/i18n/navigation";
 import {
   HowFlow,
   HowFormula,
@@ -38,6 +40,7 @@ export default async function PointLayoutPage() {
   const gate = await requireDeliveryPoint();
   if (!gate) return null;
   const t = await getTranslations("How");
+  const tp = await getTranslations("Point");
 
   return (
     <div className="space-y-6">
@@ -117,6 +120,25 @@ export default async function PointLayoutPage() {
               },
             ]}
           />
+          {/* Print QR labels for the bays so shelf codes are scanned, never
+              typed, at the receive scan. */}
+          <Link
+            href="/point/labels"
+            className="hover:bg-muted/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+              <Tags className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">
+                {tp("labelsCalloutTitle")}
+              </span>
+              <span className="text-muted-foreground block truncate text-xs">
+                {tp("labelsCalloutBody")}
+              </span>
+            </span>
+            <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+          </Link>
         </div>
       </div>
 

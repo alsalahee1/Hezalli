@@ -40,6 +40,9 @@ function extractTracking(raw: string): string {
 // A driver's collection QR encodes "hezalli:driver:<userId>" (see the driver
 // app's My-QR card).
 const DRIVER_QR = /^hezalli:driver:([\w-]+)$/i;
+// A printed shelf label encodes "hezalli:shelf:<code>" (see /point/labels).
+// Scanning one sets the sticky shelf so the operator never types a bin code.
+const SHELF_QR = /^hezalli:shelf:(.+)$/i;
 
 export type ScanMode = "receive" | "handover" | "return" | "pickup";
 type Driver = { id: string; name: string };
@@ -138,8 +141,24 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
     }
   };
 
+  // Set the sticky shelf from a scanned label (or typed value) without a server
+  // round-trip — it's stamped on the next receive/return scan.
+  const setShelfCode = (code: string) => {
+    setShelf(code);
+    shelfRef.current = code;
+  };
+
   // One scanned/typed code → one server action, per the current mode.
   const handle = async (raw: string) => {
+    // A shelf label just sets where the next parcels go — no parcel lookup.
+    const shelfMatch = raw.trim().match(SHELF_QR);
+    if (shelfMatch) {
+      const code = shelfMatch[1].trim().slice(0, 20);
+      setShelfCode(code);
+      push(true, t("shelfScanned", { code }), code);
+      return;
+    }
+
     const driverMatch = raw.trim().match(DRIVER_QR);
     if (driverMatch) {
       if (drivers.some((d) => d.id === driverMatch[1])) {
@@ -369,10 +388,7 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
           <label className="text-sm font-medium">{t("shelfLabel")}</label>
           <Input
             value={shelf}
-            onChange={(e) => {
-              setShelf(e.target.value);
-              shelfRef.current = e.target.value;
-            }}
+            onChange={(e) => setShelfCode(e.target.value)}
             placeholder={t("shelfPlaceholder")}
             maxLength={20}
             className="h-10"

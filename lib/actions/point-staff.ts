@@ -92,22 +92,17 @@ function parseRole(role: string): PointStaffRole | null {
     : null;
 }
 
-// Attach an EXISTING Hezalli account (looked up by phone or email, same rule
-// as wallet P2P) to this hub. No invite flow: the employee registers a normal
-// account first, then the owner types their number here.
-export async function addPointStaff(
-  identifier: string,
-  role: string,
+// Shared attach logic for both hire paths (typed phone/email and scanned QR).
+// `where` selects the prospective employee's User row; the caller has already
+// been authorized and the role validated. Runs the same eligibility checks and
+// the same audited, notified write regardless of how the person was found.
+async function attachStaff(
+  gate: { pointId: string; userId: string },
+  where: { id: string } | { email: string } | { phone: string },
+  job: PointStaffRole,
 ): Promise<Result> {
-  const gate = await requireDeliveryPoint();
-  if (!gate || !canManagePoint(gate.access)) return { error: "forbidden" };
-  const job = parseRole(role);
-  if (!job) return { error: "badRole" };
-  const id = identifier.trim();
-  if (!id) return { error: "userNotFound" };
-
   const user = await prisma.user.findUnique({
-    where: id.includes("@") ? { email: id.toLowerCase() } : { phone: id },
+    where,
     select: {
       id: true,
       locale: true,
@@ -120,6 +115,8 @@ export async function addPointStaff(
   if (!user || user.isSuspended || user.deletedAt) {
     return { error: "userNotFound" };
   }
+  // The owner can't hire themselves as their own counter staff.
+  if (user.id === gate.userId) return { error: "isSelf" };
   // A hub owner (of any branch) can't be hired as counter staff.
   if (user.deliveryPoints.length > 0) return { error: "ownsPoint" };
   if (user.pointStaff) {
@@ -174,6 +171,44 @@ export async function addPointStaff(
 
   await revalidateStaff();
   return { ok: true };
+}
+
+// Attach an EXISTING Hezalli account (looked up by phone or email, same rule
+// as wallet P2P) to this hub. No invite flow: the employee registers a normal
+// account first, then the owner types their number here.
+export async function addPointStaff(
+  identifier: string,
+  role: string,
+): Promise<Result> {
+  const gate = await requireDeliveryPoint();
+  if (!gate || !canManagePoint(gate.access)) return { error: "forbidden" };
+  const job = parseRole(role);
+  if (!job) return { error: "badRole" };
+  const id = identifier.trim();
+  if (!id) return { error: "userNotFound" };
+
+  return attachStaff(
+    gate,
+    id.includes("@") ? { email: id.toLowerCase() } : { phone: id },
+    job,
+  );
+}
+
+// Attach a Hezalli account by its user id — the target of the owner scanning
+// the prospective employee's personal Hezalli QR (the same `/pay/u/<id>` code
+// they show to receive wallet money). No typing: point the camera, pick a job.
+export async function addPointStaffByUserId(
+  userId: string,
+  role: string,
+): Promise<Result> {
+  const gate = await requireDeliveryPoint();
+  if (!gate || !canManagePoint(gate.access)) return { error: "forbidden" };
+  const job = parseRole(role);
+  if (!job) return { error: "badRole" };
+  const id = userId.trim();
+  if (!id) return { error: "userNotFound" };
+
+  return attachStaff(gate, { id }, job);
 }
 
 // Change an employee's job (e.g. promote a cashier to store manager).

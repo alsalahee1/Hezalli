@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Crown, Pause, Play, Trash2, UserPlus } from "lucide-react";
+import { Crown, Pause, Play, QrCode, Trash2, UserPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
   addPointStaff,
+  addPointStaffByUserId,
   removePointStaff,
   setPointStaffActive,
   setPointStaffRole,
 } from "@/lib/actions/point-staff";
 import { POINT_STAFF_ROLES, type PointStaffRole } from "@/lib/point-access";
+import { extractUserId } from "@/lib/qr-identity";
 import { useRouter } from "@/i18n/navigation";
+import { QrScanSheet } from "@/components/ui/qr-scan-sheet";
 
 type StaffRow = {
   id: string;
@@ -42,6 +45,7 @@ export function PointStaffManager({
   const [identifier, setIdentifier] = useState("");
   const [role, setRole] = useState<PointStaffRole>("CASHIER");
   const [error, setError] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
   // Two-tap remove: first tap arms the row, second confirms.
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
@@ -69,6 +73,21 @@ export function PointStaffManager({
     return known.includes(code) ? t(`staffErr_${code}`) : t("staffErr_generic");
   };
 
+  // Scan handler for the QR sheet: decode the member's identity code, hire them
+  // with the currently-selected role, and report back. Returns an error message
+  // to keep the camera scanning, or null on success (we close the sheet).
+  const onScan = async (raw: string): Promise<string | null> => {
+    const userId = extractUserId(raw);
+    if (!userId) return t("staffScanNotCode");
+    const res = await addPointStaffByUserId(userId, role);
+    if (res.ok) {
+      setScanOpen(false);
+      router.refresh();
+      return null;
+    }
+    return errorText(res.error ?? "generic");
+  };
+
   return (
     <div className="space-y-4">
       {/* Hire: attach an existing Hezalli account by phone or email. */}
@@ -88,6 +107,27 @@ export function PointStaffManager({
           <UserPlus className="size-4" /> {t("staffAddTitle")}
         </p>
         <p className="text-muted-foreground text-xs">{t("staffAddHint")}</p>
+
+        {/* Scan-first: point the camera at the member's personal Hezalli QR
+            (their wallet "My code") to add them with the selected job below —
+            no phone number to read out. Typing stays as the fallback. */}
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setScanOpen(true);
+          }}
+          className="border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm font-semibold"
+        >
+          <QrCode className="size-4" /> {t("staffScanBtn")}
+        </button>
+
+        <div className="flex items-center gap-3">
+          <span className="bg-border h-px flex-1" />
+          <span className="text-muted-foreground text-xs">{t("staffOr")}</span>
+          <span className="bg-border h-px flex-1" />
+        </div>
+
         <input
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
@@ -247,6 +287,23 @@ export function PointStaffManager({
           {t("staffEmpty")}
         </p>
       ) : null}
+
+      <QrScanSheet
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        title={t("staffScanTitle")}
+        // Remind the owner which job the scanned member will get — it's the one
+        // selected in the form behind the sheet.
+        scanHint={t("staffScanHint", { role: roleLabel(role) })}
+        startingLabel={t("staffScanStarting")}
+        cameraUnavailableLabel={t("staffScanNoCamera")}
+        manualLabel={t("staffScanManualLabel")}
+        manualPlaceholder="u/…"
+        manualSubmitLabel={t("staffAddBtn")}
+        closeLabel={t("staffScanClose")}
+        busyLabel={t("staffScanAdding")}
+        onScan={onScan}
+      />
     </div>
   );
 }
