@@ -2,8 +2,11 @@ import { getTranslations } from "next-intl/server";
 import { Tags } from "lucide-react";
 
 import { requireDeliveryPoint } from "@/lib/authz";
+import { canManagePoint } from "@/lib/point-access";
+import { prisma } from "@/lib/prisma";
 import { QrCode } from "@/components/orders/qr-code";
 import { ShelfLabelControls } from "@/components/point/shelf-label-controls";
+import { ShelfRegistryToggle } from "@/components/point/shelf-registry-toggle";
 
 // Printable shelf-label sheet. Each label is a QR encoding
 // "hezalli:shelf:<code>" with the human code beneath it; stick one on every
@@ -24,6 +27,12 @@ export default async function PointLabelsPage({
   const rows = Math.min(12, Math.max(1, Number(sp.rows) || 6));
   const bays = Math.min(20, Math.max(1, Number(sp.bays) || 8));
 
+  // Auto-placement registry status — the toggle is owner/manager only.
+  const canManage = canManagePoint(gate.access);
+  const registered = canManage
+    ? await prisma.pointShelf.count({ where: { pointId: gate.pointId } })
+    : 0;
+
   const codes: string[] = [];
   for (let r = 0; r < rows; r++) {
     const letter = String.fromCharCode(65 + r);
@@ -40,6 +49,10 @@ export default async function PointLabelsPage({
       </div>
 
       <ShelfLabelControls rows={rows} bays={bays} />
+
+      {canManage ? (
+        <ShelfRegistryToggle rows={rows} bays={bays} registered={registered} />
+      ) : null}
 
       {/* The sheet — the only thing that reaches the paper. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 print:grid-cols-4 print:gap-2">

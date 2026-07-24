@@ -26,7 +26,12 @@ import {
   type ManifestRow,
 } from "@/lib/point-core";
 
-type Result = { ok?: boolean; error?: string; reshelved?: boolean };
+type Result = {
+  ok?: boolean;
+  error?: string;
+  reshelved?: boolean;
+  shelf?: string | null;
+};
 
 async function revalidatePoint() {
   const locale = await getLocale();

@@ -7,13 +7,20 @@
 // here is always the *authenticated* operator's point.
 import { dispatchShippedParcel } from "@/lib/job-board";
 import { codSettledDigitally } from "@/lib/payment-state";
+import { assignShelf } from "@/lib/point-shelves";
 import { prisma } from "@/lib/prisma";
 import { settleReturnedSubOrder } from "@/lib/return-core";
 import { sendPushToUser } from "@/lib/push";
 import { getSetting } from "@/lib/settings";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
 
-type Result = { ok?: boolean; error?: string; reshelved?: boolean };
+type Result = {
+  ok?: boolean;
+  error?: string;
+  reshelved?: boolean;
+  // The bay the parcel was placed on — the operator reads this off the scan.
+  shelf?: string | null;
+};
 
 // The operator's own shelf labels are free text — just trim and cap.
 function cleanShelf(shelf?: string | null): string | null {
@@ -96,22 +103,28 @@ export async function receiveParcelAtPoint(
   const parcel = await findParcel(pointId, tracking);
   if (!parcel) return { error: "notFound" };
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
-  const shelfCode = cleanShelf(shelf);
+  // An explicit shelf from the operator always wins (a deliberate placement /
+  // move); only fall back to auto-placement when they left it blank.
+  const manualShelf = cleanShelf(shelf);
   // Re-shelve: a receive scan of a parcel this hub already holds, with a shelf
-  // entered, just moves the label — no custody change, no events.
+  // entered, just moves the label — no custody change, no events. Keyed on the
+  // MANUAL shelf so a bare re-scan doesn't auto-shuffle a held parcel.
   if (
-    shelfCode &&
+    manualShelf &&
     parcel.atPointId === pointId &&
     (parcel.status === "AT_POINT" || parcel.status === "RETURNED_TO_POINT")
   ) {
     const moved = await prisma.shipment.updateMany({
       where: { id: parcel.id, atPointId: pointId },
-      data: { shelfCode },
+      data: { shelfCode: manualShelf },
     });
     return moved.count === 1
-      ? { ok: true, reshelved: true }
+      ? { ok: true, reshelved: true, shelf: manualShelf }
       : { error: "badState" };
   }
+  // Fresh receive: auto-place on the least-busy registered bay when the
+  // operator didn't name one (null when the point has no shelf registry).
+  const shelfCode = manualShelf ?? (await assignShelf(pointId));
   // Which hop is this? Origin receives the seller drop-off (LABEL_CREATED);
   // the destination receives either the drop-off (single-hop) or the
   // line-haul arrival (IN_TRANSIT with an origin leg).
@@ -166,7 +179,7 @@ export async function receiveParcelAtPoint(
         ),
       }),
     ]);
-    return { ok: true };
+    return { ok: true, shelf: shelfCode };
   }
 
   const pointName = parcel.deliveryPoint?.name ?? "Hezalli Point";
@@ -222,7 +235,7 @@ export async function receiveParcelAtPoint(
       // Ops/point staff can still assign at handover.
     }
   }
-  return { ok: true };
+  return { ok: true, shelf: shelfCode };
 }
 
 // Point staff hand the parcel to a courier (the "collection" scan). Guard:
@@ -377,12 +390,14 @@ export async function receiveReturnAtPoint(
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
   if (parcel.status !== "FAILED") return { error: "badState" };
 
+  // Auto-place the returned parcel on the least-busy bay when no shelf is named.
+  const shelfCode = cleanShelf(shelf) ?? (await assignShelf(pointId));
   const claimed = await prisma.shipment.updateMany({
     where: { id: parcel.id, status: "FAILED" },
     data: {
       status: "RETURNED_TO_POINT",
       atPointId: pointId,
-      shelfCode: cleanShelf(shelf),
+      shelfCode,
     },
   });
   if (claimed.count !== 1) return { error: "badState" };
@@ -412,7 +427,7 @@ export async function receiveReturnAtPoint(
       ),
     }),
   ]);
-  return { ok: true };
+  return { ok: true, shelf: shelfCode };
 }
 
 // Terminal RTS: the point sends the parcel back to the seller (attempt limit
