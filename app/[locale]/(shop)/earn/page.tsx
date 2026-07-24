@@ -202,9 +202,9 @@ export default async function EarnPage({
             ]}
           />
           <PhoneShot
-            src="/express/seller-ship.png"
-            width={430}
-            height={1293}
+            src="/earn/sell.png"
+            width={860}
+            height={1760}
             alt={t("sellTitle")}
             caption={t("sellShot")}
           />
@@ -291,9 +291,9 @@ export default async function EarnPage({
             ]}
           />
           <PhoneShot
-            src="/express/driver-offers.png"
-            width={430}
-            height={848}
+            src="/earn/deliver.png"
+            width={860}
+            height={1760}
             alt={t("deliverTitle")}
             caption={t("deliverShot")}
           />
@@ -380,9 +380,9 @@ export default async function EarnPage({
             ]}
           />
           <PhoneShot
-            src="/express/point-scan.png"
-            width={430}
-            height={387}
+            src="/earn/point-scan.png"
+            width={860}
+            height={1760}
             alt={t("pointTitle")}
             caption={t("pointShot")}
           />
