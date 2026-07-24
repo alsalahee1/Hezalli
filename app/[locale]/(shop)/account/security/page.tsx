@@ -41,16 +41,27 @@ export default async function SecurityPage() {
       {userId ? (
         <div className="space-y-4">
           <div>
+            <h2 className="text-lg font-semibold">{t("biometricSignin")}</h2>
+            <p className="text-muted-foreground text-sm">
+              {t("biometricSigninDesc")}
+            </p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <PasskeyManager passkeys={passkeys} />
+          </div>
+        </div>
+      ) : null}
+
+      {userId ? (
+        <div className="space-y-4">
+          <div>
             <h2 className="text-lg font-semibold">{t("walletSecurity")}</h2>
             <p className="text-muted-foreground text-sm">
               {t("walletSecurityDesc")}
             </p>
           </div>
-          <div className="space-y-4 rounded-lg border p-4">
+          <div className="rounded-lg border p-4">
             <WalletPinForm hasPin={hasPin} />
-            <div className="border-t pt-4">
-              <PasskeyManager passkeys={passkeys} />
-            </div>
           </div>
         </div>
       ) : null}
