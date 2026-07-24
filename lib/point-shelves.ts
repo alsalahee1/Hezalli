@@ -3,24 +3,37 @@
 // goes: assignShelf picks the least-busy eligible bay and the receive scan
 // stamps it, so the operator just reads "→ B3" and places it there. Occupancy
 // is derived live from Shipment.shelfCode — never stored — so it can't drift.
+import type { PointShelfZone } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export type ShelfSlot = { code: string; capacity: number | null };
+export type ShelfZone = PointShelfZone;
+export type ShelfSlot = {
+  code: string;
+  capacity: number | null;
+  zone: ShelfZone | null;
+};
 
-// Pure selection: the least-occupied bay that still has room, preferring the
-// earliest bay on a tie (shelves come pre-sorted by code, so A1 wins over B1).
-// If every capped bay is full, fall back to the globally least-occupied bay so
-// the counter always gets a suggestion rather than being blocked.
+// Pure selection. When the parcel has a target zone AND the point has bays in
+// that zone, placement is confined to those bays (buyer pickups near the
+// counter, courier loads near the door); otherwise any bay is eligible. Within
+// the pool it's the least-occupied bay with room, earliest on a tie (shelves
+// come pre-sorted by code, so A1 wins over B1). If every capped bay is full,
+// fall back to the least-occupied bay in the pool so the counter is never
+// blocked.
 export function pickShelf(
   shelves: ShelfSlot[],
   occupancy: Map<string, number>,
+  zone?: ShelfZone | null,
 ): string | null {
+  const zoned = zone ? shelves.filter((s) => s.zone === zone) : [];
+  const pool = zoned.length > 0 ? zoned : shelves;
+
   let best: string | null = null;
   let bestLoad = Infinity;
   let fallback: string | null = null;
   let fallbackLoad = Infinity;
 
-  for (const s of shelves) {
+  for (const s of pool) {
     const load = occupancy.get(s.code) ?? 0;
     if (load < fallbackLoad) {
       fallbackLoad = load;
@@ -56,14 +69,18 @@ async function shelfOccupancy(pointId: string): Promise<Map<string, number>> {
 
 // The bay a freshly received parcel should go on, or null when the point hasn't
 // registered any shelves (then the operator's manual entry — or nothing — is
-// used, exactly as before).
-export async function assignShelf(pointId: string): Promise<string | null> {
+// used, exactly as before). `zone` steers the parcel to the matching area when
+// the point has tagged bays for it.
+export async function assignShelf(
+  pointId: string,
+  zone?: ShelfZone | null,
+): Promise<string | null> {
   const shelves = await prisma.pointShelf.findMany({
     where: { pointId },
     orderBy: { code: "asc" },
-    select: { code: true, capacity: true },
+    select: { code: true, capacity: true, zone: true },
   });
   if (shelves.length === 0) return null;
   const occupancy = await shelfOccupancy(pointId);
-  return pickShelf(shelves, occupancy);
+  return pickShelf(shelves, occupancy, zone);
 }

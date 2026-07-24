@@ -3250,7 +3250,18 @@
     "shelfAutoEnable": "Turn on with these bays",
     "shelfAutoUpdate": "Update bays from this grid",
     "shelfAutoDisable": "Turn off",
-    "shelfAutoHint": "Uses the rows × bays above. Adding bays keeps existing ones — parcels already shelved are untouched."
+    "shelfAutoHint": "Uses the rows × bays above. Adding bays keeps existing ones — parcels already shelved are untouched.",
+    "shelfZonesTitle": "Shelf areas",
+    "shelfZonesHint": "Tag each row by what it holds so parcels are placed where they’re retrieved — pickups near the counter, dispatch near the door. Set a per-bay limit to cap how many fit.",
+    "shelfZoneRow": "Row",
+    "shelfZoneArea": "Area",
+    "shelfZoneCap": "Per bay",
+    "shelfZoneGeneral": "General",
+    "shelfZonePickup": "Buyer pickup",
+    "shelfZoneDispatch": "Courier dispatch",
+    "shelfZoneReturns": "Returns",
+    "shelfZonesSave": "Save areas",
+    "shelfZonesSaved": "Saved"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
