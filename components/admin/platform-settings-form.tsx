@@ -48,6 +48,7 @@ export function PlatformSettingsForm({
     cod_enabled: current.cod_enabled,
     maintenance_mode: current.maintenance_mode,
     wallet_p2p_enabled: current.wallet_p2p_enabled,
+    merchant_payments_enabled: current.merchant_payments_enabled,
     wallet_bills_enabled: current.wallet_bills_enabled,
     express_enabled: current.express_enabled,
     express_auto_assign: current.express_auto_assign,
@@ -124,6 +125,7 @@ export function PlatformSettingsForm({
         cod_enabled: f.cod_enabled,
         maintenance_mode: f.maintenance_mode,
         wallet_p2p_enabled: f.wallet_p2p_enabled,
+        merchant_payments_enabled: f.merchant_payments_enabled,
         wallet_bills_enabled: f.wallet_bills_enabled,
         express_enabled: f.express_enabled,
         express_auto_assign: f.express_auto_assign,
@@ -721,6 +723,18 @@ export function PlatformSettingsForm({
           />
           {t("walletP2p")}
           <span className="text-xs text-amber-600">{t("walletP2pHint")}</span>
+        </label>
+        <label className="flex items-center gap-2 py-1 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.merchant_payments_enabled}
+            onChange={(e) => set("merchant_payments_enabled", e.target.checked)}
+          />
+          {t("merchantPayments")}
+          <span className="text-xs text-amber-600">
+            {t("merchantPaymentsHint")}
+          </span>
         </label>
         <label className="flex items-center gap-2 py-1 text-sm">
           <input

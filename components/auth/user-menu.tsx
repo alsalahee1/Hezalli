@@ -42,6 +42,7 @@ export function UserMenu({
   isCourier = false,
   isPointOperator = false,
   isFleetOwner = false,
+  isMerchant = false,
   walletBalance = 0,
 }: {
   user: MenuUser;
@@ -50,6 +51,7 @@ export function UserMenu({
   isCourier?: boolean;
   isPointOperator?: boolean;
   isFleetOwner?: boolean;
+  isMerchant?: boolean;
   walletBalance?: number;
 }) {
   const t = useTranslations("Header");
@@ -68,6 +70,7 @@ export function UserMenu({
       ? { href: "/point", key: "pointPortal", icon: MapPinned }
       : null,
     isFleetOwner ? { href: "/fleet", key: "fleetPortal", icon: Truck } : null,
+    isMerchant ? { href: "/merchant", key: "merchantApp", icon: Store } : null,
   ].filter((l): l is { href: string; key: string; icon: typeof User } =>
     Boolean(l),
   );

@@ -47,6 +47,7 @@ export function SiteHeader({
   isCourier = false,
   isPointOperator = false,
   isFleetOwner = false,
+  isMerchant = false,
   walletBalance = 0,
   categories = [],
   theme = "default",
@@ -59,6 +60,7 @@ export function SiteHeader({
   isCourier?: boolean;
   isPointOperator?: boolean;
   isFleetOwner?: boolean;
+  isMerchant?: boolean;
   walletBalance?: number;
   categories?: NavCategory[];
   theme?: ThemeId;
@@ -80,6 +82,7 @@ export function SiteHeader({
     isCourier,
     isPointOperator,
     isFleetOwner,
+    isMerchant,
   });
 
   return (
@@ -170,6 +173,7 @@ export function SiteHeader({
                 isCourier={isCourier}
                 isPointOperator={isPointOperator}
                 isFleetOwner={isFleetOwner}
+                isMerchant={isMerchant}
                 walletBalance={walletBalance}
               />
             </>

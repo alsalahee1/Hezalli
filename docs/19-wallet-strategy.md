@@ -545,6 +545,44 @@ biller/telco aggregator is a drop-in, not a rewrite.
 
 ---
 
+## Step 19.14 — Payments merchants ✅ (LICENSED ONLY — flagged off)
+
+A payments-only merchant tier: a shop accepts in-person HezalliPay payments via
+a printed store QR or a per-charge QR / link, and the money settles straight
+into the **owner's** HezalliPay wallet. No product catalog, no shipping — it
+reuses the wallet transfer core rather than the seller/order stack.
+
+- **Role + models.** `Role.MERCHANT`; `MerchantApplication` (apply → admin
+  review, mirrors `DeliveryPointApplication`), `MerchantProfile` (owner,
+  `slug` for the pay URL, category, `ACTIVE`/`SUSPENDED`), and `MerchantPayment`
+  (one row per received payment — backs the takings dashboard; the money itself
+  is the owner's wallet ledger).
+- **Onboarding.** `/merchant-apply` → `applyAsMerchant`; an admin approves in
+  **Admin → Merchants** (`reviewMerchantApplication`), which grants the role and
+  mints the profile + a unique slug in one transaction, audited. Role-granting
+  lives only there. `requireMerchant()` (lib/authz.ts) gates the app.
+- **Merchant app** `/merchant` (own shell + tab bar, like /point): takings
+  dashboard, a **Charge** screen (enter an amount → customer scans a QR for
+  exactly that), a printable **store QR**, a transactions feed, and a profile.
+- **Customer pay** `/pay/m/[slug]` mirrors `/pay/u/[userId]` — `payMerchant`
+  runs the shared `transferFunds` into the owner's wallet and records a
+  `MerchantPayment`. Reuses the PIN/biometric step-up, velocity caps, receipts.
+- **Gate.** The whole flow (onboarding, app, pay page, action) is behind the
+  `merchant_payments_enabled` platform setting — **default off**, amber-flagged
+  in Admin → Settings — because accepting money on a business's behalf is money
+  transmission (§4), the same posture as `wallet_p2p_enabled`.
+
+✅ **Acceptance criteria**
+
+- [x] Apply → admin approve grants MERCHANT + an active profile with a unique slug
+- [x] Scanning a store/charge QR pays the merchant from wallet balance, once
+- [x] A received payment shows in the merchant's dashboard + feed and credits the
+      owner's wallet exactly once (ledger stays the source of truth)
+- [x] Suspending a merchant pauses their app and blocks new payments
+- [x] Everything stays off unless `merchant_payments_enabled` is set
+
+---
+
 ## Step 21 — Biometric step-up (WebAuthn / passkeys) ✅
 
 Face ID / Touch ID / fingerprint / Windows Hello to authorize wallet outflows,
@@ -594,6 +632,7 @@ scan). The biometric never leaves the device — only public keys are stored.
 | 19.11 Reconciliation | Book integrity | Low | ✅ shipped |
 | 19.12 Freeze + adjustments | Back-office control | Low | ✅ shipped |
 | 19.13 Bill provider adapter | Provider-ready seam | Low | ✅ shipped |
+| 19.14 Payments merchants | In-person QR acceptance | **Licensed only** | ✅ built, ⚠️ off by default |
 
 **Bottom line:** 19.1–19.13 are implemented. 19.1/19.2/19.5 are safe to run now;
 **get a Central Bank of Yemen e-money read before 19.3/19.4 move real money in

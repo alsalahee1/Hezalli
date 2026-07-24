@@ -47,6 +47,7 @@ export default async function ShopLayout({
               select: { id: true },
               take: 1,
             },
+            merchantProfile: { select: { status: true } },
           },
         })
       : Promise.resolve(null),
@@ -112,6 +113,11 @@ export default async function ShopLayout({
               false
             }
             isFleetOwner={user?.ownedFleet?.isActive ?? false}
+            isMerchant={
+              (user?.roles.includes("MERCHANT") &&
+                user?.merchantProfile?.status === "ACTIVE") ??
+              false
+            }
             walletBalance={Number(user?.wallet?.availableUsd ?? 0)}
             categories={categories}
             theme={theme}

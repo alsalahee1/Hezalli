@@ -86,6 +86,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/reports", key: "reports", icon: BarChart3 },
   { href: "/admin/users", key: "users", icon: Users },
   { href: "/admin/sellers", key: "sellers", icon: Store },
+  { href: "/admin/merchants", key: "merchants", icon: Store },
   { href: "/admin/products", key: "products", icon: Package },
   { href: "/admin/orders", key: "orders", icon: ShoppingBag },
   { href: "/admin/reviews", key: "reviews", icon: Star },

@@ -8,6 +8,7 @@ export type DashboardRoleFlags = {
   isCourier?: boolean;
   isPointOperator?: boolean;
   isFleetOwner?: boolean;
+  isMerchant?: boolean;
 };
 
 export function dashboardHref(f: DashboardRoleFlags): string {
@@ -16,5 +17,6 @@ export function dashboardHref(f: DashboardRoleFlags): string {
   if (f.isCourier) return "/driver";
   if (f.isPointOperator) return "/point";
   if (f.isFleetOwner) return "/fleet";
+  if (f.isMerchant) return "/merchant";
   return "/account";
 }

@@ -258,3 +258,32 @@ export async function requireCourierId(): Promise<string | null> {
   }
   return id;
 }
+
+// Returns the current user's id + their merchant profile id, only if they hold
+// the MERCHANT role AND own an ACTIVE MerchantProfile (checked against the DB,
+// never the JWT). Guards the HezalliPay merchant app/actions. A suspended
+// profile keeps the role but pauses access, so an admin can freeze a merchant
+// mid-session. See lib/actions/merchant-application.ts.
+export async function requireMerchant(): Promise<{
+  userId: string;
+  merchantId: string;
+} | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  if (!id) return null;
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      roles: true,
+      isSuspended: true,
+      deletedAt: true,
+      merchantProfile: { select: { id: true, status: true } },
+    },
+  });
+  if (!u || u.isSuspended || u.deletedAt || !u.roles.includes("MERCHANT")) {
+    return null;
+  }
+  const profile = u.merchantProfile;
+  if (!profile || profile.status !== "ACTIVE") return null;
+  return { userId: id, merchantId: profile.id };
+}

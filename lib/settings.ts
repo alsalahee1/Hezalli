@@ -125,6 +125,12 @@ export type PlatformSettings = {
   // Peer-to-peer wallet transfers (Step 19.5+). LICENSED ONLY — money
   // transmission is regulated; keep false until authorized. Default off.
   wallet_p2p_enabled: boolean;
+  // HezalliPay payments merchants (payments-only shops that accept in-person
+  // wallet payments via QR / payment link, settling into the owner's wallet).
+  // LICENSED ONLY — accepting money on a business's behalf is money
+  // transmission; keep false until authorized. Gates the whole merchant flow:
+  // onboarding, the merchant app, and the customer pay page. Default off.
+  merchant_payments_enabled: boolean;
   // Bill payment & airtime top-up (Step 19.7). A provider-ready framework;
   // purchases are fulfilled manually by an admin until a biller/telco API is
   // wired. Off by default — admins enable it in Admin → Settings.
@@ -306,6 +312,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   // items total. Off by default (0); admins turn it on in Admin → Settings.
   wallet_cashback_rate: 0,
   wallet_p2p_enabled: false,
+  merchant_payments_enabled: false,
   wallet_bills_enabled: false,
   wallet_bills_provider: "manual",
   wallet_daily_outflow_usd: 1000,
