@@ -1889,6 +1889,13 @@
     "configured": "Connected",
     "notConfigured": "Not connected",
     "channelsHint": "\"Not connected\" means the channel's credentials (bot token / access token) aren't set — the toggle only matters once they are.",
+    "digestTitle": "Weekly Telegram digest",
+    "digestDesc": "Get a Sunday summary on Telegram: messages, users, top questions, and the couldn't-answer rate per character.",
+    "digestEnabled": "Send the weekly digest",
+    "digestChatId": "Telegram chat ID",
+    "digestChatIdHint": "Where to send it. Message your bot /id and paste the number it replies with.",
+    "digestTest": "Send test now",
+    "digestTestHint": "Sends the last-7-days summary to that chat immediately.",
     "tgConnect": "Connect",
     "tgDisconnect": "Disconnect bot",
     "tgTokenHint": "Paste the token BotFather gave you (message @BotFather → /newbot). Connecting verifies the token and registers the webhook automatically.",
@@ -1928,7 +1935,11 @@
     "err_badVoice": "Voice names can only contain letters.",
     "err_badCaps": "Limits must be non-negative numbers.",
     "err_badTemperature": "Creativity must be between 0 and 1.",
-    "err_badMaxTokens": "Reply length must be between 128 and 8192."
+    "err_badMaxTokens": "Reply length must be between 128 and 8192.",
+    "err_digest_no_chat": "Enter a Telegram chat ID first.",
+    "err_digest_not_ready": "Connect the Telegram bot and set a Gemini key first.",
+    "err_digest_disabled": "The digest is turned off.",
+    "err_digest_failed": "Couldn't send — check the chat ID and try again."
   },
   "AssistantStats": {
     "title": "Assistant statistics",

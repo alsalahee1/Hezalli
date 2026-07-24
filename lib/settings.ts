@@ -212,6 +212,11 @@ export type PlatformSettings = {
   // ai_assistant_enabled toggle still gates everything.
   ai_channel_telegram: boolean;
   ai_channel_whatsapp: boolean;
+  // Weekly assistant-stats digest to Telegram (owner summary). When on and a
+  // chat id is set, the /api/cron/assistant-digest endpoint sends a 7-day
+  // recap. Get the chat id by messaging the bot /id.
+  ai_digest_enabled: boolean;
+  ai_digest_chat_id: string;
   // ── Persona & behaviour (Admin → Shadi). ──
   // The editable base "intro" of the system prompt — Shadi's identity and the
   // marketplace description (the first block of "Layer 1"). Empty falls back to
@@ -315,6 +320,8 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   ai_spend_cap_usd: 0,
   ai_channel_telegram: true,
   ai_channel_whatsapp: true,
+  ai_digest_enabled: false,
+  ai_digest_chat_id: "",
   ai_intro: "",
   ai_persona: "",
   ai_persona_jumana: "",

@@ -2,13 +2,21 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { KeyRound, MessageCircle, Mic, Shield, Wand2 } from "lucide-react";
+import {
+  KeyRound,
+  MessageCircle,
+  Mic,
+  Send,
+  Shield,
+  Wand2,
+} from "lucide-react";
 
 import {
   connectTelegram,
   saveAssistantAvatar,
   saveAssistantKey,
   saveAssistantSettings,
+  sendTestDigest,
 } from "@/lib/actions/settings";
 import type { BotId } from "@/lib/ai/bot-constants";
 import { useRouter } from "@/i18n/navigation";
@@ -56,6 +64,8 @@ export type AssistantCurrent = {
   telegramSource: "db" | "env" | "none";
   telegramUsername: string;
   whatsappConfigured: boolean;
+  digestEnabled: boolean;
+  digestChatId: string;
   intro: string;
   defaultIntro: string;
   lockedRules: string;
@@ -97,6 +107,8 @@ export function AssistantSettings({
     spendCapUsd: String(current.spendCapUsd || ""),
     telegramEnabled: current.telegramEnabled,
     whatsappEnabled: current.whatsappEnabled,
+    digestEnabled: current.digestEnabled,
+    digestChatId: current.digestChatId,
     defaultBot: current.defaultBot,
     // Show the effective intro so it's editable in place; empty override means
     // "use the default", so seed the box with the default text.
@@ -154,6 +166,8 @@ export function AssistantSettings({
         maxTokens: Number(f.maxTokens),
         telegramEnabled: f.telegramEnabled,
         whatsappEnabled: f.whatsappEnabled,
+        digestEnabled: f.digestEnabled,
+        digestChatId: f.digestChatId,
         defaultBot: f.defaultBot,
       }),
     );
@@ -496,6 +510,51 @@ export function AssistantSettings({
           <StatusBadge ok={current.whatsappConfigured} t={t} />
         </label>
         <p className="text-muted-foreground text-xs">{t("channelsHint")}</p>
+      </section>
+
+      {/* ── Weekly digest ── */}
+      <section className="space-y-3 rounded-lg border p-5">
+        <SectionTitle icon={Send} title={t("digestTitle")} />
+        <p className="text-muted-foreground text-sm">{t("digestDesc")}</p>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={f.digestEnabled}
+            onChange={(e) => set("digestEnabled", e.target.checked)}
+          />
+          {t("digestEnabled")}
+        </label>
+        <label className="block max-w-xs space-y-1.5">
+          <span className="text-sm font-medium">{t("digestChatId")}</span>
+          <Input
+            dir="ltr"
+            value={f.digestChatId}
+            onChange={(e) => set("digestChatId", e.target.value)}
+            placeholder="6533994486"
+          />
+          <span className="text-muted-foreground block text-xs">
+            {t("digestChatIdHint")}
+          </span>
+        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pending || !f.digestChatId.trim()}
+            onClick={() =>
+              run(async () => {
+                const res = await sendTestDigest();
+                return res;
+              })
+            }
+          >
+            {t("digestTest")}
+          </Button>
+          <span className="text-muted-foreground text-xs">
+            {t("digestTestHint")}
+          </span>
+        </div>
       </section>
 
       {/* ── Voice replies ── */}
