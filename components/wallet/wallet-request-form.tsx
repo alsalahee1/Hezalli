@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { ReferralLink } from "@/components/account/referral-link";
+import { ClientQrCode } from "@/components/wallet/client-qr-code";
 
 export function WalletRequestForm() {
   const t = useTranslations("Wallet");
@@ -56,10 +57,18 @@ export function WalletRequestForm() {
           </div>
 
           {link ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm font-medium text-emerald-600">
                 {t("requestCreated")}
               </p>
+              <div className="flex flex-col items-center gap-2">
+                <div className="rounded-lg border bg-white p-3">
+                  <ClientQrCode value={link} size={200} />
+                </div>
+                <p className="text-muted-foreground max-w-xs text-center text-xs">
+                  {t("requestScanHint")}
+                </p>
+              </div>
               <ReferralLink
                 url={link}
                 copyLabel={t("copyLink")}

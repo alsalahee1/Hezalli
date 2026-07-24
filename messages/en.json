@@ -2443,7 +2443,8 @@
     "err_failed": "Couldn’t complete that. Please try again.",
     "err_noPasskey": "No passkey is registered.",
     "courierEarnings": "Delivery earnings",
-    "pointEarnings": "Point earnings"
+    "pointEarnings": "Point earnings",
+    "requestScanHint": "Scan to pay this request, or share the link."
   },
   "ShippingLabel": {
     "title": "Shipping label",

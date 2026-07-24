@@ -2443,7 +2443,8 @@
     "err_failed": "تعذّر الإكمال. حاول مجدداً.",
     "err_noPasskey": "لا توجد بصمة مُسجّلة.",
     "courierEarnings": "أرباح التوصيل",
-    "pointEarnings": "أرباح النقطة"
+    "pointEarnings": "أرباح النقطة",
+    "requestScanHint": "امسح لدفع هذا الطلب، أو شارك الرابط."
   },
   "ShippingLabel": {
     "title": "بطاقة الشحن",
