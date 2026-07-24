@@ -2592,6 +2592,7 @@
     "notifTapOn": "Tap to enable",
     "notifTapOff": "Tap to turn off",
     "myQr": "My collection QR",
+    "myQrTab": "My code",
     "myQrHint": "Show this at a Hezalli Point so staff can pull up your parcels.",
     "codBlockedTitle": "New deliveries paused",
     "codBlockedOverdue": "You have been holding {amount} of COD cash for too long.",
