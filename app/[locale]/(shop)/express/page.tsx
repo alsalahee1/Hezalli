@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
+  Award,
   Bell,
   Bike,
+  Calendar,
   Camera,
   Clock3,
   HandCoins,
@@ -21,6 +23,7 @@ import {
   Store,
   Truck,
   UserCheck,
+  Users,
   Wallet,
   Zap,
 } from "lucide-react";
@@ -287,6 +290,13 @@ export default async function ExpressShowcasePage({
           items={[
             { icon: ScanLine, tone: "sky", title: t("p1t"), text: t("p1d") },
             { icon: HandCoins, tone: "amber", title: t("p2t"), text: t("p2d") },
+            { icon: Users, tone: "violet", title: t("p3t"), text: t("p3d") },
+            {
+              icon: Calendar,
+              tone: "emerald",
+              title: t("p4t"),
+              text: t("p4d"),
+            },
           ]}
         />
       </section>
@@ -365,6 +375,7 @@ export default async function ExpressShowcasePage({
               text: t("g5d"),
             },
             { icon: Settings2, tone: "slate", title: t("g6t"), text: t("g6d") },
+            { icon: Award, tone: "amber", title: t("g7t"), text: t("g7d") },
           ]}
         />
       </section>
