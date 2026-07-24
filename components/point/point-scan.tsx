@@ -13,6 +13,7 @@ import {
   pointReceiveReturn,
 } from "@/lib/actions/point";
 import type { ManifestRow } from "@/lib/point-core";
+import { groupManifestByShelf } from "@/lib/point-manifest";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -430,33 +431,49 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
                 <p className="text-sm font-medium">
                   {t("manifestTitle", { count: manifest.length })}
                 </p>
-                <ul className="space-y-1">
-                  {manifest.map((row) => (
-                    <li
-                      key={row.shipmentId}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <span className="min-w-0 flex-1 truncate" dir="ltr">
-                        {row.trackingNumber}
-                      </span>
-                      {row.shelf ? (
-                        <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-xs font-semibold text-sky-600">
-                          {t("shelfBadge", { code: row.shelf })}
+                {/* Bay by bay — collect everything on one shelf, then move on. */}
+                <div className="space-y-2.5">
+                  {groupManifestByShelf(manifest).map((g) => (
+                    <div key={g.shelf ?? "none"} className="space-y-1">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold">
+                        {g.shelf ? (
+                          <span className="rounded bg-sky-500/15 px-1.5 py-0.5 text-sky-600">
+                            {t("shelfBadge", { code: g.shelf })}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {t("manifestNoShelf")}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground font-normal">
+                          ×{g.items.length}
                         </span>
-                      ) : null}
-                      {row.city ? (
-                        <span className="text-muted-foreground truncate text-xs">
-                          {row.city}
-                        </span>
-                      ) : null}
-                      {row.isCod ? (
-                        <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
-                          COD
-                        </span>
-                      ) : null}
-                    </li>
+                      </p>
+                      <ul className="space-y-1 ps-1">
+                        {g.items.map((row) => (
+                          <li
+                            key={row.shipmentId}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <span className="min-w-0 flex-1 truncate" dir="ltr">
+                              {row.trackingNumber}
+                            </span>
+                            {row.city ? (
+                              <span className="text-muted-foreground truncate text-xs">
+                                {row.city}
+                              </span>
+                            ) : null}
+                            {row.isCod ? (
+                              <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-600">
+                                COD
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
                 <Button
                   type="button"
                   className="h-10 w-full"
