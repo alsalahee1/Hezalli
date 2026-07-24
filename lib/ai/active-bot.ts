@@ -1,13 +1,13 @@
 // Server-side resolution of which assistant character is active, and its
 // avatar. Priority: the shopper's cookie choice → the admin default
-// (ai_default_bot) → Shadi.
+// (ai_default_bot) → the male character.
 import "server-only";
 
 import { cookies } from "next/headers";
 
 import { getSetting } from "@/lib/settings";
 
-import { BOT_COOKIE, BOTS, isBotId, type BotId } from "./bot-constants";
+import { BOT_COOKIE, BOTS, normalizeBotId, type BotId } from "./bot-constants";
 
 export async function getActiveBot(): Promise<BotId> {
   const raw = (await cookies()).get(BOT_COOKIE)?.value;
@@ -17,22 +17,22 @@ export async function getActiveBot(): Promise<BotId> {
   // default re-applies it to everyone who hasn't since picked for themselves.
   if (raw) {
     const dot = raw.lastIndexOf(".");
-    const id = dot === -1 ? raw : raw.slice(0, dot);
+    const id = normalizeBotId(dot === -1 ? raw : raw.slice(0, dot));
     const at = dot === -1 ? 0 : Number(raw.slice(dot + 1)) || 0;
-    if (isBotId(id) && at >= (await defaultChangedAt())) return id;
+    if (id && at >= (await defaultChangedAt())) return id;
   }
   return getDefaultBot();
 }
 
-/** The admin-chosen default character (ai_default_bot), or Shadi. */
+/** The admin-chosen default character (ai_default_bot), or the male one. */
 export async function getDefaultBot(): Promise<BotId> {
   try {
-    const def = await getSetting("ai_default_bot");
-    if (isBotId(def)) return def;
+    const def = normalizeBotId(await getSetting("ai_default_bot"));
+    if (def) return def;
   } catch {
     // fall through
   }
-  return "shadi";
+  return "sam";
 }
 
 /** Epoch-ms of the last admin change to the default character (0 if never). */

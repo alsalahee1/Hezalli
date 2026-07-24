@@ -12,7 +12,7 @@ import { getSetting } from "@/lib/settings";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 // Fast + cheap model, good enough for a storefront assistant. Admins can
-// override it from the Shadi settings page; the env var is the next fallback.
+// override it from the assistant settings page; the env var is the next fallback.
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
 export async function getGeminiModel(): Promise<string> {
@@ -26,7 +26,7 @@ export async function getGeminiModel(): Promise<string> {
 }
 
 /**
- * Admin-tunable reply creativity + length (Admin → Shadi). Both are clamped to
+ * Admin-tunable reply creativity + length (Admin → Assistant). Both are clamped to
  * safe ranges; on any DB hiccup we fall back to the built-in defaults.
  */
 async function getGenerationConfig(): Promise<{
@@ -74,7 +74,7 @@ export async function geminiConfigured(): Promise<boolean> {
 }
 
 /**
- * Whether Shadi (شادي) should run at all: the admin toggle is on AND a Gemini
+ * Whether the assistant should run at all: the admin toggle is on AND a Gemini
  * key is available. Gates the site widget, the chat API, and the messaging
  * channels alike.
  */

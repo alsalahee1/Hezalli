@@ -1,11 +1,11 @@
-// The two fixed pieces of Shadi's base prompt ("Layer 1"), kept in a plain
-// module (no server-only) so both the assistant runtime and the Admin → Shadi
-// page can import them:
+// The two fixed pieces of the assistant's base prompt ("Layer 1"), kept in a
+// plain module (no server-only) so both the assistant runtime and the Admin →
+// Assistant page can import them:
 //
 //   - DEFAULT_INTRO   — the editable identity/description. Admins may override
 //                       it (ai_intro setting); empty falls back to this text.
 //   - lockedRules()   — the tool-calling + safety rules. NOT editable: they're
-//                       what keep Shadi from inventing data or leaking secrets.
+//                       what keep it from inventing data or leaking secrets.
 //                       Shown read-only in the admin UI for transparency.
 
 import { BOTS, type BotDef } from "./bot-constants";
@@ -21,8 +21,8 @@ export function defaultIntro(bot: BotDef): string {
   ].join("\n");
 }
 
-/** Shown as the editable-intro seed / preview in the admin UI (Shadi). */
-export const DEFAULT_INTRO = defaultIntro(BOTS.shadi);
+/** Shown as the editable-intro seed / preview in the admin UI. */
+export const DEFAULT_INTRO = defaultIntro(BOTS.sam);
 
 /** The locked rule block. `lang` is the reply language (Arabic/English). */
 export function lockedRules(lang: string): string {

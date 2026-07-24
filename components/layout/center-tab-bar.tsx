@@ -10,7 +10,7 @@ import { useMountTransition } from "@/components/ui/use-mount-transition";
 export type CenterTab = {
   href: string;
   label: string;
-  // Any lucide icon, or a custom glyph like ShadiIcon — anything accepting
+  // Any lucide icon, or a custom glyph like AssistantIcon — anything accepting
   // SVG-ish presentational props.
   icon: React.ComponentType<{
     className?: string;

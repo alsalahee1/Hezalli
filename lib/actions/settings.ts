@@ -279,7 +279,7 @@ export async function savePlatformSettings(
   // wallet_bills_provider and delivery_window_days are ops/advanced settings not
   // part of this form — left untouched here (set via seed / DB), so their stored
   // values are preserved. All ai_* keys are managed on the dedicated Admin →
-  // Shadi page (saveAssistantSettings / saveAssistantKey / saveAssistantAvatar).
+  // Assistant page (saveAssistantSettings / saveAssistantKey / saveAssistantAvatar).
   const values: Omit<
     PlatformSettings,
     "wallet_bills_provider" | "delivery_window_days" | AiSettingKey
@@ -373,7 +373,7 @@ export async function savePlatformSettings(
   return { ok: true };
 }
 
-// --- Shadi's Gemini API key ------------------------------------------------
+// --- The assistant's Gemini API key ---------------------------------------
 // Stored as its own PlatformSetting row ("gemini_api_key") — deliberately NOT
 // part of the SettingsInput/PlatformSettings object, so the secret is never
 // echoed back through the settings form or serialized into other pages.
@@ -411,7 +411,7 @@ export async function saveAssistantKey(apiKey: string | null): Promise<Result> {
   return { ok: true };
 }
 
-// --- Shadi's tuning (Admin → Shadi page) ------------------------------------
+// --- Assistant tuning (Admin → Assistant page) -----------------------------
 // Everything except the API key (saveAssistantKey) and avatar
 // (saveAssistantAvatar). A "" / 0 value means "use the env/default".
 
@@ -430,7 +430,7 @@ export type AssistantSettingsInput = {
   digestChatId: string;
   defaultBot: string;
   intro: string;
-  // Per-character persona/greeting, keyed by bot id (e.g. { shadi, jumana }).
+  // Per-character persona/greeting, keyed by bot id (e.g. { sam, balqis }).
   personas: Record<string, string>;
   greetings: Record<string, string>;
   temperature: number;
@@ -491,7 +491,7 @@ export async function saveAssistantSettings(
   if (!Number.isFinite(maxTokens) || maxTokens < 128 || maxTokens > 8192)
     return { error: "badMaxTokens" };
 
-  const defaultBot = isBotId(input.defaultBot) ? input.defaultBot : "shadi";
+  const defaultBot = isBotId(input.defaultBot) ? input.defaultBot : "sam";
 
   // Only re-stamp the default when it actually changes, so an ordinary
   // settings save doesn't reset every shopper's switcher cookie.
@@ -520,7 +520,7 @@ export async function saveAssistantSettings(
     ["ai_temperature", Math.round(temperature * 100) / 100],
     ["ai_max_tokens", maxTokens],
   ];
-  if ((prevDefault?.value ?? "shadi") !== defaultBot) {
+  if ((prevDefault?.value ?? "sam") !== defaultBot) {
     shared.push(["ai_default_bot_at", String(Date.now())]);
   }
   const entries: Array<[AiSettingKey, string | number | boolean]> = [
@@ -564,7 +564,7 @@ export async function sendTestDigest(): Promise<Result> {
   return res.sent ? { ok: true } : { error: `digest_${res.reason}` };
 }
 
-// --- Telegram connection (Admin → Shadi) -------------------------------------
+// --- Telegram connection (Admin → Assistant) --------------------------------
 // Pasting a BotFather token connects the bot end-to-end: the token is verified
 // with getMe, a fresh webhook secret is generated, Telegram's webhook is
 // pointed at /api/telegram/webhook, and everything is stored in PlatformSetting

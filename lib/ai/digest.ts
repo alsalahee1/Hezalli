@@ -1,6 +1,6 @@
-// The weekly assistant-stats digest: a 7-day recap of how Shadi & Jumana are
+// The weekly assistant-stats digest: a 7-day recap of how the characters are
 // doing, sent to the owner's Telegram. Triggered by the cron endpoint, or the
-// "send test" button in Admin → Shadi.
+// "send test" button in Admin → Assistant.
 import "server-only";
 
 import { getSetting } from "@/lib/settings";

@@ -27,7 +27,7 @@ export type ProductCard = {
   outOfStock: boolean;
 };
 
-// Which part of the platform the user is talking to Shadi from. The widget
+// Which part of the platform the user is talking to the assistant from. The widget
 // reports it from the current route; the API downgrades it to "store" when the
 // user lacks the matching role. Messaging channels (Telegram/WhatsApp) always
 // run as "store".

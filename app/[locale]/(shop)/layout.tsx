@@ -127,7 +127,7 @@ export default async function ShopLayout({
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             aria-hidden
           />
-          {/* Shadi, the AI assistant, is mounted globally in the locale layout. */}
+          {/* The AI assistant is mounted globally in the locale layout. */}
           <MobileTabBar wishlistCount={wishlistCount} />
         </div>
       </CartProvider>

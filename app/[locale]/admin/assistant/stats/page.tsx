@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const RANGES = [7, 30, 90];
 
-// Per-character analytics for Shadi & Jumana: message + user share, busiest
+// Per-character analytics for both characters: message + user share, busiest
 // pages, and most-asked questions over a selectable window.
 export default async function AssistantStatsPage({
   searchParams,

@@ -58,13 +58,13 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   const dir = locale === "ar" ? "rtl" : "ltr";
   const theme = await getTheme();
-  const showShadi = await assistantReady();
-  const activeBot = showShadi ? await getActiveBot() : "shadi";
-  const shadiGreeting = showShadi
+  const showAssistant = await assistantReady();
+  const activeBot = showAssistant ? await getActiveBot() : "sam";
+  const assistantGreeting = showAssistant
     ? await getSetting(BOTS[activeBot].greetingKey)
     : "";
   // Every character with its avatar, so the widget can show who you'd switch to.
-  const shadiBots = showShadi
+  const assistantBots = showAssistant
     ? await Promise.all(
         BOT_IDS.map(async (id) => ({
           id,
@@ -84,15 +84,15 @@ export default async function LocaleLayout({
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <NextIntlClientProvider messages={messages}>
           {children}
-          {/* Shadi (شادي), the AI assistant, floats on every page of the site —
-            not just the storefront — so shoppers, sellers, and drivers can all
-            reach it. Hidden when the admin toggle is off or no Gemini key is
-            configured (Admin → Settings, or the GEMINI_API_KEY env var). */}
-          {showShadi ? (
+          {/* The AI assistant floats on every page of the site — not just the
+            storefront — so shoppers, sellers, and drivers can all reach it.
+            Hidden when the admin toggle is off or no Gemini key is configured
+            (Admin → Settings, or the GEMINI_API_KEY env var). */}
+          {showAssistant ? (
             <AiAssistant
               botId={activeBot}
-              bots={shadiBots}
-              greeting={shadiGreeting}
+              bots={assistantBots}
+              greeting={assistantGreeting}
             />
           ) : null}
         </NextIntlClientProvider>

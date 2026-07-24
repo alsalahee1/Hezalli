@@ -1942,7 +1942,7 @@ model BotDailyUsage {
 model AiChatEvent {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  bot       String // "shadi" | "jumana"
+  bot       String // "sam" | "balqis"
   channel   String // "web" | "telegram" | "whatsapp"
   section   String // store | seller | admin | wallet | driver | point | fleet
   locale    String // "ar" | "en"

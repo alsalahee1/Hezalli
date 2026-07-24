@@ -40,7 +40,7 @@ import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { ShadiIcon } from "@/components/ai/shadi-icon";
+import { AssistantIcon } from "@/components/ai/assistant-icon";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ChatIcon } from "@/components/chat/chat-icon";
@@ -111,7 +111,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/pages", key: "pages", icon: ScrollText },
   { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/audit", key: "audit", icon: History },
-  { href: "/admin/assistant", key: "assistant", icon: ShadiIcon },
+  { href: "/admin/assistant", key: "assistant", icon: AssistantIcon },
   { href: "/admin/settings", key: "settings", icon: Settings },
   { href: "/admin/how", key: "how", icon: BookOpen },
 ];

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   // bot MUST have a webhook secret set, and every update must present it —
   // otherwise an anonymous POST would be processed as a genuine Telegram update
   // (letting an attacker impersonate a linked user or burn the AI budget).
-  // The secret is set by the Admin → Shadi connect flow (env var fallback).
+  // The secret is set by the Admin → Assistant connect flow (env var fallback).
   const secret = await getTelegramWebhookSecret();
   if (
     !secret ||

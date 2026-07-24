@@ -7,7 +7,7 @@ import { BotSwitcher } from "@/components/ai/bot-switcher";
 
 export const dynamic = "force-dynamic";
 
-// Lets a shopper pick which assistant character (Shadi / Jumana) they chat
+// Lets a shopper pick which assistant character they chat
 // with. Open to everyone — the choice is a cookie, no login required.
 export default async function AssistantPrefsPage() {
   const t = await getTranslations("BotSwitcher");

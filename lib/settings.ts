@@ -174,29 +174,29 @@ export type PlatformSettings = {
   // (lib/actions/cod-wallet-remit.ts). Identified by email so admins can point
   // it at whichever account should hold platform cash. Must be an active ADMIN.
   platform_wallet_email: string;
-  // Shadi (شادي), the AI assistant. Off hides the site widget and disables the
-  // chat API and messaging channels. The Gemini API key itself is stored as a
-  // separate PlatformSetting row ("gemini_api_key", managed in Admin →
-  // Settings) — deliberately NOT part of this object, so the secret never
-  // rides along when pages pass the settings around. lib/ai/gemini.ts reads it.
+  // The AI assistant. Off hides the site widget and disables the chat API and
+  // messaging channels. The Gemini API key itself is stored as a separate
+  // PlatformSetting row ("gemini_api_key", managed in Admin → Settings) —
+  // deliberately NOT part of this object, so the secret never rides along when
+  // pages pass the settings around. lib/ai/gemini.ts reads it.
   ai_assistant_enabled: boolean;
-  // Shadi's face: the image shown on the chat launcher bubble and inside the
-  // widget. A public path or URL; admins change it from Admin → Shadi
-  // (upload or reset). Empty falls back to the bundled default.
+  // The male character's face: the image shown on the chat launcher bubble and
+  // inside the widget. A public path or URL; admins change it from Admin →
+  // Assistant (upload or reset). Empty falls back to the bundled default.
   ai_assistant_avatar: string;
-  // Jumana's (جُمانة) face — the second assistant character. Same rules as
-  // Shadi's avatar; falls back to the bundled /jumana.png.
-  ai_avatar_jumana: string;
-  // Which character is the platform default: "shadi" | "jumana". A shopper can
-  // override it for themselves with the bot switcher (a cookie).
+  // The female character's face — the second assistant character. Same rules
+  // as the male avatar; falls back to the bundled default image.
+  ai_avatar_balqis: string;
+  // Which character is the platform default. A shopper can override it for
+  // themselves with the bot switcher (a cookie).
   ai_default_bot: string;
   // Epoch-ms stamp of the last time an admin changed the default character.
   // A shopper's switcher cookie only wins if they switched AFTER this, so
   // changing the default re-applies it to everyone who hasn't since chosen.
   ai_default_bot_at: string;
-  // ── Shadi tuning (Admin → Shadi page). For every "" / 0 value the runtime
-  // falls back to the matching env var, then to the built-in default — so a
-  // fresh install behaves exactly as before an admin touches anything. ──
+  // ── Assistant tuning (Admin → Assistant page). For every "" / 0 value the
+  // runtime falls back to the matching env var, then to the built-in default —
+  // so a fresh install behaves exactly as before an admin touches anything. ──
   // Gemini chat model id (fallback: GEMINI_MODEL env → gemini-2.5-flash).
   ai_gemini_model: string;
   // Messaging-channel reply style: "text" | "voice" | "both" | "match"
@@ -221,20 +221,20 @@ export type PlatformSettings = {
   // recap. Get the chat id by messaging the bot /id.
   ai_digest_enabled: boolean;
   ai_digest_chat_id: string;
-  // ── Persona & behaviour (Admin → Shadi). ──
-  // The editable base "intro" of the system prompt — Shadi's identity and the
-  // marketplace description (the first block of "Layer 1"). Empty falls back to
-  // the built-in DEFAULT_INTRO. The rule block after it stays locked in code.
+  // ── Persona & behaviour (Admin → Assistant). ──
+  // The editable base "intro" of the system prompt — the assistant's identity
+  // and the marketplace description (the first block of "Layer 1"). Empty falls
+  // back to the built-in DEFAULT_INTRO. The rule block after it stays locked.
   ai_intro: string;
   // Each character's editable "role": extra natural-language instructions
   // appended to the system prompt (personality, tone, dialect, do/don'ts).
-  // Per-character (Shadi vs Jumana). Empty = that character's default only.
-  ai_persona: string; // Shadi's persona
-  ai_persona_jumana: string; // Jumana's persona
+  // Per-character. Empty = that character's default only.
+  ai_persona: string; // male character's persona
+  ai_persona_balqis: string; // female character's persona
   // Each character's custom welcome line shown when the chat widget opens.
   // Empty = the built-in per-language greeting for the active character.
-  ai_greeting: string; // Shadi's greeting
-  ai_greeting_jumana: string; // Jumana's greeting
+  ai_greeting: string; // male character's greeting
+  ai_greeting_balqis: string; // female character's greeting
   // Model creativity, 0 (focused/factual) … 1 (creative). Default 0.3.
   ai_temperature: number;
   // Max length of one reply, in Gemini output tokens (~4 chars each).
@@ -242,8 +242,8 @@ export type PlatformSettings = {
   ai_max_tokens: number;
 };
 
-/** The Shadi keys, managed on their own Admin → Shadi page (not the main
- * platform-settings form). */
+/** The assistant keys, managed on their own Admin → Assistant page (not the
+ * main platform-settings form). */
 export type AiSettingKey = Extract<keyof PlatformSettings, `ai_${string}`>;
 
 export const SETTING_DEFAULTS: PlatformSettings = {
@@ -312,9 +312,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   cod_wallet_pay_enabled: true,
   platform_wallet_email: "admin@hezalli.com",
   ai_assistant_enabled: true,
-  ai_assistant_avatar: "/shadi.jpg",
-  ai_avatar_jumana: "/jumana.png",
-  ai_default_bot: "shadi",
+  ai_assistant_avatar: "/sam.jpg",
+  ai_avatar_balqis: "/balqis.png",
+  ai_default_bot: "sam",
   ai_default_bot_at: "0",
   ai_gemini_model: "",
   ai_reply_mode: "",
@@ -329,9 +329,9 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   ai_digest_chat_id: "",
   ai_intro: "",
   ai_persona: "",
-  ai_persona_jumana: "",
+  ai_persona_balqis: "",
   ai_greeting: "",
-  ai_greeting_jumana: "",
+  ai_greeting_balqis: "",
   ai_temperature: 0.3,
   ai_max_tokens: 1024,
 };

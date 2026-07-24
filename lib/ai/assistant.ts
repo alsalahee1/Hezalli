@@ -42,9 +42,9 @@ export type AssistantReply = {
   fallback?: boolean;
 };
 
-// What Shadi focuses on in each part of the platform. The user's role has
+// What the assistant focuses on in each part of the platform. The user's role has
 // already been verified by the API before a privileged section reaches here,
-// so the brief may speak to the user as a seller/admin/driver/etc. Shadi only
+// so the brief may speak to the user as a seller/admin/driver/etc. It only
 // has read tools for the catalog and the user's own orders — for any other
 // account-specific number it explains where to look instead of guessing.
 const SECTION_BRIEFS: Record<AssistantSection, string> = {
@@ -76,7 +76,7 @@ const SECTION_BRIEFS: Record<AssistantSection, string> = {
     "executes automatically, exchange rates per currency zone (Yemen's rial",
     "differs between the Sana'a-area NORTH and Aden-area SOUTH zones), platform",
     "settings (commission %, COD on/off, express delivery, delivery points,",
-    "return windows, maintenance mode, Shadi's own settings), dispatch and",
+    "return windows, maintenance mode, the assistant's own settings), dispatch and",
     "couriers, and audit logs.",
     "For live figures, point them to the matching admin screen.",
   ].join("\n"),
@@ -147,7 +147,7 @@ function systemPrompt(
 
   // The store owner's editable persona/role, appended so it can shape tone and
   // behaviour — but the locked rules above still bind. If it conflicts with
-  // them (e.g. asks Shadi to reveal secrets or invent data), the rules win.
+  // them (e.g. asks it to reveal secrets or invent data), the rules win.
   const p = persona.trim();
   if (p) {
     lines.push(
@@ -195,7 +195,7 @@ export async function runAssistant(
   }
 
   const section = ctx.section ?? "store";
-  const bot: BotId = ctx.bot ?? "shadi";
+  const bot: BotId = ctx.bot ?? "sam";
   // Shared base intro + this character's own persona + the curated FAQ block.
   const [intro, persona, faq] = await Promise.all([
     getSetting("ai_intro").catch(() => ""),
