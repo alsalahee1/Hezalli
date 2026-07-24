@@ -12,18 +12,23 @@ export function SiteFooter() {
   const c = useTranslations("Common");
   const year = new Date().getFullYear();
 
-  const links = [
-    { href: "/how", key: "how" },
-    { href: "/express", key: "expressShowcase" },
+  // Left column: company / legal / info pages
+  const infoLinks = [
     { href: "/p/about", key: "about" },
-    { href: "/earn", key: "earnWithHezalli" },
-    { href: "/sell", key: "sellOnHezalli" },
-    { href: "/drive", key: "deliverWithHezalli" },
     { href: "/p/terms", key: "terms" },
     { href: "/p/privacy", key: "privacy" },
     { href: "/p/returns", key: "returns" },
     { href: "/p/faq", key: "faq" },
     { href: "/p/contact", key: "contact" },
+  ] as const;
+
+  // Right column: guide pages, kept together
+  const guideLinks = [
+    { href: "/how", key: "how" },
+    { href: "/express", key: "expressShowcase" },
+    { href: "/sell", key: "sellOnHezalli" },
+    { href: "/earn", key: "earnWithHezalli" },
+    { href: "/drive", key: "deliverWithHezalli" },
   ] as const;
 
   return (
@@ -42,18 +47,32 @@ export function SiteFooter() {
 
           <nav>
             <p className="mb-3 text-sm font-semibold">{t("company")}</p>
-            <ul className="text-muted-foreground grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-3">
-              {links.map((l) => (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className="hover:text-foreground hover:underline"
-                  >
-                    {t(l.key)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-2 gap-x-8">
+              <ul className="text-muted-foreground space-y-2 text-sm">
+                {infoLinks.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="hover:text-foreground hover:underline"
+                    >
+                      {t(l.key)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <ul className="text-muted-foreground space-y-2 text-sm">
+                {guideLinks.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="hover:text-foreground hover:underline"
+                    >
+                      {t(l.key)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </nav>
 
           <NewsletterSignup />
