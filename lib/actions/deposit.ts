@@ -9,7 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
 type Result = { ok?: boolean; error?: string };
@@ -20,7 +20,7 @@ const parseAmount = (raw: unknown): number | null => {
 };
 
 export async function setCourierDeposit(formData: FormData): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("SETTLEMENT");
   if (!adminId) return { error: "forbidden" };
 
   const courierId = String(formData.get("courierId") ?? "");
@@ -71,7 +71,7 @@ export async function setCourierDeposit(formData: FormData): Promise<Result> {
 }
 
 export async function setPointDeposit(formData: FormData): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("SETTLEMENT");
   if (!adminId) return { error: "forbidden" };
 
   const pointId = String(formData.get("pointId") ?? "");

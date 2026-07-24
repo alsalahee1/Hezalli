@@ -2,9 +2,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getFormatter, getTranslations } from "next-intl/server";
 
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { buildTrackingUrl } from "@/lib/tracking";
 import { Link } from "@/i18n/navigation";
+import { Forbidden } from "@/components/auth/forbidden";
 import { ShipmentOverride } from "@/components/delivery-manager/shipment-override";
 import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
@@ -15,6 +17,7 @@ export default async function DeliveryManagerShipmentPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!(await requireDeliveryScope("DISPATCH"))) return <Forbidden />;
   const { id } = await params;
   const t = await getTranslations("DeliveryManager");
   const format = await getFormatter();

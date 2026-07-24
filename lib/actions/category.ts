@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireAdminId, requireDeliveryManagerId } from "@/lib/authz";
+import { requireAdminId, requireDeliveryScope } from "@/lib/authz";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { categorySchema } from "@/lib/validations/category";
@@ -189,7 +189,7 @@ export async function setCategoryShippingDefaults(
   defaultDimensionsCm: { l: number; w: number; h: number } | null,
   defaultSizeClass?: string | null,
 ): Promise<{ ok?: boolean; error?: string }> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("NETWORK");
   if (!staffId) return { error: "forbidden" };
 
   const cls = defaultSizeClass || null;

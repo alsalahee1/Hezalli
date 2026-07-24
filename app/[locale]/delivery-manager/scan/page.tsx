@@ -1,5 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
+import { requireDeliveryScope } from "@/lib/authz";
+import { Forbidden } from "@/components/auth/forbidden";
 import { ScanConsole } from "@/components/delivery-manager/scan-console";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +10,7 @@ export const dynamic = "force-dynamic";
 // barcodes (or the buyer QR) to apply it — the fast, type-nothing flow J&T
 // hubs run on.
 export default async function DeliveryManagerScanPage() {
+  if (!(await requireDeliveryScope("DISPATCH"))) return <Forbidden />;
   const t = await getTranslations("DeliveryManager");
   return (
     <div className="mx-auto max-w-lg space-y-5">

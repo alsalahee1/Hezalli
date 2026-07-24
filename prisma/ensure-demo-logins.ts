@@ -21,7 +21,7 @@
  * the /driver and /point dashboards work exactly like a fresh seed.
  */
 import "dotenv/config";
-import type { Role } from "../lib/generated/prisma/client";
+import type { DeliveryScope, Role } from "../lib/generated/prisma/client";
 
 import { hashPassword } from "../lib/password";
 import { prisma } from "../lib/prisma";
@@ -42,6 +42,9 @@ async function ensureUser(opts: {
   phone: string;
   role: Role;
   passwordHash: string;
+  // For DELIVERY_MANAGER desk staff: the desks they may work. Empty/omitted =
+  // Head of Delivery (all desks). Only applied when provided.
+  deliveryScopes?: DeliveryScope[];
 }): Promise<boolean> {
   const existing = await prisma.user.findUnique({
     where: { email: opts.email },
@@ -58,6 +61,7 @@ async function ensureUser(opts: {
         phoneVerified: new Date(),
         passwordHash: opts.passwordHash,
         roles: [opts.role],
+        deliveryScopes: opts.deliveryScopes ?? [],
         locale: "ar",
       },
     });
@@ -69,7 +73,13 @@ async function ensureUser(opts: {
   );
   await prisma.user.update({
     where: { id: existing.id },
-    data: { roles: { set: roles }, passwordHash: opts.passwordHash },
+    data: {
+      roles: { set: roles },
+      passwordHash: opts.passwordHash,
+      ...(opts.deliveryScopes
+        ? { deliveryScopes: { set: opts.deliveryScopes } }
+        : {}),
+    },
   });
   return false;
 }
@@ -106,10 +116,53 @@ async function main() {
     phone: "+967700000012",
     role: "DELIVERY_MANAGER",
     passwordHash,
+    // No scopes = Head of Delivery: sees every desk (unchanged behaviour).
+    deliveryScopes: [],
   });
   console.log(
-    `Delivery Manager ${dmCreated ? "created" : "ensured"} — delivery@hezalli.com (DELIVERY_MANAGER).`,
+    `Delivery Manager ${dmCreated ? "created" : "ensured"} — delivery@hezalli.com (DELIVERY_MANAGER, Head of Delivery).`,
   );
+
+  // --- Scoped desk staff → each sees only their corner of /delivery-manager ---
+  // Illustrates the team split: drivers desk, points desk, settlement desk.
+  const deskStaff: {
+    email: string;
+    name: string;
+    phone: string;
+    scope: DeliveryScope;
+  }[] = [
+    {
+      email: "fleet@hezalli.com",
+      name: "Fleet Desk",
+      phone: "+967700000013",
+      scope: "FLEET",
+    },
+    {
+      email: "points@hezalli.com",
+      name: "Points Desk",
+      phone: "+967700000014",
+      scope: "POINTS",
+    },
+    {
+      email: "settlement@hezalli.com",
+      name: "Settlement Desk",
+      phone: "+967700000015",
+      scope: "SETTLEMENT",
+    },
+  ];
+  for (const s of deskStaff) {
+    const created = await ensureUser({
+      email: s.email,
+      name: s.name,
+      phone: s.phone,
+      role: "DELIVERY_MANAGER",
+      passwordHash,
+      deliveryScopes: [s.scope],
+    });
+    console.log(
+      `Delivery desk ${created ? "created" : "ensured"} — ${s.email} (DELIVERY_MANAGER · ${s.scope}).`,
+    );
+  }
 
   // --- Point Center (Hezalli Point partner) → /point ---
   // Needs an ACTIVE DeliveryPoint on top of the DELIVERY_POINT role.

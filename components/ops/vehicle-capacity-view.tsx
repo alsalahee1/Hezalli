@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Truck } from "lucide-react";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import {
   effectiveVehicleCapacity,
   VEHICLE_CAPACITY_SETTING_KEY,
@@ -15,7 +15,7 @@ import { VehicleCapacityRow } from "@/components/admin/vehicle-capacity-row";
 // auto-assignment checks parcels against. Values are live (no deploy);
 // resetting a vehicle returns it to the shipped defaults.
 export async function VehicleCapacityView() {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("FLEET");
   if (!staffId) return <Forbidden />;
   const t = await getTranslations("AdminCouriers");
 

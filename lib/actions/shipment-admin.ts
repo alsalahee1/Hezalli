@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { audit } from "@/lib/audit";
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { settleReturnedSubOrder } from "@/lib/return-core";
 import { markSubOrderDelivered } from "@/lib/shipment-core";
@@ -38,7 +38,7 @@ export async function overrideShipmentStatus(
   status: OverrideStatus,
   input?: { location?: string; note?: string },
 ): Promise<Result> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("DISPATCH");
   if (!staffId) return { error: "forbidden" };
   if (!STATUSES.includes(status)) return { error: "badStatus" };
   const locale = await getLocale();
@@ -143,7 +143,7 @@ export async function bulkOverrideShipmentStatus(
   status: OverrideStatus,
   note?: string,
 ): Promise<{ ok?: boolean; error?: string; changed: number; skipped: number }> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("DISPATCH");
   if (!staffId) return { error: "forbidden", changed: 0, skipped: 0 };
   if (!STATUSES.includes(status))
     return { error: "badStatus", changed: 0, skipped: 0 };
@@ -168,7 +168,7 @@ export async function editShipmentTracking(
   carrierId: string,
   trackingNumber: string,
 ): Promise<Result> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("DISPATCH");
   if (!staffId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -256,7 +256,7 @@ export async function lookupShipmentForScan(code: string): Promise<
     }
   | { ok?: false; error: string }
 > {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("DISPATCH");
   if (!staffId) return { error: "forbidden" };
   const raw = (code ?? "").trim();
   if (raw.length < 3) return { error: "badCode" };

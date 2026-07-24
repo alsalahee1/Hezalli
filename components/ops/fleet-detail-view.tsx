@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { fleetDetail } from "@/lib/fleet";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ export async function FleetDetailView({
   base: string;
   params: Promise<{ fleetId: string }>;
 }) {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("FLEET");
   if (!adminId) return <Forbidden />;
   const { fleetId } = await params;
   const t = await getTranslations("AdminFleets");

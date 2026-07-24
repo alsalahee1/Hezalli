@@ -1,7 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Shapes } from "lucide-react";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { localizedName } from "@/lib/categories";
 import { parseDimensions } from "@/lib/courier-capacity";
 import { prisma } from "@/lib/prisma";
@@ -13,7 +13,7 @@ import { CategoryDefaultsRow } from "@/components/admin/category-defaults-row";
 // own. Only those two fields are editable here — names, slugs, and the tree
 // stay in the admin-only category manager.
 export async function CategoryDefaultsView() {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("NETWORK");
   if (!staffId) return <Forbidden />;
   const t = await getTranslations("AdminCategories");
   const locale = await getLocale();

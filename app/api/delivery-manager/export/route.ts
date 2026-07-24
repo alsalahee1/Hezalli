@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { csvCell } from "@/lib/csv";
 import { prisma } from "@/lib/prisma";
 
@@ -24,7 +24,7 @@ const STATUSES = [
 const STUCK_DAYS = 7;
 
 export async function GET(req: Request) {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("DISPATCH");
   if (!staffId) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

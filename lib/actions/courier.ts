@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireDeliveryManagerId, requireCourierId } from "@/lib/authz";
+import { requireDeliveryScope, requireCourierId } from "@/lib/authz";
 import { codBlockedCourierIds } from "@/lib/cod-guard";
 import { cascadeShipmentOffer, offerOpenStatuses } from "@/lib/courier-assign";
 import {
@@ -86,7 +86,7 @@ export async function assignCourier(
   shipmentId: string,
   driverId: string,
 ): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("DISPATCH");
   if (!adminId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -169,7 +169,7 @@ export async function setCourierVehicle(
   courierId: string,
   vehicleType: string,
 ): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("FLEET");
   if (!adminId) return { error: "forbidden" };
 
   const vehicle = vehicleType.trim();
@@ -223,7 +223,7 @@ export async function setVehicleCapacity(
     maxItemLongestSideCm: number;
   } | null,
 ): Promise<Result> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("FLEET");
   if (!staffId) return { error: "forbidden" };
   if (!(VEHICLE_TYPES as readonly string[]).includes(vehicleType)) {
     return { error: "badVehicle" };
@@ -296,7 +296,7 @@ export async function assignManyCouriers(
   shipmentIds: string[],
   driverId: string,
 ): Promise<Result & { count?: number }> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("DISPATCH");
   if (!adminId) return { error: "forbidden" };
   const id = driverId.trim();
   if (!id) return { error: "invalidDriver" };

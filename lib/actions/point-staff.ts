@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
-import { requireDeliveryManagerId, requireDeliveryPoint } from "@/lib/authz";
+import { requireDeliveryScope, requireDeliveryPoint } from "@/lib/authz";
 import {
   canManagePoint,
   POINT_STAFF_ROLES,
@@ -337,7 +337,7 @@ export async function adminSetPointStaffActive(
   staffId: string,
   active: boolean,
 ): Promise<Result> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("POINTS");
   if (!adminId) return { error: "forbidden" };
 
   const row = await prisma.pointStaff.findFirst({

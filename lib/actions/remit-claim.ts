@@ -12,7 +12,7 @@ import { getLocale } from "next-intl/server";
 
 import {
   requireCourierId,
-  requireDeliveryManagerId,
+  requireDeliveryScope,
   requireDeliveryPoint,
 } from "@/lib/authz";
 import { courierCashSummary } from "@/lib/courier-ledger";
@@ -126,7 +126,7 @@ async function revalidateQueue(locale: string) {
 
 /** Staff verified the transfer arrived → settle the ledger. */
 export async function approveRemitClaim(claimId: string): Promise<Result> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("SETTLEMENT");
   if (!staffId) return { error: "forbidden" };
   const locale = await getLocale();
 
@@ -257,7 +257,7 @@ export async function rejectRemitClaim(
   claimId: string,
   reason: string,
 ): Promise<Result> {
-  const staffId = await requireDeliveryManagerId();
+  const staffId = await requireDeliveryScope("SETTLEMENT");
   if (!staffId) return { error: "forbidden" };
   const locale = await getLocale();
 

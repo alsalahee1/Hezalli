@@ -1,7 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Truck } from "lucide-react";
 
-import { requireDeliveryManagerId } from "@/lib/authz";
+import { requireDeliveryScope } from "@/lib/authz";
 import { listFleetsWithStats } from "@/lib/fleet";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
@@ -11,7 +11,7 @@ import { FleetCreateForm } from "@/components/admin/fleet-create-form";
 // Admin fleet console: every fleet-partner with rolled-up figures, plus a
 // create form. Each row links to the fleet's roster + settings.
 export async function FleetsView({ base }: { base: string }) {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("FLEET");
   if (!adminId) return <Forbidden />;
   const t = await getTranslations("AdminFleets");
   const format = await getFormatter();
