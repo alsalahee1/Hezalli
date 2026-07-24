@@ -215,17 +215,21 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
                 shelfRef.current || undefined,
               );
       if (res.ok) {
-        push(
-          true,
+        // Lead with WHERE the parcel goes so the operator just reads and places
+        // it — the shelf is auto-assigned when they didn't type one.
+        const base =
           m === "receive"
             ? res.reshelved
               ? t("shelfUpdated")
               : t("receivedOk")
             : m === "handover"
               ? t("handedOk")
-              : t("returnOk"),
-          code,
-        );
+              : t("returnOk");
+        const withShelf =
+          (m === "receive" || m === "return") && res.shelf
+            ? `${t("shelfBadge", { code: res.shelf })} — ${base}`
+            : base;
+        push(true, withShelf, code);
         if (m === "handover" && driverRef.current) {
           void loadManifest(driverRef.current);
         }

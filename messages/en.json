@@ -3243,7 +3243,14 @@
     "labelsUpdate": "Update",
     "labelsCalloutTitle": "Print shelf labels",
     "labelsCalloutBody": "QR labels for your bays — scan instead of typing shelf codes.",
-    "labelsTab": "Shelf labels"
+    "labelsTab": "Shelf labels",
+    "shelfAutoTitle": "Automatic shelf placement",
+    "shelfAutoOn": "On — {count} bays registered. Received parcels are placed on the least-busy bay automatically; the shelf shows on the scan.",
+    "shelfAutoOff": "Off — register your bays to auto-place parcels so the counter never picks or types a shelf.",
+    "shelfAutoEnable": "Turn on with these bays",
+    "shelfAutoUpdate": "Update bays from this grid",
+    "shelfAutoDisable": "Turn off",
+    "shelfAutoHint": "Uses the rows × bays above. Adding bays keeps existing ones — parcels already shelved are untouched."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

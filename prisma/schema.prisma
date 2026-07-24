@@ -423,9 +423,31 @@ model DeliveryPoint {
   payoutRequests PointPayoutRequest[]
   remitClaims    RemitClaim[]
   staff          PointStaff[]
+  shelves        PointShelf[]
 
   @@index([governorate, status])
   @@index([ownerId])
+}
+
+// A physical bay in a point's storage area (docs §42e). Registering shelves
+// (seeded from the printable labels grid) lets the counter AUTO-PLACE each
+// received parcel on the least-busy bay instead of the operator choosing one —
+// the parcel's shelfCode is set from here at the receive scan. Occupancy is
+// derived live from Shipment.shelfCode, never stored, so it can't drift.
+model PointShelf {
+  id        String        @id @default(cuid())
+  pointId   String
+  // The human bay code (e.g. "A1", "B3") — matches Shipment.shelfCode and the
+  // printed label QR ("hezalli:shelf:<code>").
+  code      String
+  // Optional cap on parcels this bay holds (null = unlimited). Assignment skips
+  // a full bay and rolls to the next.
+  capacity  Int?
+  createdAt DateTime      @default(now())
+  point     DeliveryPoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@unique([pointId, code])
+  @@index([pointId])
 }
 
 // A hub operator's request to be paid their earnings balance, mirroring the
