@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import { assignManyCouriers } from "@/lib/actions/courier";
 import { useRouter } from "@/i18n/navigation";
 import type { CourierOpt } from "@/components/admin/dispatch-assign";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 
 // Bulk-assign every currently-unassigned parcel in a chosen governorate to one
 // driver — for when a courier takes a whole area. Groups are unassigned-only.
@@ -48,11 +50,11 @@ export function DispatchBulkAssign({
         <Users className="text-muted-foreground size-4" />
         {t("bulkTitle")}
       </div>
-      <select
+      <Select
         value={gov}
         onChange={(e) => setGov(e.target.value)}
         disabled={pending}
-        className="h-9 rounded-md border bg-transparent px-3 text-sm disabled:opacity-50"
+        className="w-auto"
         aria-label={t("bulkGovernorate")}
       >
         {groups.map((g) => (
@@ -60,12 +62,12 @@ export function DispatchBulkAssign({
             {g.governorate} ({g.ids.length})
           </option>
         ))}
-      </select>
-      <select
+      </Select>
+      <Select
         value={driver}
         onChange={(e) => setDriver(e.target.value)}
         disabled={pending}
-        className="h-9 rounded-md border bg-transparent px-3 text-sm disabled:opacity-50"
+        className="w-auto"
         aria-label={t("assignTo")}
       >
         <option value="">{t("bulkPickDriver")}</option>
@@ -74,15 +76,10 @@ export function DispatchBulkAssign({
             {c.name}
           </option>
         ))}
-      </select>
-      <button
-        type="button"
-        onClick={run}
-        disabled={pending || !driver || !group}
-        className="bg-primary text-primary-foreground h-9 rounded-md px-4 text-sm font-medium disabled:opacity-50"
-      >
+      </Select>
+      <Button type="button" onClick={run} disabled={pending || !driver || !group}>
         {pending ? t("saving") : t("bulkAssign")}
-      </button>
+      </Button>
       {msg ? (
         <span className="text-muted-foreground text-xs">{msg}</span>
       ) : null}

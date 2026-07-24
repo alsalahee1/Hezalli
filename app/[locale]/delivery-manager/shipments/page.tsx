@@ -9,6 +9,8 @@ import {
   ShipmentBulkList,
   type ShipmentRow,
 } from "@/components/delivery-manager/shipment-bulk-list";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
@@ -139,7 +141,7 @@ export default async function DeliveryManagerShipmentsPage({
       key={href}
       href={href}
       className={cn(
-        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        "flex min-h-9 items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
         active
           ? "bg-primary text-primary-foreground border-primary"
           : "text-muted-foreground hover:text-foreground",
@@ -179,19 +181,14 @@ export default async function DeliveryManagerShipmentsPage({
       </div>
 
       <form className="flex max-w-md gap-2">
-        <input
+        <Input
           type="search"
           name="q"
           defaultValue={query}
           placeholder={t("searchPlaceholder")}
-          className="border-input bg-background h-9 flex-1 rounded-md border px-3 text-sm"
+          className="flex-1"
         />
-        <button
-          type="submit"
-          className="bg-primary text-primary-foreground h-9 rounded-md px-4 text-sm font-medium"
-        >
-          {t("search")}
-        </button>
+        <Button type="submit">{t("search")}</Button>
       </form>
 
       <a

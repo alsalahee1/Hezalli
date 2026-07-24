@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
 import { adminAddPointBranch } from "@/lib/actions/point-application";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Ops tool (docs §42j): create an additional branch for an existing owner (or
 // onboard one directly), found by email/phone. Collapsed by default so it
@@ -47,7 +49,7 @@ export function AddBranchForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-primary inline-flex items-center gap-1.5 text-sm font-medium"
+        className="text-primary flex min-h-10 items-center gap-1.5 text-sm font-medium"
       >
         <Plus className="size-4" /> {t("branchAddTitle")}
       </button>
@@ -64,27 +66,22 @@ export function AddBranchForm() {
       <p className="text-muted-foreground text-xs">{t("branchAddHint")}</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {fields.map((f) => (
-          <input
+          <Input
             key={f}
             name={f}
             placeholder={t(`branch_${f}`)}
-            className="h-9 rounded-md border bg-transparent px-3 text-sm"
             dir={f === "owner" || f === "phone" ? "ltr" : undefined}
           />
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="bg-primary text-primary-foreground h-9 rounded-md px-3 text-sm font-medium disabled:opacity-50"
-        >
+        <Button type="submit" disabled={pending}>
           {t("branchAddBtn")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-muted-foreground text-sm"
+          className="text-muted-foreground flex min-h-10 items-center text-sm"
         >
           {t("branchCancel")}
         </button>

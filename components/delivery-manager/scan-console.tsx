@@ -169,66 +169,68 @@ export function ScanConsole() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5">
-        {MODES.map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => pickMode(m)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              mode === m
-                ? "bg-primary text-primary-foreground border-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t(`shipStatus_${m}`)}
-          </button>
-        ))}
+    <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-6 md:space-y-0">
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-1.5">
+          {MODES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => pickMode(m)}
+              className={cn(
+                "min-h-10 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors",
+                mode === m
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t(`shipStatus_${m}`)}
+            </button>
+          ))}
+        </div>
+        <p className="text-muted-foreground text-xs">{t("scanModeHint")}</p>
+
+        {supported === false ? (
+          <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
+            <Camera className="mb-1 inline size-4" /> {t("scanNoCamera")}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border bg-black">
+            <video
+              ref={videoRef}
+              className="mx-auto max-h-72 w-full object-contain"
+              muted
+              playsInline
+            />
+          </div>
+        )}
+
+        <form
+          className="flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = manual.trim();
+            if (v) {
+              setManual("");
+              void handle(v);
+            }
+          }}
+        >
+          <div className="relative flex-1">
+            <Keyboard className="text-muted-foreground pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2" />
+            <Input
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              placeholder={t("scanManual")}
+              className="ps-9"
+              dir="ltr"
+            />
+          </div>
+          <Button type="submit" disabled={busy}>
+            {t("apply")}
+          </Button>
+        </form>
       </div>
-      <p className="text-muted-foreground text-xs">{t("scanModeHint")}</p>
-
-      {supported === false ? (
-        <div className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
-          <Camera className="mb-1 inline size-4" /> {t("scanNoCamera")}
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-lg border bg-black">
-          <video
-            ref={videoRef}
-            className="mx-auto max-h-72 w-full object-contain"
-            muted
-            playsInline
-          />
-        </div>
-      )}
-
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const v = manual.trim();
-          if (v) {
-            setManual("");
-            void handle(v);
-          }
-        }}
-      >
-        <div className="relative flex-1">
-          <Keyboard className="text-muted-foreground pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2" />
-          <Input
-            value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            placeholder={t("scanManual")}
-            className="h-10 ps-9"
-            dir="ltr"
-          />
-        </div>
-        <Button type="submit" disabled={busy}>
-          {t("apply")}
-        </Button>
-      </form>
 
       {feed.length > 0 ? (
         <ul className="divide-y rounded-lg border">

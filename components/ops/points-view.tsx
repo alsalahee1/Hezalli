@@ -1,13 +1,12 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
 import { prisma } from "@/lib/prisma";
-import { setPointStatus } from "@/lib/actions/point-application";
 import { getSetting } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { PointApplicationActions } from "@/components/admin/point-application-actions";
 import { AddBranchForm } from "@/components/admin/add-branch-form";
-import { Button } from "@/components/ui/button";
+import { PointStatusToggle } from "@/components/admin/point-status-toggle";
 
 // Admin review queue for "become a delivery point" applications plus the live
 // partner-hub network: each point's held-parcel count, balance owed, and a
@@ -225,25 +224,7 @@ export async function PointsView({ base }: { base: string }) {
                         {t("paused")}
                       </span>
                     ) : null}
-                    <form action={setPointStatus}>
-                      <input type="hidden" name="pointId" value={p.id} />
-                      <input
-                        type="hidden"
-                        name="status"
-                        value={p.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"}
-                      />
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant="outline"
-                        className={cn(
-                          "h-7 text-xs",
-                          p.status === "ACTIVE" && "text-destructive",
-                        )}
-                      >
-                        {p.status === "ACTIVE" ? t("suspend") : t("activate")}
-                      </Button>
-                    </form>
+                    <PointStatusToggle pointId={p.id} status={p.status} />
                   </span>
                 </li>
               );

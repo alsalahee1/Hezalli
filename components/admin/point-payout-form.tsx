@@ -45,7 +45,7 @@ export function PointPayoutForm({ pointId }: { pointId: string }) {
             type="button"
             onClick={() => setKind(k)}
             className={
-              "rounded-full border px-3 py-1 text-xs font-medium " +
+              "min-h-9 rounded-full border px-3 py-2 text-xs font-medium " +
               (kind === k
                 ? "border-primary bg-primary/5 text-foreground"
                 : "text-muted-foreground")

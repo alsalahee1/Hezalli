@@ -12,6 +12,7 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import type { DriverStats } from "@/lib/fleet";
 
 // Admin manages a fleet's roster: add a courier, set/clear the partner owner,
@@ -50,11 +51,11 @@ export function FleetRoster({
     <div className="space-y-3">
       {/* Add a courier */}
       <div className="flex flex-wrap items-end gap-2">
-        <select
+        <Select
           aria-label={t("addCourier")}
           value={pick}
           onChange={(e) => setPick(e.target.value)}
-          className="h-9 min-w-56 rounded-md border bg-transparent px-3 text-sm"
+          className="min-w-56 w-auto"
         >
           <option value="">{t("addCourierPlaceholder")}</option>
           {assignable.map((c) => (
@@ -62,7 +63,7 @@ export function FleetRoster({
               {c.label}
             </option>
           ))}
-        </select>
+        </Select>
         <Button
           type="button"
           size="sm"

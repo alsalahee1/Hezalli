@@ -10,6 +10,7 @@ import { GOVERNORATES } from "@/lib/yemen";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type ZoneRow = { id: string; name: string; governorates: string[] };
 
@@ -23,6 +24,7 @@ export function ShippingZoneManager({ zones }: { zones: ZoneRow[] }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [err, setErr] = useState<string | null>(null);
   const [conflict, setConflict] = useState<string[]>([]);
+  const { confirm, dialog } = useConfirm();
 
   const label = (value: string) =>
     GOVERNORATES.find((g) => g.value === value)?.[
@@ -68,14 +70,24 @@ export function ShippingZoneManager({ zones }: { zones: ZoneRow[] }) {
       router.refresh();
     });
 
-  const remove = (id: string) =>
+  const remove = async (id: string, name: string) => {
+    if (
+      !(await confirm(t("deleteConfirm", { name }), {
+        title: t("deleteTitle"),
+        destructive: true,
+        confirmLabel: t("delete"),
+      }))
+    )
+      return;
     start(async () => {
       await deleteZone(id);
       router.refresh();
     });
+  };
 
   return (
     <div className="space-y-4">
+      {dialog}
       <div className="flex justify-end">
         <Button size="sm" onClick={openNew} disabled={pending}>
           <Plus className="size-4" /> {t("addZone")}
@@ -102,7 +114,7 @@ export function ShippingZoneManager({ zones }: { zones: ZoneRow[] }) {
                 <label
                   key={g.value}
                   className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm",
+                    "flex min-h-10 cursor-pointer items-center gap-2 rounded-md border px-2.5 py-2 text-sm",
                     editing.govs.has(g.value)
                       ? "border-primary bg-primary/5"
                       : "hover:border-muted-foreground/40",
@@ -173,7 +185,7 @@ export function ShippingZoneManager({ zones }: { zones: ZoneRow[] }) {
                   size="sm"
                   variant="outline"
                   className="text-destructive"
-                  onClick={() => remove(z.id)}
+                  onClick={() => remove(z.id, z.name)}
                   disabled={pending}
                 >
                   <Trash2 className="size-4" /> {t("delete")}
