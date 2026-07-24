@@ -64,14 +64,14 @@ export function RefundButton({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("refundReason")}
-            className="h-9 w-56"
+            className="w-56"
           />
           <Input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder={t("refundAmount", { max: maxAmount })}
-            className="h-9 w-56"
+            className="w-56"
             dir="ltr"
           />
           <label className="text-muted-foreground flex items-center gap-2 text-xs">

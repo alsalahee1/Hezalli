@@ -52,7 +52,7 @@ function ModerationCell({ row }: { row: AdminProductRow }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("reasonPlaceholder")}
-            className="h-8 w-36 text-xs"
+            className="w-36 text-xs"
           />
           <Button
             size="sm"

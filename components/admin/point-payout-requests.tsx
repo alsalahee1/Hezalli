@@ -73,7 +73,7 @@ export function PointPayoutRequests({
                       setRefs((s) => ({ ...s, [r.id]: e.target.value }))
                     }
                     placeholder={t("payRefPlaceholder")}
-                    className="h-9 w-48"
+                    className="w-48"
                   />
                   <Button
                     size="sm"

@@ -84,7 +84,7 @@ export function WithdrawalQueue({ rows }: { rows: WithdrawalRow[] }) {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={t("reference")}
-                className="h-9 max-w-xs"
+                className="max-w-xs"
               />
               <Button
                 size="sm"
@@ -101,7 +101,7 @@ export function WithdrawalQueue({ rows }: { rows: WithdrawalRow[] }) {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={t("rejectReason")}
-                className="h-9 max-w-xs"
+                className="max-w-xs"
               />
               <Button
                 size="sm"

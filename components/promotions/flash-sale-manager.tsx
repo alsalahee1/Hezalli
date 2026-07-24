@@ -13,6 +13,8 @@ import {
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type ProductOption = {
   title: string;
@@ -57,6 +59,7 @@ export function FlashSaleManager({
   const [variantId, setVariantId] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [stockLimit, setStockLimit] = useState("");
+  const { confirm, dialog } = useConfirm();
 
   const run = (fn: () => Promise<{ error?: string }>, after?: () => void) =>
     start(async () => {
@@ -78,6 +81,7 @@ export function FlashSaleManager({
 
   return (
     <div className="space-y-6">
+      {dialog}
       {/* Create sale */}
       <div className="space-y-3 rounded-lg border p-4">
         <h2 className="font-semibold">{t("createTitle")}</h2>
@@ -156,7 +160,14 @@ export function FlashSaleManager({
                   variant="outline"
                   className="text-destructive"
                   disabled={pending}
-                  onClick={() => run(() => deleteFlashSale(s.id))}
+                  onClick={() =>
+                    void confirm(t("deleteSaleConfirm"), {
+                      title: t("deleteSale"),
+                      destructive: true,
+                    }).then((ok) => {
+                      if (ok) run(() => deleteFlashSale(s.id));
+                    })
+                  }
                 >
                   <Trash2 className="size-4" /> {t("deleteSale")}
                 </Button>
@@ -184,7 +195,14 @@ export function FlashSaleManager({
                         variant="ghost"
                         className="text-destructive"
                         disabled={pending}
-                        onClick={() => run(() => removeFlashItem(it.id))}
+                        onClick={() =>
+                          void confirm(t("removeItemConfirm"), {
+                            title: t("deleteSale"),
+                            destructive: true,
+                          }).then((ok) => {
+                            if (ok) run(() => removeFlashItem(it.id));
+                          })
+                        }
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -197,10 +215,10 @@ export function FlashSaleManager({
                 <div className="flex flex-wrap items-end gap-2 border-t pt-3">
                   <label className="flex flex-col gap-1 text-xs font-medium">
                     {t("product")}
-                    <select
+                    <Select
                       value={variantId}
                       onChange={(e) => setVariantId(e.target.value)}
-                      className="h-9 max-w-xs rounded-md border bg-transparent px-2 text-sm"
+                      className="max-w-xs"
                     >
                       <option value="">—</option>
                       {variantOptions.map((v) => (
@@ -208,7 +226,7 @@ export function FlashSaleManager({
                           {v.label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                   <label className="flex flex-col gap-1 text-xs font-medium">
                     {t("salePrice")}

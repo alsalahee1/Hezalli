@@ -7,6 +7,7 @@ import { forceOrderStatus } from "@/lib/actions/admin-oversight";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 const STATUSES = [
   "PENDING",
@@ -53,22 +54,22 @@ export function ForceStatus({
       </Button>
       {open ? (
         <div className="flex flex-col items-end gap-2">
-          <select
+          <Select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="bg-background h-9 w-56 rounded-md border px-3 text-sm"
+            className="w-56"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {t(`status_${s}`)}
               </option>
             ))}
-          </select>
+          </Select>
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("forceNote")}
-            className="h-9 w-56"
+            className="w-56"
           />
           <Button
             size="sm"

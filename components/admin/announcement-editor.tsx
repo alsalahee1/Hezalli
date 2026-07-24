@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/announcement";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export function AnnouncementEditor({ current }: { current: Announcement }) {
   const t = useTranslations("AdminSettings");
@@ -24,13 +25,12 @@ export function AnnouncementEditor({ current }: { current: Announcement }) {
         <h2 className="font-semibold">{t("announcementTitle")}</h2>
         <p className="text-muted-foreground text-sm">{t("announcementDesc")}</p>
       </div>
-      <textarea
+      <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
         maxLength={200}
         placeholder={t("announcementPlaceholder")}
-        className="w-full rounded-md border bg-transparent p-2 text-sm outline-none"
       />
       <label className="flex items-center gap-2 text-sm">
         <input

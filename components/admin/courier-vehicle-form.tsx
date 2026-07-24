@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { setCourierVehicle } from "@/lib/actions/courier";
 import { VEHICLE_TYPES } from "@/lib/validations/courier";
 import { useRouter } from "@/i18n/navigation";
+import { Select } from "@/components/ui/select";
 
 // Ops picks the vehicle a courier drives (saved on change, like the dispatch
 // assign select). The vehicle caps how much weight / how many parcels
@@ -39,11 +40,11 @@ export function CourierVehicleForm({
 
   return (
     <div className="flex items-center gap-2">
-      <select
+      <Select
         value={value}
         disabled={pending}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 rounded-md border bg-transparent px-3 text-sm disabled:opacity-50"
+        className="w-auto"
         aria-label={t("vehicleLabel")}
       >
         <option value="">{t("vehicleNone")}</option>
@@ -52,7 +53,7 @@ export function CourierVehicleForm({
             {t(`vehicle_${v}`)}
           </option>
         ))}
-      </select>
+      </Select>
       {pending ? (
         <span className="text-muted-foreground text-xs">{t("saving")}</span>
       ) : err ? (

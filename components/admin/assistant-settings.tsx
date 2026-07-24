@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/upload/image-uploader";
 import { ShadiIcon } from "@/components/ai/shadi-icon";
 
@@ -196,7 +198,7 @@ export function AssistantSettings({
       {/* ── Status & identity ── */}
       <section className="space-y-4 rounded-lg border p-5">
         <SectionTitle icon={ShadiIcon} title={t("statusTitle")} />
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -224,7 +226,7 @@ export function AssistantSettings({
               aria-selected={tab === bot.id}
               onClick={() => setTab(bot.id)}
               className={cn(
-                "flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
+                "flex min-h-11 items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
                 tab === bot.id
                   ? "border-primary text-primary"
                   : "text-muted-foreground hover:text-foreground border-transparent",
@@ -320,7 +322,7 @@ export function AssistantSettings({
             {/* Persona (role) */}
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">{t("persona")}</span>
-              <textarea
+              <Textarea
                 value={f.personas[activeBotCard.id] ?? ""}
                 onChange={(e) =>
                   setBotText("personas", activeBotCard.id, e.target.value)
@@ -328,7 +330,6 @@ export function AssistantSettings({
                 rows={5}
                 maxLength={4000}
                 placeholder={t("personaPlaceholder")}
-                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
               />
               <span className="text-muted-foreground block text-xs">
                 {t("personaHint")}
@@ -338,7 +339,7 @@ export function AssistantSettings({
             {/* Greeting */}
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">{t("greeting")}</span>
-              <textarea
+              <Textarea
                 value={f.greetings[activeBotCard.id] ?? ""}
                 onChange={(e) =>
                   setBotText("greetings", activeBotCard.id, e.target.value)
@@ -346,7 +347,6 @@ export function AssistantSettings({
                 rows={2}
                 maxLength={600}
                 placeholder={t("greetingPlaceholder")}
-                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
               />
               <span className="text-muted-foreground block text-xs">
                 {t("greetingHint")}
@@ -427,18 +427,17 @@ export function AssistantSettings({
               <button
                 type="button"
                 onClick={() => set("intro", current.defaultIntro)}
-                className="text-primary text-xs hover:underline"
+                className="text-primary flex min-h-8 items-center text-xs hover:underline"
               >
                 {t("introReset")}
               </button>
             ) : null}
           </div>
-          <textarea
+          <Textarea
             value={f.intro}
             onChange={(e) => set("intro", e.target.value)}
             rows={5}
             maxLength={2000}
-            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
           />
           <span className="text-muted-foreground block text-xs">
             {t("introHint")}
@@ -497,7 +496,7 @@ export function AssistantSettings({
         <SectionTitle icon={MessageCircle} title={t("channelsTitle")} />
         <p className="text-muted-foreground text-sm">{t("channelsDesc")}</p>
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 py-1 text-sm">
             <input
               type="checkbox"
               className="size-4"
@@ -552,7 +551,7 @@ export function AssistantSettings({
             </div>
           )}
         </div>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -569,7 +568,7 @@ export function AssistantSettings({
       <section className="space-y-3 rounded-lg border p-5">
         <SectionTitle icon={Send} title={t("digestTitle")} />
         <p className="text-muted-foreground text-sm">{t("digestDesc")}</p>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input
             type="checkbox"
             className="size-4"
@@ -616,10 +615,9 @@ export function AssistantSettings({
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5">
             <span className="text-sm font-medium">{t("replyMode")}</span>
-            <select
+            <Select
               value={f.replyMode}
               onChange={(e) => set("replyMode", e.target.value)}
-              className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
             >
               <option value="">{t("useDefault")}</option>
               {REPLY_MODES.map((m) => (
@@ -627,17 +625,16 @@ export function AssistantSettings({
                   {t(`replyMode_${m}`)}
                 </option>
               ))}
-            </select>
+            </Select>
             <span className="text-muted-foreground block text-xs">
               {t("replyModeHint")}
             </span>
           </label>
           <label className="space-y-1.5">
             <span className="text-sm font-medium">{t("voice")}</span>
-            <select
+            <Select
               value={f.ttsVoice}
               onChange={(e) => set("ttsVoice", e.target.value)}
-              className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
             >
               <option value="">{t("useDefault")}</option>
               {VOICES.map((v) => (
@@ -645,7 +642,7 @@ export function AssistantSettings({
                   {v}
                 </option>
               ))}
-            </select>
+            </Select>
             <span className="text-muted-foreground block text-xs">
               {t("voiceHint")}
             </span>
@@ -653,13 +650,12 @@ export function AssistantSettings({
         </div>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{t("style")}</span>
-          <textarea
+          <Textarea
             value={f.ttsStyle}
             onChange={(e) => set("ttsStyle", e.target.value)}
             rows={2}
             maxLength={500}
             placeholder={t("stylePlaceholder")}
-            className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
           />
           <span className="text-muted-foreground block text-xs">
             {t("styleHint")}

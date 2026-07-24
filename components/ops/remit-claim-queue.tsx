@@ -76,7 +76,7 @@ export function RemitClaimQueue({ claims }: { claims: RemitClaimRow[] }) {
                   setReasons((s) => ({ ...s, [c.id]: e.target.value }))
                 }
                 placeholder={t("remitReasonPlaceholder")}
-                className="h-9 w-48"
+                className="w-48"
               />
               <Button
                 size="sm"

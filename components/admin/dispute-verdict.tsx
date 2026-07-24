@@ -8,6 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const OUTCOMES: DisputeOutcome[] = [
   "refund_buyer",
@@ -83,18 +84,17 @@ export function DisputeVerdict({
             step="0.5"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="h-9 w-40"
+            className="w-40"
             dir="ltr"
           />
         </label>
       ) : null}
 
-      <textarea
+      <Textarea
         value={decision}
         onChange={(e) => setDecision(e.target.value)}
         rows={3}
         placeholder={t("decisionPlaceholder")}
-        className="w-full rounded-md border bg-transparent p-2 text-sm outline-none"
       />
 
       {err ? (
