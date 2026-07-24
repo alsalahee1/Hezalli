@@ -64,6 +64,7 @@ export type SettingsInput = {
   queue_enabled: boolean;
   queue_slot_minutes: number;
   queue_slot_capacity: number;
+  queue_reminder_minutes: number;
   driver_cash_limit: number;
   driver_cod_max_age_hours: number;
   point_cash_limit: number;
@@ -164,6 +165,13 @@ export async function savePlatformSettings(
     !Number.isFinite(queueSlotCapacity) ||
     queueSlotCapacity < 0 ||
     queueSlotCapacity > 99
+  )
+    return { error: "badQueue" };
+  const queueReminderMinutes = int(input.queue_reminder_minutes);
+  if (
+    !Number.isFinite(queueReminderMinutes) ||
+    queueReminderMinutes < 0 ||
+    queueReminderMinutes > 240
   )
     return { error: "badQueue" };
   const maxAttempts = int(input.max_delivery_attempts);
@@ -351,6 +359,7 @@ export async function savePlatformSettings(
     queue_enabled: Boolean(input.queue_enabled),
     queue_slot_minutes: queueSlotMinutes,
     queue_slot_capacity: queueSlotCapacity,
+    queue_reminder_minutes: queueReminderMinutes,
     driver_cash_limit: driverCashLimit,
     driver_cod_max_age_hours: codMaxAge,
     point_cash_limit: pointCashLimit,

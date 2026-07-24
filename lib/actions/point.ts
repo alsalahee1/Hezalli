@@ -328,6 +328,44 @@ export async function setPointHours(
   return { ok: true };
 }
 
+// Per-hub arrival-queue slot cap (docs §45): how many bookings one time slot +
+// lane accepts here. Null clears the override → the hub falls back to the
+// platform `queue_slot_capacity`; 0 means no booking cap (walk-ins only).
+// Owner/manager only, audited.
+export async function setPointSlotCapacity(
+  cap: number | null,
+): Promise<Result> {
+  const gate = await requireDeliveryPoint();
+  if (!gate || !canManagePoint(gate.access)) return { error: "forbidden" };
+
+  let value: number | null = null;
+  if (cap !== null) {
+    value = Math.trunc(Number(cap));
+    if (!Number.isFinite(value) || value < 0 || value > 99) {
+      return { error: "badInput" };
+    }
+  }
+
+  await prisma.deliveryPoint.update({
+    where: { id: gate.pointId },
+    data: { slotCapacity: value },
+  });
+  await prisma.auditLog.create({
+    data: {
+      actorId: gate.userId,
+      action: "point.slotCapacity",
+      entity: "DeliveryPoint",
+      entityId: gate.pointId,
+      meta: { slotCapacity: value },
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/point/profile`);
+  revalidatePath(`/${locale}/points/${gate.pointId}/queue`);
+  return { ok: true };
+}
+
 // Multi-location (docs §42j): switch which of the owner's branches the point
 // app is operating. Validated against ownership of an ACTIVE branch, then
 // stored in the point_branch cookie that requireDeliveryPoint reads. Only an

@@ -1177,6 +1177,40 @@ settings (`queue_enabled`, `queue_slot_minutes` default 30,
 - [x] Unit test (slot math) + integration test (ticket numbering, call/serve/no-show, book→check-in, slot-full / already-queued, disabled switch, operator gating)
 - [x] This file kept current
 
+## 42l. v1.35 — Queue refinements: per-hub slot cap & slot reminders
+
+Two follow-ups to the v1.34 arrival queue, refining it without changing its
+shape:
+
+1. **Per-hub slot capacity.** The global `queue_slot_capacity` becomes a
+   default a hub can override (`DeliveryPoint.slotCapacity`): a busy hub allows
+   more bookings per slot, a small shop fewer. Null = fall back to the platform
+   setting; 0 = no booking cap (walk-ins only). `bookableSlots` reads the
+   override, so both the visitor picker and the in-transaction booking re-check
+   respect it. Owner/manager set it from `/point/profile`
+   (`setPointSlotCapacity`, gated + audited) — the same self-service pattern as
+   opening hours and vacation mode.
+
+2. **Approaching-slot reminder.** A booked visitor is nudged once when their
+   slot is within `queue_reminder_minutes` (default 15; 0 = off), so a
+   reservation doesn't slip. `sweepQueueReminders()` runs from the existing
+   `CRON_SECRET`-protected `/api/cron/points` endpoint alongside the
+   stale-parcel sweep; a one-shot `PointQueueEntry.remindedAt` guard (claimed
+   with a race-safe `updateMany` before the notification) keeps re-runs
+   harmless. Notifications only — the sweep never moves a parcel or touches
+   money.
+
+### Build checklist (v1.35)
+
+- [x] Schema: `DeliveryPoint.slotCapacity`, `PointQueueEntry.remindedAt` + migration
+- [x] Setting `queue_reminder_minutes` (default 15) + admin form field
+- [x] `bookableSlots` uses the per-hub cap (override → global fallback)
+- [x] `setPointSlotCapacity` (owner/manager gated, audited) + `/point/profile` editor
+- [x] `lib/point-queue-sweep.ts` `sweepQueueReminders()` (one-shot guard, active hubs) wired into `/api/cron/points`
+- [x] i18n (en + ar) for Point + AdminSettings
+- [x] Integration test (capacity override + fallback + gating; reminder fires once, skips far slots, honours the off switch)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

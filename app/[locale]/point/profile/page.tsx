@@ -13,6 +13,7 @@ import { getPlatformSettings } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 import { PointPauseToggle } from "@/components/point/point-pause-toggle";
 import { PointHoursEditor } from "@/components/point/point-hours-editor";
+import { PointSlotCapacityEditor } from "@/components/point/point-slot-capacity-editor";
 
 // The hub's own record card: the business details published in the public
 // /points directory, the capacity admins set, and the cash-limit breakdown
@@ -37,6 +38,7 @@ export default async function PointProfilePage() {
         city: true,
         addressLine: true,
         capacity: true,
+        slotCapacity: true,
         depositUsd: true,
         pausedAt: true,
         openingHours: true,
@@ -69,6 +71,16 @@ export default async function PointProfilePage() {
           counter keeps working for parcels already announced or held.
           Owner/manager only — a cashier can't close the hub. */}
       {canManage ? <PointPauseToggle paused={point.pausedAt != null} /> : null}
+
+      {/* Per-hub arrival-queue slot cap (docs §45): owner/manager tune how
+          many bookings a single slot accepts here, overriding the platform
+          default. Only while the queue feature is on. */}
+      {canManage && settings.queue_enabled ? (
+        <PointSlotCapacityEditor
+          initial={point.slotCapacity}
+          platformDefault={settings.queue_slot_capacity}
+        />
+      ) : null}
 
       {/* Weekly opening hours: an editor for owner/manager, a read-only
           open/closed line for everyone else. */}
