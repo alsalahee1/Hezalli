@@ -20,6 +20,7 @@ import {
   recordDailyUsage,
   type GuardReason,
 } from "./guards";
+import { recordFaqHit } from "./faq";
 import { logAiEvent } from "./stats";
 
 // Keep the last N turns (≈5 exchanges). Enough context for follow-ups without
@@ -199,6 +200,7 @@ export async function runChannelTurn(opts: {
     tokensIn: reply.usage.in,
     tokensOut: reply.usage.out,
   });
+  void recordFaqHit(bot, locale, displayText);
 
   return { reply };
 }
