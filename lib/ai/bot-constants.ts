@@ -50,22 +50,8 @@ export const BOTS: Record<BotId, BotDef> = {
 
 export const BOT_IDS = Object.keys(BOTS) as BotId[];
 
-// Old internal ids, kept only to remap pre-rename switcher cookies so a
-// shopper's saved choice survives the rename instead of silently resetting.
-const LEGACY_BOT_IDS: Record<string, BotId> = {
-  shadi: "sam",
-  jumana: "balqis",
-};
-
 export function isBotId(v: unknown): v is BotId {
   return typeof v === "string" && v in BOTS;
-}
-
-/** Map a possibly-legacy id ("shadi"/"jumana") to a current one, or null. */
-export function normalizeBotId(v: unknown): BotId | null {
-  if (isBotId(v)) return v;
-  if (typeof v === "string" && v in LEGACY_BOT_IDS) return LEGACY_BOT_IDS[v];
-  return null;
 }
 
 /** The character's display name in the shopper's language. */
