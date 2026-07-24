@@ -90,7 +90,26 @@ services:
       # Shared secret for the /api/cron/* endpoints; the cron sidecar below
       # sends it as a bearer token. Generated into .env by vps-deploy.sh.
       CRON_SECRET: ${CRON_SECRET:-}
+      # Image/file storage (lib/storage.ts). Default "local" writes to the
+      # uploads volume below (persists across redeploys). Set STORAGE_DRIVER=s3
+      # with the S3_* values to use any S3-compatible bucket (Cloudflare R2,
+      # Supabase, MinIO). Without this passthrough the container never sees the
+      # S3 vars, so it always fell back to local. See docs/STORAGE.md.
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
       PORT: "3000"
+    volumes:
+      # Persist locally-stored uploads (banners, avatars, product images,
+      # proof/KYC) across redeploys. Without this, files written to the local
+      # driver live only in the container's writable layer and are LOST every
+      # `up -d --build`, leaving banner/product image URLs 404ing after a
+      # deploy. Unused when STORAGE_DRIVER=s3.
+      - uploads:/app/.uploads
     networks:
       - hezalli-internal
       - traefik
@@ -149,3 +168,6 @@ networks:
 
 volumes:
   hezalli-db-data:
+  # Local storage driver's upload dir, mounted into the app at /app/.uploads so
+  # uploaded images survive container rebuilds/redeploys.
+  uploads:
