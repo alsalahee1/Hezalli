@@ -92,10 +92,10 @@ describe("delivery point application", () => {
 
     const user = await prisma.user.findUnique({
       where: { id: applicantId },
-      select: { roles: true, deliveryPoint: true },
+      select: { roles: true, deliveryPoints: true },
     });
     expect(user?.roles).not.toContain("DELIVERY_POINT");
-    expect(user?.deliveryPoint).toBeNull();
+    expect(user?.deliveryPoints).toEqual([]);
 
     // A second application while one is pending is refused.
     expect(await applyAsDeliveryPoint(undefined, applyForm())).toMatchObject({
@@ -128,10 +128,10 @@ describe("delivery point application", () => {
 
     const user = await prisma.user.findUnique({
       where: { id: applicantId },
-      select: { roles: true, deliveryPoint: true },
+      select: { roles: true, deliveryPoints: true },
     });
     expect(user?.roles).toContain("DELIVERY_POINT");
-    expect(user?.deliveryPoint).toMatchObject({
+    expect(user?.deliveryPoints[0]).toMatchObject({
       name: "Corner Store",
       governorate: "Aden",
       status: "ACTIVE",
@@ -139,7 +139,7 @@ describe("delivery point application", () => {
   });
 
   it("a suspended point locks the operator out of scan actions", async () => {
-    const point = await prisma.deliveryPoint.findUnique({
+    const point = await prisma.deliveryPoint.findFirst({
       where: { ownerId: applicantId },
       select: { id: true },
     });

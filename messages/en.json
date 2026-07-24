@@ -3170,7 +3170,8 @@
     "receiptDelivered": "Handed to the customer",
     "receiptFooter": "Collected via {locale} Point",
     "receiptNotFound": "No collected parcel matches that code at this point.",
-    "receiptBack": "Back to scan"
+    "receiptBack": "Back to scan",
+    "branchSwitch": "Switch branch"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
@@ -3294,7 +3295,22 @@
     "staffSince": "since {date}",
     "staffDeactivate": "Pause",
     "staffReactivate": "Reinstate",
-    "staffErr": "Couldn't update — try again."
+    "staffErr": "Couldn't update — try again.",
+    "branchAddTitle": "Add a branch",
+    "branchAddHint": "Create another hub for an existing owner (by email or phone), or onboard a new one.",
+    "branchAddBtn": "Create branch",
+    "branchAdded": "Branch created.",
+    "branchCancel": "Cancel",
+    "branch_owner": "Owner email or phone",
+    "branch_name": "Branch name",
+    "branch_phone": "Branch phone",
+    "branch_governorate": "Governorate",
+    "branch_city": "City",
+    "branch_addressLine": "Address",
+    "branchErr_forbidden": "Not allowed.",
+    "branchErr_badInput": "Fill in all fields.",
+    "branchErr_ownerNotFound": "No account matches that email or phone.",
+    "branchErr_isStaff": "That account works as point staff and can't own branches."
   },
   "DeliveryProof": {
     "title": "Proof of delivery",

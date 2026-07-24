@@ -42,7 +42,11 @@ export default async function ShopLayout({
             roles: true,
             wallet: { select: { availableUsd: true } },
             ownedFleet: { select: { isActive: true } },
-            deliveryPoint: { select: { status: true } },
+            deliveryPoints: {
+              where: { status: "ACTIVE" },
+              select: { id: true },
+              take: 1,
+            },
           },
         })
       : Promise.resolve(null),
@@ -104,7 +108,7 @@ export default async function ShopLayout({
             isCourier={user?.roles.includes("COURIER") ?? false}
             isPointOperator={
               (user?.roles.includes("DELIVERY_POINT") &&
-                user?.deliveryPoint?.status === "ACTIVE") ??
+                (user?.deliveryPoints.length ?? 0) > 0) ??
               false
             }
             isFleetOwner={user?.ownedFleet?.isActive ?? false}

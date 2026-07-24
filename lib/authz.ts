@@ -1,5 +1,8 @@
+import { cookies } from "next/headers";
+
 import { auth } from "@/auth";
 import type { PointAccess } from "@/lib/point-access";
+import { POINT_BRANCH_COOKIE, resolveActiveBranch } from "@/lib/point-branch";
 import { prisma } from "@/lib/prisma";
 
 // Returns the current user's id only if they are an active ADMIN (checked
@@ -127,7 +130,13 @@ export async function requireDeliveryPoint(): Promise<{
       roles: true,
       isSuspended: true,
       deletedAt: true,
-      deliveryPoint: { select: { id: true, status: true } },
+      // An owner may run several branches (docs §42j); the one they're
+      // operating comes from the point_branch cookie, defaulting to the first.
+      deliveryPoints: {
+        where: { status: "ACTIVE" },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      },
       pointStaff: {
         select: {
           role: true,
@@ -138,11 +147,15 @@ export async function requireDeliveryPoint(): Promise<{
     },
   });
   if (!u || u.isSuspended || u.deletedAt) return null;
-  if (
-    u.roles.includes("DELIVERY_POINT") &&
-    u.deliveryPoint?.status === "ACTIVE"
-  ) {
-    return { userId: id, pointId: u.deliveryPoint.id, access: "OWNER" };
+  if (u.roles.includes("DELIVERY_POINT") && u.deliveryPoints.length > 0) {
+    // Only a multi-branch owner needs the cookie; the common single-branch
+    // case skips it (and avoids reading cookies outside a request scope).
+    const cookie =
+      u.deliveryPoints.length > 1
+        ? (await cookies()).get(POINT_BRANCH_COOKIE)?.value
+        : undefined;
+    const branch = resolveActiveBranch(u.deliveryPoints, cookie);
+    if (branch) return { userId: id, pointId: branch.id, access: "OWNER" };
   }
   const staff = u.pointStaff;
   if (staff?.isActive && staff.point.status === "ACTIVE") {

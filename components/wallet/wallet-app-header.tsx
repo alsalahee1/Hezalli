@@ -34,7 +34,11 @@ export async function WalletAppHeader({ backHref }: { backHref?: string }) {
         select: {
           roles: true,
           ownedFleet: { select: { isActive: true } },
-          deliveryPoint: { select: { status: true } },
+          deliveryPoints: {
+            where: { status: "ACTIVE" },
+            select: { id: true },
+            take: 1,
+          },
         },
       });
       dash = dashboardHref({
@@ -43,7 +47,7 @@ export async function WalletAppHeader({ backHref }: { backHref?: string }) {
         isCourier: user?.roles.includes("COURIER"),
         isPointOperator:
           user?.roles.includes("DELIVERY_POINT") &&
-          user?.deliveryPoint?.status === "ACTIVE",
+          (user?.deliveryPoints.length ?? 0) > 0,
         isFleetOwner: user?.ownedFleet?.isActive ?? false,
       });
     }

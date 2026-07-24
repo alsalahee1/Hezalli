@@ -115,7 +115,11 @@ async function main() {
   // Needs an ACTIVE DeliveryPoint on top of the DELIVERY_POINT role.
   const point = await prisma.user.findUnique({
     where: { email: "point@hezalli.com" },
-    select: { id: true, roles: true, deliveryPoint: { select: { id: true } } },
+    select: {
+      id: true,
+      roles: true,
+      deliveryPoints: { select: { id: true }, take: 1 },
+    },
   });
 
   if (!point) {
@@ -129,7 +133,7 @@ async function main() {
         passwordHash,
         roles: ["DELIVERY_POINT"],
         locale: "ar",
-        deliveryPoint: {
+        deliveryPoints: {
           create: {
             name: POINT.name,
             phone: POINT.phone,
@@ -151,8 +155,13 @@ async function main() {
       data: {
         roles: { set: roles },
         passwordHash,
-        deliveryPoint: point.deliveryPoint
-          ? { update: { status: "ACTIVE" } }
+        deliveryPoints: point.deliveryPoints[0]
+          ? {
+              update: {
+                where: { id: point.deliveryPoints[0].id },
+                data: { status: "ACTIVE" },
+              },
+            }
           : {
               create: {
                 name: POINT.name,
