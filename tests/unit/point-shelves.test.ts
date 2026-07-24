@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { pickShelf, type ShelfSlot } from "@/lib/point-shelves";
+import {
+  buildShelfMonitor,
+  pickShelf,
+  type ShelfSlot,
+} from "@/lib/point-shelves";
 
 const slots = (...codes: string[]): ShelfSlot[] =>
   codes.map((code) => ({ code, capacity: null, zone: null }));
@@ -148,5 +152,70 @@ describe("pickShelf", () => {
       const sameCity = new Map<string, number>();
       expect(pickShelf(shelves, occ, undefined, sameCity)).toBe("A2");
     });
+  });
+});
+
+describe("buildShelfMonitor", () => {
+  // A fixed "now" so the day maths is deterministic.
+  const now = new Date("2026-07-24T12:00:00Z").getTime();
+  const daysAgo = (n: number) => new Date(now - n * 86_400_000);
+
+  it("reports an empty bay as load 0 with no age", () => {
+    const [bay] = buildShelfMonitor(slots("A1"), [], [], now);
+    expect(bay).toMatchObject({
+      code: "A1",
+      load: 0,
+      agedCount: 0,
+      oldestAgeDays: null,
+    });
+  });
+
+  it("merges load, oldest age, and aged count onto the right bay", () => {
+    const bays = buildShelfMonitor(
+      slots("A1", "A2"),
+      [
+        { code: "A1", load: 3, oldestMovedAt: daysAgo(6) },
+        { code: "A2", load: 1, oldestMovedAt: daysAgo(0) },
+      ],
+      [{ code: "A1", agedCount: 2 }],
+      now,
+    );
+    expect(bays[0]).toMatchObject({
+      code: "A1",
+      load: 3,
+      agedCount: 2,
+      oldestAgeDays: 6,
+    });
+    // A2 has a parcel but none aged, and it moved today → 0 days, no aged count.
+    expect(bays[1]).toMatchObject({
+      code: "A2",
+      load: 1,
+      agedCount: 0,
+      oldestAgeDays: 0,
+    });
+  });
+
+  it("carries the bay's zone and capacity through unchanged", () => {
+    const shelves: ShelfSlot[] = [
+      { code: "B1", capacity: 5, zone: "DISPATCH" },
+    ];
+    const [bay] = buildShelfMonitor(
+      shelves,
+      [{ code: "B1", load: 2, oldestMovedAt: daysAgo(1) }],
+      [],
+      now,
+    );
+    expect(bay).toMatchObject({ capacity: 5, zone: "DISPATCH", load: 2 });
+  });
+
+  it("floors the age to whole days", () => {
+    const [bay] = buildShelfMonitor(
+      slots("A1"),
+      // 47 hours ago → 1 whole day, not 2.
+      [{ code: "A1", load: 1, oldestMovedAt: new Date(now - 47 * 3_600_000) }],
+      [],
+      now,
+    );
+    expect(bay.oldestAgeDays).toBe(1);
   });
 });

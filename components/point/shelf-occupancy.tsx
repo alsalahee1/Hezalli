@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
-import { Boxes } from "lucide-react";
+import { Boxes, ChevronRight } from "lucide-react";
 
 import type { ShelfLoad, ShelfZone } from "@/lib/point-shelves";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 // At-a-glance occupancy of every registered bay, grouped by area, so the
@@ -23,14 +24,20 @@ export async function ShelfOccupancy({ loads }: { loads: ShelfLoad[] }) {
 
   return (
     <div className="space-y-3 rounded-xl border p-3 print:hidden">
-      <div>
-        <p className="flex items-center gap-1.5 text-sm font-semibold">
-          <Boxes className="size-4" /> {t("shelfLoadTitle")}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          {t("shelfLoadSummary", { parcels: total, bays: loads.length })}
-        </p>
-      </div>
+      <Link
+        href="/point/shelves"
+        className="hover:bg-muted/40 -m-1 flex items-start gap-2 rounded-lg p-1 transition-colors"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-sm font-semibold">
+            <Boxes className="size-4" /> {t("shelfLoadTitle")}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {t("shelfLoadSummary", { parcels: total, bays: loads.length })}
+          </p>
+        </div>
+        <ChevronRight className="text-muted-foreground size-4 shrink-0 rtl:rotate-180" />
+      </Link>
 
       <div className="space-y-3">
         {groups.map((g) => {

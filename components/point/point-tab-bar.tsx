@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Boxes,
   CircleHelp,
   FileText,
   History,
@@ -69,6 +70,7 @@ export function PointTabBar({ access }: { access: PointAccess }) {
               { href: "/point/labels", label: t("labelsTab"), icon: Tags },
             ]
           : []),
+        { href: "/point/shelves", label: t("shelvesTab"), icon: Boxes },
         { href: "/point/layout", label: t("layoutTab"), icon: Map },
         { href: "/point/how", label: t("howTab"), icon: CircleHelp },
       ]}

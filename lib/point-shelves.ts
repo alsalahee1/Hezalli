@@ -148,3 +148,104 @@ export async function pointShelfLoads(pointId: string): Promise<ShelfLoad[]> {
   ]);
   return shelves.map((s) => ({ ...s, load: occupancy.get(s.code) ?? 0 }));
 }
+
+// The richer per-bay view behind the shelves monitor (/point/shelves): on top
+// of the live load it carries the AGE of what's sitting there — the oldest
+// held parcel's days, and how many are past the stale threshold — because a
+// full bay is a space problem but an old parcel is money (returns, refunds,
+// unhappy buyers). Age uses the parcel's updatedAt (days since it last moved),
+// the same clock the dashboard's aged badge uses, so the two never disagree.
+export type ShelfMonitorBay = {
+  code: string;
+  zone: ShelfZone | null;
+  capacity: number | null;
+  load: number;
+  // Held parcels on this bay whose last move was longer ago than the stale
+  // threshold — the count that should prompt a nudge or return.
+  agedCount: number;
+  // Days since the oldest held parcel on this bay last moved (null = empty).
+  oldestAgeDays: number | null;
+};
+
+type ShelfLoadRow = {
+  code: string;
+  load: number;
+  oldestMovedAt: Date | null;
+};
+
+// Pure merge of the registered bays with the live load/age aggregates, so the
+// day-boundary maths is unit-testable without a database (`now` is injected).
+// A bay with no held parcels comes back load 0, agedCount 0, oldestAgeDays null.
+export function buildShelfMonitor(
+  shelves: ShelfSlot[],
+  loads: ShelfLoadRow[],
+  aged: { code: string; agedCount: number }[],
+  now: number,
+): ShelfMonitorBay[] {
+  const loadMap = new Map(loads.map((l) => [l.code, l]));
+  const agedMap = new Map(aged.map((a) => [a.code, a.agedCount]));
+  return shelves.map((s) => {
+    const l = loadMap.get(s.code);
+    const oldest = l?.oldestMovedAt ?? null;
+    return {
+      code: s.code,
+      zone: s.zone,
+      capacity: s.capacity,
+      load: l?.load ?? 0,
+      agedCount: agedMap.get(s.code) ?? 0,
+      oldestAgeDays: oldest
+        ? Math.floor((now - oldest.getTime()) / 86_400_000)
+        : null,
+    };
+  });
+}
+
+// Live monitor rows for every registered bay: load, cap, zone, plus the age
+// signal. Two lightweight aggregate passes over the held parcels (one for
+// count + oldest, one for the aged count past `staleDays`) keep it cheap — no
+// parcel rows are pulled. Occupancy stays derived, never stored, so it can't
+// drift. Empty (no bays registered) → empty array; the page shows a set-up hint.
+export async function pointShelfMonitor(
+  pointId: string,
+  staleDays: number,
+): Promise<ShelfMonitorBay[]> {
+  const cutoff = new Date(Date.now() - staleDays * 86_400_000);
+  const [shelves, loadRows, agedRows] = await Promise.all([
+    prisma.pointShelf.findMany({
+      where: { pointId },
+      orderBy: { code: "asc" },
+      select: { code: true, zone: true, capacity: true },
+    }),
+    prisma.shipment.groupBy({
+      by: ["shelfCode"],
+      where: {
+        atPointId: pointId,
+        status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
+        shelfCode: { not: null },
+      },
+      _count: { _all: true },
+      _min: { updatedAt: true },
+    }),
+    prisma.shipment.groupBy({
+      by: ["shelfCode"],
+      where: {
+        atPointId: pointId,
+        status: { in: ["AT_POINT", "RETURNED_TO_POINT"] },
+        shelfCode: { not: null },
+        updatedAt: { lt: cutoff },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+  const loads: ShelfLoadRow[] = loadRows
+    .filter((r) => r.shelfCode)
+    .map((r) => ({
+      code: r.shelfCode as string,
+      load: r._count._all,
+      oldestMovedAt: r._min.updatedAt ?? null,
+    }));
+  const aged = agedRows
+    .filter((r) => r.shelfCode)
+    .map((r) => ({ code: r.shelfCode as string, agedCount: r._count._all }));
+  return buildShelfMonitor(shelves, loads, aged, Date.now());
+}
