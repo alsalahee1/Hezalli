@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { sweepQueueReminders } from "@/lib/point-queue-sweep";
 import { sweepPointParcels } from "@/lib/point-sweep";
 
 // Scheduled endpoint (e.g. Vercel Cron) that sweeps parcels held at Hezalli
 // Points: reminds buyers about waiting PUDO parcels, flags lapsed pickup
-// windows, and nudges hubs holding stuck courier parcels. Protected by
-// CRON_SECRET; one-shot guards on Shipment make re-runs harmless.
+// windows, nudges hubs holding stuck courier parcels, and nudges booked queue
+// visitors whose arrival slot is near (docs §45). Protected by CRON_SECRET;
+// one-shot guards make re-runs harmless.
 export const dynamic = "force-dynamic";
 
 async function run(req: Request) {
@@ -17,8 +19,11 @@ async function run(req: Request) {
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const result = await sweepPointParcels();
-  return NextResponse.json({ ok: true, ...result });
+  const [parcels, queue] = await Promise.all([
+    sweepPointParcels(),
+    sweepQueueReminders(),
+  ]);
+  return NextResponse.json({ ok: true, ...parcels, ...queue });
 }
 
 export async function GET(req: Request) {

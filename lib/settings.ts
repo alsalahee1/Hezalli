@@ -105,10 +105,14 @@ export type PlatformSettings = {
   pickup_window_days: number;
   // Hub arrival queue & slot booking (docs §44). Master switch; the length of a
   // bookable slot in minutes; and how many visits a single slot+lane accepts
-  // before it shows full (0 = no booking cap, walk-ins always allowed).
+  // before it shows full (0 = no booking cap, walk-ins always allowed). The
+  // capacity is the platform default; a hub may override it (DeliveryPoint
+  // .slotCapacity, docs §45). `queue_reminder_minutes` is how long before a
+  // booked slot the visitor is nudged (docs §45); 0 turns the reminder off.
   queue_enabled: boolean;
   queue_slot_minutes: number;
   queue_slot_capacity: number;
+  queue_reminder_minutes: number;
   // Wallet top-ups (Step 19.3). Per-transaction bounds + a standing balance cap
   // that limits how much unverified users may hold; VERIFIED users get a
   // multiple of the cap (see lib/wallet-limits.ts).
@@ -294,6 +298,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   queue_enabled: true,
   queue_slot_minutes: 30,
   queue_slot_capacity: 4,
+  queue_reminder_minutes: 15,
   wallet_topup_min_usd: 1,
   wallet_topup_max_usd: 500,
   wallet_balance_cap_usd: 2000,

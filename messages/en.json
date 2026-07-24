@@ -1894,7 +1894,9 @@
     "queueSlotMinutesHint": "How long each bookable drop-off/collection window is.",
     "queueSlotCapacity": "Bookings per slot",
     "queueSlotCapacityHint": "Max reservations one slot & lane accepts (0 = uncapped; walk-ins always allowed).",
-    "err_badQueue": "Enter a valid slot length (5–240 min) and per-slot capacity (0–99)."
+    "err_badQueue": "Enter a valid slot length (5–240 min) and per-slot capacity (0–99).",
+    "queueReminderMinutes": "Slot reminder (minutes)",
+    "queueReminderMinutesHint": "How long before a booked slot the visitor is nudged to check in. 0 turns the reminder off."
   },
   "AdminAssistant": {
     "title": "AI assistant — Sam & Balqis",
@@ -3341,7 +3343,10 @@
     "err_closed": "This hub isn’t taking arrivals right now.",
     "err_noHours": "This hub hasn’t published opening hours.",
     "err_empty": "No one is waiting.",
-    "err_unauthorized": "Please sign in first."
+    "err_unauthorized": "Please sign in first.",
+    "slotCapTitle": "Slot capacity",
+    "slotCapHint": "How many bookings each time slot accepts at this hub. Leave blank to use the platform default ({default}); 0 means booking is off (walk-ins only).",
+    "slotCapDefault": "Default ({default})"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",

@@ -401,6 +401,10 @@ model DeliveryPoint {
   // Max parcels held/inbound at once (null = unlimited). Gates NEW routing
   // only — counter scans always accept announced parcels. See §8 of the docs.
   capacity       Int?
+  // Per-slot arrival-queue booking cap for THIS hub (docs §45): how many
+  // reservations one time slot + lane accepts. Null = fall back to the global
+  // `queue_slot_capacity` setting; 0 = no booking cap (walk-ins only).
+  slotCapacity   Int?
   // Security deposit Hezalli holds from this operator (docs §32). Optional —
   // raises the point's unremitted-cash limit 1:1. Admin-set, audited.
   depositUsd     Decimal                    @default(0) @db.Decimal(12, 2)
@@ -479,6 +483,9 @@ model PointQueueEntry {
   // size the wait. Null/1 otherwise.
   parcelCount Int?
   note        String?
+  // One-shot guard for the approaching-slot reminder sweep (docs §45): stamped
+  // when the booked visitor has been nudged that their slot is near.
+  remindedAt  DateTime?
   bookedAt    DateTime? // a future slot was reserved
   arrivedAt   DateTime? // checked in — joined the line
   calledAt    DateTime? // operator called them to the counter

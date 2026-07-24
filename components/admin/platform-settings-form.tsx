@@ -76,6 +76,7 @@ export function PlatformSettingsForm({
     queue_enabled: current.queue_enabled,
     queue_slot_minutes: String(current.queue_slot_minutes),
     queue_slot_capacity: String(current.queue_slot_capacity),
+    queue_reminder_minutes: String(current.queue_reminder_minutes),
     driver_cash_limit: String(current.driver_cash_limit),
     driver_cod_max_age_hours: String(current.driver_cod_max_age_hours),
     point_cash_limit: String(current.point_cash_limit),
@@ -149,6 +150,7 @@ export function PlatformSettingsForm({
         queue_enabled: f.queue_enabled,
         queue_slot_minutes: Number(f.queue_slot_minutes),
         queue_slot_capacity: Number(f.queue_slot_capacity),
+        queue_reminder_minutes: Number(f.queue_reminder_minutes),
         driver_cash_limit: Number(f.driver_cash_limit),
         driver_cod_max_age_hours: Number(f.driver_cod_max_age_hours),
         point_cash_limit: Number(f.point_cash_limit),
@@ -397,6 +399,17 @@ export function PlatformSettingsForm({
             type="number"
             value={f.queue_slot_capacity}
             onChange={(e) => set("queue_slot_capacity", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field
+          label={t("queueReminderMinutes")}
+          hint={t("queueReminderMinutesHint")}
+        >
+          <Input
+            type="number"
+            value={f.queue_reminder_minutes}
+            onChange={(e) => set("queue_reminder_minutes", e.target.value)}
             dir="ltr"
           />
         </Field>

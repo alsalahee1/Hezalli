@@ -118,7 +118,12 @@ export async function bookableSlots(
     getPlatformSettings(),
     prisma.deliveryPoint.findUnique({
       where: { id: pointId },
-      select: { status: true, pausedAt: true, openingHours: true },
+      select: {
+        status: true,
+        pausedAt: true,
+        openingHours: true,
+        slotCapacity: true,
+      },
     }),
   ]);
   if (!settings.queue_enabled) return { open: false, reason: "disabled" };
@@ -129,7 +134,8 @@ export async function bookableSlots(
   if (!hours || !hasAnyHours(hours)) return { open: false, reason: "noHours" };
 
   const slotMinutes = settings.queue_slot_minutes;
-  const capacity = settings.queue_slot_capacity;
+  // Per-hub override wins; null falls back to the platform default.
+  const capacity = point.slotCapacity ?? settings.queue_slot_capacity;
   const starts = slotsForDay(hours, now, slotMinutes);
   const serviceDay = serviceDayFor(now);
   const nowMin = minutesNowAden(now);
