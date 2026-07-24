@@ -17,6 +17,7 @@ import {
   saveAssistantAvatar,
   saveAssistantKey,
   saveAssistantSettings,
+  saveDefaultBot,
   sendTestDigest,
 } from "@/lib/actions/settings";
 import type { BotId } from "@/lib/ai/bot-constants";
@@ -212,18 +213,21 @@ export function AssistantSettings({
       {/* ── Characters (tabbed): each bot's image, default, persona, greeting ── */}
       <section className="space-y-4 rounded-lg border p-5">
         <SectionTitle icon={Users} title={t("charactersTitle")} />
-        {/* Shadi / Jumana tabs */}
-        <div className="flex gap-2">
+        {/* Shadi / Jumana tabs — a real tab bar: the active one sits on a
+            bottom border so the panel below reads as that tab's own page. */}
+        <div role="tablist" className="-mb-px flex gap-1 border-b">
           {current.bots.map((bot) => (
             <button
               key={bot.id}
               type="button"
+              role="tab"
+              aria-selected={tab === bot.id}
               onClick={() => setTab(bot.id)}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
                 tab === bot.id
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "text-muted-foreground hover:bg-muted",
+                  ? "border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent",
               )}
             >
               <span className="bg-muted size-6 shrink-0 overflow-hidden rounded-full border">
@@ -291,14 +295,19 @@ export function AssistantSettings({
               </span>
             </div>
 
-            {/* Default character */}
+            {/* Default character — persists on click (its own action) so the
+                choice sticks without waiting for the form's Save button. */}
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="radio"
                 name="defaultBot"
                 className="size-4"
+                disabled={pending}
                 checked={f.defaultBot === activeBotCard.id}
-                onChange={() => set("defaultBot", activeBotCard.id)}
+                onChange={() => {
+                  set("defaultBot", activeBotCard.id);
+                  run(() => saveDefaultBot(activeBotCard.id as BotId));
+                }}
               />
               {f.defaultBot === activeBotCard.id
                 ? t("isDefault")

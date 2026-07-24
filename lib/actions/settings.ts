@@ -704,6 +704,38 @@ export async function saveAssistantAvatar(
   return { ok: true };
 }
 
+// --- The default character ---------------------------------------------------
+// Which bot greets visitors before they pick one. Split out from the big
+// settings save so the admin's "Set as default" choice on a character tab
+// persists on click, instead of waiting for the form's Save button.
+
+export async function saveDefaultBot(botId: BotId): Promise<Result> {
+  const adminId = await requireAdminId();
+  if (!adminId) return { error: "forbidden" };
+  if (!isBotId(botId)) return { error: "badBot" };
+
+  await prisma.platformSetting.upsert({
+    where: { key: "ai_default_bot" },
+    create: { key: "ai_default_bot", value: botId },
+    update: { value: botId },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminId,
+      action: "settings.ai_default_bot",
+      entity: "PlatformSetting",
+      entityId: "ai_default_bot",
+      meta: { bot: botId },
+    },
+  });
+
+  const locale = await getLocale();
+  revalidatePath(`/${locale}/admin/assistant`);
+  revalidatePath(`/${locale}`, "layout");
+  return { ok: true };
+}
+
 // --- Exchange rates (DECISIONS.md §3) -------------------------------------
 // Display rates per currency zone: Yemen's rial trades at very different
 // values in the Sana'a-area (old rial) and Aden-area (new rial) markets, so
