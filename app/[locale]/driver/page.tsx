@@ -25,7 +25,6 @@ import { LocationShare } from "@/components/driver/location-share";
 import { OfferActions } from "@/components/driver/offer-actions";
 import { PauseToggle } from "@/components/driver/pause-toggle";
 import { PushToggle } from "@/components/driver/push-toggle";
-import { QrCode } from "@/components/orders/qr-code";
 import { StarRating } from "@/components/product/star-rating";
 import { DeliveryWindowBadge } from "@/components/orders/delivery-window-badge";
 
@@ -203,20 +202,6 @@ export default async function DriverJobsPage() {
           </p>
         </div>
       ) : null}
-
-      {/* Collection QR: point staff scan this to pull up the driver's manifest
-          at the counter (docs/DELIVERY-POINTS.md §3). Collapsed by default. */}
-      <details className="rounded-xl border">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-          {t("myQr")}
-        </summary>
-        <div className="flex flex-col items-center gap-2 border-t px-4 py-4">
-          <QrCode value={`hezalli:driver:${courierId}`} size={180} />
-          <p className="text-muted-foreground text-center text-xs">
-            {t("myQrHint")}
-          </p>
-        </div>
-      </details>
 
       {/* Skip the morning scrum at the hub: book a collection slot or check
           in on arrival, and see your place in line (docs §44). */}
