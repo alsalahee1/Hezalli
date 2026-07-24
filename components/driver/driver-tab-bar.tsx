@@ -42,6 +42,12 @@ export function DriverTabBar() {
       active ? "text-primary" : "text-muted-foreground hover:text-foreground",
     );
 
+  const iconWrapCls = (active: boolean) =>
+    cn(
+      "flex size-9 items-center justify-center rounded-lg transition-colors",
+      active && "bg-primary/15",
+    );
+
   const renderTab = (tab: Tab) => {
     const Icon = tab.icon;
     const active = isActive(tab);
@@ -52,11 +58,13 @@ export function DriverTabBar() {
           aria-current={active ? "page" : undefined}
           className={cls(active)}
         >
-          <Icon
-            className="size-6"
-            strokeWidth={active ? 2.4 : 1.9}
-            aria-hidden
-          />
+          <span className={iconWrapCls(active)}>
+            <Icon
+              className="size-5"
+              strokeWidth={active ? 2.2 : 1.9}
+              aria-hidden
+            />
+          </span>
           {tab.label}
         </Link>
       </li>
