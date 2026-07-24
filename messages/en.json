@@ -1874,6 +1874,9 @@
   "AdminAssistant": {
     "title": "AI assistant — Shadi & Jumana",
     "desc": "Per-character settings live in the Shadi / Jumana tabs; credentials, channels, voice and limits are shared below.",
+    "navSettings": "Settings",
+    "navStats": "Statistics",
+    "navFaq": "Knowledge base",
     "statusTitle": "Status & identity",
     "enabled": "Show Shadi across the platform",
     "enabledHint": "Master switch — hides the chat bubble and pauses the chat API and messaging channels.",
