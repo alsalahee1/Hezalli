@@ -170,6 +170,61 @@
     height: 1.25rem;
     accent-color: var(--primary);
   }
+
+  /* Native-app tap feedback: every button/link presses down slightly and
+     dims on touch/click, replacing the flat "nothing happened" feel of a
+     website. Also drops the tap-highlight flash mobile browsers draw on
+     <a>/<button> — one of the biggest tells that something is a website
+     viewed on a phone rather than an app. Elements that manage their own
+     `transform` (carousel arrows, RTL icon mirroring, sheet open/close)
+     keep working: Tailwind's utilities layer always wins over this base
+     layer, so this only ever affects elements with no transform of their
+     own. */
+  button:not(:disabled),
+  a,
+  [role="button"],
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button:not(:disabled):active,
+  a:active,
+  [role="button"]:active,
+  summary:active {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+}
+
+@layer utilities {
+  /* Elements already carry their own transition-* utility (transition-colors,
+     transition-all, …) far more often than not; that utility's
+     transition-property always wins over the base layer above, which would
+     silently drop transform/opacity from the animated list and make the
+     press effect above snap instead of ease. Re-declared here — in the same
+     layer Tailwind's own utilities compile into — with `all` rather than an
+     enumerated list so it never needs to guess what any given element was
+     already transitioning. Same layer + equal-or-higher specificity is what
+     actually wins this tie (source order alone only decides equal-specificity
+     ties, and a bare `a` loses to any `.transition-colors` class outright —
+     hence `a[href]`, which is every real link anyway). */
+  button:not(:disabled),
+  a[href],
+  [role="button"],
+  summary {
+    transition-duration: 100ms;
+    transition-timing-function: ease;
+    transition-property: all;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):active,
+  a:active,
+  [role="button"]:active,
+  summary:active {
+    transform: none;
+  }
 }
 
 /* Diamond trim — the repeating rhombus border seen on tribal thawb
