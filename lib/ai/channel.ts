@@ -20,6 +20,7 @@ import {
   recordDailyUsage,
   type GuardReason,
 } from "./guards";
+import { logAiEvent } from "./stats";
 
 // Keep the last N turns (≈5 exchanges). Enough context for follow-ups without
 // letting the prompt grow unbounded.
@@ -183,6 +184,20 @@ export async function runChannelTurn(opts: {
     },
   });
   await recordDailyUsage(reply.usage, now).catch(() => {});
+
+  // Per-character analytics for the messaging channels. The chat id stands in
+  // as the anonymous "visitor" so distinct-user counts work per platform.
+  void logAiEvent({
+    bot,
+    channel: platform === "whatsapp" ? "whatsapp" : "telegram",
+    section: "store",
+    locale,
+    userId: existing?.userId ?? null,
+    visitorId: existing?.userId ? null : `${platform}:${chatId}`,
+    question: displayText,
+    tokensIn: reply.usage.in,
+    tokensOut: reply.usage.out,
+  });
 
   return { reply };
 }

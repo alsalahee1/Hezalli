@@ -10,9 +10,16 @@ import {
 import { getActiveBot } from "@/lib/ai/active-bot";
 import { checkGlobalCaps } from "@/lib/ai/guards";
 import { assistantReady, GeminiError } from "@/lib/ai/gemini";
+import { logAiEvent, VISITOR_COOKIE } from "@/lib/ai/stats";
 import { prisma } from "@/lib/prisma";
 import { rateLimitAsync } from "@/lib/rate-limit";
 import { routing } from "@/i18n/routing";
+
+// A short opaque id for anonymous visitors, so per-character "users" can be
+// counted without an account. Not PII — a random tag scoped to the bot stats.
+function randomVisitorId(): string {
+  return `v_${crypto.randomUUID().replace(/-/g, "")}`;
+}
 
 // Best-effort client IP for throttling (behind the platform's proxy).
 function clientIp(req: NextRequest): string {
@@ -126,6 +133,11 @@ export async function POST(req: NextRequest) {
   // Which character is active for this shopper (cookie → admin default).
   const bot = await getActiveBot();
 
+  // Anonymous visitor id (for distinct-user stats); minted here if absent and
+  // set on the response below.
+  const existingVid = req.cookies.get(VISITOR_COOKIE)?.value;
+  const visitorId = existingVid || randomVisitorId();
+
   try {
     const reply = await runAssistant(history, {
       locale,
@@ -133,7 +145,31 @@ export async function POST(req: NextRequest) {
       section,
       bot,
     });
-    return NextResponse.json(reply);
+
+    // Log this turn for the per-character stats (fire-and-forget).
+    const lastUser = [...history].reverse().find((m) => m.role === "user");
+    void logAiEvent({
+      bot,
+      channel: "web",
+      section,
+      locale,
+      userId: session?.user?.id ?? null,
+      visitorId: session?.user?.id ? null : visitorId,
+      question: lastUser?.text ?? "",
+      tokensIn: reply.usage.in,
+      tokensOut: reply.usage.out,
+    });
+
+    const res = NextResponse.json(reply);
+    if (!existingVid) {
+      res.cookies.set(VISITOR_COOKIE, visitorId, {
+        maxAge: 60 * 60 * 24 * 365,
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+      });
+    }
+    return res;
   } catch (err) {
     // Rate limit / quota exhausted upstream — surface as a retryable 429 so the
     // UI can show a "busy, try again" message instead of a hard error.

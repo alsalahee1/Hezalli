@@ -111,6 +111,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/banners", key: "banners", icon: Images },
   { href: "/admin/audit", key: "audit", icon: History },
   { href: "/admin/assistant", key: "assistant", icon: ShadiIcon },
+  { href: "/admin/assistant/stats", key: "assistantStats", icon: BarChart3 },
   { href: "/admin/settings", key: "settings", icon: Settings },
   { href: "/admin/how", key: "how", icon: BookOpen },
 ];
