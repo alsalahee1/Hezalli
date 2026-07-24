@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { sweepQueueReminders } from "@/lib/point-queue-sweep";
+import {
+  sweepQueueNoShows,
+  sweepQueueReminders,
+} from "@/lib/point-queue-sweep";
 import { sweepPointParcels } from "@/lib/point-sweep";
 
 // Scheduled endpoint (e.g. Vercel Cron) that sweeps parcels held at Hezalli
@@ -19,11 +22,12 @@ async function run(req: Request) {
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const [parcels, queue] = await Promise.all([
+  const [parcels, queue, noShows] = await Promise.all([
     sweepPointParcels(),
     sweepQueueReminders(),
+    sweepQueueNoShows(),
   ]);
-  return NextResponse.json({ ok: true, ...parcels, ...queue });
+  return NextResponse.json({ ok: true, ...parcels, ...queue, ...noShows });
 }
 
 export async function GET(req: Request) {

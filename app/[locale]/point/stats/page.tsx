@@ -2,10 +2,13 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import {
   ChevronLeft,
   ChevronRight,
+  Clock,
   PackageCheck,
   RotateCcw,
   ShoppingBag,
   TrendingUp,
+  UserX,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -14,7 +17,8 @@ import { getLocale } from "next-intl/server";
 import { requireDeliveryPoint } from "@/lib/authz";
 import { canViewMoney } from "@/lib/point-access";
 import { monthRange } from "@/lib/point-statement";
-import { hubSummary } from "@/lib/point-stats";
+import { hubSummary, queueStats } from "@/lib/point-stats";
+import { getPlatformSettings } from "@/lib/settings";
 import { Link, redirect } from "@/i18n/navigation";
 
 // The hub's own scoreboard: the per-hub numbers admins already see on the
@@ -38,9 +42,11 @@ export default async function PointStatsPage({
     format.number(n, { style: "currency", currency: "USD" });
 
   const { from, to } = monthRange(month);
-  const [stats, allTime] = await Promise.all([
+  const [stats, allTime, settings, queue] = await Promise.all([
     hubSummary(gate.pointId, from, to),
     hubSummary(gate.pointId, new Date(0), new Date()),
+    getPlatformSettings(),
+    queueStats(gate.pointId, from, to),
   ]);
 
   const shift = (delta: number) => {
@@ -177,6 +183,57 @@ export default async function PointStatsPage({
           </div>
         </dl>
       </section>
+
+      {/* Arrival queue scoreboard (docs §46): throughput, no-shows, and how
+          long people waited this month — only when the queue feature is on and
+          there was activity. */}
+      {settings.queue_enabled && queue.total > 0 ? (
+        <section className="space-y-3 rounded-xl border p-4">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+            <Users className="size-4" /> {t("queueStatsTitle")}
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border p-3">
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                <Users className="size-3.5" /> {t("queueStatServed")}
+              </p>
+              <p className="mt-1 text-lg font-semibold" dir="ltr">
+                {queue.served}
+              </p>
+            </div>
+            <div className="rounded-xl border p-3">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-500">
+                <UserX className="size-3.5" /> {t("queueStatNoShowRate")}
+              </p>
+              <p className="mt-1 text-lg font-semibold" dir="ltr">
+                {queue.noShowRatePct == null ? "—" : `${queue.noShowRatePct}%`}
+              </p>
+            </div>
+            <div className="rounded-xl border p-3">
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                <Clock className="size-3.5" /> {t("queueStatAvgWait")}
+              </p>
+              <p className="mt-1 text-lg font-semibold" dir="ltr">
+                {queue.avgWaitMin == null
+                  ? "—"
+                  : t("queueStatMinutes", { min: queue.avgWaitMin })}
+              </p>
+            </div>
+            <div className="rounded-xl border p-3">
+              <p className="text-muted-foreground text-xs font-medium">
+                {t("queueStatWalkIns")}
+              </p>
+              <p className="mt-1 text-lg font-semibold" dir="ltr">
+                {queue.walkIns}
+                <span className="text-muted-foreground text-xs font-normal">
+                  {" "}
+                  / {queue.booked} {t("queueStatBooked")}
+                </span>
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

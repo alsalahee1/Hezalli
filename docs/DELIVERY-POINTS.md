@@ -1211,6 +1211,39 @@ shape:
 - [x] Integration test (capacity override + fallback + gating; reminder fires once, skips far slots, honours the off switch)
 - [x] This file kept current
 
+## 42m. v1.36 — Queue operations: no-show sweep, analytics & arrival ping
+
+Three finishing touches that make the arrival queue run itself and pay back the
+data it collects — no schema changes, all on the v1.34/1.35 tables:
+
+1. **No-show auto-expiry.** A booking nobody honours used to sit "open" all day,
+   quietly consuming its slot's capacity and resurfacing as the visitor's
+   current ticket (`myQueueEntry` isn't day-scoped). `sweepQueueNoShows()` — a
+   new phase on the `/api/cron/points` endpoint — closes them out: today's
+   `BOOKED` whose slot ended more than one slot-length ago (a grace window for
+   the slightly-late), plus any still-open entry left over from an earlier
+   service day. Pure state cleanup: no notification, no money.
+
+2. **Queue analytics.** `queueStats()` rolls the `PointQueueEntry` timestamps up
+   into a scoreboard — served, no-show rate, average arrival→served wait, and
+   the walk-in/booked split — surfaced as a section on the hub's own `/point/stats`
+   page (money-view tiers, month-navigated, shown only when the queue is on and
+   had activity). Operators can finally see when to add staff.
+
+3. **Operator new-arrival ping.** When a visitor checks in (a walk-in or a
+   booked arrival — not an idempotent re-check-in), the hub owner gets a
+   notification with the ticket number and lane: a doorbell for a counter that
+   isn't watching the queue screen.
+
+### Build checklist (v1.36)
+
+- [x] `sweepQueueNoShows()` (today's passed bookings + prior-day leftovers) wired into `/api/cron/points`
+- [x] `queueStats(pointId, from, to)` in `lib/point-stats.ts` + `/point/stats` queue section
+- [x] `checkInToPoint` pings the hub owner on a genuinely new arrival (locale-aware)
+- [x] i18n (en + ar) for the stats section
+- [x] Integration test (stale + today no-show expiry frees the visitor; analytics totals/rate/avg-wait; owner pinged once per arrival, not on repeat)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

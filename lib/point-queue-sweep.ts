@@ -81,3 +81,48 @@ export async function sweepQueueReminders(): Promise<QueueSweepResult> {
 
   return { reminded };
 }
+
+/**
+ * Close out bookings that were never honoured (docs §46), so a no-show stops
+ * consuming a slot's capacity and stops showing as the visitor's "current"
+ * ticket:
+ *  - today's BOOKED whose slot ended more than one slot-length ago (a grace
+ *    period so someone walking in a little late isn't cut off);
+ *  - any still-open entry left over from a previous service day.
+ * Pure state cleanup — no notification, no money.
+ */
+export async function sweepQueueNoShows(): Promise<{ expired: number }> {
+  const [enabled, slotMinutes] = await Promise.all([
+    getSetting("queue_enabled"),
+    getSetting("queue_slot_minutes"),
+  ]);
+  if (!enabled) return { expired: 0 };
+
+  const today = serviceDayFor();
+  const nowMin = minutesNowAden();
+  // Slot ends at slotStart + slotMinutes; add one slot of grace after that.
+  const cutoff = nowMin - 2 * slotMinutes;
+
+  const [todayGone, staleGone] = await Promise.all([
+    prisma.pointQueueEntry.updateMany({
+      where: {
+        status: "BOOKED",
+        serviceDay: today,
+        slotStart: { not: null, lte: cutoff },
+      },
+      data: { status: "NO_SHOW" },
+    }),
+    // Anything still open from an earlier day is dead — a stale booking would
+    // otherwise resurface as the visitor's active ticket (myQueueEntry isn't
+    // day-scoped).
+    prisma.pointQueueEntry.updateMany({
+      where: {
+        status: { in: ["BOOKED", "WAITING", "SERVING"] },
+        serviceDay: { lt: today },
+      },
+      data: { status: "NO_SHOW" },
+    }),
+  ]);
+
+  return { expired: todayGone.count + staleGone.count };
+}

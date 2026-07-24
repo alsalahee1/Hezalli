@@ -188,6 +188,7 @@ export async function checkInToPoint(input: {
         ok: true as const,
         ticketNo: updated.ticketNo,
         kind: entry.kind,
+        newArrival: true as const,
       };
     }
 
@@ -220,9 +221,45 @@ export async function checkInToPoint(input: {
         arrivedAt: new Date(),
       },
     });
-    return { ok: true as const, ticketNo: created.ticketNo, kind: input.kind };
+    return {
+      ok: true as const,
+      ticketNo: created.ticketNo,
+      kind: input.kind,
+      newArrival: true as const,
+    };
   });
   if (res.error) return { error: res.error };
+
+  // Ping the hub owner that someone just joined the line — a doorbell for a
+  // counter that isn't watching the queue screen. Only on a genuinely new
+  // arrival (not an idempotent re-check-in).
+  if (res.newArrival) {
+    const point = await prisma.deliveryPoint.findUnique({
+      where: { id: input.pointId },
+      select: { ownerId: true, owner: { select: { locale: true } } },
+    });
+    if (point) {
+      const ar = point.owner.locale === "ar";
+      const lane =
+        res.kind === "DROPOFF"
+          ? ar
+            ? "تسليم"
+            : "drop-off"
+          : ar
+            ? "استلام"
+            : "collection";
+      await notify({
+        userId: point.ownerId,
+        type: "SHIPMENT",
+        title: ar ? "وصول جديد إلى الطابور" : "New arrival in the queue",
+        body: ar
+          ? `التذكرة رقم ${res.ticketNo} (${lane}) بانتظار الخدمة.`
+          : `Ticket #${res.ticketNo} (${lane}) is waiting to be served.`,
+        link: `/point/queue`,
+        data: { pointId: input.pointId },
+      });
+    }
+  }
 
   await revalidateQueue(input.pointId);
   return { ok: true, ticketNo: res.ticketNo };

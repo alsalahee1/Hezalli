@@ -3347,7 +3347,14 @@
     "err_unauthorized": "Please sign in first.",
     "slotCapTitle": "Slot capacity",
     "slotCapHint": "How many bookings each time slot accepts at this hub. Leave blank to use the platform default ({default}); 0 means booking is off (walk-ins only).",
-    "slotCapDefault": "Default ({default})"
+    "slotCapDefault": "Default ({default})",
+    "queueStatsTitle": "Arrival queue",
+    "queueStatServed": "Served",
+    "queueStatNoShowRate": "No-show rate",
+    "queueStatAvgWait": "Avg wait",
+    "queueStatMinutes": "{min} min",
+    "queueStatWalkIns": "Walk-ins",
+    "queueStatBooked": "booked"
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
