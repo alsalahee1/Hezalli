@@ -30,6 +30,15 @@ export async function applyAsDeliveryPoint(
   const userId = session?.user?.id;
   if (!userId) return { formError: "notSignedIn" };
 
+  // Coords arrive as strings (or empty) from the hidden inputs — turn them into
+  // real numbers, or drop them so the optional schema fields stay absent.
+  const num = (v: FormDataEntryValue | null) => {
+    const s = typeof v === "string" ? v.trim() : "";
+    if (!s) return undefined;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
   const parsed = applyPointSchema.safeParse({
     pointName: formData.get("pointName"),
     fullName: formData.get("fullName"),
@@ -38,6 +47,8 @@ export async function applyAsDeliveryPoint(
     city: formData.get("city"),
     addressLine: formData.get("addressLine"),
     notes: formData.get("notes") || undefined,
+    lat: num(formData.get("lat")),
+    lng: num(formData.get("lng")),
     acceptTerms: formData.get("acceptTerms") === "on",
   });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
@@ -59,8 +70,17 @@ export async function applyAsDeliveryPoint(
   if (user.deliveryPointApplication?.status === "PENDING")
     return { formError: "alreadyPending" };
 
-  const { pointName, fullName, phone, governorate, city, addressLine, notes } =
-    parsed.data;
+  const {
+    pointName,
+    fullName,
+    phone,
+    governorate,
+    city,
+    addressLine,
+    notes,
+    lat,
+    lng,
+  } = parsed.data;
 
   // Upsert: first-time applicants create a row; previously-rejected ones reuse
   // it and reset the review fields so the queue shows a fresh PENDING request.
@@ -75,6 +95,8 @@ export async function applyAsDeliveryPoint(
       city,
       addressLine,
       notes: notes || null,
+      lat: lat ?? null,
+      lng: lng ?? null,
     },
     update: {
       pointName,
@@ -84,6 +106,8 @@ export async function applyAsDeliveryPoint(
       city,
       addressLine,
       notes: notes || null,
+      lat: lat ?? null,
+      lng: lng ?? null,
       status: "PENDING",
       reviewedById: null,
       reviewedAt: null,

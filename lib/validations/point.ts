@@ -20,6 +20,10 @@ export const applyPointSchema = z.object({
   city: z.string().trim().min(1, "cityRequired").max(60),
   addressLine: z.string().trim().min(5, "addressShort").max(200, "addressLong"),
   notes: z.string().trim().max(500, "notesLong").optional(),
+  // Optional precise location dropped by the applicant (GPS or map pin) so the
+  // hub lands on the map without an admin geocoding the written address.
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
   acceptTerms: z.literal(true, { error: "termsRequired" }),
 });
 

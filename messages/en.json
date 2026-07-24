@@ -3281,7 +3281,18 @@
     "addressShort": "Address is too short.",
     "addressLong": "Address is too long.",
     "notesLong": "Notes are too long.",
-    "termsRequired": "You must accept the terms."
+    "termsRequired": "You must accept the terms.",
+    "selectGovernorate": "Select governorate",
+    "locationHint": "Add your exact location (optional) — helps buyers and drivers find you.",
+    "locationPinned": "Location pinned · {gov}",
+    "pinLocation": "Use my location",
+    "repin": "Update location",
+    "locating": "Locating…",
+    "clearLocation": "Clear",
+    "showMap": "Map",
+    "hideMap": "Hide map",
+    "mapHint": "Drag the pin or tap the map to set your exact spot.",
+    "locationError": "Couldn’t get your location — try the map instead."
   },
   "AdminPoints": {
     "title": "Delivery points",

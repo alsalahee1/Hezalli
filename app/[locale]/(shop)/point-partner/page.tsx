@@ -33,11 +33,16 @@ export default async function PointPartnerPage({
 
   const session = await auth();
   let application: { status: string } | null = null;
+  // Prefill the form with what the account already holds so the applicant
+  // doesn't retype their own name and number.
+  let defaults = { fullName: "", phone: "" };
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
         roles: true,
+        name: true,
+        phone: true,
         deliveryPointApplication: { select: { status: true } },
       },
     });
@@ -46,6 +51,7 @@ export default async function PointPartnerPage({
       redirect({ href: "/point", locale });
     }
     application = user?.deliveryPointApplication ?? null;
+    defaults = { fullName: user?.name ?? "", phone: user?.phone ?? "" };
   }
 
   const t = await getTranslations("PointApply");
@@ -104,7 +110,10 @@ export default async function PointPartnerPage({
               {t("rejectedResubmit")}
             </p>
           ) : null}
-          <BecomePointForm />
+          <BecomePointForm
+            defaultFullName={defaults.fullName}
+            defaultPhone={defaults.phone}
+          />
         </div>
       )}
     </main>
