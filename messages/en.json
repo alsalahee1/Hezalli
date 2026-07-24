@@ -3003,7 +3003,7 @@
     "pickupBadge": "Pickup",
     "shelfLabel": "Shelf / bin (optional)",
     "shelfPlaceholder": "e.g. A3",
-    "shelfHint": "Where you're putting the parcel — shown again when a driver or buyer collects it. Re-scan a held parcel to move it.",
+    "shelfHint": "Where you're putting the parcel — shown again when a driver or buyer collects it. Scan a shelf label to set it without typing. Re-scan a held parcel to move it.",
     "shelfBadge": "Shelf {code}",
     "shelfUpdated": "Shelf updated — parcel re-shelved.",
     "err_pickupOnly": "This is a pickup parcel — the buyer collects it with their code (Pickup mode).",
@@ -3231,7 +3231,15 @@
     "searchScanBtn": "Scan",
     "searchScanTitle": "Scan a parcel",
     "searchScanHint": "Point the camera at the parcel label’s QR to open it.",
-    "searchScanManualLabel": "Enter tracking number"
+    "searchScanManualLabel": "Enter tracking number",
+    "shelfScanned": "Shelf set to {code} — scan parcels to shelve them here.",
+    "labelsTitle": "Shelf labels",
+    "labelsSubtitle": "Print a QR label for every bay and stick it on the shelf. At the counter, scan a label to set where parcels go — no shelf code to type.",
+    "labelsRows": "Rows (letters)",
+    "labelsBays": "Bays per row",
+    "labelsUpdate": "Update",
+    "labelsCalloutTitle": "Print shelf labels",
+    "labelsCalloutBody": "QR labels for your bays — scan instead of typing shelf codes."
   },
   "PointApply": {
     "title": "Become a Hezalli Point",
