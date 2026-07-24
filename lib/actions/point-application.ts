@@ -229,7 +229,7 @@ export async function reviewPointApplication(
 export async function adminAddPointBranch(
   formData: FormData,
 ): Promise<{ ok?: boolean; error?: string }> {
-  const adminId = await requireDeliveryManagerId();
+  const adminId = await requireDeliveryScope("POINTS");
   if (!adminId) return { error: "forbidden" };
 
   const identifier = String(formData.get("owner") ?? "").trim();
