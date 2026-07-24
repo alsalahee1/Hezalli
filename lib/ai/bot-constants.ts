@@ -27,8 +27,8 @@ export type BotDef = {
 export const BOTS: Record<BotId, BotDef> = {
   shadi: {
     id: "shadi",
-    nameEn: "Shadi",
-    nameAr: "شادي",
+    nameEn: "Sam",
+    nameAr: "سام",
     defaultAvatar: "/shadi.jpg",
     gender: "male",
     avatarKey: "ai_assistant_avatar",
@@ -37,8 +37,8 @@ export const BOTS: Record<BotId, BotDef> = {
   },
   jumana: {
     id: "jumana",
-    nameEn: "Jumana",
-    nameAr: "جُمانة",
+    nameEn: "Balqis",
+    nameAr: "بلقيس",
     defaultAvatar: "/jumana.png",
     gender: "female",
     avatarKey: "ai_avatar_jumana",
