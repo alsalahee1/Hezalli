@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, Keyboard, XCircle } from "lucide-react";
+import { Camera, CheckCircle2, Keyboard, Receipt, XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -13,7 +13,7 @@ import {
   pointReceiveReturn,
 } from "@/lib/actions/point";
 import type { ManifestRow } from "@/lib/point-core";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,9 @@ type Feedback = {
   text: string;
   code: string;
   at: number;
+  // Buyer delivery code for a successful pickup → offers a "print receipt"
+  // link on that feedback row (docs §42i).
+  receipt?: string;
 };
 
 // The point counter's scan station: pick what the scan MEANS (seller drop-off,
@@ -70,6 +73,13 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
   // drop-offs going onto the same shelf is typed once.
   const [shelf, setShelf] = useState("");
   const shelfRef = useRef("");
+  // Optional counter proof-of-pickup (docs §42h): who collected it + a photo.
+  // Per-buyer, so reset after each successful pickup (unlike the sticky shelf).
+  const [pickupName, setPickupName] = useState("");
+  const pickupNameRef = useRef("");
+  const [photoKey, setPhotoKey] = useState<string | null>(null);
+  const photoKeyRef = useRef<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [manual, setManual] = useState("");
   const [busy, setBusy] = useState(false);
   const [feed, setFeed] = useState<Feedback[]>([]);
@@ -95,8 +105,38 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
     void loadManifest(id);
   };
 
-  const push = (ok: boolean, text: string, code: string) =>
-    setFeed((f) => [{ ok, text, code, at: Date.now() }, ...f].slice(0, 8));
+  const push = (ok: boolean, text: string, code: string, receipt?: string) =>
+    setFeed((f) =>
+      [{ ok, text, code, at: Date.now(), receipt }, ...f].slice(0, 8),
+    );
+
+  // Clear the per-pickup proof fields after a collection completes.
+  const resetPickupProof = () => {
+    setPickupName("");
+    pickupNameRef.current = "";
+    setPhotoKey(null);
+    photoKeyRef.current = null;
+  };
+
+  // Upload a handover photo (same endpoint/pattern as the driver's proof).
+  const uploadPhoto = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set("file", file);
+      fd.set("folder", "proof");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = (await res.json().catch(() => null)) as {
+        key?: string;
+      } | null;
+      if (res.ok && data?.key) {
+        setPhotoKey(data.key);
+        photoKeyRef.current = data.key;
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // One scanned/typed code → one server action, per the current mode.
   const handle = async (raw: string) => {
@@ -119,7 +159,11 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
       const m = modeRef.current;
       // Pickup scans the BUYER's delivery QR/code, not the parcel label.
       if (m === "pickup") {
-        const res = await pointBuyerPickup(code);
+        const res = await pointBuyerPickup(
+          code,
+          pickupNameRef.current || undefined,
+          photoKeyRef.current || undefined,
+        );
         if (res.ok) {
           const base =
             res.codDue && res.codDue > 0
@@ -132,7 +176,9 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
               ? `${t("shelfBadge", { code: res.shelf })} — ${base}`
               : base,
             code,
+            code, // enables the "print receipt" link for this pickup
           );
+          resetPickupProof();
           router.refresh();
         } else {
           push(false, t(`err_${res.error ?? "notFound"}`), code);
@@ -267,9 +313,53 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
       </div>
 
       {mode === "pickup" ? (
-        <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-2 text-xs">
-          {t("pickupHint")}
-        </p>
+        <div className="space-y-2">
+          <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-2 text-xs">
+            {t("pickupHint")}
+          </p>
+          {/* Optional proof-of-pickup (docs §42h): who collected it + a photo.
+              Filled BEFORE scanning the buyer's QR; the buyer's code is still
+              the primary proof, these are extra evidence. */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">
+              {t("pickupRecipientLabel")}
+            </label>
+            <Input
+              value={pickupName}
+              onChange={(e) => {
+                setPickupName(e.target.value);
+                pickupNameRef.current = e.target.value;
+              }}
+              placeholder={t("pickupRecipientPlaceholder")}
+              maxLength={120}
+              className="h-10"
+            />
+          </div>
+          <label
+            className={cn(
+              "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium",
+              photoKey && "border-emerald-500/50 text-emerald-600",
+            )}
+          >
+            <Camera className="size-4" />
+            {uploading
+              ? t("pickupUploading")
+              : photoKey
+                ? t("pickupPhotoAdded")
+                : t("pickupAddPhoto")}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void uploadPhoto(f);
+              }}
+            />
+          </label>
+        </div>
       ) : null}
 
       {/* Where the parcel is being put — stamped on each receive/return scan
@@ -459,6 +549,14 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
                 <XCircle className="size-4 shrink-0 text-red-600" />
               )}
               <span className="min-w-0 flex-1 truncate">{f.text}</span>
+              {f.receipt ? (
+                <Link
+                  href={`/point/receipt/${encodeURIComponent(f.receipt)}`}
+                  className="text-primary inline-flex shrink-0 items-center gap-1 text-xs font-medium"
+                >
+                  <Receipt className="size-3.5" /> {t("receiptLink")}
+                </Link>
+              ) : null}
               <span className="text-muted-foreground text-xs" dir="ltr">
                 {f.code}
               </span>

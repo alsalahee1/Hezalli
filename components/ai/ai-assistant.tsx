@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, Send, Star, X } from "lucide-react";
+import { Bot, Loader2, Repeat, Send, Star, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
+import { BOT_COOKIE } from "@/lib/ai/bot-constants";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
 import { ShadiIcon } from "@/components/ai/shadi-icon";
+
+// Switch character: persist the choice in a cookie and reload so the server
+// re-resolves the avatar, name, and system-prompt identity.
+function switchTo(id: string) {
+  document.cookie = `${BOT_COOKIE}=${id}; path=/; max-age=31536000; SameSite=Lax`;
+  window.location.reload();
+}
 
 type ProductCard = {
   slug: string;
@@ -49,11 +57,15 @@ function sectionFor(pathname: string): Section {
   return "store";
 }
 
+type SwitcherBot = { id: string; name: string; avatar: string };
+
 export function AiAssistant({
-  avatar,
+  botId,
+  bots = [],
   greeting,
 }: {
-  avatar?: string;
+  botId?: string;
+  bots?: SwitcherBot[];
   greeting?: string;
 }) {
   const t = useTranslations("Assistant");
@@ -61,6 +73,12 @@ export function AiAssistant({
   const isRtl = locale === "ar";
   const pathname = usePathname();
   const section = sectionFor(pathname);
+  // The active character (from the list the server resolved), and the other one
+  // to offer switching to — shown by its own face so the change is obvious.
+  const activeBot = bots.find((b) => b.id === botId);
+  const otherBot = bots.find((b) => b.id !== botId);
+  const name = activeBot?.name || t("title");
+  const avatar = activeBot?.avatar || "";
 
   const [open, setOpen] = useState(false);
   const { mounted, shown } = useMountTransition(open, 200);
@@ -184,13 +202,38 @@ export function AiAssistant({
               <Bot className="size-5" />
             )}
             <div className="flex-1">
-              <p className="text-sm leading-tight font-semibold">
-                {t("title")}
-              </p>
+              <p className="text-sm leading-tight font-semibold">{name}</p>
               <p className="text-primary-foreground/80 text-xs">
                 {t("subtitle")}
               </p>
             </div>
+            {otherBot ? (
+              <button
+                type="button"
+                aria-label={t("switchTo", { name: otherBot.name })}
+                title={t("switchTo", { name: otherBot.name })}
+                onClick={() => switchTo(otherBot.id)}
+                className="ring-primary-foreground/40 hover:ring-primary-foreground focus-visible:ring-primary-foreground relative shrink-0 rounded-full ring-2 transition focus-visible:outline-none"
+              >
+                {/* The other character's face in full colour, so it's obvious
+                    who you'd switch to; a small swap badge marks the action. */}
+                {otherBot.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={otherBot.avatar}
+                    alt={otherBot.name}
+                    className="size-8 rounded-full bg-white object-cover"
+                  />
+                ) : (
+                  <span className="flex size-8 items-center justify-center">
+                    <Repeat className="size-4" />
+                  </span>
+                )}
+                <span className="bg-background text-primary absolute -end-1 -bottom-1 flex size-4 items-center justify-center rounded-full shadow ring-1 ring-black/5">
+                  <Repeat className="size-2.5" />
+                </span>
+              </button>
+            ) : null}
             <button
               type="button"
               aria-label={t("close")}
@@ -219,7 +262,7 @@ export function AiAssistant({
                   <ShadiIcon className="text-primary mx-auto size-8" />
                 )}
                 <p className="whitespace-pre-line">
-                  {greeting?.trim() || t("greeting")}
+                  {greeting?.trim() || t("greeting", { name })}
                 </p>
                 <div className="flex flex-col gap-2">
                   {suggestions.map((s) => (

@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
 import { requireAdminId } from "@/lib/authz";
+import { BOTS, isBotId, type BotId } from "@/lib/ai/bot-constants";
+import { DEFAULT_INTRO } from "@/lib/ai/prompt-defaults";
 import { getTelegramToken, telegramApi } from "@/lib/integrations/telegram";
 import { prisma } from "@/lib/prisma";
 import type { AiSettingKey, PlatformSettings } from "@/lib/settings";
@@ -423,8 +425,11 @@ export type AssistantSettingsInput = {
   spendCapUsd: number;
   telegramEnabled: boolean;
   whatsappEnabled: boolean;
-  persona: string;
-  greeting: string;
+  defaultBot: string;
+  intro: string;
+  // Per-character persona/greeting, keyed by bot id (e.g. { shadi, jumana }).
+  personas: Record<string, string>;
+  greetings: Record<string, string>;
   temperature: number;
   maxTokens: number;
 };
@@ -460,10 +465,22 @@ export async function saveAssistantSettings(
   if (!Number.isFinite(spendCap) || spendCap < 0 || spendCap > 1_000_000)
     return { error: "badCaps" };
 
-  // Persona/role + greeting are free text; temperature and reply length are
-  // clamped to the ranges Gemini accepts.
-  const persona = (input.persona || "").trim().slice(0, 4000);
-  const greeting = (input.greeting || "").trim().slice(0, 600);
+  // Base intro is free text; storing it verbatim would freeze the wording even
+  // if we later improve DEFAULT_INTRO, so an unchanged/blank intro normalises to
+  // "" (= use the default). Personas/greetings are per-character free text.
+  const introRaw = (input.intro || "").trim().slice(0, 2000);
+  const intro = introRaw === DEFAULT_INTRO.trim() ? "" : introRaw;
+  const botText: Array<[AiSettingKey, string]> = [];
+  for (const id of Object.keys(BOTS) as BotId[]) {
+    botText.push([
+      BOTS[id].personaKey,
+      (input.personas?.[id] || "").trim().slice(0, 4000),
+    ]);
+    botText.push([
+      BOTS[id].greetingKey,
+      (input.greetings?.[id] || "").trim().slice(0, 600),
+    ]);
+  }
   const temperature = Number(input.temperature);
   if (!Number.isFinite(temperature) || temperature < 0 || temperature > 1)
     return { error: "badTemperature" };
@@ -471,35 +488,37 @@ export async function saveAssistantSettings(
   if (!Number.isFinite(maxTokens) || maxTokens < 128 || maxTokens > 8192)
     return { error: "badMaxTokens" };
 
-  const values: Record<AiSettingKey, string | number | boolean> = {
-    ai_assistant_enabled: Boolean(input.enabled),
-    // Managed by its own action, but part of the AiSettingKey record type —
-    // filtered out below so this save never touches it.
-    ai_assistant_avatar: "",
-    ai_gemini_model: model,
-    ai_reply_mode: mode,
-    ai_tts_voice: voice,
-    ai_tts_style: style,
-    ai_max_per_hour: maxPerHour,
-    ai_daily_cap: dailyCap,
-    ai_spend_cap_usd: spendCap,
-    ai_channel_telegram: Boolean(input.telegramEnabled),
-    ai_channel_whatsapp: Boolean(input.whatsappEnabled),
-    ai_persona: persona,
-    ai_greeting: greeting,
-    ai_temperature: Math.round(temperature * 100) / 100,
-    ai_max_tokens: maxTokens,
-  };
-  const keys = (Object.keys(values) as AiSettingKey[]).filter(
-    (k) => k !== "ai_assistant_avatar",
-  );
+  const defaultBot = isBotId(input.defaultBot) ? input.defaultBot : "shadi";
+
+  // Shared keys written by this action. Avatars have their own action; the
+  // per-character persona/greeting keys are written from `botText` below.
+  const shared: Array<[AiSettingKey, string | number | boolean]> = [
+    ["ai_assistant_enabled", Boolean(input.enabled)],
+    ["ai_default_bot", defaultBot],
+    ["ai_gemini_model", model],
+    ["ai_reply_mode", mode],
+    ["ai_tts_voice", voice],
+    ["ai_tts_style", style],
+    ["ai_max_per_hour", maxPerHour],
+    ["ai_daily_cap", dailyCap],
+    ["ai_spend_cap_usd", spendCap],
+    ["ai_channel_telegram", Boolean(input.telegramEnabled)],
+    ["ai_channel_whatsapp", Boolean(input.whatsappEnabled)],
+    ["ai_intro", intro],
+    ["ai_temperature", Math.round(temperature * 100) / 100],
+    ["ai_max_tokens", maxTokens],
+  ];
+  const entries: Array<[AiSettingKey, string | number | boolean]> = [
+    ...shared,
+    ...botText,
+  ];
 
   await prisma.$transaction(
-    keys.map((key) =>
+    entries.map(([key, value]) =>
       prisma.platformSetting.upsert({
         where: { key },
-        create: { key, value: values[key] as never },
-        update: { value: values[key] as never },
+        create: { key, value: value as never },
+        update: { value: value as never },
       }),
     ),
   );
@@ -510,7 +529,7 @@ export async function saveAssistantSettings(
       action: "settings.assistant",
       entity: "PlatformSetting",
       entityId: "assistant",
-      meta: Object.fromEntries(keys.map((k) => [k, values[k]])) as never,
+      meta: Object.fromEntries(entries) as never,
     },
   });
 
@@ -626,29 +645,32 @@ export async function connectTelegram(
   return { ok: true, username };
 }
 
-// --- Shadi's avatar ---------------------------------------------------------
-// The image on the chat launcher bubble and inside the widget. Admins upload a
-// new one (via /api/upload) or reset to the bundled default.
+// --- A character's avatar ----------------------------------------------------
+// The image on the chat launcher bubble and inside the widget, per bot. Admins
+// upload a new one (via /api/upload) or reset to the bundled default.
 
-export async function saveAssistantAvatar(url: string | null): Promise<Result> {
+export async function saveAssistantAvatar(
+  botId: BotId,
+  url: string | null,
+): Promise<Result> {
   const adminId = await requireAdminId();
   if (!adminId) return { error: "forbidden" };
+  if (!isBotId(botId)) return { error: "badBot" };
+  const key = BOTS[botId].avatarKey;
 
   // null / empty resets to the bundled default image: deleting the row lets
-  // getSetting() fall back to SETTING_DEFAULTS.ai_assistant_avatar.
+  // getSetting() fall back to the SETTING_DEFAULTS entry for this key.
   const value = (url ?? "").trim().slice(0, 500);
   if (value && !/^(\/|https?:\/\/)/.test(value)) return { error: "badAvatar" };
 
   if (value) {
     await prisma.platformSetting.upsert({
-      where: { key: "ai_assistant_avatar" },
-      create: { key: "ai_assistant_avatar", value },
+      where: { key },
+      create: { key, value },
       update: { value },
     });
   } else {
-    await prisma.platformSetting.deleteMany({
-      where: { key: "ai_assistant_avatar" },
-    });
+    await prisma.platformSetting.deleteMany({ where: { key } });
   }
 
   await prisma.auditLog.create({
@@ -656,8 +678,8 @@ export async function saveAssistantAvatar(url: string | null): Promise<Result> {
       actorId: adminId,
       action: "settings.ai_avatar",
       entity: "PlatformSetting",
-      entityId: "ai_assistant_avatar",
-      meta: { url: value },
+      entityId: key,
+      meta: { bot: botId, url: value },
     },
   });
 

@@ -82,7 +82,7 @@ export default async function PointLayout({
 
   return (
     <div className="bg-background mx-auto flex min-h-screen max-w-md flex-col">
-      <header className="bg-background/95 sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur">
+      <header className="bg-background/95 sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur print:hidden">
         <Link href="/point" className="flex items-center gap-2 font-semibold">
           <Store className="text-primary size-5" /> {t("appName")}
         </Link>
@@ -114,9 +114,13 @@ export default async function PointLayout({
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-4 pb-20">{children}</main>
+      <main className="flex-1 px-4 py-4 pb-20 print:p-0 print:pb-0">
+        {children}
+      </main>
 
-      <PointTabBar access={access} />
+      <div className="print:hidden">
+        <PointTabBar access={access} />
+      </div>
     </div>
   );
 }

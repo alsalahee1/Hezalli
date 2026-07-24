@@ -184,6 +184,12 @@ export type PlatformSettings = {
   // widget. A public path or URL; admins change it from Admin → Shadi
   // (upload or reset). Empty falls back to the bundled default.
   ai_assistant_avatar: string;
+  // Jumana's (جُمانة) face — the second assistant character. Same rules as
+  // Shadi's avatar; falls back to the bundled /jumana.png.
+  ai_avatar_jumana: string;
+  // Which character is the platform default: "shadi" | "jumana". A shopper can
+  // override it for themselves with the bot switcher (a cookie).
+  ai_default_bot: string;
   // ── Shadi tuning (Admin → Shadi page). For every "" / 0 value the runtime
   // falls back to the matching env var, then to the built-in default — so a
   // fresh install behaves exactly as before an admin touches anything. ──
@@ -207,13 +213,19 @@ export type PlatformSettings = {
   ai_channel_telegram: boolean;
   ai_channel_whatsapp: boolean;
   // ── Persona & behaviour (Admin → Shadi). ──
-  // The bot's editable "role": extra natural-language instructions appended to
-  // the built-in system prompt (personality, tone, dialect, rules, things it
-  // may/may not do). Empty = Shadi's default behaviour only.
-  ai_persona: string;
-  // Custom welcome line shown when the chat widget opens. Empty = the built-in
-  // per-language greeting.
-  ai_greeting: string;
+  // The editable base "intro" of the system prompt — Shadi's identity and the
+  // marketplace description (the first block of "Layer 1"). Empty falls back to
+  // the built-in DEFAULT_INTRO. The rule block after it stays locked in code.
+  ai_intro: string;
+  // Each character's editable "role": extra natural-language instructions
+  // appended to the system prompt (personality, tone, dialect, do/don'ts).
+  // Per-character (Shadi vs Jumana). Empty = that character's default only.
+  ai_persona: string; // Shadi's persona
+  ai_persona_jumana: string; // Jumana's persona
+  // Each character's custom welcome line shown when the chat widget opens.
+  // Empty = the built-in per-language greeting for the active character.
+  ai_greeting: string; // Shadi's greeting
+  ai_greeting_jumana: string; // Jumana's greeting
   // Model creativity, 0 (focused/factual) … 1 (creative). Default 0.3.
   ai_temperature: number;
   // Max length of one reply, in Gemini output tokens (~4 chars each).
@@ -292,6 +304,8 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   platform_wallet_email: "admin@hezalli.com",
   ai_assistant_enabled: true,
   ai_assistant_avatar: "/shadi.jpg",
+  ai_avatar_jumana: "/jumana.png",
+  ai_default_bot: "shadi",
   ai_gemini_model: "",
   ai_reply_mode: "",
   ai_tts_voice: "",
@@ -301,8 +315,11 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   ai_spend_cap_usd: 0,
   ai_channel_telegram: true,
   ai_channel_whatsapp: true,
+  ai_intro: "",
   ai_persona: "",
+  ai_persona_jumana: "",
   ai_greeting: "",
+  ai_greeting_jumana: "",
   ai_temperature: 0.3,
   ai_max_tokens: 1024,
 };

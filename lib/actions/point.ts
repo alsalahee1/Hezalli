@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 
+import { Prisma } from "@/lib/generated/prisma/client";
 import { requireDeliveryPoint } from "@/lib/authz";
 import { cashBlockedPointIds } from "@/lib/cod-guard";
 import { canHandleCash, canManagePoint } from "@/lib/point-access";
+import { parseWeeklyHours, type WeeklyHours } from "@/lib/point-hours";
 import { courierCashSummary } from "@/lib/courier-ledger";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -38,7 +40,12 @@ export async function pointReceiveParcel(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await receiveParcelAtPoint(gate.pointId, tracking, shelf);
+  const res = await receiveParcelAtPoint(
+    gate.pointId,
+    tracking,
+    shelf,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -51,7 +58,12 @@ export async function pointHandoverParcel(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await handoverParcelToDriver(gate.pointId, tracking, driverId);
+  const res = await handoverParcelToDriver(
+    gate.pointId,
+    tracking,
+    driverId,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -77,7 +89,7 @@ export async function pointHandoverManifest(
   if (!gate) return { error: "forbidden" };
   const id = driverId.trim();
   if (!id) return { error: "driverRequired" };
-  const res = await handoverManifestToDriver(gate.pointId, id);
+  const res = await handoverManifestToDriver(gate.pointId, id, gate.userId);
   if (res.handed > 0) await revalidatePoint();
   return { ok: true, ...res };
 }
@@ -90,14 +102,24 @@ export async function pointReceiveReturn(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await receiveReturnAtPoint(gate.pointId, tracking, note, shelf);
+  const res = await receiveReturnAtPoint(
+    gate.pointId,
+    tracking,
+    note,
+    shelf,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
 
 // Counter pickup: the buyer shows their delivery QR/code and takes the
 // parcel. Returns the COD amount the counter must collect (0 for prepaid).
-export async function pointBuyerPickup(code: string): Promise<{
+export async function pointBuyerPickup(
+  code: string,
+  recipientName?: string,
+  photoKey?: string,
+): Promise<{
   ok?: boolean;
   error?: string;
   codDue?: number;
@@ -107,7 +129,16 @@ export async function pointBuyerPickup(code: string): Promise<{
   // Cash-gated: a shelves organizer may not take a buyer's COD money.
   if (!gate || !canHandleCash(gate.access)) return { error: "forbidden" };
   const locale = await getLocale();
-  const res = await buyerPickupAtPoint(gate.pointId, code, locale);
+  const res = await buyerPickupAtPoint(
+    gate.pointId,
+    code,
+    locale,
+    gate.userId,
+    {
+      recipientName: recipientName?.trim().slice(0, 120) || undefined,
+      photoKey: photoKey || undefined,
+    },
+  );
   if (res.ok) {
     await revalidatePoint();
     return res;
@@ -215,7 +246,12 @@ export async function pointReturnToSeller(
 ): Promise<Result> {
   const gate = await requireDeliveryPoint();
   if (!gate) return { error: "forbidden" };
-  const res = await returnParcelToSeller(gate.pointId, tracking, note);
+  const res = await returnParcelToSeller(
+    gate.pointId,
+    tracking,
+    note,
+    gate.userId,
+  );
   if (res.ok) await revalidatePoint();
   return res;
 }
@@ -246,6 +282,38 @@ export async function setPointPaused(paused: boolean): Promise<Result> {
 
   const locale = await getLocale();
   revalidatePath(`/${locale}/point`);
+  revalidatePath(`/${locale}/point/profile`);
+  revalidatePath(`/${locale}/points`);
+  return { ok: true };
+}
+
+// Publish the hub's weekly opening hours (docs §42g) — a discovery aid shown
+// on the public directory and profile, separate from vacation pause. Pass a
+// 7-slot schedule (0=Sunday..6=Saturday) or null to clear it. Owner/manager
+// only; the counter's hours are the shop's decision, not a cashier's.
+export async function setPointHours(
+  hours: WeeklyHours | null,
+): Promise<Result> {
+  const gate = await requireDeliveryPoint();
+  if (!gate || !canManagePoint(gate.access)) return { error: "forbidden" };
+
+  // Clearing is allowed; anything present must be a valid 7-day schedule.
+  let value: WeeklyHours | null = null;
+  if (hours !== null) {
+    value = parseWeeklyHours(hours);
+    if (!value) return { error: "badHours" };
+  }
+
+  await prisma.deliveryPoint.update({
+    where: { id: gate.pointId },
+    // A Json? column needs Prisma.DbNull (not JS null) to store SQL NULL.
+    data: {
+      openingHours:
+        value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue),
+    },
+  });
+
+  const locale = await getLocale();
   revalidatePath(`/${locale}/point/profile`);
   revalidatePath(`/${locale}/points`);
   return { ok: true };

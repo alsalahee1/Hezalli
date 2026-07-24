@@ -389,6 +389,12 @@ model DeliveryPoint {
   // are still accepted at the counter and held ones stay collectible.
   // Self-service toggle from the point app; null = open.
   pausedAt       DateTime?
+  // Weekly opening hours (docs §42g): a 7-slot array (0=Sunday..6=Saturday),
+  // each `{ open, close }` in "HH:MM" Asia/Aden wall-clock or null for a closed
+  // day. Null/absent = hours not published (no open/closed badge). A
+  // display/discovery aid, separate from the vacation pause that stops routing.
+  // See lib/point-hours.ts.
+  openingHours   Json?
   status         DeliveryPointStatus        @default(ACTIVE)
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
@@ -1567,10 +1573,16 @@ model ShipmentEvent {
   status     ShipmentStatus
   location   String?
   note       String?
+  // The user who performed this custody scan, when a person did it at a hub
+  // counter (point staff or owner) — null for automatic/system transitions and
+  // courier-side events. Powers per-staff accountability (who received /
+  // handed over / picked up what), see lib/point-staff-activity.ts.
+  actorId    String?
   createdAt  DateTime       @default(now())
   shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
   @@index([shipmentId])
+  @@index([actorId, createdAt])
 }
 
 // ---------------------------------------------------------------------------

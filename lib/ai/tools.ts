@@ -39,6 +39,9 @@ export type ToolContext = {
   userId: string | null;
   // Tailors the system prompt to where the user is. Defaults to "store".
   section?: AssistantSection;
+  // Which character is answering (name/gender in the prompt). Defaults to the
+  // platform default when unset.
+  bot?: import("./bot-constants").BotId;
 };
 
 export type ToolResult = {

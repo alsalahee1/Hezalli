@@ -12,6 +12,8 @@ import {
   type Part,
   type TokenUsage,
 } from "./gemini";
+import { BOTS, type BotId } from "./bot-constants";
+import { defaultIntro, lockedRules } from "./prompt-defaults";
 import {
   runTool,
   TOOL_DECLARATIONS,
@@ -121,35 +123,25 @@ const SECTION_BRIEFS: Record<AssistantSection, string> = {
 function systemPrompt(
   locale: string,
   section: AssistantSection,
+  bot: BotId,
+  intro: string,
   persona: string,
 ): string {
   const lang = locale === "ar" ? "Arabic" : "English";
+  // The intro (identity + marketplace description) is admin-editable; empty
+  // falls back to the active character's default identity. The rule block is
+  // locked — it keeps the bot calling tools and never inventing data.
   const lines = [
-    "You are Shadi (Arabic: شادي), Hezalli's friendly assistant.",
-    "Hezalli is a multi-vendor online marketplace (like Amazon or Noon) where",
-    "independent sellers list products that buyers can search, add to cart, and order.",
-    `Your name is "شادي" in Arabic and "Shadi" in English — introduce yourself by it when greeting or when asked who you are.`,
+    intro.trim() || defaultIntro(BOTS[bot]),
     "",
     "Where the user is right now:",
     SECTION_BRIEFS[section],
     "",
-    "Rules:",
-    `- Reply in ${lang} (the user's current language). Keep answers concise and helpful.`,
-    "- To recommend or find products, ALWAYS call search_products — never invent",
-    "  products, prices, or links. Only talk about items the tools return.",
-    "- Prices are in USD. Use the price strings exactly as the tools return them.",
-    "- For questions about the user's own orders, call get_order_status.",
-    "- If a tool says the user is not signed in, politely ask them to sign in.",
-    "- You have NO tools beyond the catalog and the user's own orders. For any",
-    "  other account-specific figure (balances, payouts, cash ledgers, admin",
-    "  stats), explain where in the app to find it — never invent numbers.",
-    "- If nothing matches, say so honestly and suggest a broader search.",
-    "- Never ask for or handle passwords, PINs, card numbers, or other sensitive data.",
-    "- Stay on topic: using Hezalli. Politely decline unrelated requests.",
+    lockedRules(lang),
   ];
 
   // The store owner's editable persona/role, appended so it can shape tone and
-  // behaviour — but the safety rules above still bind. If it conflicts with
+  // behaviour — but the locked rules above still bind. If it conflicts with
   // them (e.g. asks Shadi to reveal secrets or invent data), the rules win.
   const p = persona.trim();
   if (p) {
@@ -193,9 +185,13 @@ export async function runAssistant(
   }
 
   const section = ctx.section ?? "store";
-  // The admin-editable persona/role (Admin → Shadi). Fetched once per turn.
-  const persona = await getSetting("ai_persona").catch(() => "");
-  const system = systemPrompt(ctx.locale, section, persona);
+  const bot: BotId = ctx.bot ?? "shadi";
+  // Shared base intro + this character's own persona (Admin → Shadi).
+  const [intro, persona] = await Promise.all([
+    getSetting("ai_intro").catch(() => ""),
+    getSetting(BOTS[bot].personaKey).catch(() => ""),
+  ]);
+  const system = systemPrompt(ctx.locale, section, bot, intro, persona);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await generateContent({

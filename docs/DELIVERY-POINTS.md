@@ -967,6 +967,134 @@ Now the owner attaches EXISTING Hezalli accounts to the hub as employees
       removal keeps the account, strangers refused)
 - [x] This file kept current
 
+## 42e. v1.28 — Per-staff accountability
+
+Adding staff (§42d) gave a hub several logins but no oversight: every scan and
+COD row recorded *the point*, not *the person*, so an owner couldn't see who
+did what or reconcile a cashier's drawer. Now the acting user is stamped
+through the counter flow:
+
+- **`ShipmentEvent.actorId`** (+ migration) — the custody scan records who did
+  it. `receiveParcelAtPoint`, `handoverParcelToDriver`, `receiveReturnAtPoint`,
+  `returnParcelToSeller`, `buyerPickupAtPoint`, and the manifest handover all
+  take the caller's `gate.userId` and stamp it on the event. Null for automatic
+  transitions and courier-side events.
+- **`DeliveryPointLedgerEntry.createdById` on COD** — counter COD
+  (`recordPointCounterCod`, via `markSubOrderDelivered`'s `DeliveryProof.actorId`)
+  now records the cashier, matching the driver-cash-in path that already did.
+  So every dollar the hub takes is attributed to a person.
+- **Who-did-what view** — `lib/point-staff-activity.ts` rolls the hub's day up
+  by person (received / handed over / picked up / returns + cash taken); the
+  `/point/staff` screen shows today's scoreboard above the roster. Cash per
+  cashier IS the drawer-reconciliation number. Owner/manager only.
+- **Staff notifications** — role change, pause, reinstate, and removal now
+  notify the employee in their locale (they no longer learn of a demotion by
+  hitting a wall).
+
+### Build checklist (v1.28)
+
+- [x] `ShipmentEvent.actorId` + index + migration
+- [x] Acting user threaded through all six counter transitions + COD ledger
+- [x] `pointStaffActivity` rollup + `/point/staff` today scoreboard
+- [x] Staff notified on role/pause/reinstate/removal
+- [x] i18n (en + ar) + integration test (`point-staff.test.ts`: scan
+      attribution, activity rollup, standing-change notifications)
+- [x] This file kept current
+
+## 42f. v1.29 — Ops visibility of staff
+
+Staff management was 100% owner/manager-only: an admin investigating a
+dispute couldn't even see who worked at a hub. The ops point-detail view
+(`components/ops/point-detail-view.tsx`, shared by `/admin/points/[id]` and
+`/delivery-manager/points/[id]`) now shows the **team roster** (owner + each
+member's name, role, status, join date) and gives ops **one lever**: pause or
+reinstate a member's access (`adminSetPointStaffActive`, delivery-manager
+gated, audited `byOps`, employee notified). Hiring, role changes, and removal
+stay the owner's call — ops only holds the access switch, so a rogue employee
+can be frozen during an investigation without waiting on the owner.
+
+### Build checklist (v1.29)
+
+- [x] Roster + `AdminStaffRoster` in the shared ops point-detail view
+- [x] `adminSetPointStaffActive` (delivery-manager gated, audited, notified)
+- [x] i18n (en + ar) + integration test (ops can pause/reinstate; non-ops
+      refused; frozen member's access revoked)
+- [x] This file kept current
+
+## 42g. v1.30 — Opening hours
+
+A hub could only signal "closed" via the all-or-nothing vacation pause. Now it
+publishes a weekly schedule (`DeliveryPoint.openingHours` JSON, + migration):
+7 slots (0=Sunday..6=Saturday), each `{ open, close }` in "HH:MM" Asia/Aden
+wall-clock or null for a closed day.
+
+- **One rule, shared** — `lib/point-hours.ts` (pure) validates the schedule
+  and answers "open now?" including overnight windows (e.g. 18:00→02:00) and
+  open-all-day (open===close). Same UTC+3 convention as `dispatch-hours.ts`.
+- **Editor** — owner/manager set hours from `/point/profile`
+  (`setPointHours`, gated); other staff see a read-only open/closed line.
+- **Discovery** — the public `/points` directory shows an Open/Closed chip per
+  hub (computed server-side in `point-public.ts`); hubs that haven't published
+  hours show no chip. Independent of vacation pause, which still stops routing.
+
+### Build checklist (v1.30)
+
+- [x] `DeliveryPoint.openingHours` + migration
+- [x] `lib/point-hours.ts` parse + `isPointOpenNow` (overnight, all-day) + unit
+      test (`point-hours.test.ts`)
+- [x] `setPointHours` (owner/manager gated) + profile editor + open/closed line
+- [x] Public directory Open/Closed chip
+- [x] i18n (en + ar)
+- [x] This file kept current
+
+## 42h. v1.31 — Counter proof-of-pickup
+
+The doorstep flow captured a recipient name + photo on the DeliveryAttempt,
+but the counter-pickup path recorded only the verified code — weaker evidence
+for the exact moment cash and goods change hands. Counter pickup now captures
+the same optional proof:
+
+- **Optional recipient + photo** at the pickup station (`point-scan.tsx`,
+  pickup mode) — a name field and an "add handover photo" button (same
+  `/api/upload` → `photoKey` pattern as the driver). Filled before scanning
+  the buyer's QR; per-pickup, reset after each collection.
+- **Threaded through** `pointBuyerPickup` → `buyerPickupAtPoint` →
+  `markSubOrderDelivered`'s proof, landing on `DeliveryAttempt.recipientName`
+  and `proofPhotoKey` — no schema change (the fields already existed). The
+  buyer's delivery code stays the primary proof; these are extra evidence, so
+  both remain optional and never block a pickup.
+- The buyer's existing delivery-proof card renders it automatically.
+
+### Build checklist (v1.31)
+
+- [x] Optional recipient + photo capture in point-scan pickup mode
+- [x] `pointBuyerPickup` / `buyerPickupAtPoint` thread proof to the attempt
+- [x] i18n (en + ar) + integration test (`point-pickup.test.ts`: recipient +
+      photo stored on the attempt)
+- [x] This file kept current
+
+## 42i. v1.32 — Printable pickup receipt
+
+The counter took cash but couldn't hand the buyer anything. Now a successful
+pickup offers a printable receipt:
+
+- **Receipt route** `/point/receipt/[code]` — resolves the buyer's delivery
+  code among parcels this hub has DELIVERED, and renders a receipt card: hub
+  name/phone/address, store, tracking, collection time, and the cash actually
+  taken (the `COD_COLLECTED` ledger row) or a "prepaid" note.
+- **Print** — a client Print button calls `window.print()`; the point shell's
+  header and tab bar are `print:hidden`, so only the receipt card prints (or
+  saves to PDF / shares on mobile).
+- **Discoverable** — a successful pickup in the scan station shows a "Receipt"
+  link on that feedback row.
+
+### Build checklist (v1.32)
+
+- [x] `/point/receipt/[code]` printable receipt (gated) + `print:hidden` shell
+- [x] Receipt link on successful pickup feedback in the scan station
+- [x] i18n (en + ar)
+- [x] This file kept current
+
 ## 43. Out of scope
 
 - Three-plus-hop routing / regional sort hubs

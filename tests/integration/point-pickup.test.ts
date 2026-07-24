@@ -188,7 +188,12 @@ describe("pickup custody chain", () => {
 
     // The buyer's code is the key: wrong code opens nothing.
     expect(await pointBuyerPickup("WRONGCODE1")).toEqual({ error: "notFound" });
-    const res = await pointBuyerPickup(shipment.deliveryCode!);
+    // Optional counter proof (docs §42h): recipient name + a handover photo.
+    const res = await pointBuyerPickup(
+      shipment.deliveryCode!,
+      "Cousin Ahmed",
+      "proof/u/pickup.jpg",
+    );
     // COD due = items total (shipping is free for pickup in this fixture).
     expect(res).toMatchObject({ ok: true, codDue: fx.price });
 
@@ -206,6 +211,9 @@ describe("pickup custody chain", () => {
       outcome: "DELIVERED",
       codeVerified: true,
       courierId: null,
+      // Counter proof was captured and stored on the attempt.
+      recipientName: "Cousin Ahmed",
+      proofPhotoKey: "proof/u/pickup.jpg",
     });
     // COD captured at the counter.
     expect(done?.order.payment?.status).toBe("CONFIRMED");

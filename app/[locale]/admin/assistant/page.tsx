@@ -1,7 +1,9 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
+import { botName } from "@/lib/ai/bot-constants";
 import { getDailyCap, getSpendCapUsd, monthSpendUsd } from "@/lib/ai/guards";
 import { dayKey, monthKey } from "@/lib/ai/guards-core";
+import { DEFAULT_INTRO, LOCKED_RULES_PREVIEW } from "@/lib/ai/prompt-defaults";
 import { telegramTokenSource } from "@/lib/integrations/telegram";
 import { whatsappConfigured } from "@/lib/integrations/whatsapp";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +16,7 @@ export const dynamic = "force-dynamic";
 // credentials, channels, voice replies, cost guards, and live usage.
 export default async function AdminAssistantPage() {
   const t = await getTranslations("AdminAssistant");
+  const locale = await getLocale();
   const now = Date.now();
 
   const [
@@ -67,8 +70,25 @@ export default async function AdminAssistantPage() {
       <AssistantSettings
         current={{
           enabled: settings.ai_assistant_enabled,
-          avatar: settings.ai_assistant_avatar,
-          defaultAvatar: SETTING_DEFAULTS.ai_assistant_avatar,
+          bots: [
+            {
+              id: "shadi",
+              name: botName("shadi", locale),
+              avatar: settings.ai_assistant_avatar,
+              defaultAvatar: SETTING_DEFAULTS.ai_assistant_avatar,
+              persona: settings.ai_persona,
+              greeting: settings.ai_greeting,
+            },
+            {
+              id: "jumana",
+              name: botName("jumana", locale),
+              avatar: settings.ai_avatar_jumana,
+              defaultAvatar: SETTING_DEFAULTS.ai_avatar_jumana,
+              persona: settings.ai_persona_jumana,
+              greeting: settings.ai_greeting_jumana,
+            },
+          ],
+          defaultBot: settings.ai_default_bot,
           keySource,
           model: settings.ai_gemini_model,
           replyMode: settings.ai_reply_mode,
@@ -79,8 +99,9 @@ export default async function AdminAssistantPage() {
           spendCapUsd: settings.ai_spend_cap_usd,
           telegramEnabled: settings.ai_channel_telegram,
           whatsappEnabled: settings.ai_channel_whatsapp,
-          persona: settings.ai_persona,
-          greeting: settings.ai_greeting,
+          intro: settings.ai_intro,
+          defaultIntro: DEFAULT_INTRO,
+          lockedRules: LOCKED_RULES_PREVIEW,
           temperature: settings.ai_temperature,
           maxTokens: settings.ai_max_tokens,
           telegramSource: tgSource,
