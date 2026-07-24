@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { loginSchema, registerSchema } from "@/lib/validations/auth";
+import {
+  loginSchema,
+  registerSchema,
+  requestResetSchema,
+  resetPasswordSchema,
+} from "@/lib/validations/auth";
 
 describe("loginSchema email normalization", () => {
   it("accepts a correct email and lowercases it", () => {
@@ -82,5 +87,65 @@ describe("registerSchema optional home governorate", () => {
       homeGovernorate: "Atlantis",
     });
     expect(r.success).toBe(false);
+  });
+});
+
+describe("requestResetSchema", () => {
+  it("trims and lowercases the email like the other auth forms", () => {
+    const r = requestResetSchema.safeParse({ email: "  User@Hezalli.COM " });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.email).toBe("user@hezalli.com");
+  });
+
+  it("rejects an invalid email", () => {
+    const r = requestResetSchema.safeParse({ email: "nope" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toBe("emailInvalid");
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  const base = {
+    token: "a".repeat(64),
+    password: "password123",
+    confirmPassword: "password123",
+  };
+
+  it("accepts a matching password with a token present", () => {
+    expect(resetPasswordSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("requires the token (empty link → resetTokenMissing)", () => {
+    const r = resetPasswordSchema.safeParse({ ...base, token: "" });
+    expect(r.success).toBe(false);
+    if (!r.success)
+      expect(
+        r.error.issues.some((i) => i.message === "resetTokenMissing"),
+      ).toBe(true);
+  });
+
+  it("rejects a password shorter than 8 characters", () => {
+    const r = resetPasswordSchema.safeParse({
+      ...base,
+      password: "short",
+      confirmPassword: "short",
+    });
+    expect(r.success).toBe(false);
+    if (!r.success)
+      expect(r.error.issues.some((i) => i.message === "passwordShort")).toBe(
+        true,
+      );
+  });
+
+  it("rejects when the confirmation does not match", () => {
+    const r = resetPasswordSchema.safeParse({
+      ...base,
+      confirmPassword: "different1",
+    });
+    expect(r.success).toBe(false);
+    if (!r.success)
+      expect(r.error.issues.some((i) => i.message === "passwordMismatch")).toBe(
+        true,
+      );
   });
 });
