@@ -65,13 +65,9 @@ export function PayoutRequestForm({
           onChange={(e) => setAmount(e.target.value)}
           placeholder={free.toFixed(2)}
           dir="ltr"
-          className="h-10 w-32"
+          className="w-32"
         />
-        <Button
-          onClick={submit}
-          disabled={pending || free <= 0}
-          className="h-10"
-        >
+        <Button onClick={submit} disabled={pending || free <= 0}>
           {pending ? t("saving") : t("payoutSubmit")}
         </Button>
       </div>

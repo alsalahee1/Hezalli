@@ -18,6 +18,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 // Minimal typing for the browser Barcode Detection API (not yet in lib.dom).
 interface DetectedBarcode {
@@ -325,7 +326,7 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
             type="button"
             onClick={() => pickMode(m.key)}
             className={cn(
-              "rounded-md px-2 py-1.5 text-sm font-medium",
+              "min-h-11 rounded-md px-2 py-2 text-sm font-medium",
               mode === m.key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground",
@@ -356,12 +357,11 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
               }}
               placeholder={t("pickupRecipientPlaceholder")}
               maxLength={120}
-              className="h-10"
             />
           </div>
           <label
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium",
+              "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium",
               photoKey && "border-emerald-500/50 text-emerald-600",
             )}
           >
@@ -396,7 +396,6 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
             onChange={(e) => setShelfCode(e.target.value)}
             placeholder={t("shelfPlaceholder")}
             maxLength={20}
-            className="h-10"
           />
           <p className="text-muted-foreground text-xs">{t("shelfHint")}</p>
         </div>
@@ -405,18 +404,14 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
       {mode === "handover" ? (
         <div className="space-y-1">
           <label className="text-sm font-medium">{t("driverLabel")}</label>
-          <select
-            value={driverId}
-            onChange={(e) => pickDriver(e.target.value)}
-            className="h-10 w-full rounded-md border bg-transparent px-3 text-sm"
-          >
+          <Select value={driverId} onChange={(e) => pickDriver(e.target.value)}>
             <option value="">{t("pickDriver")}</option>
             {drivers.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
               </option>
             ))}
-          </select>
+          </Select>
           <p className="text-muted-foreground text-xs">{t("scanDriverHint")}</p>
 
           {/* The driver's pickup list at this hub — hand it all over at once
@@ -476,7 +471,7 @@ export function PointScan({ drivers }: { drivers: Driver[] }) {
                 </div>
                 <Button
                   type="button"
-                  className="h-10 w-full"
+                  className="w-full"
                   disabled={busy}
                   onClick={async () => {
                     setBusy(true);

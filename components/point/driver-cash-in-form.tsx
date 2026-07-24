@@ -8,6 +8,7 @@ import { pointDriverCashIn } from "@/lib/actions/point";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { DriverQrScanner } from "@/components/point/driver-qr-scanner";
 
 type Driver = { id: string; name: string; cashOnHand: number };
@@ -73,15 +74,10 @@ export function DriverCashInForm({ drivers }: { drivers: Driver[] }) {
       <div className="flex flex-wrap items-center gap-2">
         {/* Scanning the driver's collection QR is the fast path; the list keeps
             camera-less counters working. */}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setScanOpen(true)}
-          className="h-10"
-        >
+        <Button type="button" variant="outline" onClick={() => setScanOpen(true)}>
           <QrCode className="size-4" /> {t("cashInScan")}
         </Button>
-        <select
+        <Select
           value={driverId}
           onChange={(e) => {
             setDriverId(e.target.value);
@@ -89,7 +85,7 @@ export function DriverCashInForm({ drivers }: { drivers: Driver[] }) {
             setDone(false);
             setErr(null);
           }}
-          className="h-10 flex-1 basis-40 rounded-md border bg-transparent px-3 text-sm"
+          className="flex-1 basis-40"
         >
           <option value="">{t("pickDriver")}</option>
           {drivers.map((d) => (
@@ -97,7 +93,7 @@ export function DriverCashInForm({ drivers }: { drivers: Driver[] }) {
               {d.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* Once a driver is chosen, show what they're holding and a one-tap
@@ -128,12 +124,11 @@ export function DriverCashInForm({ drivers }: { drivers: Driver[] }) {
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00"
           dir="ltr"
-          className="h-10 w-28"
+          className="w-28"
         />
         <Button
           onClick={submit}
           disabled={pending || !driverId || !(value > 0) || overRemit}
-          className="h-10"
         >
           {pending ? t("saving") : t("cashInSubmit")}
         </Button>

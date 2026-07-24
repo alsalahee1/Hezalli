@@ -15,6 +15,9 @@ import { POINT_STAFF_ROLES, type PointStaffRole } from "@/lib/point-access";
 import { extractUserId } from "@/lib/qr-identity";
 import { useRouter } from "@/i18n/navigation";
 import { QrScanSheet } from "@/components/ui/qr-scan-sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 type StaffRow = {
   id: string;
@@ -128,32 +131,31 @@ export function PointStaffManager({
           <span className="bg-border h-px flex-1" />
         </div>
 
-        <input
+        <Input
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           placeholder={t("staffIdentifierPlaceholder")}
           dir="ltr"
-          className="border-input bg-background focus-visible:ring-ring w-full rounded-lg border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
         />
         <div className="flex items-center gap-2">
-          <select
+          <Select
             value={role}
             onChange={(e) => setRole(e.target.value as PointStaffRole)}
-            className="border-input bg-background focus-visible:ring-ring min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+            className="min-w-0 flex-1"
           >
             {POINT_STAFF_ROLES.map((r) => (
               <option key={r} value={r}>
                 {roleLabel(r)}
               </option>
             ))}
-          </select>
-          <button
+          </Select>
+          <Button
             type="submit"
             disabled={pending || !identifier.trim()}
-            className="bg-primary text-primary-foreground shrink-0 rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            className="shrink-0 rounded-full"
           >
             {t("staffAddBtn")}
-          </button>
+          </Button>
         </div>
         <p className="text-muted-foreground text-xs">
           {t(`staffRoleDesc_${role}`)}
@@ -227,7 +229,7 @@ export function PointStaffManager({
                     onChange={(e) =>
                       run(() => setPointStaffRole(s.id, e.target.value))
                     }
-                    className="border-input bg-background rounded-lg border px-2 py-1.5 text-xs disabled:opacity-50"
+                    className="border-input bg-background min-h-10 rounded-lg border px-2 py-2 text-xs disabled:opacity-50"
                   >
                     {POINT_STAFF_ROLES.map((r) => (
                       <option key={r} value={r}>
@@ -241,7 +243,7 @@ export function PointStaffManager({
                     onClick={() =>
                       run(() => setPointStaffActive(s.id, !s.isActive))
                     }
-                    className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
+                    className="text-muted-foreground hover:text-foreground inline-flex min-h-10 items-center gap-1 rounded-full border px-3 py-2 text-xs font-medium disabled:opacity-50"
                   >
                     {s.isActive ? (
                       <>
@@ -266,8 +268,8 @@ export function PointStaffManager({
                     }}
                     className={
                       confirmRemove === s.id
-                        ? "bg-destructive inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                        : "text-destructive inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
+                        ? "bg-destructive inline-flex min-h-10 items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                        : "text-destructive inline-flex min-h-10 items-center gap-1 rounded-full border px-3 py-2 text-xs font-medium disabled:opacity-50"
                     }
                   >
                     <Trash2 className="size-3.5" />

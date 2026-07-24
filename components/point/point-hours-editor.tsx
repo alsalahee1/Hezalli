@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import { setPointHours } from "@/lib/actions/point";
 import type { WeeklyHours } from "@/lib/point-hours";
 import { useRouter } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Editable weekly opening hours (docs §42g). Seven rows, each an open/close
 // pair or a "closed" toggle; Save writes the whole schedule through the
@@ -75,19 +77,19 @@ export function PointHoursEditor({ initial }: { initial: WeeklyHours | null }) {
                 {t("hoursOpen")}
               </label>
               {open ? (
-                <div className="flex items-center gap-1" dir="ltr">
-                  <input
+                <div className="flex items-center gap-1.5" dir="ltr">
+                  <Input
                     type="time"
                     value={d.open}
                     onChange={(e) => setDay(i, { ...d, open: e.target.value })}
-                    className="border-input bg-background rounded-md border px-2 py-1 text-xs"
+                    className="w-auto"
                   />
                   <span className="text-muted-foreground">–</span>
-                  <input
+                  <Input
                     type="time"
                     value={d.close}
                     onChange={(e) => setDay(i, { ...d, close: e.target.value })}
-                    className="border-input bg-background rounded-md border px-2 py-1 text-xs"
+                    className="w-auto"
                   />
                 </div>
               ) : (
@@ -101,14 +103,9 @@ export function PointHoursEditor({ initial }: { initial: WeeklyHours | null }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={save}
-          disabled={pending}
-          className="bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-sm font-semibold disabled:opacity-50"
-        >
+        <Button type="button" onClick={save} disabled={pending}>
           {t("hoursSave")}
-        </button>
+        </Button>
         {saved ? (
           <span className="text-xs text-emerald-600 dark:text-emerald-400">
             {t("hoursSaved")}

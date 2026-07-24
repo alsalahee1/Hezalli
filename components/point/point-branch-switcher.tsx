@@ -31,7 +31,7 @@ export function PointBranchSwitcher({
 
   return (
     <label
-      className="text-muted-foreground hover:text-foreground relative inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium"
+      className="text-muted-foreground hover:text-foreground relative inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium"
       title={t("branchSwitch")}
     >
       <Store className="size-3.5 shrink-0" />

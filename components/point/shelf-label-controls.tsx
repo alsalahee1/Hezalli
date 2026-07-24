@@ -45,7 +45,7 @@ export function ShelfLabelControls({
           value={r}
           onChange={(e) => setR(e.target.value)}
           dir="ltr"
-          className="h-10 w-24"
+          className="w-24"
         />
       </label>
       <label className="space-y-1 text-sm">
@@ -59,10 +59,10 @@ export function ShelfLabelControls({
           value={b}
           onChange={(e) => setB(e.target.value)}
           dir="ltr"
-          className="h-10 w-24"
+          className="w-24"
         />
       </label>
-      <Button type="submit" variant="outline" className="h-10">
+      <Button type="submit" variant="outline">
         <RefreshCw className="size-4" /> {t("labelsUpdate")}
       </Button>
       <PrintButton />

@@ -92,7 +92,7 @@ export default async function PointHistoryPage({
           {page > 1 ? t("noMoreEntries") : t("noHistory")}
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
           {shipments.map((s) => {
             const fee = feeBy.get(s.id) ?? 0;
             return (

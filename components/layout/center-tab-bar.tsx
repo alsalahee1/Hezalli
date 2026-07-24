@@ -35,6 +35,7 @@ export function CenterTabBar({
   ariaLabel,
   responsive = true,
   centerKey,
+  maxWidthClass = "max-w-md",
 }: {
   primary: CenterTab[];
   moreItems?: CenterTab[];
@@ -52,6 +53,12 @@ export function CenterTabBar({
    * primary tabs flank it in their array order. Omit for the flat layout.
    */
   centerKey?: string;
+  /**
+   * Max-width of the bar's tab row, matching whatever the caller's shell uses
+   * (e.g. the Point app's widened tablet container). Defaults to the phone-
+   * width most centers use.
+   */
+  maxWidthClass?: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -183,7 +190,12 @@ export function CenterTabBar({
           hiddenAtMd,
         )}
       >
-        <ul className="mx-auto flex max-w-md items-stretch justify-around">
+        <ul
+          className={cn(
+            "mx-auto flex items-stretch justify-around",
+            maxWidthClass,
+          )}
+        >
           {primary.map((tab) =>
             tab.href === centerKey ? renderCenter(tab) : renderTab(tab),
           )}

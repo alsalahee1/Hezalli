@@ -361,7 +361,7 @@ export default async function PointDashboardPage() {
                   {g.items.length}
                 </span>
               </h2>
-              <ul className="space-y-2">
+              <ul className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
                 {g.items.map((p) => {
                   const pickupDaysLeft =
                     g.key === "PICKUP_WAIT"

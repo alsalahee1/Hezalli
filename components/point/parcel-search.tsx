@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
 import { QrScanSheet } from "@/components/ui/qr-scan-sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Pull the tracking token out of whatever the QR encoded: a full tracking URL
 // (…/track/YE123) or a bare tracking number.
@@ -40,31 +42,31 @@ export function ParcelSearch() {
         className="flex gap-2"
         role="search"
       >
-        <input
+        <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchPlaceholder")}
           dir="ltr"
-          className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-1 focus-visible:outline-none"
         />
         {/* Scan the parcel label instead of reading its tracking number. */}
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setScanOpen(true)}
           aria-label={t("searchScanBtn")}
-          className="border-input text-foreground hover:bg-muted inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-3 text-sm font-medium"
+          className="shrink-0"
         >
           <QrCode className="size-4" /> {t("searchScanBtn")}
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
           aria-label={t("searchGo")}
-          className="bg-primary text-primary-foreground inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-medium disabled:opacity-50"
+          className="shrink-0"
           disabled={!q.trim()}
         >
           <Search className="size-4" /> {t("searchGo")}
-        </button>
+        </Button>
       </form>
 
       <QrScanSheet
