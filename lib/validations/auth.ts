@@ -49,8 +49,30 @@ export const loginSchema = z.object({
   remember: z.boolean().optional(),
 });
 
+// Request a reset link: only an email is needed. The action never reveals
+// whether the address has an account, so there is nothing else to validate.
+export const requestResetSchema = z.object({
+  email: emailField,
+});
+
+// Set a new password from a reset link. The token travels in a hidden field
+// (populated from the URL); password rules mirror registration so the two
+// never drift.
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "resetTokenMissing"),
+    password: z.string().min(8, "passwordShort").max(100, "passwordLong"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "passwordMismatch",
+    path: ["confirmPassword"],
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type RequestResetInput = z.infer<typeof requestResetSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 // Flatten a ZodError into { field: firstMessageKey } for form rendering.
 export function fieldErrors(error: z.ZodError): Record<string, string> {

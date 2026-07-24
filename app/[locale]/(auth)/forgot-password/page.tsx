@@ -1,8 +1,14 @@
-import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { ComingSoon } from "@/components/coming-soon";
+import { Link } from "@/i18n/navigation";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 
-// Placeholder — the real request/reset flow is built in Step 3.2 (Resend).
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Auth");
+  return { title: t("forgotPasswordTitle") };
+}
+
 export default async function ForgotPasswordPage({
   params,
 }: {
@@ -10,5 +16,31 @@ export default async function ForgotPasswordPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <ComingSoon ns="Auth" titleKey="forgotPassword" />;
+
+  const t = await getTranslations("Auth");
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("forgotPasswordTitle")}
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          {t("forgotPasswordSubtitle")}
+        </p>
+      </div>
+
+      <ForgotPasswordForm />
+
+      <p className="text-muted-foreground text-center text-sm">
+        {t("noAccount")}{" "}
+        <Link
+          href="/register"
+          className="text-foreground font-medium hover:underline"
+        >
+          {t("createOne")}
+        </Link>
+      </p>
+    </div>
+  );
 }
