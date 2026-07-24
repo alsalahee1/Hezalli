@@ -116,47 +116,86 @@ export default async function SellerAnalyticsPage({
             {t("noSales")}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-muted-foreground border-b text-xs">
-                <tr>
-                  <th className="p-3 text-start font-medium">
-                    {t("colProduct")}
-                  </th>
-                  <th className="p-3 text-end font-medium">{t("colUnits")}</th>
-                  <th className="p-3 text-end font-medium">
-                    {t("colRevenue")}
-                  </th>
-                  <th className="p-3 text-end font-medium">{t("colViews")}</th>
-                  <th className="p-3 text-end font-medium">
-                    {t("colConversion")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {a.topProducts.map((p) => (
-                  <tr key={p.id} className="border-b last:border-0">
-                    <td className="p-3">
-                      <Link
-                        href={`/product/${p.slug}`}
-                        className="hover:underline"
-                      >
-                        {localizedName(p.title, locale)}
-                      </Link>
-                    </td>
-                    <td className="p-3 text-end tabular-nums">{p.units}</td>
-                    <td className="p-3 text-end tabular-nums" dir="ltr">
+          <>
+            <ul className="space-y-2 p-3 md:hidden">
+              {a.topProducts.map((p) => (
+                <li key={p.id} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/product/${p.slug}`}
+                      className="font-medium hover:underline"
+                    >
+                      {localizedName(p.title, locale)}
+                    </Link>
+                    <span className="shrink-0 font-medium" dir="ltr">
                       {money(p.revenue)}
-                    </td>
-                    <td className="p-3 text-end tabular-nums">{p.views}</td>
-                    <td className="text-muted-foreground p-3 text-end tabular-nums">
-                      {p.conversion == null ? "—" : `${p.conversion}%`}
-                    </td>
+                    </span>
+                  </div>
+                  <dl className="text-muted-foreground mt-2 flex items-center gap-4 text-xs">
+                    <div>
+                      <dt className="inline">{t("colUnits")}: </dt>
+                      <dd className="inline">{p.units}</dd>
+                    </div>
+                    <div>
+                      <dt className="inline">{t("colViews")}: </dt>
+                      <dd className="inline">{p.views}</dd>
+                    </div>
+                    <div>
+                      <dt className="inline">{t("colConversion")}: </dt>
+                      <dd className="inline">
+                        {p.conversion == null ? "—" : `${p.conversion}%`}
+                      </dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="text-muted-foreground border-b text-xs">
+                  <tr>
+                    <th className="p-3 text-start font-medium">
+                      {t("colProduct")}
+                    </th>
+                    <th className="p-3 text-end font-medium">
+                      {t("colUnits")}
+                    </th>
+                    <th className="p-3 text-end font-medium">
+                      {t("colRevenue")}
+                    </th>
+                    <th className="p-3 text-end font-medium">
+                      {t("colViews")}
+                    </th>
+                    <th className="p-3 text-end font-medium">
+                      {t("colConversion")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {a.topProducts.map((p) => (
+                    <tr key={p.id} className="border-b last:border-0">
+                      <td className="p-3">
+                        <Link
+                          href={`/product/${p.slug}`}
+                          className="hover:underline"
+                        >
+                          {localizedName(p.title, locale)}
+                        </Link>
+                      </td>
+                      <td className="p-3 text-end tabular-nums">{p.units}</td>
+                      <td className="p-3 text-end tabular-nums" dir="ltr">
+                        {money(p.revenue)}
+                      </td>
+                      <td className="p-3 text-end tabular-nums">{p.views}</td>
+                      <td className="text-muted-foreground p-3 text-end tabular-nums">
+                        {p.conversion == null ? "—" : `${p.conversion}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
