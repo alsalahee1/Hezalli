@@ -8,6 +8,7 @@ import {
   Mic,
   Send,
   Shield,
+  Users,
   Wand2,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ import {
   sendTestDigest,
 } from "@/lib/actions/settings";
 import type { BotId } from "@/lib/ai/bot-constants";
+import { cn } from "@/lib/utils";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,6 +138,15 @@ export function AssistantSettings({
     setDone(false);
   };
 
+  // Which character's tab is open (image + persona + greeting live per bot).
+  const [tab, setTab] = useState<string>(
+    current.bots.some((b) => b.id === current.defaultBot)
+      ? current.defaultBot
+      : (current.bots[0]?.id ?? "shadi"),
+  );
+  const activeBotCard =
+    current.bots.find((b) => b.id === tab) ?? current.bots[0];
+
   const run = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
       setErr(null);
@@ -196,66 +207,144 @@ export function AssistantSettings({
             {t("enabledHint")}
           </span>
         </label>
-        {/* Characters: each has its own image; one is the platform default. */}
-        <div className="space-y-2">
-          <span className="text-sm font-medium">{t("charactersTitle")}</span>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {current.bots.map((bot) => (
-              <div key={bot.id} className="space-y-3 rounded-lg border p-3">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted size-14 shrink-0 overflow-hidden rounded-full border">
-                    {bot.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={bot.avatar}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{bot.name}</p>
-                    <label className="mt-1 flex items-center gap-1.5 text-xs">
-                      <input
-                        type="radio"
-                        name="defaultBot"
-                        className="size-3.5"
-                        checked={f.defaultBot === bot.id}
-                        onChange={() => set("defaultBot", bot.id)}
-                      />
-                      {f.defaultBot === bot.id
-                        ? t("isDefault")
-                        : t("makeDefault")}
-                    </label>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <ImageUploader
-                    folder="avatars"
-                    onUploaded={(url) =>
-                      run(() => saveAssistantAvatar(bot.id as BotId, url))
-                    }
+      </section>
+
+      {/* ── Characters (tabbed): each bot's image, default, persona, greeting ── */}
+      <section className="space-y-4 rounded-lg border p-5">
+        <SectionTitle icon={Users} title={t("charactersTitle")} />
+        {/* Shadi / Jumana tabs */}
+        <div className="flex gap-2">
+          {current.bots.map((bot) => (
+            <button
+              key={bot.id}
+              type="button"
+              onClick={() => setTab(bot.id)}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                tab === bot.id
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              <span className="bg-muted size-6 shrink-0 overflow-hidden rounded-full border">
+                {bot.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={bot.avatar}
+                    alt=""
+                    className="size-full object-cover"
                   />
-                  {bot.avatar && bot.avatar !== bot.defaultAvatar ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        run(() => saveAssistantAvatar(bot.id as BotId, null))
-                      }
-                      disabled={pending}
-                    >
-                      {t("avatarReset")}
-                    </Button>
+                ) : null}
+              </span>
+              {bot.name}
+              {f.defaultBot === bot.id ? (
+                <span className="text-xs" title={t("isDefault")}>
+                  ★
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        {activeBotCard ? (
+          <div className="space-y-4">
+            {/* Image */}
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium">{t("avatar")}</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="bg-muted size-16 shrink-0 overflow-hidden rounded-full border">
+                  {activeBotCard.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={activeBotCard.avatar}
+                      alt=""
+                      className="size-full object-cover"
+                    />
                   ) : null}
                 </div>
+                <ImageUploader
+                  folder="avatars"
+                  onUploaded={(url) =>
+                    run(() =>
+                      saveAssistantAvatar(activeBotCard.id as BotId, url),
+                    )
+                  }
+                />
+                {activeBotCard.avatar &&
+                activeBotCard.avatar !== activeBotCard.defaultAvatar ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() =>
+                      run(() =>
+                        saveAssistantAvatar(activeBotCard.id as BotId, null),
+                      )
+                    }
+                  >
+                    {t("avatarReset")}
+                  </Button>
+                ) : null}
               </div>
-            ))}
+              <span className="text-muted-foreground block text-xs">
+                {t("avatarHint")}
+              </span>
+            </div>
+
+            {/* Default character */}
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="defaultBot"
+                className="size-4"
+                checked={f.defaultBot === activeBotCard.id}
+                onChange={() => set("defaultBot", activeBotCard.id)}
+              />
+              {f.defaultBot === activeBotCard.id
+                ? t("isDefault")
+                : t("makeDefault")}
+              <span className="text-muted-foreground text-xs">
+                {t("defaultHint")}
+              </span>
+            </label>
+
+            {/* Persona (role) */}
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium">{t("persona")}</span>
+              <textarea
+                value={f.personas[activeBotCard.id] ?? ""}
+                onChange={(e) =>
+                  setBotText("personas", activeBotCard.id, e.target.value)
+                }
+                rows={5}
+                maxLength={4000}
+                placeholder={t("personaPlaceholder")}
+                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+              />
+              <span className="text-muted-foreground block text-xs">
+                {t("personaHint")}
+              </span>
+            </label>
+
+            {/* Greeting */}
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium">{t("greeting")}</span>
+              <textarea
+                value={f.greetings[activeBotCard.id] ?? ""}
+                onChange={(e) =>
+                  setBotText("greetings", activeBotCard.id, e.target.value)
+                }
+                rows={2}
+                maxLength={600}
+                placeholder={t("greetingPlaceholder")}
+                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+              />
+              <span className="text-muted-foreground block text-xs">
+                {t("greetingHint")}
+              </span>
+            </label>
           </div>
-          <span className="text-muted-foreground block text-xs">
-            {t("charactersHint")}
-          </span>
-        </div>
+        ) : null}
       </section>
 
       {/* ── Credentials & model ── */}
@@ -316,9 +405,10 @@ export function AssistantSettings({
         </div>
       </section>
 
-      {/* ── Persona & behaviour (the bot's "role") ── */}
+      {/* ── Shared behaviour: base prompt + creativity/length (both bots) ── */}
       <section className="space-y-4 rounded-lg border p-5">
-        <SectionTitle icon={Wand2} title={t("personaTitle")} />
+        <SectionTitle icon={Wand2} title={t("behaviourTitle")} />
+        <p className="text-muted-foreground text-sm">{t("behaviourDesc")}</p>
 
         {/* Base intro — the editable half of "Layer 1". */}
         <div className="space-y-1.5">
@@ -359,52 +449,6 @@ export function AssistantSettings({
           </div>
         </details>
 
-        {/* Persona + greeting are per-character. */}
-        <p className="text-muted-foreground text-xs">{t("perBotHint")}</p>
-        {current.bots.map((bot) => (
-          <div key={bot.id} className="space-y-3 rounded-lg border p-3">
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <span className="bg-muted size-6 shrink-0 overflow-hidden rounded-full border">
-                {bot.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={bot.avatar}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : null}
-              </span>
-              {bot.name}
-            </p>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium">{t("persona")}</span>
-              <textarea
-                value={f.personas[bot.id] ?? ""}
-                onChange={(e) => setBotText("personas", bot.id, e.target.value)}
-                rows={5}
-                maxLength={4000}
-                placeholder={t("personaPlaceholder")}
-                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium">{t("greeting")}</span>
-              <textarea
-                value={f.greetings[bot.id] ?? ""}
-                onChange={(e) =>
-                  setBotText("greetings", bot.id, e.target.value)
-                }
-                rows={2}
-                maxLength={600}
-                placeholder={t("greetingPlaceholder")}
-                className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
-        ))}
-        <span className="text-muted-foreground block text-xs">
-          {t("personaHint")}
-        </span>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5">
             <span className="text-sm font-medium">

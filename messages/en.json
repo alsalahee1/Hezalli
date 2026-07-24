@@ -1872,8 +1872,8 @@
     "err_badWalletEmail": "Enter a valid email for the Hezalli wallet account."
   },
   "AdminAssistant": {
-    "title": "Shadi — AI assistant",
-    "desc": "Everything about شادي: identity, credentials, channels, voice, and cost limits.",
+    "title": "AI assistant — Shadi & Jumana",
+    "desc": "Per-character settings live in the Shadi / Jumana tabs; credentials, channels, voice and limits are shared below.",
     "statusTitle": "Status & identity",
     "enabled": "Show Shadi across the platform",
     "enabledHint": "Master switch — hides the chat bubble and pauses the chat API and messaging channels.",
@@ -1884,6 +1884,10 @@
     "charactersHint": "Each character has its own image. Shoppers can switch between them; the default is used until they do (and on Telegram/WhatsApp). Square images look best.",
     "isDefault": "Default character",
     "makeDefault": "Set as default",
+    "defaultHint": "Shown first (and used on Telegram/WhatsApp) until a shopper switches.",
+    "behaviourTitle": "Base prompt & behavior",
+    "behaviourDesc": "Shared by both characters. Each character's own role and welcome message are in its tab above.",
+    "greetingHint": "The first line shown when the chat opens. Empty = the built-in greeting for the current language.",
     "personaTitle": "Persona & behavior",
     "intro": "Base identity & description",
     "introHint": "The opening of Shadi's instructions — who it is and what Hezalli is. Edit freely, or use Reset to restore the default. This is the safe half of the base prompt; the rules below are always applied on top.",
