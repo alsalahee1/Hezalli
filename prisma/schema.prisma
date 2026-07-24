@@ -1864,3 +1864,28 @@ model BotDailyUsage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// One row per assistant turn, for the per-character analytics on the Admin →
+// Shadi stats page: which character answered, where, in what language, who
+// asked (a logged-in user or an anonymous visitor cookie), and the question
+// itself (truncated) so we can surface the most-asked questions. Best-effort:
+// written fire-and-forget after a reply, never blocking the chat.
+model AiChatEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  bot       String // "shadi" | "jumana"
+  channel   String // "web" | "telegram" | "whatsapp"
+  section   String // store | seller | admin | wallet | driver | point | fleet
+  locale    String // "ar" | "en"
+  // Who asked: a signed-in user id, and/or an anonymous visitor-cookie id. We
+  // count distinct COALESCE(userId, visitorId) as "users" per character.
+  userId    String?
+  visitorId String?
+  // The shopper's message, trimmed + truncated. Grouped for "most questions".
+  question  String
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+
+  @@index([bot, createdAt])
+  @@index([createdAt])
+}
