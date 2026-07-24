@@ -24,7 +24,9 @@ export function BotSwitcher({
 
   const choose = (id: string) => {
     if (id === active) return;
-    document.cookie = `${BOT_COOKIE}=${id}; path=/; max-age=31536000; SameSite=Lax`;
+    // Stamp the choice (see getActiveBot): it outranks the admin default only
+    // until the admin next changes it.
+    document.cookie = `${BOT_COOKIE}=${id}.${Date.now()}; path=/; max-age=31536000; SameSite=Lax`;
     window.location.reload();
   };
 

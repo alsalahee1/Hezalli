@@ -493,6 +493,13 @@ export async function saveAssistantSettings(
 
   const defaultBot = isBotId(input.defaultBot) ? input.defaultBot : "shadi";
 
+  // Only re-stamp the default when it actually changes, so an ordinary
+  // settings save doesn't reset every shopper's switcher cookie.
+  const prevDefault = await prisma.platformSetting.findUnique({
+    where: { key: "ai_default_bot" },
+    select: { value: true },
+  });
+
   // Shared keys written by this action. Avatars have their own action; the
   // per-character persona/greeting keys are written from `botText` below.
   const shared: Array<[AiSettingKey, string | number | boolean]> = [
@@ -513,6 +520,9 @@ export async function saveAssistantSettings(
     ["ai_temperature", Math.round(temperature * 100) / 100],
     ["ai_max_tokens", maxTokens],
   ];
+  if ((prevDefault?.value ?? "shadi") !== defaultBot) {
+    shared.push(["ai_default_bot_at", String(Date.now())]);
+  }
   const entries: Array<[AiSettingKey, string | number | boolean]> = [
     ...shared,
     ...botText,
@@ -714,11 +724,21 @@ export async function saveDefaultBot(botId: BotId): Promise<Result> {
   if (!adminId) return { error: "forbidden" };
   if (!isBotId(botId)) return { error: "badBot" };
 
-  await prisma.platformSetting.upsert({
-    where: { key: "ai_default_bot" },
-    create: { key: "ai_default_bot", value: botId },
-    update: { value: botId },
-  });
+  // Stamp the change so shopper switcher cookies set before now stop
+  // overriding the default (see lib/ai/active-bot.ts:getActiveBot).
+  const at = String(Date.now());
+  await prisma.$transaction([
+    prisma.platformSetting.upsert({
+      where: { key: "ai_default_bot" },
+      create: { key: "ai_default_bot", value: botId },
+      update: { value: botId },
+    }),
+    prisma.platformSetting.upsert({
+      where: { key: "ai_default_bot_at" },
+      create: { key: "ai_default_bot_at", value: at },
+      update: { value: at },
+    }),
+  ]);
 
   await prisma.auditLog.create({
     data: {

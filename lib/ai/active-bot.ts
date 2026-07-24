@@ -10,8 +10,17 @@ import { getSetting } from "@/lib/settings";
 import { BOT_COOKIE, BOTS, isBotId, type BotId } from "./bot-constants";
 
 export async function getActiveBot(): Promise<BotId> {
-  const cookie = (await cookies()).get(BOT_COOKIE)?.value;
-  if (isBotId(cookie)) return cookie;
+  const raw = (await cookies()).get(BOT_COOKIE)?.value;
+  // The switcher cookie is "<botId>.<epochMs>" (older cookies are a bare id,
+  // read as stamp 0). It only overrides the platform default if the shopper
+  // switched AFTER the admin last changed the default — so changing the
+  // default re-applies it to everyone who hasn't since picked for themselves.
+  if (raw) {
+    const dot = raw.lastIndexOf(".");
+    const id = dot === -1 ? raw : raw.slice(0, dot);
+    const at = dot === -1 ? 0 : Number(raw.slice(dot + 1)) || 0;
+    if (isBotId(id) && at >= (await defaultChangedAt())) return id;
+  }
   return getDefaultBot();
 }
 
@@ -24,6 +33,15 @@ export async function getDefaultBot(): Promise<BotId> {
     // fall through
   }
   return "shadi";
+}
+
+/** Epoch-ms of the last admin change to the default character (0 if never). */
+async function defaultChangedAt(): Promise<number> {
+  try {
+    return Number(await getSetting("ai_default_bot_at")) || 0;
+  } catch {
+    return 0;
+  }
 }
 
 /** A bot's avatar: its custom override if set, else the bundled default. */

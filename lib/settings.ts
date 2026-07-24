@@ -190,6 +190,10 @@ export type PlatformSettings = {
   // Which character is the platform default: "shadi" | "jumana". A shopper can
   // override it for themselves with the bot switcher (a cookie).
   ai_default_bot: string;
+  // Epoch-ms stamp of the last time an admin changed the default character.
+  // A shopper's switcher cookie only wins if they switched AFTER this, so
+  // changing the default re-applies it to everyone who hasn't since chosen.
+  ai_default_bot_at: string;
   // ── Shadi tuning (Admin → Shadi page). For every "" / 0 value the runtime
   // falls back to the matching env var, then to the built-in default — so a
   // fresh install behaves exactly as before an admin touches anything. ──
@@ -311,6 +315,7 @@ export const SETTING_DEFAULTS: PlatformSettings = {
   ai_assistant_avatar: "/shadi.jpg",
   ai_avatar_jumana: "/jumana.png",
   ai_default_bot: "shadi",
+  ai_default_bot_at: "0",
   ai_gemini_model: "",
   ai_reply_mode: "",
   ai_tts_voice: "",

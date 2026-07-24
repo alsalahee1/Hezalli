@@ -19,7 +19,9 @@ const REOPEN_KEY = "shadi:reopen-after-switch";
 // re-resolves the avatar, name, and system-prompt identity. Flag the widget to
 // re-open with the new character once the page comes back.
 function switchTo(id: string) {
-  document.cookie = `${BOT_COOKIE}=${id}; path=/; max-age=31536000; SameSite=Lax`;
+  // Stamp the choice so it outranks the admin default only until the admin
+  // next changes it (see getActiveBot). Bare-id cookies count as stamp 0.
+  document.cookie = `${BOT_COOKIE}=${id}.${Date.now()}; path=/; max-age=31536000; SameSite=Lax`;
   try {
     sessionStorage.setItem(REOPEN_KEY, "1");
   } catch {
