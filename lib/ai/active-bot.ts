@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 
 import { getSetting } from "@/lib/settings";
 
-import { BOT_COOKIE, BOTS, normalizeBotId, type BotId } from "./bot-constants";
+import { BOT_COOKIE, BOTS, isBotId, type BotId } from "./bot-constants";
 
 export async function getActiveBot(): Promise<BotId> {
   const raw = (await cookies()).get(BOT_COOKIE)?.value;
@@ -17,9 +17,9 @@ export async function getActiveBot(): Promise<BotId> {
   // default re-applies it to everyone who hasn't since picked for themselves.
   if (raw) {
     const dot = raw.lastIndexOf(".");
-    const id = normalizeBotId(dot === -1 ? raw : raw.slice(0, dot));
+    const id = dot === -1 ? raw : raw.slice(0, dot);
     const at = dot === -1 ? 0 : Number(raw.slice(dot + 1)) || 0;
-    if (id && at >= (await defaultChangedAt())) return id;
+    if (isBotId(id) && at >= (await defaultChangedAt())) return id;
   }
   return getDefaultBot();
 }
@@ -27,8 +27,8 @@ export async function getActiveBot(): Promise<BotId> {
 /** The admin-chosen default character (ai_default_bot), or the male one. */
 export async function getDefaultBot(): Promise<BotId> {
   try {
-    const def = normalizeBotId(await getSetting("ai_default_bot"));
-    if (def) return def;
+    const def = await getSetting("ai_default_bot");
+    if (isBotId(def)) return def;
   } catch {
     // fall through
   }
