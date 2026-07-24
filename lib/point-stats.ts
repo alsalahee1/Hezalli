@@ -158,6 +158,60 @@ export async function hubSummary(
   };
 }
 
+export type QueueStats = {
+  total: number; // queue entries created in range
+  served: number; // reached DONE
+  noShow: number; // BOOKED/WAITING that were cleared as no-show
+  walkIns: number; // arrived without a reservation
+  booked: number; // reserved a slot (whether or not honoured)
+  avgWaitMin: number | null; // arrival → served, averaged over served entries
+  noShowRatePct: number | null; // noShow / (served + noShow)
+};
+
+// Arrival-queue scoreboard for a hub (docs §46): how the counter queue
+// performed over a range — throughput, no-show rate, and how long people
+// waited — computed from the PointQueueEntry timestamps.
+export async function queueStats(
+  pointId: string,
+  from: Date,
+  to: Date,
+): Promise<QueueStats> {
+  const rows = await prisma.pointQueueEntry.findMany({
+    where: { pointId, createdAt: { gte: from, lt: to } },
+    select: {
+      status: true,
+      slotStart: true,
+      arrivedAt: true,
+      servedAt: true,
+    },
+  });
+  const served = rows.filter((r) => r.status === "DONE").length;
+  const noShow = rows.filter((r) => r.status === "NO_SHOW").length;
+  const walkIns = rows.filter((r) => r.slotStart == null).length;
+  const booked = rows.length - walkIns;
+
+  const waits = rows
+    .filter((r) => r.status === "DONE" && r.arrivedAt && r.servedAt)
+    .map((r) => (r.servedAt!.getTime() - r.arrivedAt!.getTime()) / 60_000)
+    .filter((m) => m >= 0);
+  const avgWaitMin =
+    waits.length > 0
+      ? Math.round((waits.reduce((a, b) => a + b, 0) / waits.length) * 10) / 10
+      : null;
+
+  const closed = served + noShow;
+  return {
+    total: rows.length,
+    served,
+    noShow,
+    walkIns,
+    booked,
+    avgWaitMin,
+    noShowRatePct:
+      closed > 0 ? Math.round((noShow / closed) * 1000) / 10 : null,
+  };
+}
+
 export async function networkSummary(
   from: Date,
   to: Date,

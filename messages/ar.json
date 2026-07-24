@@ -3347,7 +3347,14 @@
     "err_unauthorized": "يرجى تسجيل الدخول أولًا.",
     "slotCapTitle": "سعة الفترة",
     "slotCapHint": "كم حجزًا تقبله كل فترة في هذه النقطة. اتركه فارغًا لاستخدام الافتراضي ({default})؛ 0 يعني إيقاف الحجز (الحضور المباشر فقط).",
-    "slotCapDefault": "الافتراضي ({default})"
+    "slotCapDefault": "الافتراضي ({default})",
+    "queueStatsTitle": "طابور الوصول",
+    "queueStatServed": "تمت خدمتهم",
+    "queueStatNoShowRate": "نسبة عدم الحضور",
+    "queueStatAvgWait": "متوسط الانتظار",
+    "queueStatMinutes": "{min} دقيقة",
+    "queueStatWalkIns": "حضور مباشر",
+    "queueStatBooked": "محجوز"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
