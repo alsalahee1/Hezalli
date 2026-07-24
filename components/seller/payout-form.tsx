@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { savePayoutMethod, type FormState } from "@/lib/actions/payout";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 
 export type PayoutData = {
   kind: string;
@@ -19,6 +20,7 @@ type Kind = "bank" | "wallet" | "usdt";
 
 export function PayoutForm({ current }: { current: PayoutData }) {
   const t = useTranslations("Payout");
+  const { toast } = useToast();
   const [kind, setKind] = useState<Kind>((current?.kind as Kind) ?? "wallet");
   const [state, action, pending] = useActionState<FormState, FormData>(
     savePayoutMethod,
@@ -28,16 +30,12 @@ export function PayoutForm({ current }: { current: PayoutData }) {
     current?.kind === kind ? (current.details[key] ?? "") : "";
   const err = (key: string) => state.errors?.[key];
 
+  useEffect(() => {
+    if (state.ok) toast(t("saved"));
+  }, [state, t, toast]);
+
   return (
     <form action={action} className="max-w-lg space-y-4" noValidate>
-      {state.ok ? (
-        <p
-          role="status"
-          className="bg-primary/10 text-primary rounded-md px-3 py-2 text-sm"
-        >
-          {t("saved")}
-        </p>
-      ) : null}
       {state.formError ? (
         <p
           role="alert"

@@ -7,9 +7,11 @@ import { changePassword, type FormState } from "@/lib/actions/account";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
 
 export function PasswordForm() {
   const t = useTranslations("Account");
+  const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<FormState, FormData>(
     changePassword,
@@ -17,8 +19,11 @@ export function PasswordForm() {
   );
 
   useEffect(() => {
-    if (state.ok) formRef.current?.reset();
-  }, [state]);
+    if (state.ok) {
+      formRef.current?.reset();
+      toast(t("passwordUpdated"));
+    }
+  }, [state, t, toast]);
 
   return (
     <form
@@ -27,14 +32,6 @@ export function PasswordForm() {
       className="max-w-sm space-y-4"
       noValidate
     >
-      {state.ok ? (
-        <p
-          role="status"
-          className="bg-primary/10 text-primary rounded-md px-3 py-2 text-sm"
-        >
-          {t("passwordUpdated")}
-        </p>
-      ) : null}
       {state.formError ? (
         <p
           role="alert"

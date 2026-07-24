@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
 import { updateProfile, type FormState } from "@/lib/actions/account";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
 
 export function ProfileForm({
   defaultName,
@@ -18,22 +19,18 @@ export function ProfileForm({
   defaultPhone: string;
 }) {
   const t = useTranslations("Account");
+  const { toast } = useToast();
   const [state, action, pending] = useActionState<FormState, FormData>(
     updateProfile,
     {},
   );
 
+  useEffect(() => {
+    if (state.ok) toast(t("saved"));
+  }, [state, t, toast]);
+
   return (
     <form action={action} className="space-y-4" noValidate>
-      {state.ok ? (
-        <p
-          role="status"
-          className="bg-primary/10 text-primary rounded-md px-3 py-2 text-sm"
-        >
-          {t("saved")}
-        </p>
-      ) : null}
-
       <div className="space-y-1.5">
         <Label htmlFor="name">{t("name")}</Label>
         <Input

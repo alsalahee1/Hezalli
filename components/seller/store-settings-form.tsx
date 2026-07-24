@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
 import { updateStoreSettings, type FormState } from "@/lib/actions/store";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 
 export type StoreSettingsData = {
   name: string;
@@ -20,6 +21,7 @@ export type StoreSettingsData = {
 
 export function StoreSettingsForm({ store }: { store: StoreSettingsData }) {
   const t = useTranslations("SellerSettings");
+  const { toast } = useToast();
   const [state, action, pending] = useActionState<FormState, FormData>(
     updateStoreSettings,
     {},
@@ -28,16 +30,12 @@ export function StoreSettingsForm({ store }: { store: StoreSettingsData }) {
 
   const field = (key: string) => state.errors?.[key];
 
+  useEffect(() => {
+    if (state.ok) toast(t("saved"));
+  }, [state, t, toast]);
+
   return (
     <form action={action} className="max-w-2xl space-y-5" noValidate>
-      {state.ok ? (
-        <p
-          role="status"
-          className="bg-primary/10 text-primary rounded-md px-3 py-2 text-sm"
-        >
-          {t("saved")}
-        </p>
-      ) : null}
       {state.formError ? (
         <p
           role="alert"

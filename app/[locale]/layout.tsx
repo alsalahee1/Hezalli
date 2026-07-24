@@ -12,6 +12,7 @@ import { assistantReady } from "@/lib/ai/gemini";
 import { getActiveBot, getBotAvatar } from "@/lib/ai/active-bot";
 import { BOTS, BOT_IDS, botName } from "@/lib/ai/bot-constants";
 import { AiAssistant } from "@/components/ai/ai-assistant";
+import { ToastProvider } from "@/components/ui/toast";
 
 import "../globals.css";
 
@@ -83,18 +84,20 @@ export default async function LocaleLayout({
     >
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <NextIntlClientProvider messages={messages}>
-          {children}
-          {/* The AI assistant floats on every page of the site — not just the
-            storefront — so shoppers, sellers, and drivers can all reach it.
-            Hidden when the admin toggle is off or no Gemini key is configured
-            (Admin → Settings, or the GEMINI_API_KEY env var). */}
-          {showAssistant ? (
-            <AiAssistant
-              botId={activeBot}
-              bots={assistantBots}
-              greeting={assistantGreeting}
-            />
-          ) : null}
+          <ToastProvider>
+            {children}
+            {/* The AI assistant floats on every page of the site — not just the
+              storefront — so shoppers, sellers, and drivers can all reach it.
+              Hidden when the admin toggle is off or no Gemini key is configured
+              (Admin → Settings, or the GEMINI_API_KEY env var). */}
+            {showAssistant ? (
+              <AiAssistant
+                botId={activeBot}
+                bots={assistantBots}
+                greeting={assistantGreeting}
+              />
+            ) : null}
+          </ToastProvider>
         </NextIntlClientProvider>
       </body>
     </html>
