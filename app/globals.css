@@ -4,6 +4,28 @@
 @custom-variant dark (&:is(.dark *));
 @custom-variant yemeni (&:is(.theme-yemeni *));
 
+/* Every "phone vs. tablet/desktop" split in this app (sidebars, bottom tab
+   bars, card-list-vs-table, etc.) is written as a plain `md:` utility, so an
+   unfolded foldable phone (Galaxy Z Fold, Pixel Fold, ...) is the one place
+   that needs fixing: it reports a viewport around 600-767px — just under
+   `md` — but reads as roughly square rather than tall and narrow like a
+   folded phone. Redefine `md` itself to match the normal 768px cutoff OR
+   that near-square band, so every existing `md:` class in the app treats an
+   unfolded fold as tablet-and-up without touching each call site. A folded
+   (narrow, elongated) state doesn't match the aspect-ratio band and keeps
+   the phone layout as before. */
+@theme {
+  --breakpoint-md: initial;
+}
+@custom-variant md {
+  @media (min-width: 768px) {
+    @slot;
+  }
+  @media (min-width: 600px) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 4/3) {
+    @slot;
+  }
+}
+
 :root {
   /* Match native controls (select popups, date pickers, scrollbars) to the
      app theme, so a device in dark mode doesn't render a dark OS picker over
@@ -209,8 +231,12 @@
    the storefront chrome (announcement banner, site header, footer, and the
    account heading + nav) so the wallet reads like a standalone mobile-app
    screen — leaving just the balance card, stats/actions, and the wallet's own
-   bottom tab bar. Desktop (md and up) is unaffected. */
-@media (max-width: 767px) {
+   bottom tab bar. Desktop (md and up) is unaffected, and so is an unfolded
+   foldable phone (see the `md` override above) even though its viewport is
+   under 768px — this raw media query can't reuse that Tailwind variant, so
+   it repeats the same near-square carve-out directly. */
+@media (max-width: 767px) and
+  (not ((min-width: 600px) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 4/3))) {
   /* Hide the storefront chrome — but NOT the wallet's own app header, which is
      also a <header> and opts out with [data-app-header]. */
   body:has([data-native-wallet]) [data-announcement],
