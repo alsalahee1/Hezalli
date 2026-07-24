@@ -156,6 +156,7 @@ export async function POST(req: NextRequest) {
       userId: session?.user?.id ?? null,
       visitorId: session?.user?.id ? null : visitorId,
       question: lastUser?.text ?? "",
+      fallback: reply.fallback,
       tokensIn: reply.usage.in,
       tokensOut: reply.usage.out,
     });

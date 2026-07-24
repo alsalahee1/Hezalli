@@ -195,6 +195,7 @@ export async function runChannelTurn(opts: {
     userId: existing?.userId ?? null,
     visitorId: existing?.userId ? null : `${platform}:${chatId}`,
     question: displayText,
+    fallback: reply.fallback,
     tokensIn: reply.usage.in,
     tokensOut: reply.usage.out,
   });

@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { Download } from "lucide-react";
 
 import { getBotAvatar } from "@/lib/ai/active-bot";
 import { BOT_IDS, botName } from "@/lib/ai/bot-constants";
@@ -49,20 +50,30 @@ export default async function AssistantStatsPage({
           </h1>
           <p className="text-muted-foreground text-sm">{t("desc")}</p>
         </div>
-        <div className="flex items-center gap-1 text-sm">
-          {RANGES.map((r) => (
-            <Link
-              key={r}
-              href={`/admin/assistant/stats?days=${r}`}
-              className={
-                r === days
-                  ? "bg-primary text-primary-foreground rounded-md px-3 py-1.5 font-medium"
-                  : "text-muted-foreground hover:bg-muted rounded-md px-3 py-1.5"
-              }
-            >
-              {t("lastDays", { days: r })}
-            </Link>
-          ))}
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <div className="flex items-center gap-1">
+            {RANGES.map((r) => (
+              <Link
+                key={r}
+                href={`/admin/assistant/stats?days=${r}`}
+                className={
+                  r === days
+                    ? "bg-primary text-primary-foreground rounded-md px-3 py-1.5 font-medium"
+                    : "text-muted-foreground hover:bg-muted rounded-md px-3 py-1.5"
+                }
+              >
+                {t("lastDays", { days: r })}
+              </Link>
+            ))}
+          </div>
+          {/* Plain anchor — hits the API route directly to download the file. */}
+          <a
+            href={`/api/admin/assistant/stats/export?days=${days}`}
+            className="hover:bg-muted inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-medium"
+          >
+            <Download className="size-4" />
+            {t("export")}
+          </a>
         </div>
       </div>
       <AssistantStatsView stats={stats} bots={bots} />
