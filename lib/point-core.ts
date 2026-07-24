@@ -124,7 +124,15 @@ export async function receiveParcelAtPoint(
   }
   // Fresh receive: auto-place on the least-busy registered bay when the
   // operator didn't name one (null when the point has no shelf registry).
-  const shelfCode = manualShelf ?? (await assignShelf(pointId));
+  // A buyer-collected PICKUP parcel goes to the pickup area near the counter;
+  // everything else (courier last-mile, or a line-haul departure at an origin
+  // hub) goes to the dispatch area near the door.
+  const isPickupParcel =
+    parcel.subOrder.shippingMethod === "PICKUP" &&
+    parcel.deliveryPointId === pointId;
+  const shelfCode =
+    manualShelf ??
+    (await assignShelf(pointId, isPickupParcel ? "PICKUP" : "DISPATCH"));
   // Which hop is this? Origin receives the seller drop-off (LABEL_CREATED);
   // the destination receives either the drop-off (single-hop) or the
   // line-haul arrival (IN_TRANSIT with an origin leg).
@@ -390,8 +398,10 @@ export async function receiveReturnAtPoint(
   if (parcel.subOrder.status !== "SHIPPED") return { error: "badState" };
   if (parcel.status !== "FAILED") return { error: "badState" };
 
-  // Auto-place the returned parcel on the least-busy bay when no shelf is named.
-  const shelfCode = cleanShelf(shelf) ?? (await assignShelf(pointId));
+  // Auto-place the returned parcel on the least-busy RETURNS bay when no shelf
+  // is named (falls back to any bay when the point has no returns area).
+  const shelfCode =
+    cleanShelf(shelf) ?? (await assignShelf(pointId, "RETURNS"));
   const claimed = await prisma.shipment.updateMany({
     where: { id: parcel.id, status: "FAILED" },
     data: {

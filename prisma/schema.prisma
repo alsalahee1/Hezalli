@@ -435,19 +435,31 @@ model DeliveryPoint {
 // the parcel's shelfCode is set from here at the receive scan. Occupancy is
 // derived live from Shipment.shelfCode, never stored, so it can't drift.
 model PointShelf {
-  id        String        @id @default(cuid())
+  id        String         @id @default(cuid())
   pointId   String
   // The human bay code (e.g. "A1", "B3") — matches Shipment.shelfCode and the
   // printed label QR ("hezalli:shelf:<code>").
   code      String
+  // What this bay is for, so auto-placement routes a parcel to the right area:
+  // buyer PICKUP bays near the counter, courier DISPATCH bays near the door,
+  // RETURNS for failed parcels. Null = general (eligible for anything).
+  zone      PointShelfZone?
   // Optional cap on parcels this bay holds (null = unlimited). Assignment skips
   // a full bay and rolls to the next.
   capacity  Int?
-  createdAt DateTime      @default(now())
-  point     DeliveryPoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  point     DeliveryPoint  @relation(fields: [pointId], references: [id], onDelete: Cascade)
 
   @@unique([pointId, code])
   @@index([pointId])
+}
+
+// Which counter activity a shelf serves, so a received parcel is placed where
+// it will be retrieved (docs §42e).
+enum PointShelfZone {
+  PICKUP // buyer collects here — keep near the counter
+  DISPATCH // courier loads here — keep near the door
+  RETURNS // failed/returned parcels
 }
 
 // A hub operator's request to be paid their earnings balance, mirroring the

@@ -3250,7 +3250,18 @@
     "shelfAutoEnable": "تفعيل بهذه الرفوف",
     "shelfAutoUpdate": "تحديث الرفوف من هذه الشبكة",
     "shelfAutoDisable": "إيقاف",
-    "shelfAutoHint": "يستخدم الصفوف × الأرفف بالأعلى. إضافة أرفف تُبقي الموجودة — والطرود المرصوصة مسبقًا لا تتأثر."
+    "shelfAutoHint": "يستخدم الصفوف × الأرفف بالأعلى. إضافة أرفف تُبقي الموجودة — والطرود المرصوصة مسبقًا لا تتأثر.",
+    "shelfZonesTitle": "مناطق الرفوف",
+    "shelfZonesHint": "صنّف كل صف حسب محتواه لتُوضع الطرود حيث تُستلم — الاستلام قرب الكاونتر والإرسال قرب الباب. حدّد سعة لكل رف لتقييد عدد الطرود.",
+    "shelfZoneRow": "الصف",
+    "shelfZoneArea": "المنطقة",
+    "shelfZoneCap": "لكل رف",
+    "shelfZoneGeneral": "عام",
+    "shelfZonePickup": "استلام المشتري",
+    "shelfZoneDispatch": "إرسال المندوب",
+    "shelfZoneReturns": "المرتجعات",
+    "shelfZonesSave": "حفظ المناطق",
+    "shelfZonesSaved": "تم الحفظ"
   },
   "PointApply": {
     "title": "كن نقطة هزلي",
