@@ -4,6 +4,7 @@ import {
   CircleHelp,
   FileText,
   History,
+  Map,
   Package,
   QrCode,
   Store,
@@ -63,6 +64,7 @@ export function PointTabBar({ access }: { access: PointAccess }) {
         ...(manage
           ? [{ href: "/point/staff", label: t("staffTab"), icon: Users }]
           : []),
+        { href: "/point/layout", label: t("layoutTab"), icon: Map },
         { href: "/point/how", label: t("howTab"), icon: CircleHelp },
       ]}
     />

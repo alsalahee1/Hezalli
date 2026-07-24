@@ -215,6 +215,41 @@ export function HowFormula({
   );
 }
 
+export type LegendItem = {
+  n: number;
+  title: string;
+  text: string;
+  tone: Tone;
+};
+
+/** Numbered key for a diagram: colored number chip + name + what happens
+ *  there. Numbers line up with the medallions drawn on the floor plan. */
+export function HowLegend({ items }: { items: LegendItem[] }) {
+  return (
+    <ol className="grid gap-3 sm:grid-cols-2">
+      {items.map((it) => {
+        const c = TONES[it.tone];
+        return (
+          <li key={it.n} className="flex gap-3 rounded-xl border p-4">
+            <span
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-sm",
+                c.chip,
+              )}
+            >
+              {it.n}
+            </span>
+            <div className="min-w-0">
+              <p className={cn("text-sm font-semibold", c.text)}>{it.title}</p>
+              <p className="text-muted-foreground mt-0.5 text-sm">{it.text}</p>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 /** Traffic-light legend: what green / amber / red mean for this role. */
 export function HowBadges({
   items,
