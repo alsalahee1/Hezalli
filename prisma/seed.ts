@@ -16,7 +16,7 @@
  *   - extra coupons (seller / fixed / free-shipping / expired), an active
  *     flash sale, seller payout methods + a payout request, and banners
  *
- * Dev login password for every seeded user: "hezalli123".
+ * Dev login password for every seeded user: "salahahmed".
  * Run with: npm run db:seed
  */
 import "dotenv/config";
@@ -686,7 +686,7 @@ async function main() {
 
   // Dev login password shared by every seeded user (see file header). Hashed
   // via the same helper the app uses so seeded users can sign in.
-  const PASSWORD = await hashPassword("hezalli123");
+  const PASSWORD = await hashPassword("salahahmed");
 
   console.log("🧹 Clearing existing data…");
   await clearDatabase();

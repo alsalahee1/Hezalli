@@ -5,7 +5,7 @@ import { login } from "./helpers";
 test("seller analytics page renders KPIs, chart and period switch", async ({
   page,
 }) => {
-  await login(page, "seller1@hezalli.com", "hezalli123");
+  await login(page, "seller1@hezalli.com", "salahahmed");
 
   await page.goto("/en/seller/analytics", { waitUntil: "domcontentloaded" });
   expect(page.url()).toContain("/seller/analytics");

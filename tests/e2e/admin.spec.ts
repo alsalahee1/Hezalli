@@ -5,7 +5,7 @@ import { login } from "./helpers";
 test("admin can sign in and reach the dashboard + oversight screens", async ({
   page,
 }) => {
-  await login(page, "admin@hezalli.com", "hezalli123");
+  await login(page, "admin@hezalli.com", "salahahmed");
 
   await page.goto("/en/admin", { waitUntil: "domcontentloaded" });
   expect(page.url()).toContain("/admin");
@@ -23,7 +23,7 @@ test("admin can sign in and reach the dashboard + oversight screens", async ({
 });
 
 test("a buyer cannot reach the admin panel", async ({ page }) => {
-  await login(page, "buyer1@example.com", "hezalli123");
+  await login(page, "buyer1@example.com", "salahahmed");
   await page.goto("/en/admin", { waitUntil: "domcontentloaded" });
   // The admin layout renders a Forbidden screen for non-admins — no admin nav.
   await expect(page.locator('a[href*="/admin/users"]')).toHaveCount(0);

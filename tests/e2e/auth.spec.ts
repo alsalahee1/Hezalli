@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Golden path: register a new buyer → auto-logged-in → log out → log back in.
 const email = `e2e-${Date.now()}@test.local`;
-const password = "hezalli123";
+const password = "salahahmed";
 
 test("register, then log back in", async ({ page }) => {
   // --- register ---

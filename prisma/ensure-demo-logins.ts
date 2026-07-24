@@ -17,7 +17,7 @@
  *   docker compose -f deploy/docker-compose.traefik.yml --env-file .env \
  *     run --rm migrate npx tsx prisma/ensure-demo-logins.ts
  *
- * Safe to re-run: matches the seed's emails/password so the one-tap logins and
+ * Safe to re-run: matches the seed's emails/password so the fast-login cards and
  * the /driver and /point dashboards work exactly like a fresh seed.
  */
 import "dotenv/config";
@@ -85,7 +85,7 @@ async function ensureUser(opts: {
 }
 
 async function main() {
-  const passwordHash = await hashPassword("hezalli123");
+  const passwordHash = await hashPassword("salahahmed");
 
   // --- Courier (Hezalli Express driver) → /driver ---
   const driverCreated = await ensureUser({
@@ -232,7 +232,7 @@ async function main() {
     );
   }
 
-  console.log("Demo logins ensured. Password for all: hezalli123");
+  console.log("Demo logins ensured. Password for all: salahahmed");
 }
 
 main()

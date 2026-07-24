@@ -8,7 +8,7 @@
  * users, and products are left untouched.
  *
  * SECURITY: the demo seed creates staff/admin accounts that all share a single,
- * publicly-known password ("hezalli123", committed in prisma/seed.ts). Running
+ * publicly-known password ("salahahmed", committed in prisma/seed.ts). Running
  * it against a real (production) database would hand anyone full admin access
  * through the normal login form. So this guard refuses to run in production
  * unless SEED_ALLOWED=true is explicitly set. A production deploy gets its
