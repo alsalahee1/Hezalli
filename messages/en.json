@@ -1964,6 +1964,11 @@
     "questionPlaceholder": "e.g. How do I return an item?",
     "answer": "Answer",
     "answerPlaceholder": "The answer the assistant should give. It rephrases this in its own voice.",
+    "draft": "Draft with AI",
+    "drafting": "Drafting…",
+    "draftHint": "Let the AI suggest an answer, then edit it before saving.",
+    "used": "used {n}×",
+    "neverUsed": "not triggered yet",
     "character": "Character",
     "language": "Language",
     "allChars": "Both characters",
@@ -1977,7 +1982,9 @@
     "confirmDelete": "Delete this answer?",
     "empty": "No saved answers yet. Add one, or create one from a “needs attention” question on the stats page.",
     "err_forbidden": "You don't have permission to do that.",
-    "err_empty": "Enter both a question and an answer."
+    "err_empty": "Enter both a question and an answer.",
+    "err_unavailable": "The AI isn't configured — add a Gemini key first.",
+    "err_aiFailed": "Couldn't draft an answer. Try again."
   },
   "Vouchers": {
     "platformTitle": "Platform vouchers",

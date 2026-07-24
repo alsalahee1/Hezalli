@@ -44,3 +44,62 @@ export async function getFaqBlock(bot: BotId, locale: string): Promise<string> {
     items,
   ].join("\n");
 }
+
+// Normalise a question to a set of meaningful word tokens (drop punctuation and
+// very short words) for lightweight overlap matching.
+function tokenize(s: string): Set<string> {
+  return new Set(
+    s
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 3),
+  );
+}
+
+/**
+ * Attribute a shopper's question to the best-matching enabled FAQ (if any) and
+ * bump its usefulness counter. Best-effort, fire-and-forget: we don't know
+ * which entry the model actually used, so we approximate with keyword overlap
+ * (share of the FAQ's words present in the question). Conservative threshold to
+ * avoid over-counting.
+ */
+export async function recordFaqHit(
+  bot: BotId,
+  locale: string,
+  question: string,
+): Promise<void> {
+  const asked = tokenize(question);
+  if (asked.size === 0) return;
+  try {
+    const rows = await prisma.aiFaq.findMany({
+      where: {
+        enabled: true,
+        bot: { in: ["all", bot] },
+        locale: { in: ["all", locale] },
+      },
+      select: { id: true, question: true },
+    });
+    let bestId: string | null = null;
+    let bestScore = 0;
+    for (const r of rows) {
+      const faqWords = tokenize(r.question);
+      if (faqWords.size === 0) continue;
+      let overlap = 0;
+      for (const w of faqWords) if (asked.has(w)) overlap++;
+      const score = overlap / faqWords.size; // share of the FAQ's words asked
+      if (score > bestScore) {
+        bestScore = score;
+        bestId = r.id;
+      }
+    }
+    if (bestId && bestScore >= 0.6) {
+      await prisma.aiFaq.update({
+        where: { id: bestId },
+        data: { hitCount: { increment: 1 }, lastHitAt: new Date() },
+      });
+    }
+  } catch {
+    // Best-effort — swallow.
+  }
+}

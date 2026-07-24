@@ -1899,18 +1899,22 @@ model AiChatEvent {
 // Enabled entries matching the active character + language are injected into
 // the system prompt each turn.
 model AiFaq {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   // The question / topic this answers (the trigger).
   question  String
   // The curated answer the character should give (it adapts tone to persona).
   answer    String
   // Which character uses it: "all" | "shadi" | "jumana".
-  bot       String   @default("all")
+  bot       String    @default("all")
   // Which language: "all" | "ar" | "en".
-  locale    String   @default("all")
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  locale    String    @default("all")
+  enabled   Boolean   @default(true)
+  // How often a real shopper question matched this entry (a usefulness signal),
+  // and when it last did. Bumped fire-and-forget after a turn.
+  hitCount  Int       @default(0)
+  lastHitAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([enabled, updatedAt])
 }

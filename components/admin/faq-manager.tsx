@@ -2,9 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
 
-import { deleteFaq, saveFaq, toggleFaq } from "@/lib/actions/faq";
+import {
+  deleteFaq,
+  draftFaqAnswer,
+  saveFaq,
+  toggleFaq,
+} from "@/lib/actions/faq";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +21,7 @@ export type FaqRow = {
   bot: string;
   locale: string;
   enabled: boolean;
+  hitCount: number;
 };
 
 type Draft = {
@@ -49,6 +55,7 @@ export function FaqManager({
   const t = useTranslations("AdminFaq");
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [drafting, setDrafting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(
     initialDraft
@@ -86,6 +93,25 @@ export function FaqManager({
       else router.refresh();
     });
 
+  // Ask the AI to draft an answer for the current question; admin edits/approves.
+  const draft2 = async () => {
+    if (!draft?.question.trim()) return;
+    setErr(null);
+    setDrafting(true);
+    try {
+      const res = await draftFaqAnswer({
+        question: draft.question,
+        bot: draft.bot,
+        locale: draft.locale,
+      });
+      if (res.error) setErr(res.error);
+      else if (res.answer)
+        setDraft((d) => (d ? { ...d, answer: res.answer! } : d));
+    } finally {
+      setDrafting(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       {!draft ? (
@@ -107,7 +133,22 @@ export function FaqManager({
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium">{t("answer")}</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">{t("answer")}</span>
+              <button
+                type="button"
+                onClick={draft2}
+                disabled={drafting || pending || !draft.question.trim()}
+                className="text-primary inline-flex items-center gap-1.5 text-xs font-medium hover:underline disabled:opacity-50"
+              >
+                {drafting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Wand2 className="size-3.5" />
+                )}
+                {drafting ? t("drafting") : t("draft")}
+              </button>
+            </div>
             <textarea
               value={draft.answer}
               onChange={(e) => setDraft({ ...draft, answer: e.target.value })}
@@ -116,6 +157,9 @@ export function FaqManager({
               placeholder={t("answerPlaceholder")}
               className="border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm"
             />
+            <span className="text-muted-foreground block text-xs">
+              {t("draftHint")}
+            </span>
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
@@ -190,7 +234,10 @@ export function FaqManager({
                   {f.answer}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {scopeLabel(f.bot, f.locale)}
+                  {scopeLabel(f.bot, f.locale)} ·{" "}
+                  {f.hitCount > 0
+                    ? t("used", { n: f.hitCount })
+                    : t("neverUsed")}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">

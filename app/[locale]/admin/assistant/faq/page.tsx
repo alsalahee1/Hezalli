@@ -28,6 +28,7 @@ export default async function AdminFaqPage({
         bot: true,
         locale: true,
         enabled: true,
+        hitCount: true,
       },
     });
   } catch {

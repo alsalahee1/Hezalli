@@ -8,6 +8,7 @@ import {
   type ChatMessage,
 } from "@/lib/ai/assistant";
 import { getActiveBot } from "@/lib/ai/active-bot";
+import { recordFaqHit } from "@/lib/ai/faq";
 import { checkGlobalCaps } from "@/lib/ai/guards";
 import { assistantReady, GeminiError } from "@/lib/ai/gemini";
 import { logAiEvent, VISITOR_COOKIE } from "@/lib/ai/stats";
@@ -160,6 +161,9 @@ export async function POST(req: NextRequest) {
       tokensIn: reply.usage.in,
       tokensOut: reply.usage.out,
     });
+
+    // Attribute the question to a matching FAQ (usefulness counter).
+    void recordFaqHit(bot, locale, lastUser?.text ?? "");
 
     const res = NextResponse.json(reply);
     if (!existingVid) {
