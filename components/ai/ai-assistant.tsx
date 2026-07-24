@@ -11,10 +11,20 @@ import { useMountTransition } from "@/components/ui/use-mount-transition";
 import { Button } from "@/components/ui/button";
 import { ShadiIcon } from "@/components/ai/shadi-icon";
 
+// Set on a bot switch so the widget re-opens after the reload (below) instead
+// of closing. Session-scoped so it's a true one-shot.
+const REOPEN_KEY = "shadi:reopen-after-switch";
+
 // Switch character: persist the choice in a cookie and reload so the server
-// re-resolves the avatar, name, and system-prompt identity.
+// re-resolves the avatar, name, and system-prompt identity. Flag the widget to
+// re-open with the new character once the page comes back.
 function switchTo(id: string) {
   document.cookie = `${BOT_COOKIE}=${id}; path=/; max-age=31536000; SameSite=Lax`;
+  try {
+    sessionStorage.setItem(REOPEN_KEY, "1");
+  } catch {
+    // sessionStorage unavailable (private mode / blocked) — reload anyway.
+  }
   window.location.reload();
 }
 
@@ -101,6 +111,19 @@ export function AiAssistant({
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  // After a character switch reloads the page, re-open the widget with the new
+  // bot already selected (server-resolved) instead of leaving it closed.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(REOPEN_KEY)) {
+        sessionStorage.removeItem(REOPEN_KEY);
+        setOpen(true);
+      }
+    } catch {
+      // ignore — nothing to restore
+    }
+  }, []);
 
   async function send() {
     const text = input.trim();
